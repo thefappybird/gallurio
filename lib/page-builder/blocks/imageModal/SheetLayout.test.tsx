@@ -39,6 +39,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     filmstripLabel: "Photo filmstrip",
     seeMoreLabel: "See more",
     seeLessLabel: "See less",
+    additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
     ...overrides,
   };
@@ -60,6 +61,8 @@ describe("SheetLayout — sticky nav footer", () => {
 
     const navRow = prevButton.closest("div");
     expect(navRow).toHaveStyle({ position: "sticky", bottom: "0px" });
+    expect(navRow?.style.zIndex).toBe("2");
+    expect(navRow?.style.backdropFilter).toBe("blur(12px)");
   });
 
   it("still renders a functional prev/counter/next row when caption/meta/tags are absent", () => {
@@ -96,5 +99,13 @@ describe("SheetLayout — sticky nav footer", () => {
   it("renders no nav row when hasNav is false", () => {
     render(<SheetLayout {...baseProps({ hasNav: false })} />);
     expect(screen.queryByRole("button", { name: "Previous image" })).not.toBeInTheDocument();
+  });
+
+  it("groups primary and additional data into a two-column metadata layout", () => {
+    render(<SheetLayout {...baseProps({ image: img("a", { title: "Golden Hour", location: "Tagaytay", meta: [{ label: "Venue", value: "The Farm" }] }) })} />);
+    expect(screen.getByRole("heading", { name: "Additional information" })).toBeInTheDocument();
+    const css = document.querySelector("style")?.textContent ?? "";
+    expect(css).toContain("repeat(2, minmax(0, 1fr))");
+    expect(css).not.toContain("repeat(3, 1fr)");
   });
 });

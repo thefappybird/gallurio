@@ -18,7 +18,7 @@ import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
-import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { ImageMetaWizard, useImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerItem } from "./types";
 
@@ -63,7 +63,6 @@ export function CreateCollectionDialog({
   onCreated: () => void;
 }) {
   const errMsg = useActionError();
-  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Holds the new collection's id once created, so a retry after a failed
@@ -89,41 +88,7 @@ export function CreateCollectionDialog({
   const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  const wizardLabels: ImageWizardLabels = {
-    heading: tWizard("heading"),
-    position: (current, total) => tWizard("position", { current, total }),
-    fieldTitle: tWizard("fieldTitle"),
-    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
-    fieldCaption: tWizard("fieldCaption"),
-    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
-    fieldAlt: tWizard("fieldAlt"),
-    fieldAltHelp: tWizard("fieldAltHelp"),
-    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
-    altCounter: (count, max) => tWizard("altCounter", { count, max }),
-    fieldDate: tWizard("fieldDate"),
-    fieldLocation: tWizard("fieldLocation"),
-    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
-    fieldClient: tWizard("fieldClient"),
-    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
-    fieldTags: tWizard("fieldTags"),
-    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
-    fieldTagsHint: tWizard("fieldTagsHint"),
-    removeTag: (tag) => tWizard("removeTag", { tag }),
-    fieldMeta: tWizard("fieldMeta"),
-    fieldMetaHint: tWizard("fieldMetaHint"),
-    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
-    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
-    addMetaRow: tWizard("addMetaRow"),
-    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
-    savedBadge: tWizard("savedBadge"),
-    unsavedBadge: tWizard("unsavedBadge"),
-    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
-    previous: tWizard("previous"),
-    next: tWizard("next"),
-    finish: tWizard("finish"),
-    close: tWizard("close"),
-    errorMessage: (code) => errMsg(code),
-  };
+  const wizardLabels = useImageWizardLabels();
 
   function handleMetaSaved(updated: PickerItem) {
     setUploaded((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));

@@ -39,6 +39,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     filmstripLabel: "Photo filmstrip",
     seeMoreLabel: "See more",
     seeLessLabel: "See less",
+    additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
     ...overrides,
   };
@@ -79,10 +80,31 @@ describe("CaptionLayout — see-more metadata panel", () => {
     render(<CaptionLayout {...baseProps({ image })} />);
     expect(screen.getByRole("button", { name: "See more" })).toBeInTheDocument();
   });
+
+  it("uses theme fonts and mounts the shared two-column metadata grid", () => {
+    const image = img("a", {
+      title: "Golden hour",
+      location: "Manila",
+      tags: ["wedding"],
+    });
+    const { container } = render(<CaptionLayout {...baseProps({ image })} />);
+
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe(
+      "var(--pf-font-body)",
+    );
+    expect(screen.getByText("Golden hour").style.fontFamily).toBe(
+      "var(--pf-font-heading)",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+    expect(document.querySelector(".pf-photo-meta-grid")).toBeInTheDocument();
+    expect(document.querySelector('[data-meta-column="primary"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-meta-column="additional"]')).toBeInTheDocument();
+  });
 });
 
-describe("CaptionLayout — expanded panel stays under the dots/counter", () => {
-  it("keeps the dot-pagination row's z-index above the expanded see-more panel's", () => {
+describe("CaptionLayout — expanded panel overlays upward", () => {
+  it("keeps the expanded see-more panel above the dot-pagination row", () => {
     const images = [img("a", { location: "Manila" }), img("b"), img("c")];
     render(
       <CaptionLayout
@@ -96,10 +118,11 @@ describe("CaptionLayout — expanded panel stays under the dots/counter", () => 
     const panel = document.getElementById(panelId!)!;
 
     expect(dotsRow.style.position).toBe("relative");
-    expect(Number(dotsRow.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+    expect(Number(panel.style.zIndex)).toBeGreaterThan(Number(dotsRow.style.zIndex));
+    expect(panel.style.bottom).toContain("100%");
   });
 
-  it("keeps the numeric counter's z-index above the expanded see-more panel's when total > 8", () => {
+  it("keeps the expanded panel above the numeric counter when total > 8", () => {
     const images = Array.from({ length: 9 }, (_, i) => img(`p${i}`, i === 0 ? { location: "Manila" } : {}));
     render(
       <CaptionLayout
@@ -113,7 +136,7 @@ describe("CaptionLayout — expanded panel stays under the dots/counter", () => 
     const panel = document.getElementById(panelId!)!;
 
     expect(counter.style.position).toBe("relative");
-    expect(Number(counter.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+    expect(Number(panel.style.zIndex)).toBeGreaterThan(Number(counter.style.zIndex));
   });
 });
 

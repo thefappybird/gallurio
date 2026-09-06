@@ -78,6 +78,8 @@ export default async function PortfolioPreviewPage({
   setRequestLocale(locale);
   const sp = await searchParams;
   const zone = parseZone(sp.zone);
+  const requestedDraftId =
+    typeof sp.draftId === "string" && Types.ObjectId.isValid(sp.draftId) ? sp.draftId : null;
 
   const { workspace, role } = await requireOrg();
   if (role !== "owner") notFound();
@@ -100,6 +102,7 @@ export default async function PortfolioPreviewPage({
     chromeLocale,
   );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
+  const tPopup = await getTranslations({ locale: chromeLocale, namespace: "publicPage.collectionPopup" });
   // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
   const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
 
@@ -136,17 +139,16 @@ export default async function PortfolioPreviewPage({
       ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
       { content: [], root: {} };
     let resolvedCollectionsPopup = collectionsPopupConfig;
-    const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
     let resolvedDraftId: string | null = null;
-    if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
+    if (requestedDraftId) {
       const draftDoc = await PortfolioDraft.findOne(
-        { _id: draftIdParam, workspaceId: workspace._id },
+        { _id: requestedDraftId, workspaceId: workspace._id },
         { data: 1, collectionsPopup: 1 },
       ).lean();
       const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
       if (draftDoc && draftZoneData) {
         fallbackData = draftZoneData;
-        resolvedDraftId = draftIdParam;
+        resolvedDraftId = requestedDraftId;
         resolvedCollectionsPopup =
           (draftDoc.collectionsPopup as PortfolioCollectionsPopupConfig | null | undefined) ??
           collectionsPopupConfig;
@@ -189,6 +191,11 @@ export default async function PortfolioPreviewPage({
           carouselHint: t("gallery.carouselHint"),
           carouselPrev: t("gallery.carouselPrev"),
           carouselNext: t("gallery.carouselNext"),
+          lightboxAdditionalInformation: t("gallery.lightboxAdditionalInformation"),
+          lightboxDate: t("gallery.lightboxDate"),
+          lightboxLocation: t("gallery.lightboxLocation"),
+          lightboxClient: t("gallery.lightboxClient"),
+          lightboxTags: t("gallery.lightboxTags"),
         },
         nav: {
           navLandmark: tNav("navLandmark"),
@@ -221,6 +228,29 @@ export default async function PortfolioPreviewPage({
         workspace={renderWorkspace}
         fallbackData={fallbackData}
         draftId={resolvedDraftId}
+        collectionPopupLabels={{
+          close: tPopup("close"),
+          loading: tPopup("loading"),
+          failed: tPopup("failed"),
+          retry: tPopup("retry"),
+          empty: tPopup("empty"),
+          fullSizeAlt: tPopup("fullSizeAlt"),
+          openPhoto: tPopup("openPhoto"),
+          photo: tPopup("photo"),
+          loadMore: tPopup("loadMore"),
+          loadingMore: tPopup("loadingMore"),
+          loadMoreFailed: tPopup("loadMoreFailed"),
+          photoCountOne: tPopup("photoCountOne"),
+          photoCountOther: tPopup("photoCountOther", { count: "{count}" }),
+          previousPhoto: tPopup("previousPhoto"),
+          nextPhoto: tPopup("nextPhoto"),
+          filmstripLabel: tPopup("filmstripLabel"),
+          dateLabel: tPopup("dateLabel"),
+          locationLabel: tPopup("locationLabel"),
+          clientLabel: tPopup("clientLabel"),
+          tagsLabel: tPopup("tagsLabel"),
+          photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+        }}
       />
     );
   }
@@ -232,6 +262,7 @@ export default async function PortfolioPreviewPage({
     <div lang={chromeLocale} dir={effectiveDir}>
       <PreviewBrandShell
         slug={workspace.slug}
+        draftId={requestedDraftId}
         fallbackCssVars={cssVars}
         fallbackClassName={className}
       >

@@ -2503,7 +2503,7 @@
           "savedToast": "Na-save ang alt text.",
           "editTrigger": "I-edit ang mga detalye ng larawan para sa {name}",
           "photoFallback": "larawan",
-          "incompleteWarning": "Walang alt text — maaaring hindi maipakita nang tama ang larawang ito."
+          "incompleteWarning": "Walang paglalarawan — magdagdag para sa accessibility at SEO."
         },
         "imageBlockDetails": {
           "heading": "Mga detalye ng larawan",
@@ -2538,19 +2538,32 @@
         "imageWizard": {
           "heading": "Magdagdag ng mga detalye ng larawan",
           "position": "Larawan {current} ng {total}",
+          "stepBasics": "Pangunahing detalye",
+          "stepAdditional": "Karagdagang impormasyon",
+          "stepPosition": "Hakbang {current} ng {total}",
           "fieldTitle": "Pamagat",
           "fieldTitlePlaceholder": "hal. Kasal nina Sarah at Miguel",
           "fieldCaption": "Paglalarawan",
           "fieldCaptionPlaceholder": "Ano ang nangyayari sa larawang ito?",
-          "fieldAlt": "Alt text",
-          "fieldAltHelp": "Ilarawan kung ano ang ipinapakita ng larawan. Binabasa nang malakas ng mga screen reader at ginagamit ng mga search engine para maunawaan ang larawan.",
-          "fieldAltPlaceholder": "hal. Nobyo at nobya na sumasayaw sa ilalim ng mga ilaw",
-          "altCounter": "{count}/{max} na character",
+          "fieldCaptionHelp": "Ginagamit din ang paglalarawang ito bilang alt text ng larawan para sa accessibility at SEO.",
           "fieldDate": "Petsa",
           "fieldLocation": "Lokasyon",
           "fieldLocationPlaceholder": "hal. Tagaytay, Pilipinas",
           "fieldClient": "Kliyente",
           "fieldClientPlaceholder": "hal. Sarah at Miguel",
+          "hideClient": "Itago ang pangalan ng kliyente",
+          "hideClientHelp": "Panatilihing pribado ang impormasyon ng kliyente saanman lumitaw ang larawang ito.",
+          "linkBooking": "I-link ang booking",
+          "linkClient": "I-link ang kliyente",
+          "noBooking": "Walang naka-link na booking",
+          "noClient": "Walang naka-link na kliyente",
+          "searchLinks": "Maghanap ng record",
+          "noLinkMatches": "Walang tumugmang record",
+          "linksLoading": "Naglo-load ng mga record...",
+          "linksLoadError": "Hindi ma-load ang mga booking at kliyente.",
+          "retryLinks": "Subukan muli",
+          "manualDetails": "Hindi nakarehistro sa Gallurio? Ilagay o i-edit nang manu-mano ang mga detalye sa ibaba.",
+          "linkedRecord": "Naka-link na booking",
           "fieldTags": "Mga tag",
           "fieldTagsPlaceholder": "Magdagdag ng tag at pindutin ang Enter",
           "fieldTagsHint": "Hanggang 20 tag.",
@@ -2744,6 +2757,8 @@
           "layout": "Layout",
           "popupLayoutLabel": "Layout ng featured work",
           "popupLayoutHint": "Ito ang makikita ng mga bisita kapag binuksan nila ang isang featured collection.",
+          "popupColumnsLabel": "Mga column",
+          "popupColumnsHint": "Itakda kung ilang larawan ang lalabas sa bawat hanay.",
           "imageModalLayoutLabel": "Layout ng preview ng larawan",
           "imageModalLayoutHint": "Ito ang makikita ng mga bisita kapag na-click nila ang isang larawan sa iyong pahina.",
           "immersiveModalScopeNote": "Ipinapakita ng Immersive ang mga larawan nang direkta sa loob ng pahina, kaya nalalapat ito sa mga image block, photo grid, at masonry.",
@@ -2751,7 +2766,7 @@
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon." },
             "justified": { "label": "Justified", "description": "Mga larawang naka-pack sa hanay na iba't ibang lapad ngunit iisang taas." },
-            "splitIndex": { "label": "Split index", "description": "Matangkad na pangunahing larawan sa tabi ng dalawang-kolumnang index ng iba." },
+            "splitIndex": { "label": "Split index", "description": "Mga detalye ng koleksyon sa tabi ng nako-configure na index ng larawan." },
             "immersive": { "label": "Immersive", "description": "Isang malaking larawan paisa-isa, buong-viewport, may filmstrip sa ibaba." }
           },
           "imageModalLayouts": {
@@ -3678,7 +3693,12 @@
         "lightboxFilmstrip": "Filmstrip ng mga larawan",
         "lightboxSeeMore": "Tingnan pa",
         "lightboxSeeLess": "Ipakita nang mas kaunti",
-        "lightboxPhotoOf": "Larawan {current} ng {total}"
+        "lightboxAdditionalInformation": "Karagdagang impormasyon",
+        "lightboxPhotoOf": "Larawan {current} ng {total}",
+        "lightboxDate": "Petsa",
+        "lightboxLocation": "Lokasyon",
+        "lightboxClient": "Kliyente",
+        "lightboxTags": "Mga tag"
       }
     },
     "nav": {
@@ -3752,7 +3772,11 @@
       "photoCountOther": "{count} na larawan",
       "previousPhoto": "Nakaraang larawan",
       "nextPhoto": "Susunod na larawan",
-      "filmstripLabel": "Filmstrip ng mga larawan"
+      "filmstripLabel": "Filmstrip ng mga larawan",
+      "dateLabel": "Petsa",
+      "locationLabel": "Lokasyon",
+      "clientLabel": "Kliyente",
+      "tagsLabel": "Mga tag"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Tingnan ang mga bagong gawa at mag-book agad.",

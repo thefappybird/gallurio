@@ -445,7 +445,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
         }}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Open photo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reception at dusk" }));
     expect(screen.getByText("Golden Hour")).toBeInTheDocument();
     expect(screen.getByText("Reception at dusk")).toBeInTheDocument();
   });

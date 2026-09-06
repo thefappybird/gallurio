@@ -32,6 +32,7 @@ export function CaptionLayout({
   counterText,
   seeMoreLabel,
   seeLessLabel,
+  additionalInformationLabel,
   dotLabelTemplate,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
@@ -56,6 +57,7 @@ export function CaptionLayout({
         justifyContent: "center",
         padding: "16px",
         boxSizing: "border-box",
+        fontFamily: "var(--pf-font-body)",
       }}
     >
       <div
@@ -102,9 +104,9 @@ export function CaptionLayout({
         )}
       </div>
       {(hasCaptionText || hasNav || hasMetaExtra) && (
-        <div style={{ position: "relative", marginTop: "16px", maxWidth: "640px", textAlign: "center" }}>
+        <div style={{ position: "relative", width: "min(100%, 640px)", marginTop: "16px", textAlign: "center" }}>
           {image.title && (
-            <p style={{ margin: 0, color: "#f2f2f2", fontSize: "1rem", fontWeight: 600 }}>{image.title}</p>
+            <p style={{ margin: 0, color: "#f2f2f2", fontFamily: "var(--pf-font-heading)", fontSize: "1rem", fontWeight: 600 }}>{image.title}</p>
           )}
           {image.caption && (
             <p style={{ margin: "4px 0 0", color: "rgba(242,242,242,0.66)", fontSize: "0.875rem" }}>
@@ -147,11 +149,14 @@ export function CaptionLayout({
           )}
           <SeeMoreMetaPanel
             key={image.id}
+            title={image.title}
+            description={image.caption}
             facts={facts}
             meta={meta}
             tags={tags}
             seeMoreLabel={seeMoreLabel}
             seeLessLabel={seeLessLabel}
+            additionalInformationLabel={additionalInformationLabel}
           />
         </div>
       )}

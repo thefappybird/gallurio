@@ -4,7 +4,7 @@ import path from "node:path";
 
 // Verifies browser-observed behavior (not just compile-time correctness) for
 // three surfaces shipped on this branch without Playwright evidence:
-//  1. ImageMetaDialog (alt-text editor) — reached via MediaPicker (Puck field
+//  1. Shared photo-details wizard — reached via MediaPicker (Puck field
 //     panel) and via EditCollectionDialog (Photos manager). Both entry points
 //     render localized copy: Puck portals its field panel, so next-intl context
 //     reaches it.
@@ -100,7 +100,7 @@ async function openEditCollectionImageMeta(page: Page, locale: Locale) {
   await trigger.click();
   await page.waitForTimeout(400);
 
-  const title = pick(locale, "app.pageBuilder.editor.imageMeta.title");
+  const title = pick(locale, "app.pageBuilder.editor.imageWizard.heading");
   const dialog = page.getByRole("dialog", { name: title });
   await expect(dialog).toBeVisible();
   return { dialog, trigger };
@@ -172,7 +172,7 @@ function contrastRatio(fg: string, bg: string): number | null {
 
 test.describe("Layout / responsive — no horizontal overflow", () => {
   for (const width of [375, 768, 1280]) {
-    test(`EditCollectionDialog + ImageMetaDialog @ ${width}px`, async ({ page }) => {
+    test(`EditCollectionDialog + photo-details wizard @ ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await openEditCollectionImageMeta(page, "en");
       const overflow = await page.evaluate(() => ({
@@ -184,7 +184,7 @@ test.describe("Layout / responsive — no horizontal overflow", () => {
       );
     });
 
-    test(`MediaPicker + ImageMetaDialog @ ${width}px`, async ({ page }) => {
+    test(`MediaPicker + photo-details wizard @ ${width}px`, async ({ page }) => {
       // The Components panel that supplies the draggable Gallery Grid block is not
       // reachable at <lg widths (the editor is a desktop-only surface for adding
       // blocks) — build the fixture at desktop size, then resize down to the
@@ -193,7 +193,7 @@ test.describe("Layout / responsive — no horizontal overflow", () => {
       const dialog = await openMediaPickerAllPhotos(page);
       await page.setViewportSize({ width, height: 900 });
       await page.waitForTimeout(300);
-      await dialog.locator('button[aria-label^="Edit alt text for"]').first().click();
+      await dialog.locator('button[aria-label^="Edit photo details for"]').first().click();
       await page.waitForTimeout(400);
       const overflow = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
@@ -232,7 +232,7 @@ test.describe("375px tile overlay controls", () => {
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await openEditCollectionImageMeta(page, "en");
-    // Close the ImageMetaDialog opened by the helper — we need the tile underneath.
+    // Close the photo-details wizard opened by the helper — we need the tile underneath.
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
 
@@ -247,7 +247,7 @@ test.describe("375px tile overlay controls", () => {
     const checkboxBox = await checkboxLabel.boundingBox();
     const coverBtn = tile.locator('button[aria-label^="Set "]').first();
     const coverBox = await coverBtn.boundingBox();
-    const pencilBtn = tile.locator('button[aria-label^="Edit alt text for"]').first();
+    const pencilBtn = tile.locator('button[aria-label^="Edit photo details for"]').first();
     const pencilBox = await pencilBtn.boundingBox();
 
     expect(tileBox, "tile bounding box").not.toBeNull();
@@ -302,7 +302,7 @@ test.describe("375px tile overlay controls", () => {
     await openEditCollectionImageMeta(page, "en");
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
-    const editCollectionPencil = page.locator('button[aria-label^="Edit alt text for"]').first();
+    const editCollectionPencil = page.locator('button[aria-label^="Edit photo details for"]').first();
     const b1 = await editCollectionPencil.boundingBox();
     expect(b1, "EditCollectionDialog pencil box").not.toBeNull();
     expect(b1!.width, "EditCollectionDialog pencil width").toBeGreaterThanOrEqual(24);
@@ -314,7 +314,7 @@ test.describe("375px tile overlay controls", () => {
     const dialog2 = await openMediaPickerAllPhotos(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(300);
-    const mediaPickerPencil = dialog2.locator('button[aria-label^="Edit alt text for"]').first();
+    const mediaPickerPencil = dialog2.locator('button[aria-label^="Edit photo details for"]').first();
     const b2 = await mediaPickerPencil.boundingBox();
     expect(b2, "MediaPicker pencil box").not.toBeNull();
     expect(b2!.width, "MediaPicker pencil width").toBeGreaterThanOrEqual(24);
@@ -323,10 +323,10 @@ test.describe("375px tile overlay controls", () => {
 });
 
 // ===========================================================================
-// 3. Locale x theme — EditCollectionDialog / ImageMetaDialog (localized copy)
+// 3. Locale x theme — shared photo-details wizard (localized copy)
 // ===========================================================================
 
-test.describe("Locale x theme — EditCollectionDialog ImageMetaDialog", () => {
+test.describe("Locale x theme — shared photo-details wizard", () => {
   for (const locale of LOCALES) {
     for (const theme of ["light", "dark"] as const) {
       test(`${locale} ${theme}: renders correct script, no mojibake, readable contrast`, async ({ page }) => {
@@ -336,17 +336,17 @@ test.describe("Locale x theme — EditCollectionDialog ImageMetaDialog", () => {
 
         await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^((?!dark).)*$/);
 
-        const expectedTitle = pick(locale, "app.pageBuilder.editor.imageMeta.title");
-        const expectedAltLabel = pick(locale, "app.pageBuilder.editor.imageMeta.altLabel");
-        const expectedAltHelp = pick(locale, "app.pageBuilder.editor.imageMeta.altHelp");
-        const expectedSave = pick(locale, "app.pageBuilder.editor.imageMeta.save");
-        const expectedCancel = pick(locale, "app.pageBuilder.editor.imageMeta.cancel");
+        const expectedTitle = pick(locale, "app.pageBuilder.editor.imageWizard.heading");
+        const expectedDescription = pick(locale, "app.pageBuilder.editor.imageWizard.fieldCaption");
+        const expectedDescriptionHelp = pick(locale, "app.pageBuilder.editor.imageWizard.fieldCaptionHelp");
+        const expectedNext = pick(locale, "app.pageBuilder.editor.imageWizard.next");
+        const expectedClose = pick(locale, "app.pageBuilder.editor.imageWizard.close");
 
         await expect(dialog.getByText(expectedTitle, { exact: true })).toBeVisible();
-        await expect(dialog.getByText(expectedAltLabel, { exact: true })).toBeVisible();
-        await expect(dialog.getByText(expectedAltHelp, { exact: true })).toBeVisible();
-        await expect(dialog.getByRole("button", { name: expectedSave })).toBeVisible();
-        await expect(dialog.getByRole("button", { name: expectedCancel })).toBeVisible();
+        await expect(dialog.getByText(expectedDescription, { exact: true })).toBeVisible();
+        await expect(dialog.getByText(expectedDescriptionHelp, { exact: true })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: expectedNext })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: expectedClose })).toBeVisible();
 
         // Geometry stays inside the viewport for every script, RTL included.
         const dialogBox = await dialog.boundingBox();
@@ -359,20 +359,20 @@ test.describe("Locale x theme — EditCollectionDialog ImageMetaDialog", () => {
           // The footer stacks buttons vertically below `sm` (flex-col-reverse,
           // unaffected by writing direction) — widen past `sm` to observe the
           // row-direction mirror the RTL rule actually targets, then verify
-          // Cancel (first in DOM) renders to the RIGHT of Save.
+          // The primary action group renders to the right of Close in RTL.
           await page.setViewportSize({ width: 700, height: 812 });
           await page.waitForTimeout(200);
-          const cancelBox = await dialog.getByRole("button", { name: expectedCancel }).boundingBox();
-          const saveBox = await dialog.getByRole("button", { name: expectedSave }).boundingBox();
-          expect(cancelBox!.x, "Cancel renders to the right of Save in RTL").toBeGreaterThan(saveBox!.x);
+          const closeBox = await dialog.getByRole("button", { name: expectedClose }).boundingBox();
+          const nextBox = await dialog.getByRole("button", { name: expectedNext }).boundingBox();
+          expect(nextBox!.x, "Next renders to the right of Close in RTL").toBeGreaterThan(closeBox!.x);
           await page.setViewportSize({ width: 375, height: 812 });
           await page.waitForTimeout(200);
         }
 
         // Dark-theme contrast: measure the hint/body text against its real
         // background rather than assuming the token resolved.
-        const altHelpEl = dialog.getByText(expectedAltHelp, { exact: true });
-        const [fg, bg] = await altHelpEl.evaluate((el) => {
+        const descriptionHelpEl = dialog.getByText(expectedDescriptionHelp, { exact: true });
+        const [fg, bg] = await descriptionHelpEl.evaluate((el) => {
           const color = getComputedStyle(el).color;
           let node: HTMLElement | null = el as HTMLElement;
           let background = "rgba(0,0,0,0)";
@@ -453,13 +453,12 @@ test("ar: the collection dialog title is bidi-isolated so its quotes cannot reor
 // ===========================================================================
 // Puck renders its field panel through createPortal and never mounts a second
 // React root, so NextIntlClientProvider context does reach MediaPicker. The
-// alt-text dialog used to be handed a hardcoded English label object there,
-// which made the same dialog English from a Puck images field and translated
-// from the Photos manager. These tests pin the fix.
+// The photo-details wizard used to receive host-specific labels. These tests
+// pin the shared localized label source across both entry points.
 
-test.describe("MediaPicker ImageMetaDialog — localized chrome", () => {
+test.describe("MediaPicker photo-details wizard — localized chrome", () => {
   for (const locale of ["ar", "th"] as const) {
-    test(`${locale}: MediaPicker + ImageMetaDialog render translated copy`, async ({ page }) => {
+    test(`${locale}: MediaPicker + photo-details wizard render translated copy`, async ({ page }) => {
       // Block library panel is desktop-only — build at 1280, then shrink to 375
       // to check the already-open dialog's mobile reflow.
       await page.setViewportSize({ width: 1280, height: 900 });
@@ -476,19 +475,18 @@ test.describe("MediaPicker ImageMetaDialog — localized chrome", () => {
       await page.waitForTimeout(400);
 
       const metaDialog = page.getByRole("dialog", {
-        name: pick(locale, "app.pageBuilder.editor.imageMeta.title"),
+        name: pick(locale, "app.pageBuilder.editor.imageWizard.heading"),
       });
       await expect(metaDialog).toBeVisible();
       await expect(
-        metaDialog.getByText(pick(locale, "app.pageBuilder.editor.imageMeta.altLabel"), { exact: true }),
+        metaDialog.getByText(pick(locale, "app.pageBuilder.editor.imageWizard.fieldCaption"), { exact: true }),
       ).toBeVisible();
       await expect(
-        metaDialog.getByRole("button", { name: pick(locale, "app.pageBuilder.editor.imageMeta.save") }),
+        metaDialog.getByRole("button", { name: pick(locale, "app.pageBuilder.editor.imageWizard.next") }),
       ).toBeVisible();
 
-      // The English fallback copy must be gone — that regression is the point.
+      // The retired English field must not leak through a localized host.
       await expect(metaDialog.getByText("Alt text", { exact: true })).toHaveCount(0);
-      await expect(metaDialog.getByRole("button", { name: "Save" })).toHaveCount(0);
 
       await page.screenshot({
         path: `e2e/__screenshots__/imagemeta-mediapicker-375-${locale}.png`,
@@ -498,19 +496,18 @@ test.describe("MediaPicker ImageMetaDialog — localized chrome", () => {
 });
 
 // ===========================================================================
-// 5. ImageMetaDialog states
+// 5. Shared photo-details wizard states
 // ===========================================================================
 
-test.describe("ImageMetaDialog states", () => {
-  test("populated: prefills existing alt text and counts characters", async ({ page }) => {
+test.describe("shared photo-details wizard states", () => {
+  test("populated: prefills the description and explains its accessibility/SEO use", async ({ page }) => {
     const { dialog } = await openEditCollectionImageMeta(page, "en");
-    const textarea = dialog.locator("textarea");
-    await expect(textarea).toHaveValue("Weddings sample 1");
-    await expect(dialog.getByText("17/300 characters")).toBeVisible();
-    await expect(textarea).toBeFocused();
+    await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveValue("Weddings sample 1");
+    await expect(dialog.getByText(/accessibility and SEO/i)).toBeVisible();
+    await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
   });
 
-  test("empty: null altText renders a blank field, not the string 'null'", async ({ page }) => {
+  test("empty: null description renders a blank field, not the string 'null'", async ({ page }) => {
     await page.route("**/api/portfolio/gallery/collections/all**", async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       await route.fulfill({
@@ -519,11 +516,10 @@ test.describe("ImageMetaDialog states", () => {
         body: JSON.stringify({
           items: [
             {
-              id: "fixture-empty-alt",
-              publicId: "fixture-empty-alt",
+              id: "fixture-empty-description",
+              publicId: "fixture-empty-description",
               thumbUrl: "https://picsum.photos/seed/fixture/200/200",
-              caption: "Fixture photo",
-              altText: null,
+              caption: null,
             },
           ],
           nextCursor: null,
@@ -531,16 +527,15 @@ test.describe("ImageMetaDialog states", () => {
       });
     });
     const dialog = await openMediaPickerAllPhotos(page);
-    await dialog.locator('button[aria-label^="Edit alt text for"]').first().click();
+    await dialog.locator('button[aria-label^="Edit photo details for"]').first().click();
     await page.waitForTimeout(400);
-    const metaDialog = page.getByRole("dialog", { name: "Edit alt text" });
-    const textarea = metaDialog.locator("textarea");
-    await expect(textarea).toHaveValue("");
-    await expect(textarea).not.toHaveValue("null");
-    await expect(metaDialog.getByText("0/300 characters")).toBeVisible();
+    const metaDialog = page.getByRole("dialog", { name: "Add photo details" });
+    const description = metaDialog.getByRole("textbox", { name: "Description" });
+    await expect(description).toHaveValue("");
+    await expect(description).not.toHaveValue("null");
   });
 
-  test("saving: Save disabled with progress, Cancel disabled, dialog cannot be dismissed", async ({ page }) => {
+  test("saving: actions are disabled and Escape cannot dismiss the wizard", async ({ page }) => {
     const { dialog } = await openEditCollectionImageMeta(page, "en");
     let resolveRoute: () => void = () => {};
     const gate = new Promise<void>((r) => (resolveRoute = r));
@@ -554,17 +549,18 @@ test.describe("ImageMetaDialog states", () => {
           id: "item",
           publicId: "item",
           thumbUrl: "https://picsum.photos/seed/item/200/200",
-          caption: "Weddings sample 1",
-          altText: "Updated alt text",
+          caption: "Updated description",
         }),
       });
     });
 
-    const saveBtn = dialog.getByRole("button", { name: /Save|Saving/ });
+    await dialog.getByRole("textbox", { name: "Description" }).fill("Updated description");
+    await dialog.getByRole("button", { name: "Next" }).click();
+    const saveBtn = dialog.getByRole("button", { name: "Save and exit" });
     await saveBtn.click();
     await page.waitForTimeout(200);
-    await expect(dialog.getByRole("button", { name: "Saving…" })).toBeDisabled();
-    await expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await expect(saveBtn).toBeDisabled();
+    await expect(dialog.getByRole("button", { name: "Close" })).toBeDisabled();
 
     // Escape while saving must not close the dialog (guarded by `if (!saving)`).
     await page.keyboard.press("Escape");
@@ -577,7 +573,7 @@ test.describe("ImageMetaDialog states", () => {
   });
 
   test("error: 403 owner_only is surfaced without closing the dialog", async ({ page }) => {
-    const { dialog, trigger } = await openEditCollectionImageMeta(page, "en");
+    const { dialog } = await openEditCollectionImageMeta(page, "en");
     await page.route("**/api/portfolio/gallery/items/**", async (route) => {
       if (route.request().method() !== "PATCH") return route.fallback();
       await route.fulfill({
@@ -587,15 +583,15 @@ test.describe("ImageMetaDialog states", () => {
       });
     });
 
-    await dialog.getByRole("button", { name: "Save" }).click();
+    await dialog.getByRole("textbox", { name: "Description" }).fill("Updated description");
+    await dialog.getByRole("button", { name: "Next" }).click();
+    await dialog.getByRole("button", { name: "Save and exit" }).click();
     await page.waitForTimeout(400);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("alert")).toContainText("Only the workspace owner can do this.");
-    await expect(dialog.locator("textarea")).toHaveAttribute("aria-invalid", "true");
-    void trigger;
   });
 
-  test("success: PATCH 200 shows a toast and closes the dialog, focus returns to the trigger", async ({ page }) => {
+  test("success: PATCH 200 closes the wizard and returns focus to the trigger", async ({ page }) => {
     const { dialog, trigger } = await openEditCollectionImageMeta(page, "en");
     await page.route("**/api/portfolio/gallery/items/**", async (route) => {
       if (route.request().method() !== "PATCH") return route.fallback();
@@ -606,36 +602,26 @@ test.describe("ImageMetaDialog states", () => {
           id: "item",
           publicId: "item",
           thumbUrl: "https://picsum.photos/seed/item/200/200",
-          caption: "Weddings sample 1",
-          altText: "Weddings sample 1",
+          caption: "Updated description",
         }),
       });
     });
 
-    await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Alt text saved.")).toBeVisible({ timeout: 5_000 });
+    await dialog.getByRole("textbox", { name: "Description" }).fill("Updated description");
+    await dialog.getByRole("button", { name: "Next" }).click();
+    await dialog.getByRole("button", { name: "Save and exit" }).click();
     await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
   });
 
-  test("character counter becomes a polite live region near the limit", async ({ page }) => {
+  test("description keeps the 2000-character storage boundary", async ({ page }) => {
     const { dialog } = await openEditCollectionImageMeta(page, "en");
-    const textarea = dialog.locator("textarea");
-    const counter = dialog.locator("span[aria-live]").filter({ hasText: "characters" });
-
-    // Far from the limit: no aria-live wrapper (announcing every keystroke drowns the dialog).
-    await expect(counter).toHaveCount(0);
-
-    const near = "x".repeat(285);
-    await textarea.fill(near);
-    await expect(dialog.getByText(`${near.length}/300 characters`)).toBeVisible();
-    const liveCounter = dialog.locator('span[aria-live="polite"]').filter({ hasText: "characters" });
-    await expect(liveCounter).toHaveCount(1);
+    await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveAttribute("maxlength", "2000");
   });
 
-  test("keyboard: focus enters the field on open and returns to the trigger on Escape", async ({ page }) => {
+  test("keyboard: focus enters the first field and returns to the trigger on Escape", async ({ page }) => {
     const { dialog, trigger } = await openEditCollectionImageMeta(page, "en");
-    await expect(dialog.locator("textarea")).toBeFocused();
+    await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
     await expect(dialog).toBeHidden();
@@ -651,30 +637,30 @@ test.describe("ImageMetaDialog states", () => {
   // `translate`, and only `translate`, for any v4 `translate-*` utility.
   test("controls: idle / hover / focus-visible / active / disabled are visually distinct", async ({ page }) => {
     const { dialog } = await openEditCollectionImageMeta(page, "en");
-    const cancelBtn = dialog.getByRole("button", { name: "Cancel" });
+    const closeBtn = dialog.getByRole("button", { name: "Close" });
 
-    const idle = await cancelBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const idle = await closeBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    await cancelBtn.hover();
+    await closeBtn.hover();
     await page.waitForTimeout(100);
-    const hovered = await cancelBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const hovered = await closeBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
 
     // Real keyboard Tab (not .focus()) — Chromium's :focus-visible heuristic
     // does not reliably match a bare programmatic focus() call, only
     // keyboard-driven focus, so we drive it the same way a real user would.
-    // Tab order from the auto-focused textarea is: textarea -> Cancel -> Save.
-    await page.keyboard.press("Tab");
+    // Shift+Tab wraps from the auto-focused first field to the final Close action.
+    await page.keyboard.press("Shift+Tab");
     await page.waitForTimeout(100);
-    await expect(cancelBtn).toBeFocused();
-    const focusRing = await cancelBtn.evaluate((el) => {
+    await expect(closeBtn).toBeFocused();
+    const focusRing = await closeBtn.evaluate((el) => {
       const cs = getComputedStyle(el);
       return { boxShadow: cs.boxShadow, borderColor: cs.borderColor };
     });
 
-    await cancelBtn.hover();
+    await closeBtn.hover();
     await page.mouse.down();
     await page.waitForTimeout(80);
-    const activeTranslate = await cancelBtn.evaluate((el) => getComputedStyle(el).translate);
+    const activeTranslate = await closeBtn.evaluate((el) => getComputedStyle(el).translate);
     await page.mouse.up();
 
     console.log("[controls]", JSON.stringify({ idle, hovered, focusRing, activeTranslate }));
@@ -683,7 +669,7 @@ test.describe("ImageMetaDialog states", () => {
     expect(focusRing.boxShadow, "focus-visible ring is present").not.toBe("none");
     expect(activeTranslate, "active state applies a translate").not.toBe("none");
 
-    // Disabled: covered by the "saving" state test (Save + Cancel both `disabled` while pending).
+    // Disabled is covered by the saving-state test above.
   });
 });
 

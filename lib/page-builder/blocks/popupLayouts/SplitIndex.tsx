@@ -21,6 +21,7 @@ export function SplitIndex({
   collectionName,
   collectionDescription,
   total,
+  popupColumns,
   hasMore,
   isLoadingMore,
   loadMoreError,
@@ -69,8 +70,9 @@ export function SplitIndex({
       <div style={{ flex: 1, minWidth: 0 }}>
         <ul
           aria-label={collectionName}
+          data-popup-columns={popupColumns}
           style={{
-            columnCount: 2,
+            columnCount: popupColumns,
             columnGap: "8px",
             listStyle: "none",
             margin: 0,

@@ -22,6 +22,7 @@ export function ContactSheet({
   collectionName,
   collectionDescription,
   total,
+  popupColumns,
   hasMore,
   isLoadingMore,
   loadMoreError,
@@ -61,12 +62,13 @@ export function ContactSheet({
         </div>
       ) : null}
 
-      {/* Image grid, roughly six per row, reflowing on smaller screens */}
+      {/* Exact configured column count — shared with the editor preview. */}
       <ul
         aria-label={collectionName}
+        data-popup-columns={popupColumns}
         style={{
-          display: "flex",
-          flexWrap: "wrap",
+          display: "grid",
+          gridTemplateColumns: `repeat(${popupColumns}, minmax(0, 1fr))`,
           gap: "8px",
           listStyle: "none",
           margin: 0,
@@ -82,10 +84,6 @@ export function ContactSheet({
           return (
             <li
               key={img.id}
-              style={{
-                flex: "0 0 calc(100% / 6 - 7px)",
-                minWidth: "120px",
-              }}
             >
               <button
                 type="button"

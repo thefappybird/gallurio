@@ -22,6 +22,14 @@ export const galleryItemMetaFields = {
   date: z.string().trim().regex(GALLERY_DATE_RE, "invalid_date").optional(),
   location: z.string().trim().max(300).optional(),
   client: z.string().trim().max(300).optional(),
+  hideClient: z.boolean().optional(),
   tags: z.array(z.string().trim().max(40)).max(20).optional(),
   meta: z.array(galleryMetaRowSchema).max(20).optional(),
+} as const;
+
+const galleryLinkId = z.union([z.string().regex(/^[a-f\d]{24}$/i, "invalid_link"), z.literal(""), z.null()]).optional();
+
+export const galleryItemLinkFields = {
+  bookingId: galleryLinkId,
+  clientId: galleryLinkId,
 } as const;

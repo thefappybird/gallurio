@@ -183,7 +183,7 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
       if (url === "/api/portfolio/gallery/items" && init?.method === "POST")
         return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", thumbUrl: "https://x/thumb-new.jpg", caption: null }) } as Response);
       if (url === "/api/portfolio/gallery/items/up-new" && init?.method === "PATCH")
-        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: null, altText: "A bride and groom" }) } as Response);
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: "A bride and groom" }) } as Response);
       if (url === "/api/portfolio/gallery/collections" && init?.method === "POST")
         return Promise.resolve({ ok: true, json: async () => ({ id: "newCol", name: "X", slug: "x" }) } as Response);
       if (url.includes("/items/copy")) return Promise.resolve({ ok: true, json: async () => ({ items: [] }) } as Response);
@@ -217,8 +217,9 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
     fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
 
     await screen.findByText(/add photo details/i);
-    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
-    fireEvent.change(altField, { target: { value: "A bride and groom" } });
+    const descriptionField = await screen.findByRole("textbox", { name: /^description$/i });
+    fireEvent.change(descriptionField, { target: { value: "A bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
@@ -228,7 +229,7 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
 });
 
 describe("CreateCollectionDialog incomplete-metadata warning", () => {
-  it("does not show the warning badge once alt text is saved from the immediate wizard", async () => {
+  it("does not show the warning badge once a description is saved from the immediate wizard", async () => {
     vi.mocked(uploadImage).mockResolvedValue({
       assetId: "a-new.jpg", url: "https://x/new.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
     });
@@ -237,7 +238,7 @@ describe("CreateCollectionDialog incomplete-metadata warning", () => {
       if (url === "/api/portfolio/gallery/items" && init?.method === "POST")
         return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", thumbUrl: "https://x/thumb-new.jpg", caption: null }) } as Response);
       if (url === "/api/portfolio/gallery/items/up-new" && init?.method === "PATCH")
-        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: null, altText: "A bride and groom" }) } as Response);
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: "A bride and groom" }) } as Response);
       if (url.includes("/items/copy")) return Promise.resolve({ ok: true, json: async () => ({ items: [] }) } as Response);
       return Promise.resolve({ ok: true, json: async () => ({ items: photos, nextCursor: null }) } as Response);
     });
@@ -247,10 +248,11 @@ describe("CreateCollectionDialog incomplete-metadata warning", () => {
     await waitFor(() => expect(document.querySelector('img[src*="thumb-new.jpg"]')).toBeTruthy());
 
     expect(await screen.findByText(/add photo details/i)).toBeTruthy();
-    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
-    fireEvent.change(altField, { target: { value: "A bride and groom" } });
+    const descriptionField = await screen.findByRole("textbox", { name: /^description$/i });
+    fireEvent.change(descriptionField, { target: { value: "A bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
-    await waitFor(() => expect(screen.queryByRole("button", { name: /missing alt text/i })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("button", { name: /missing description/i })).toBeNull());
   });
 });

@@ -24,7 +24,7 @@ vi.mock("@/lib/auth/apiOrgContext", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem, Workspace } from "@/lib/db/models";
+import { Client, GalleryItem, Workspace } from "@/lib/db/models";
 import { GET, PATCH } from "./route";
 
 let workspaceId: Types.ObjectId;
@@ -154,6 +154,25 @@ describe("PATCH by-asset", () => {
     const doc = await GalleryItem.findOne({ assetId: "asset_1" });
     expect(doc!.title).toBe("keep");
     expect(doc!.location).toBe("Cebu");
+  });
+
+  it("stores an owned client link and rejects a client from another workspace", async () => {
+    await seed(workspaceId, "asset_1");
+    const ownClient = await Client.create({ workspaceId, name: "Ana Reyes" });
+    const linked = (await PATCH(
+      makeReq({ clientId: ownClient._id.toString() }),
+      makeParams("asset_1")
+    )) as unknown as MockResp;
+    expect(linked.status).toBe(200);
+    expect(linked.body).toMatchObject({ clientId: ownClient._id.toString() });
+
+    const foreignClient = await Client.create({ workspaceId: otherWorkspaceId, name: "Foreign client" });
+    const rejected = (await PATCH(
+      makeReq({ clientId: foreignClient._id.toString() }),
+      makeParams("asset_1")
+    )) as unknown as MockResp;
+    expect(rejected.status).toBe(400);
+    expect(rejected.body).toEqual({ error: "invalid_link" });
   });
 
   it("rejects a malformed date rather than coercing it", async () => {

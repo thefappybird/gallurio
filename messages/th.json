@@ -2503,7 +2503,7 @@
           "savedToast": "บันทึกข้อความอธิบายภาพแล้ว",
           "editTrigger": "แก้ไขรายละเอียดรูปภาพสำหรับ {name}",
           "photoFallback": "ภาพ",
-          "incompleteWarning": "ไม่มีข้อความอธิบายภาพ — ภาพนี้อาจแสดงผลไม่ตรงตามที่ตั้งใจไว้"
+          "incompleteWarning": "ไม่มีคำอธิบาย — เพิ่มคำอธิบายเพื่อการเข้าถึงและ SEO"
         },
         "imageBlockDetails": {
           "heading": "รายละเอียดภาพ",
@@ -2538,19 +2538,32 @@
         "imageWizard": {
           "heading": "เพิ่มรายละเอียดภาพ",
           "position": "ภาพที่ {current} จาก {total}",
+          "stepBasics": "รายละเอียดหลัก",
+          "stepAdditional": "ข้อมูลเพิ่มเติม",
+          "stepPosition": "ขั้นตอน {current} จาก {total}",
           "fieldTitle": "ชื่อเรื่อง",
           "fieldTitlePlaceholder": "เช่น งานแต่งงานของซาราห์และมิเกล",
           "fieldCaption": "คำอธิบาย",
           "fieldCaptionPlaceholder": "เกิดอะไรขึ้นในภาพนี้?",
-          "fieldAlt": "ข้อความอธิบายภาพ (Alt text)",
-          "fieldAltHelp": "อธิบายสิ่งที่ปรากฏในภาพ โปรแกรมอ่านหน้าจอจะอ่านออกเสียงข้อความนี้ และเครื่องมือค้นหาใช้เพื่อทำความเข้าใจภาพ",
-          "fieldAltPlaceholder": "เช่น เจ้าบ่าวเจ้าสาวเต้นรำใต้แสงไฟ",
-          "altCounter": "{count}/{max} ตัวอักษร",
+          "fieldCaptionHelp": "คำอธิบายนี้ใช้เป็นข้อความ alt ของรูปภาพด้วย เพื่อการเข้าถึงและ SEO",
           "fieldDate": "วันที่",
           "fieldLocation": "สถานที่",
           "fieldLocationPlaceholder": "เช่น ตากายไต ประเทศฟิลิปปินส์",
           "fieldClient": "ลูกค้า",
           "fieldClientPlaceholder": "เช่น ซาราห์และมิเกล",
+          "hideClient": "ซ่อนชื่อลูกค้า",
+          "hideClientHelp": "เก็บข้อมูลลูกค้าเป็นส่วนตัวทุกที่ที่รูปภาพนี้ปรากฏ",
+          "linkBooking": "เชื่อมโยงการจอง",
+          "linkClient": "เชื่อมโยงลูกค้า",
+          "noBooking": "ไม่ได้เชื่อมโยงการจอง",
+          "noClient": "ไม่ได้เชื่อมโยงลูกค้า",
+          "searchLinks": "ค้นหารายการ",
+          "noLinkMatches": "ไม่พบรายการที่ตรงกัน",
+          "linksLoading": "กำลังโหลดรายการ...",
+          "linksLoadError": "ไม่สามารถโหลดการจองและลูกค้าได้",
+          "retryLinks": "ลองอีกครั้ง",
+          "manualDetails": "ยังไม่ได้ลงทะเบียนใน Gallurio? กรอกหรือแก้ไขรายละเอียดด้วยตนเองด้านล่าง",
+          "linkedRecord": "การจองที่เชื่อมโยง",
           "fieldTags": "แท็ก",
           "fieldTagsPlaceholder": "เพิ่มแท็กแล้วกด Enter",
           "fieldTagsHint": "สูงสุด 20 แท็ก",
@@ -2744,6 +2757,8 @@
           "layout": "เลย์เอาต์",
           "popupLayoutLabel": "เลย์เอาต์ผลงานเด่น",
           "popupLayoutHint": "นี่คือสิ่งที่ผู้เยี่ยมชมเห็นเมื่อเปิดคอลเลกชันเด่น",
+          "popupColumnsLabel": "คอลัมน์",
+          "popupColumnsHint": "กำหนดจำนวนรูปภาพที่แสดงในแต่ละแถว",
           "imageModalLayoutLabel": "เลย์เอาต์ตัวอย่างภาพ",
           "imageModalLayoutHint": "นี่คือสิ่งที่ผู้เยี่ยมชมเห็นเมื่อคลิกภาพบนหน้าเพจของคุณ",
           "immersiveModalScopeNote": "Immersive แสดงภาพแบบฝังในหน้า ดังนั้นการตั้งค่านี้จึงมีผลกับบล็อกภาพ ตารางภาพ และเลย์เอาต์ Masonry",
@@ -2751,7 +2766,7 @@
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้" },
             "justified": { "label": "Justified", "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน" },
-            "splitIndex": { "label": "Split index", "description": "ภาพหลักแนวตั้งอยู่ข้างดัชนีสองคอลัมน์ของภาพที่เหลือ" },
+            "splitIndex": { "label": "Split index", "description": "รายละเอียดคอลเลกชันอยู่ข้างดัชนีภาพที่กำหนดจำนวนคอลัมน์ได้" },
             "immersive": { "label": "Immersive", "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง" }
           },
           "imageModalLayouts": {
@@ -3678,7 +3693,12 @@
         "lightboxFilmstrip": "แถบภาพขนาดย่อ",
         "lightboxSeeMore": "ดูเพิ่มเติม",
         "lightboxSeeLess": "ดูน้อยลง",
-        "lightboxPhotoOf": "ภาพที่ {current} จาก {total}"
+        "lightboxAdditionalInformation": "ข้อมูลเพิ่มเติม",
+        "lightboxPhotoOf": "ภาพที่ {current} จาก {total}",
+        "lightboxDate": "วันที่",
+        "lightboxLocation": "สถานที่",
+        "lightboxClient": "ลูกค้า",
+        "lightboxTags": "แท็ก"
       }
     },
     "nav": {
@@ -3752,7 +3772,11 @@
       "photoCountOther": "{count} รูปภาพ",
       "previousPhoto": "รูปภาพก่อนหน้า",
       "nextPhoto": "รูปภาพถัดไป",
-      "filmstripLabel": "แถบฟิล์มรูปภาพ"
+      "filmstripLabel": "แถบฟิล์มรูปภาพ",
+      "dateLabel": "วันที่",
+      "locationLabel": "สถานที่",
+      "clientLabel": "ลูกค้า",
+      "tagsLabel": "แท็ก"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType} รับชมผลงานล่าสุดและติดต่อเพื่อจองคิวได้เลย",

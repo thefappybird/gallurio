@@ -100,6 +100,12 @@ export type GalleryChromeLabels = {
   lightboxSeeMore?: string;
   /** "See less" — same toggle, expanded state. */
   lightboxSeeLess?: string;
+  /** Heading for the structured facts/custom metadata group. */
+  lightboxAdditionalInformation?: string;
+  lightboxDate?: string;
+  lightboxLocation?: string;
+  lightboxClient?: string;
+  lightboxTags?: string;
   /** aria-label for a caption-layout pagination dot. Template with literal "{current}"/"{total}" tokens. */
   lightboxPhotoOf?: string;
 };
@@ -135,6 +141,10 @@ export type CollectionPopupLabels = {
   previousPhoto?: string;
   nextPhoto?: string;
   filmstripLabel?: string;
+  dateLabel?: string;
+  locationLabel?: string;
+  clientLabel?: string;
+  tagsLabel?: string;
   /** Dot-pagination aria-label template. Contains literal "{current}"/"{total}" tokens. */
   photoOf?: string;
 };
@@ -161,6 +171,10 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
     previousPhoto: l.previousPhoto ?? "Previous photo",
     nextPhoto: l.nextPhoto ?? "Next photo",
     filmstripLabel: l.filmstripLabel ?? "Photo filmstrip",
+    dateLabel: l.dateLabel ?? "Date",
+    locationLabel: l.locationLabel ?? "Location",
+    clientLabel: l.clientLabel ?? "Client",
+    tagsLabel: l.tagsLabel ?? "Tags",
     photoOf: l.photoOf ?? "Photo {current} of {total}",
   };
 }
@@ -217,6 +231,11 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     lightboxFilmstrip: g.lightboxFilmstrip ?? "Photo filmstrip",
     lightboxSeeMore: g.lightboxSeeMore ?? "See more",
     lightboxSeeLess: g.lightboxSeeLess ?? "See less",
+    lightboxAdditionalInformation: g.lightboxAdditionalInformation ?? "Additional information",
+    lightboxDate: g.lightboxDate ?? "Date",
+    lightboxLocation: g.lightboxLocation ?? "Location",
+    lightboxClient: g.lightboxClient ?? "Client",
+    lightboxTags: g.lightboxTags ?? "Tags",
     lightboxPhotoOf: g.lightboxPhotoOf ?? "Photo {current} of {total}",
   };
 }

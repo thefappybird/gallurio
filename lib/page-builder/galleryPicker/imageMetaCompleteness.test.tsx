@@ -4,22 +4,21 @@ import { renderWithProviders } from "@/test-utils/render";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 
 describe("hasIncompleteMetadata", () => {
-  it("is true when altText is null", () => {
-    expect(hasIncompleteMetadata({ altText: null })).toBe(true);
+  it("is true when description is null", () => {
+    expect(hasIncompleteMetadata({ caption: null })).toBe(true);
   });
-  it("is true when altText is undefined", () => {
-    expect(hasIncompleteMetadata({ altText: undefined })).toBe(true);
+  it("is true when description is undefined", () => {
+    expect(hasIncompleteMetadata({ caption: undefined })).toBe(true);
   });
-  it("is true when altText is an empty/whitespace-only string", () => {
-    expect(hasIncompleteMetadata({ altText: "" })).toBe(true);
-    expect(hasIncompleteMetadata({ altText: "   " })).toBe(true);
+  it("is true when description is an empty/whitespace-only string", () => {
+    expect(hasIncompleteMetadata({ caption: "" })).toBe(true);
+    expect(hasIncompleteMetadata({ caption: "   " })).toBe(true);
   });
-  it("is false when altText is set", () => {
-    expect(hasIncompleteMetadata({ altText: "Bride and groom" })).toBe(false);
+  it("is false when description is set", () => {
+    expect(hasIncompleteMetadata({ caption: "Bride and groom" })).toBe(false);
   });
   it("does not treat a missing title/caption alone as incomplete", () => {
-    // altText present is enough, regardless of title/caption.
-    expect(hasIncompleteMetadata({ altText: "Bride and groom" })).toBe(false);
+    expect(hasIncompleteMetadata({ caption: "Bride and groom" })).toBe(false);
   });
 });
 

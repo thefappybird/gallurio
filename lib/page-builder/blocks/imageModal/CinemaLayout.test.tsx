@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { CinemaLayout } from "./CinemaLayout";
 import type { ImageModalLeafProps, LightboxImage } from "../Lightbox";
 
@@ -39,127 +39,155 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     filmstripLabel: "Photo filmstrip",
     seeMoreLabel: "See more",
     seeLessLabel: "See less",
+    additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
     ...overrides,
   };
 }
 
-describe("CinemaLayout — see-more metadata panel", () => {
-  it("keeps facts/meta/tags hidden until the see-more toggle is activated", () => {
-    const image = img("a", {
-      date: "2026-06-01",
-      location: "Manila",
-      client: "Cruz Wedding",
-      meta: [{ label: "Camera", value: "GFX100" }],
-      tags: ["wedding"],
-    });
+describe("CinemaLayout - shared Immersive design", () => {
+  it("renders the shared immersive viewer instead of the former cinema chrome", () => {
+    const image = img("a", { title: "Golden hour" });
     render(<CinemaLayout {...baseProps({ image })} />);
 
-    expect(screen.queryByText("Manila")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "See more" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "See more" }));
-
-    expect(screen.getByText("Manila")).toBeInTheDocument();
-    expect(screen.getByText("Camera")).toBeInTheDocument();
-    expect(screen.getByText("GFX100")).toBeInTheDocument();
-    expect(screen.getByText("wedding")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "See less" }));
-    expect(screen.queryByText("Manila")).not.toBeInTheDocument();
-  });
-
-  it("renders no toggle when there is no caption, nav, or metadata", () => {
-    render(<CinemaLayout {...baseProps({ image: img("a") })} />);
+    expect(document.querySelector("[data-immersive-viewer]")).toBeInTheDocument();
+    expect(document.querySelector("[data-immersive-main]")).toBeInTheDocument();
+    expect(document.querySelector("[data-immersive-collection-card]")).not.toBeInTheDocument();
+    expect(document.querySelector(".pf-modal-cinema-chrome")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "See more" })).not.toBeInTheDocument();
   });
 
-  it("shows the toggle even without title/caption when metadata alone is present", () => {
-    const image = img("a", { location: "Manila" });
+  it("shows every photo detail in one compact, far-left metadata card", () => {
+    const image = img("a", {
+      title: "Golden hour",
+      caption: "A couple walking at sunset",
+      date: "2026-09-06",
+      location: "Manila",
+      client: "Cruz Wedding",
+      meta: [
+        { label: "Camera", value: "GFX100" },
+        { label: "Lens", value: "80mm" },
+      ],
+      tags: ["wedding", "outdoor"],
+    });
     render(<CinemaLayout {...baseProps({ image })} />);
-    expect(screen.getByRole("button", { name: "See more" })).toBeInTheDocument();
+
+    const card = document.querySelector("[data-immersive-meta-card]") as HTMLElement;
+    expect(card).toBeInTheDocument();
+    expect(card.style.position).toBe("absolute");
+    expect(card.style.insetInlineStart).toBe("16px");
+    expect(card.style.flexDirection).toBe("column");
+
+    const cardQueries = within(card);
+    expect(cardQueries.getByText("Golden hour")).toBeInTheDocument();
+    expect(cardQueries.getByText("A couple walking at sunset")).toBeInTheDocument();
+    expect(cardQueries.getByText("2026-09-06")).toBeInTheDocument();
+    expect(cardQueries.getByText("Manila")).toBeInTheDocument();
+    expect(cardQueries.getByText("Cruz Wedding")).toBeInTheDocument();
+    expect(cardQueries.getByText("GFX100")).toBeInTheDocument();
+    expect(cardQueries.getByText("80mm")).toBeInTheDocument();
+    expect(cardQueries.getByText("wedding, outdoor")).toBeInTheDocument();
+    expect(card.querySelectorAll('[data-immersive-meta-row="fact"]')).toHaveLength(5);
+  });
+
+  it("does not render an empty metadata card", () => {
+    render(<CinemaLayout {...baseProps()} />);
+    expect(document.querySelector("[data-immersive-meta-card]")).not.toBeInTheDocument();
+  });
+
+  it("uses portfolio theme fonts for the viewer and metadata title", () => {
+    const image = img("a", { title: "Golden hour" });
+    render(<CinemaLayout {...baseProps({ image })} />);
+
+    const viewer = document.querySelector("[data-immersive-viewer]") as HTMLElement;
+    expect(viewer.style.fontFamily).toBe("var(--pf-font-body)");
+    expect(screen.getByRole("heading", { name: "Golden hour" }).style.fontFamily).toBe(
+      "var(--pf-font-heading)",
+    );
+  });
+
+  it("uses immersive side arrows and forwards navigation", () => {
+    const images = [img("a"), img("b")];
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CinemaLayout
+        {...baseProps({
+          image: images[1],
+          images,
+          index: 1,
+          canGoPrev: true,
+          canGoNext: true,
+          onPrev,
+          onNext,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous image" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next image" }));
+    expect(onPrev).toHaveBeenCalledOnce();
+    expect(onNext).toHaveBeenCalledOnce();
+  });
+
+  it("marks the next immersive arrow busy while another page is loading", () => {
+    const images = [img("a"), img("b")];
+    render(
+      <CinemaLayout
+        {...baseProps({
+          image: images[1],
+          images,
+          index: 1,
+          canGoNext: true,
+          isPendingMore: true,
+        })}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Next image" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
   });
 });
 
-describe("CinemaLayout — expanded panel stays under dots/counter/filmstrip", () => {
-  it("keeps the dot-pagination row's and filmstrip's z-index above the expanded see-more panel's", () => {
-    const images = [img("a", { location: "Manila" }), img("b"), img("c")];
-    render(
-      <CinemaLayout
-        {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true })}
-      />
-    );
-    fireEvent.click(screen.getByRole("button", { name: "See more" }));
-
-    const dotsRow = document.querySelector(".pf-modal-cinema-dots") as HTMLElement;
-    const filmstrip = screen.getByRole("listbox", { name: "Photo filmstrip" });
-    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
-    const panel = document.getElementById(panelId!)!;
-
-    expect(dotsRow.style.position).toBe("relative");
-    expect(Number(dotsRow.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
-    expect(getComputedStyle(filmstrip).position).toBe("relative");
-    expect(Number(getComputedStyle(filmstrip).zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
-  });
-
-  it("keeps the numeric counter's z-index above the expanded see-more panel's when total > 8", () => {
-    const images = Array.from({ length: 9 }, (_, i) => img(`p${i}`, i === 0 ? { location: "Manila" } : {}));
-    render(
-      <CinemaLayout
-        {...baseProps({ image: images[0], images, index: 0, total: 9, hasNav: true, counterText: "1 / 9" })}
-      />
-    );
-    fireEvent.click(screen.getByRole("button", { name: "See more" }));
-
-    const counter = screen.getByText("1 / 9");
-    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
-    const panel = document.getElementById(panelId!)!;
-
-    expect(counter.style.position).toBe("relative");
-    expect(Number(counter.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
-  });
-});
-
-describe("CinemaLayout — dot pagination", () => {
-  it("renders one clickable dot per photo when total <= 8, marking the current one", () => {
+describe("CinemaLayout - immersive pagination and filmstrip", () => {
+  it("renders immersive dots and square filmstrip frames for a fully loaded small set", () => {
     const images = [img("a"), img("b"), img("c")];
     const onSelect = vi.fn();
-    render(<CinemaLayout {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true, onSelect })} />);
-
-    const dots = [
-      screen.getByRole("button", { name: "Photo 1 of 3" }),
-      screen.getByRole("button", { name: "Photo 2 of 3" }),
-      screen.getByRole("button", { name: "Photo 3 of 3" }),
-    ];
-    expect(dots).toHaveLength(3);
-    expect(dots[0]).toHaveAttribute("aria-current", "true");
-    expect(dots[1]).not.toHaveAttribute("aria-current");
-
-    fireEvent.click(dots[2]);
-    expect(onSelect).toHaveBeenCalledWith(2);
-
-    // No numeric counter text alongside the dots.
-    expect(screen.queryByText("1 / 3")).not.toBeInTheDocument();
-  });
-
-  it("keeps the numeric counter, not dots, when total > 8", () => {
-    const images = Array.from({ length: 9 }, (_, i) => img(`p${i}`));
     render(
       <CinemaLayout
-        {...baseProps({ image: images[0], images, index: 0, total: 9, hasNav: true, counterText: "1 / 9" })}
-      />
+        {...baseProps({ image: images[0], images, total: 3, hasNav: true, onSelect })}
+      />,
     );
 
-    expect(screen.getByText("1 / 9")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Photo \d+ of 9/ })).not.toBeInTheDocument();
+    expect(document.querySelector("[data-immersive-dots]")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 1 of 3" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(3);
+    expect(options[0].style.width).toBe("56px");
+    expect(options[0].style.height).toBe("56px");
+    fireEvent.click(options[2]);
+    expect(onSelect).toHaveBeenCalledWith(2);
   });
 
-  it("still renders the filmstrip alongside dots", () => {
+  it("omits dots when the total is larger than the loaded set or exceeds eight", () => {
     const images = [img("a"), img("b"), img("c")];
-    render(
-      <CinemaLayout {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true })} />
+    const { rerender } = render(
+      <CinemaLayout {...baseProps({ image: images[0], images, total: 5 })} />,
     );
-    expect(screen.getByRole("listbox", { name: "Photo filmstrip" })).toBeInTheDocument();
-    expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(document.querySelector("[data-immersive-dots]")).not.toBeInTheDocument();
+
+    const manyImages = Array.from({ length: 9 }, (_, index) => img(`p${index}`));
+    rerender(
+      <CinemaLayout
+        {...baseProps({ image: manyImages[0], images: manyImages, total: manyImages.length })}
+      />,
+    );
+    expect(document.querySelector("[data-immersive-dots]")).not.toBeInTheDocument();
+    expect(screen.queryByText("1 / 9")).not.toBeInTheDocument();
   });
 });

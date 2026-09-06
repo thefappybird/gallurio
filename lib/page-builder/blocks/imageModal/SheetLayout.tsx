@@ -17,7 +17,7 @@ const SHEET_STYLES = `
 }
 @media (min-width: 768px) {
   .pf-modal-sheet-meta {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 `;
@@ -41,14 +41,16 @@ export function SheetLayout({
   prevLabel,
   nextLabel,
   counterText,
+  additionalInformationLabel,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
-  const rows: { label: string; value: string }[] = [];
-  if (image.date) rows.push({ label: "Date", value: image.date });
-  if (image.location) rows.push({ label: "Location", value: image.location });
-  if (image.client) rows.push({ label: "Client", value: image.client });
+  const facts: { label: string; value: string }[] = [];
+  if (image.date) facts.push({ label: "Date", value: image.date });
+  if (image.location) facts.push({ label: "Location", value: image.location });
+  if (image.client) facts.push({ label: "Client", value: image.client });
+  const meta: { label: string; value: string }[] = [];
   for (const row of image.meta ?? []) {
-    if (row.label && row.value) rows.push(row);
+    if (row.label && row.value) meta.push(row);
   }
   const tags = image.tags?.filter(Boolean) ?? [];
 
@@ -82,11 +84,6 @@ export function SheetLayout({
           gap: "16px",
         }}
       >
-        {image.title && (
-          <h2 style={{ margin: 0, fontFamily: "var(--pf-font-heading)", fontSize: "1.5rem", fontWeight: 600 }}>
-            {image.title}
-          </h2>
-        )}
         <div
           style={{
             display: "flex",
@@ -102,32 +99,37 @@ export function SheetLayout({
             <div style={{ padding: "2rem", textAlign: "center" }}>{image.alt || fullSizeAlt}</div>
           )}
         </div>
-        {image.caption && <p style={{ margin: 0, fontSize: "0.9375rem", lineHeight: 1.5 }}>{image.caption}</p>}
-        {rows.length > 0 && (
-          <dl className="pf-modal-sheet-meta" style={{ margin: 0, display: "grid", gap: "12px", fontSize: "0.875rem" }}>
-            {rows.map((row, i) => (
-              <div key={`${row.label}-${i}`}>
-                <dt style={{ margin: 0, opacity: 0.6, fontWeight: 500 }}>{row.label}</dt>
-                <dd style={{ margin: 0 }}>{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {tags.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                style={{
-                  fontSize: "0.75rem",
-                  padding: "2px 8px",
-                  borderRadius: "var(--pf-radius, 4px)",
-                  border: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 20%, transparent)",
-                }}
-              >
-                {tag}
-              </span>
-            ))}
+        {(image.title || image.caption || tags.length > 0 || facts.length > 0 || meta.length > 0) && (
+          <div className="pf-modal-sheet-meta" style={{ display: "grid", gap: "24px" }}>
+            <section style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {image.title && (
+                <h2 style={{ margin: 0, fontFamily: "var(--pf-font-heading)", fontSize: "1.5rem", fontWeight: 600 }}>
+                  {image.title}
+                </h2>
+              )}
+              {image.caption && <p style={{ margin: 0, fontSize: "0.9375rem", lineHeight: 1.5 }}>{image.caption}</p>}
+              {tags.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {tags.map((tag) => (
+                    <span key={tag} style={{ fontSize: "0.75rem", padding: "2px 8px", borderRadius: "var(--pf-radius, 4px)", border: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 20%, transparent)" }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+            {(facts.length > 0 || meta.length > 0) && (
+              <section style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                <h3 style={{ margin: 0, fontFamily: "var(--pf-font-heading)", fontSize: "0.8125rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {additionalInformationLabel}
+                </h3>
+                <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "minmax(5rem, auto) 1fr", columnGap: "12px", rowGap: "8px", fontSize: "0.875rem" }}>
+                  {[...facts, ...meta].map((row, i) => (
+                    <SheetFactRow key={`${row.label}-${i}`} label={row.label} value={row.value} />
+                  ))}
+                </dl>
+              </section>
+            )}
           </div>
         )}
         {hasNav && (
@@ -135,14 +137,16 @@ export function SheetLayout({
             style={{
               position: "sticky",
               bottom: 0,
+              zIndex: 2,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "16px",
               padding: "12px 0 0",
               borderTop: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)",
-              background: "linear-gradient(to top, var(--pf-color-bg, #fff) 60%, transparent)",
-              backdropFilter: "blur(6px)",
+              background: "color-mix(in srgb, var(--pf-color-bg, #fff) 88%, transparent)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
             }}
           >
             <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} />
@@ -154,5 +158,14 @@ export function SheetLayout({
         )}
       </div>
     </div>
+  );
+}
+
+function SheetFactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt style={{ margin: 0, opacity: 0.6, fontWeight: 500 }}>{label}</dt>
+      <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{value}</dd>
+    </>
   );
 }

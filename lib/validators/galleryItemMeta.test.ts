@@ -20,6 +20,10 @@ describe("galleryItemMetaFields", () => {
   it("accepts every field omitted (all optional)", () => {
     expect(schema.safeParse({}).success).toBe(true);
   });
+  it("accepts only a boolean client privacy flag", () => {
+    expect(schema.safeParse({ hideClient: true }).success).toBe(true);
+    expect(schema.safeParse({ hideClient: "true" }).success).toBe(false);
+  });
   it("rejects a malformed date", () => {
     const r = schema.safeParse({ date: "15-06-2026" });
     expect(r.success).toBe(false);

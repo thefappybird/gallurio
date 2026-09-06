@@ -96,6 +96,30 @@ describe("PreviewBrandShell", () => {
     expect(wrapper.className).toContain("pf-theme-minimal");
   });
 
+  it("ignores local brand/config data from a different requested draft", () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        version: 2,
+        draftId: "draft-a",
+        brandKit: { ...DEFAULT_BRAND_KIT, backgroundColor: "#123456" },
+      }),
+    );
+
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        draftId="draft-b"
+        fallbackCssVars={{ "--pf-color-bg": "#aabbcc" }}
+        fallbackClassName="pf-theme-minimal pf-button-solid"
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    expect((container.firstChild as HTMLElement).getAttribute("style")).toContain("--pf-color-bg: #aabbcc");
+  });
+
   it("falls back to fallbackCssVars when draft is malformed", () => {
     window.localStorage.setItem(KEY, "not-valid-json{{{");
 

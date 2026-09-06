@@ -227,24 +227,25 @@ describe("EditCollectionDialog", () => {
   it("editing photo details PATCHes the item and the tile reflects it when reopened", async () => {
     mockFetch.mockImplementation((u: string, init?: RequestInit) => {
       if (u === "/api/portfolio/gallery/items/a" && init?.method === "PATCH") {
-        return Promise.resolve({ ok: true, json: async () => ({ ...items[0], altText: "Bride and groom" }) } as Response);
+        return Promise.resolve({ ok: true, json: async () => ({ ...items[0], caption: "Bride and groom" }) } as Response);
       }
       return defaultRoute(u, init);
     });
     open();
     fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
-    const field = await screen.findByLabelText("Alt text");
-    expect(field).toHaveValue("");
+    const field = await screen.findByLabelText("Description");
+    expect(field).toHaveValue("A");
     fireEvent.change(field, { target: { value: "Bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
     );
-    await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
+    await waitFor(() => expect(screen.queryByLabelText("Description")).toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /edit photo details for A/i }));
-    expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
+    fireEvent.click(screen.getByRole("button", { name: /edit photo details for Bride and groom/i }));
+    expect(await screen.findByLabelText("Description")).toHaveValue("Bride and groom");
   });
 
   it("reports a per-file error for a file rejected before upload (unsupported type), instead of silently dropping it", async () => {
@@ -326,11 +327,16 @@ describe("EditCollectionDialog", () => {
 });
 
 describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata warning", () => {
-  it("shows an incomplete-metadata warning badge for a photo with no alt text", async () => {
+  it("shows an incomplete-metadata warning badge for a photo with no description", async () => {
+    const incompleteItems = items.map((item) => ({ ...item, caption: null }));
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/portfolio/gallery/collections/col1?")) {
+        return Promise.resolve({ ok: true, json: async () => ({ items: incompleteItems, nextCursor: null }) } as Response);
+      }
+      return defaultRoute(url, init);
+    });
     open();
-    // Both seeded items (A, B) have altText: null, so both get the badge.
-    await screen.findByRole("checkbox", { name: /select A/i });
-    expect(await screen.findAllByRole("button", { name: /missing alt text/i })).toHaveLength(2);
+    expect(await screen.findAllByRole("button", { name: /missing description/i })).toHaveLength(2);
   });
 
   it("opens the metadata wizard immediately after an upload", async () => {
@@ -362,7 +368,7 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
         return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
       }
       if (u === "/api/portfolio/gallery/items/up-id" && init?.method === "PATCH") {
-        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", publicId: "up-asset", thumbUrl: "https://x/up-thumb.jpg", caption: null, altText: "New photo" }) } as Response);
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", publicId: "up-asset", thumbUrl: "https://x/up-thumb.jpg", caption: "New photo" }) } as Response);
       }
       return defaultRoute(u, init);
     });
@@ -372,8 +378,9 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
     fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
 
     await screen.findByText(/add photo details/i);
-    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
-    fireEvent.change(altField, { target: { value: "New photo" } });
+    const descriptionField = await screen.findByRole("textbox", { name: /^description$/i });
+    fireEvent.change(descriptionField, { target: { value: "New photo" } });
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>

@@ -35,6 +35,13 @@ export type LightboxImage = {
   height?: number;
 };
 
+export type PhotoMetadataLabels = {
+  date: string;
+  location: string;
+  client: string;
+  tags: string;
+};
+
 /** Props every leaf (CaptionLayout/SidebarLayout/CinemaLayout/SheetLayout) receives. Presentational only — no state, no key handling, all navigation is derived and handed down by the shell. */
 export type ImageModalLeafProps = {
   image: LightboxImage;
@@ -62,6 +69,8 @@ export type ImageModalLeafProps = {
    *  disclosure (SeeMoreMetaPanel) inside caption/cinema layouts. */
   seeMoreLabel: string;
   seeLessLabel: string;
+  additionalInformationLabel: string;
+  metadataLabels?: PhotoMetadataLabels;
   /** aria-label template for a pagination dot (caption layout, total<=8).
    *  Contains literal "{current}"/"{total}" tokens — unlike counterText
    *  (pre-formatted for currentIndex), leaves interpolate this once per dot
@@ -85,6 +94,12 @@ export type LightboxLabels = {
   seeMore?: string;
   /** "See less" — same toggle, expanded state. */
   seeLess?: string;
+  /** Heading for the structured facts/custom metadata group. */
+  additionalInformation?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  tags?: string;
   /** aria-label for a pagination dot. Template with literal "{current}"/"{total}" tokens. */
   photoOf?: string;
 };
@@ -200,10 +215,12 @@ function FloatingCloseButton({
 }: {
   onClick: () => void;
   label?: string;
-  variant: "scrim" | "brand";
+  variant: "scrim" | "brand" | "immersive";
 }) {
   const colors =
-    variant === "scrim"
+    variant === "immersive"
+      ? { bg: "rgba(0,0,0,0.5)", fg: "#f2f2f2", border: "rgba(242,242,242,0.3)", hoverBg: "#f2f2f2", hoverFg: "#111" }
+      : variant === "scrim"
       ? { bg: "rgba(255,255,255,0.12)", fg: "#f2f2f2", border: "rgba(255,255,255,0.28)", hoverBg: "#f2f2f2", hoverFg: "#111" }
       : { bg: "var(--pf-color-bg, #fff)", fg: "var(--pf-color-fg, #111)", border: "color-mix(in srgb, var(--pf-color-fg, #111) 20%, transparent)", hoverBg: "var(--pf-color-fg, #111)", hoverFg: "var(--pf-color-bg, #fff)" };
   return (
@@ -309,6 +326,13 @@ export function Lightbox(props: LightboxProps) {
   const filmstripLabel = labels?.filmstrip ?? "Photo filmstrip";
   const seeMoreLabel = labels?.seeMore ?? "See more";
   const seeLessLabel = labels?.seeLess ?? "See less";
+  const additionalInformationLabel = labels?.additionalInformation ?? "Additional information";
+  const metadataLabels: PhotoMetadataLabels = {
+    date: labels?.date ?? "Date",
+    location: labels?.location ?? "Location",
+    client: labels?.client ?? "Client",
+    tags: labels?.tags ?? "Tags",
+  };
   const dotLabelTemplate = labels?.photoOf ?? "Photo {current} of {total}";
   const initialIndexRaw = legacy ? 0 : props.initialIndex ?? 0;
 
@@ -378,7 +402,8 @@ export function Lightbox(props: LightboxProps) {
 
   const currentImage = images[currentIndex] ?? images[0];
   const LeafComponent = LAYOUT_COMPONENTS[layout];
-  const closeVariant: "scrim" | "brand" = SCRIM_LAYOUTS.has(layout) ? "scrim" : "brand";
+  const closeVariant: "scrim" | "brand" | "immersive" =
+    layout === "cinema" ? "immersive" : SCRIM_LAYOUTS.has(layout) ? "scrim" : "brand";
   const counterText = counterTemplate
     .replace("{current}", String(currentIndex + 1))
     .replace("{total}", String(total));
@@ -434,6 +459,8 @@ export function Lightbox(props: LightboxProps) {
               filmstripLabel={filmstripLabel}
               seeMoreLabel={seeMoreLabel}
               seeLessLabel={seeLessLabel}
+              additionalInformationLabel={additionalInformationLabel}
+              metadataLabels={metadataLabels}
               dotLabelTemplate={dotLabelTemplate}
             />
           ) : null}

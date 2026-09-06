@@ -82,6 +82,7 @@ export const portfolioCollectionsPopupConfigSchema = z.object({
   borderWidth: z.number().int().min(0).max(12).optional(),
   radius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   popupLayout: z.enum(POPUP_LAYOUTS).optional().or(z.literal("")),
+  popupColumns: z.number().int().min(1).max(6).optional(),
   imageModalLayout: z.enum(IMAGE_MODAL_LAYOUTS).optional().or(z.literal("")),
   // Title styling
   titleText: z.string().optional(),

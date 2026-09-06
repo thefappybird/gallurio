@@ -20,6 +20,9 @@ import { buildHomeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
 vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn(async () => (key: string, vars?: Record<string, unknown>) => {
+    if (key === "photoCountOther" && vars?.count !== "{count}") {
+      throw new Error("photoCountOther must preserve the {count} token");
+    }
     const en: Record<string, string> = {
       comingSoon: "Coming soon",
       poweredBy: "Powered by Gallurio",

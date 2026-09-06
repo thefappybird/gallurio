@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiOrg } from "@/lib/auth/apiOrgContext";
-import { findItemByAsset, updateItemMetaByAsset } from "@/lib/db/queries/gallery";
-import { galleryItemMetaFields } from "@/lib/validators/galleryItemMeta";
+import { findItemByAsset, updateItemMetaByAsset, galleryLinksBelongToWorkspace } from "@/lib/db/queries/gallery";
+import { galleryItemMetaFields, galleryItemLinkFields } from "@/lib/validators/galleryItemMeta";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,7 @@ const patchSchema = z
     altText: z.string().trim().max(300).optional(),
     caption: z.string().trim().max(2000).optional(),
     ...galleryItemMetaFields,
+    ...galleryItemLinkFields,
   })
   .refine((d) => Object.keys(d).length > 0, { message: "invalid_input" });
 
@@ -77,6 +78,13 @@ export async function PATCH(req: Request, { params }: Params) {
       { error: parsed.error.errors[0]?.message ?? "invalid_input" },
       { status: 400, headers: NO_STORE }
     );
+  }
+  if (!(await galleryLinksBelongToWorkspace({
+    workspaceId: auth.workspaceId,
+    bookingId: parsed.data.bookingId,
+    clientId: parsed.data.clientId,
+  }))) {
+    return NextResponse.json({ error: "invalid_link" }, { status: 400, headers: NO_STORE });
   }
 
   const result = await updateItemMetaByAsset({

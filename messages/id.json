@@ -2503,7 +2503,7 @@
           "savedToast": "Teks alternatif disimpan.",
           "editTrigger": "Edit detail foto untuk {name}",
           "photoFallback": "foto",
-          "incompleteWarning": "Teks alternatif belum diisi — foto ini mungkin tidak tampil sesuai rencana."
+          "incompleteWarning": "Deskripsi belum diisi — tambahkan untuk aksesibilitas dan SEO."
         },
         "imageBlockDetails": {
           "heading": "Detail foto",
@@ -2538,19 +2538,32 @@
         "imageWizard": {
           "heading": "Tambahkan detail foto",
           "position": "Foto {current} dari {total}",
+          "stepBasics": "Detail utama",
+          "stepAdditional": "Informasi tambahan",
+          "stepPosition": "Langkah {current} dari {total}",
           "fieldTitle": "Judul",
           "fieldTitlePlaceholder": "mis. Pernikahan Sarah & Miguel",
           "fieldCaption": "Deskripsi",
           "fieldCaptionPlaceholder": "Apa yang terjadi di foto ini?",
-          "fieldAlt": "Teks alternatif",
-          "fieldAltHelp": "Jelaskan apa yang ditampilkan foto ini. Dibacakan oleh pembaca layar dan digunakan mesin pencari untuk memahami gambar.",
-          "fieldAltPlaceholder": "mis. Pengantin pria dan wanita menari di bawah lampu",
-          "altCounter": "{count}/{max} karakter",
+          "fieldCaptionHelp": "Deskripsi ini juga digunakan sebagai teks alternatif gambar untuk aksesibilitas dan SEO.",
           "fieldDate": "Tanggal",
           "fieldLocation": "Lokasi",
           "fieldLocationPlaceholder": "mis. Tagaytay, Filipina",
           "fieldClient": "Klien",
           "fieldClientPlaceholder": "mis. Sarah & Miguel",
+          "hideClient": "Sembunyikan nama klien",
+          "hideClientHelp": "Jaga informasi klien tetap pribadi di mana pun foto ini muncul.",
+          "linkBooking": "Tautkan pemesanan",
+          "linkClient": "Tautkan klien",
+          "noBooking": "Tidak ada pemesanan tertaut",
+          "noClient": "Tidak ada klien tertaut",
+          "searchLinks": "Cari data",
+          "noLinkMatches": "Tidak ada data yang cocok",
+          "linksLoading": "Memuat data...",
+          "linksLoadError": "Tidak dapat memuat pemesanan dan klien.",
+          "retryLinks": "Coba lagi",
+          "manualDetails": "Belum terdaftar di Gallurio? Masukkan atau edit detail secara manual di bawah.",
+          "linkedRecord": "Pemesanan tertaut",
           "fieldTags": "Tag",
           "fieldTagsPlaceholder": "Tambahkan tag lalu tekan Enter",
           "fieldTagsHint": "Hingga 20 tag.",
@@ -2744,6 +2757,8 @@
           "layout": "Layout",
           "popupLayoutLabel": "Layout featured work",
           "popupLayoutHint": "Inilah yang dilihat pengunjung saat membuka koleksi unggulan.",
+          "popupColumnsLabel": "Kolom",
+          "popupColumnsHint": "Atur jumlah foto yang muncul di setiap baris.",
           "imageModalLayoutLabel": "Layout preview gambar",
           "imageModalLayoutHint": "Inilah yang dilihat pengunjung saat mengeklik gambar di halaman Anda.",
           "immersiveModalScopeNote": "Immersive menampilkan gambar secara inline, jadi pengaturan ini berlaku untuk blok gambar, galeri foto, dan masonry.",
@@ -2751,7 +2766,7 @@
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "Grid thumbnail yang rata, dengan header opsional untuk koleksi." },
             "justified": { "label": "Justified", "description": "Foto disusun dalam baris dengan lebar berbeda tapi tinggi baris sama." },
-            "splitIndex": { "label": "Split index", "description": "Foto utama yang tinggi di samping indeks dua kolom untuk sisanya." },
+            "splitIndex": { "label": "Split index", "description": "Detail koleksi di samping indeks gambar dengan jumlah kolom yang dapat diatur." },
             "immersive": { "label": "Immersive", "description": "Satu foto besar dalam satu waktu, layar penuh, dengan filmstrip di bawah." }
           },
           "imageModalLayouts": {
@@ -3678,7 +3693,12 @@
         "lightboxFilmstrip": "Filmstrip foto",
         "lightboxSeeMore": "Lihat selengkapnya",
         "lightboxSeeLess": "Lihat lebih sedikit",
-        "lightboxPhotoOf": "Foto {current} dari {total}"
+        "lightboxAdditionalInformation": "Informasi tambahan",
+        "lightboxPhotoOf": "Foto {current} dari {total}",
+        "lightboxDate": "Tanggal",
+        "lightboxLocation": "Lokasi",
+        "lightboxClient": "Klien",
+        "lightboxTags": "Tag"
       }
     },
     "nav": {
@@ -3752,7 +3772,11 @@
       "photoCountOther": "{count} foto",
       "previousPhoto": "Foto sebelumnya",
       "nextPhoto": "Foto berikutnya",
-      "filmstripLabel": "Filmstrip foto"
+      "filmstripLabel": "Filmstrip foto",
+      "dateLabel": "Tanggal",
+      "locationLabel": "Lokasi",
+      "clientLabel": "Klien",
+      "tagsLabel": "Tag"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Lihat karya terbaru dan hubungi kami untuk memesan.",

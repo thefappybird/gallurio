@@ -2503,7 +2503,7 @@
           "savedToast": "تم حفظ النص البديل.",
           "editTrigger": "تعديل تفاصيل الصورة لـ {name}",
           "photoFallback": "الصورة",
-          "incompleteWarning": "النص البديل مفقود — قد لا تظهر هذه الصورة كما هو متوقع."
+          "incompleteWarning": "الوصف مفقود — أضفه لتحسين إمكانية الوصول وSEO."
         },
         "imageBlockDetails": {
           "heading": "تفاصيل الصورة",
@@ -2538,19 +2538,32 @@
         "imageWizard": {
           "heading": "إضافة تفاصيل الصورة",
           "position": "الصورة {current} من {total}",
+          "stepBasics": "التفاصيل الأساسية",
+          "stepAdditional": "معلومات إضافية",
+          "stepPosition": "الخطوة {current} من {total}",
           "fieldTitle": "العنوان",
           "fieldTitlePlaceholder": "مثال: حفل زفاف سارة وميغيل",
           "fieldCaption": "الوصف",
           "fieldCaptionPlaceholder": "ما الذي يحدث في هذه الصورة؟",
-          "fieldAlt": "النص البديل",
-          "fieldAltHelp": "صف ما تُظهره الصورة. يُقرأ بصوت عالٍ لمستخدمي قارئ الشاشة، وتستخدمه محركات البحث لفهم الصورة.",
-          "fieldAltPlaceholder": "مثال: عروسان يرقصان تحت الأضواء",
-          "altCounter": "{count}/{max} حرفًا",
+          "fieldCaptionHelp": "يُستخدم هذا الوصف أيضًا كنص بديل للصورة لتحسين إمكانية الوصول وSEO.",
           "fieldDate": "التاريخ",
           "fieldLocation": "الموقع",
           "fieldLocationPlaceholder": "مثال: تاغايتاي، الفلبين",
           "fieldClient": "العميل",
           "fieldClientPlaceholder": "مثال: سارة وميغيل",
+          "hideClient": "إخفاء اسم العميل",
+          "hideClientHelp": "حافظ على خصوصية معلومات العميل أينما ظهرت هذه الصورة.",
+          "linkBooking": "ربط حجز",
+          "linkClient": "ربط عميل",
+          "noBooking": "لا يوجد حجز مرتبط",
+          "noClient": "لا يوجد عميل مرتبط",
+          "searchLinks": "البحث في السجلات",
+          "noLinkMatches": "لا توجد سجلات مطابقة",
+          "linksLoading": "جارٍ تحميل السجلات...",
+          "linksLoadError": "تعذر تحميل الحجوزات والعملاء.",
+          "retryLinks": "حاول مرة أخرى",
+          "manualDetails": "غير مسجل في Gallurio؟ أدخل التفاصيل أو عدّلها يدويًا أدناه.",
+          "linkedRecord": "الحجز المرتبط",
           "fieldTags": "الوسوم",
           "fieldTagsPlaceholder": "أضف وسمًا واضغط Enter",
           "fieldTagsHint": "حتى 20 وسمًا.",
@@ -2744,6 +2757,8 @@
           "layout": "التخطيط",
           "popupLayoutLabel": "تخطيط الأعمال المميزة",
           "popupLayoutHint": "هذا ما يراه الزوار عند فتح مجموعة مميزة.",
+          "popupColumnsLabel": "الأعمدة",
+          "popupColumnsHint": "حدّد عدد الصور التي تظهر في كل صف.",
           "imageModalLayoutLabel": "تخطيط معاينة الصورة",
           "imageModalLayoutHint": "هذا ما يراه الزوار عند النقر على صورة في صفحتك.",
           "immersiveModalScopeNote": "يعرض التخطيط الغامر الصور ضمن الصفحة مباشرة، لذا ينطبق هذا الإعداد على كتل الصور وشبكات الصور وتخطيط Masonry.",
@@ -2751,7 +2766,7 @@
           "popupLayouts": {
             "contactSheet": { "label": "لوحة تلامس", "description": "شبكة متساوية من الصور المصغّرة، مع رأس اختياري للمجموعة." },
             "justified": { "label": "مسطّر", "description": "صور مرصوفة في صفوف بعروض مختلفة وارتفاع صف واحد مشترك." },
-            "splitIndex": { "label": "فهرس مقسّم", "description": "صورة رئيسية طويلة بجانب فهرس من عمودين لبقية الصور." },
+            "splitIndex": { "label": "فهرس مقسّم", "description": "تفاصيل المجموعة بجانب فهرس صور بعدد أعمدة قابل للتخصيص." },
             "immersive": { "label": "غامر", "description": "صورة كبيرة واحدة في كل مرة، بملء الشاشة، مع شريط صور أسفلها." }
           },
           "imageModalLayouts": {
@@ -3678,7 +3693,12 @@
         "lightboxFilmstrip": "شريط الصور المصغّرة",
         "lightboxSeeMore": "عرض المزيد",
         "lightboxSeeLess": "عرض أقل",
-        "lightboxPhotoOf": "الصورة {current} من {total}"
+        "lightboxAdditionalInformation": "معلومات إضافية",
+        "lightboxPhotoOf": "الصورة {current} من {total}",
+        "lightboxDate": "التاريخ",
+        "lightboxLocation": "الموقع",
+        "lightboxClient": "العميل",
+        "lightboxTags": "الوسوم"
       }
     },
     "nav": {
@@ -3752,7 +3772,11 @@
       "photoCountOther": "{count} صور",
       "previousPhoto": "الصورة السابقة",
       "nextPhoto": "الصورة التالية",
-      "filmstripLabel": "شريط الصور"
+      "filmstripLabel": "شريط الصور",
+      "dateLabel": "التاريخ",
+      "locationLabel": "الموقع",
+      "clientLabel": "العميل",
+      "tagsLabel": "الوسوم"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. تصفح آخر الأعمال وتواصل معنا للحجز.",

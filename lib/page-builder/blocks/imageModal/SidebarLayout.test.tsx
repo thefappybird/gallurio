@@ -39,6 +39,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     filmstripLabel: "Photo filmstrip",
     seeMoreLabel: "See more",
     seeLessLabel: "See less",
+    additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
     ...overrides,
   };
@@ -96,5 +97,11 @@ describe("SidebarLayout — sticky nav footer", () => {
   it("renders no nav row when hasNav is false", () => {
     render(<SidebarLayout {...baseProps({ hasNav: false })} />);
     expect(screen.queryByRole("button", { name: "Previous image" })).not.toBeInTheDocument();
+  });
+
+  it("labels the facts and custom key/value rows as additional information", () => {
+    render(<SidebarLayout {...baseProps({ image: img("a", { date: "2026-09-02", meta: [{ label: "Venue", value: "The Farm" }] }) })} />);
+    expect(screen.getByRole("heading", { name: "Additional information" })).toBeInTheDocument();
+    expect(screen.getByText("Venue")).toBeInTheDocument();
   });
 });

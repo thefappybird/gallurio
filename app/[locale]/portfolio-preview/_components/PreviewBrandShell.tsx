@@ -17,6 +17,7 @@ const LOCAL_DRAFT_VERSION = 2;
 
 type DraftShape = {
   version?: number;
+  draftId?: string | null;
   brandKit?: PortfolioBrandKit;
   contact?: PortfolioContactConfig;
   collectionsPopup?: PortfolioCollectionsPopupConfig;
@@ -50,11 +51,13 @@ export function PreviewBrandShell({
   fallbackCssVars,
   fallbackClassName,
   children,
+  draftId = null,
 }: {
   slug: string;
   fallbackCssVars: Record<string, string>;
   fallbackClassName: string;
   children: ReactNode;
+  draftId?: string | null;
 }) {
   const [cssVars, setCssVars] = useState<Record<string, string>>(fallbackCssVars);
   const [className, setClassName] = useState<string>(fallbackClassName);
@@ -67,6 +70,7 @@ export function PreviewBrandShell({
       if (!raw) return;
       const draft = JSON.parse(raw) as DraftShape;
       if (draft.version !== LOCAL_DRAFT_VERSION) return;
+      if ((draft.draftId ?? null) !== draftId) return;
 
       // --- brandKit ---
       if (draft.brandKit) {
@@ -110,7 +114,7 @@ export function PreviewBrandShell({
     } finally {
       setDraftReady(true);
     }
-  }, [slug]);
+  }, [draftId, slug]);
 
   return (
     // ponytail: merge cssVars into context at render rather than a second state or effect

@@ -2509,7 +2509,7 @@
           "savedToast": "Alt text saved.",
           "editTrigger": "Edit photo details for {name}",
           "photoFallback": "photo",
-          "incompleteWarning": "Missing alt text — this photo may not display as intended."
+          "incompleteWarning": "Missing description — add one for accessibility and SEO."
         },
         "imageBlockDetails": {
           "heading": "Photo details",
@@ -2544,19 +2544,32 @@
         "imageWizard": {
           "heading": "Add photo details",
           "position": "Photo {current} of {total}",
+          "stepBasics": "Basics",
+          "stepAdditional": "Additional information",
+          "stepPosition": "Step {current} of {total}",
           "fieldTitle": "Title",
           "fieldTitlePlaceholder": "e.g. Sarah & Miguel's wedding",
           "fieldCaption": "Description",
           "fieldCaptionPlaceholder": "What's happening in this photo?",
-          "fieldAlt": "Alt text",
-          "fieldAltHelp": "Describe what the photo shows. Read aloud by screen readers and used by search engines to understand the image.",
-          "fieldAltPlaceholder": "e.g. Bride and groom dancing under string lights",
-          "altCounter": "{count}/{max} characters",
+          "fieldCaptionHelp": "This description is also used as the image's alt text for accessibility and SEO.",
           "fieldDate": "Date",
           "fieldLocation": "Location",
           "fieldLocationPlaceholder": "e.g. Tagaytay, Philippines",
           "fieldClient": "Client",
           "fieldClientPlaceholder": "e.g. Sarah & Miguel",
+          "hideClient": "Hide client name",
+          "hideClientHelp": "Keep client information private wherever this photo appears.",
+          "linkBooking": "Link a booking",
+          "linkClient": "Link a client",
+          "noBooking": "No booking linked",
+          "noClient": "No client linked",
+          "searchLinks": "Search records",
+          "noLinkMatches": "No matching records",
+          "linksLoading": "Loading records...",
+          "linksLoadError": "Could not load bookings and clients.",
+          "retryLinks": "Try again",
+          "manualDetails": "Not registered in Gallurio? Enter or edit the details manually below.",
+          "linkedRecord": "Linked booking",
           "fieldTags": "Tags",
           "fieldTagsPlaceholder": "Add a tag and press Enter",
           "fieldTagsHint": "Up to 20 tags.",
@@ -2744,6 +2757,8 @@
           "layout": "Layout",
           "popupLayoutLabel": "Featured work layout",
           "popupLayoutHint": "This is what visitors see when they open a featured collection.",
+          "popupColumnsLabel": "Columns",
+          "popupColumnsHint": "Set how many photos appear in each row.",
           "imageModalLayoutLabel": "Image preview layout",
           "imageModalLayoutHint": "This is what visitors see when they click an image on your page.",
           "immersiveModalScopeNote": "Immersive shows images inline, so this applies to image blocks, photo grids and masonry.",
@@ -2751,7 +2766,7 @@
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "An even grid of thumbnails, with an optional header for the collection." },
             "justified": { "label": "Justified", "description": "Photos packed into rows of varied width sharing one row height." },
-            "splitIndex": { "label": "Split index", "description": "A tall lead photo beside a two-column index of the rest." },
+            "splitIndex": { "label": "Split index", "description": "Collection details beside a configurable image index." },
             "immersive": { "label": "Immersive", "description": "One large photo at a time, full-viewport, with a filmstrip below." }
           },
           "imageModalLayouts": {
@@ -3678,7 +3693,12 @@
         "lightboxFilmstrip": "Photo filmstrip",
         "lightboxSeeMore": "See more",
         "lightboxSeeLess": "See less",
-        "lightboxPhotoOf": "Photo {current} of {total}"
+        "lightboxAdditionalInformation": "Additional information",
+        "lightboxPhotoOf": "Photo {current} of {total}",
+        "lightboxDate": "Date",
+        "lightboxLocation": "Location",
+        "lightboxClient": "Client",
+        "lightboxTags": "Tags"
       }
     },
     "nav": {
@@ -3752,7 +3772,11 @@
       "photoCountOther": "{count} photos",
       "previousPhoto": "Previous photo",
       "nextPhoto": "Next photo",
-      "filmstripLabel": "Photo filmstrip"
+      "filmstripLabel": "Photo filmstrip",
+      "dateLabel": "Date",
+      "locationLabel": "Location",
+      "clientLabel": "Client",
+      "tagsLabel": "Tags"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Browse recent work and get in touch to book.",

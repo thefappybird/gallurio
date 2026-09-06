@@ -14,6 +14,8 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
 import { Workspace } from "@/lib/db/models/Workspace";
+import { Booking } from "@/lib/db/models/Booking";
+import { Client } from "@/lib/db/models/Client";
 import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 import { mapBlocks } from "@/lib/page-builder/blockTree";
 import type { PickerCollection, PickerItem } from "@/lib/page-builder/galleryPicker/types";
@@ -186,7 +188,22 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
   const items = await GalleryItem.find({ workspaceId })
     .sort({ createdAt: -1 })
     .limit(PICKER_ITEMS_CAP + 1)
-    .select({ assetId: 1, caption: 1, altText: 1 })
+    .select({
+      assetId: 1,
+      caption: 1,
+      altText: 1,
+      title: 1,
+      date: 1,
+      location: 1,
+      client: 1,
+      hideClient: 1,
+      bookingId: 1,
+      clientId: 1,
+      tags: 1,
+      meta: 1,
+      width: 1,
+      height: 1,
+    })
     .lean();
 
   if (items.length > PICKER_ITEMS_CAP) {
@@ -196,13 +213,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
     items.splice(PICKER_ITEMS_CAP);
   }
 
-  return items.map((it) => ({
-    id: String(it._id),
-    publicId: it.assetId as string,
-    thumbUrl: imageDeliveryUrl(it.assetId as string, { width: 200, height: 200, fit: "cover" }),
-    caption: (it.caption as string) || null,
-    altText: (it.altText as string) || null,
-  }));
+  return items.map(toPickerItem);
 }
 
 // ---------------------------------------------------------------------------
@@ -237,15 +248,47 @@ function toPickerItem(it: {
   assetId?: unknown;
   caption?: unknown;
   altText?: unknown;
+  title?: unknown;
+  date?: unknown;
+  location?: unknown;
+  client?: unknown;
+  hideClient?: unknown;
+  bookingId?: unknown;
+  clientId?: unknown;
+  tags?: unknown;
+  meta?: unknown;
+  width?: unknown;
+  height?: unknown;
 }): PickerItem {
   const publicId = (it.assetId as string) ?? "";
-  return {
+  const item: PickerItem = {
     id: String(it._id),
     publicId,
     thumbUrl: imageDeliveryUrl(publicId, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
     altText: (it.altText as string) || null,
+    title: (it.title as string) ?? null,
+    date: (it.date as string) ?? null,
+    location: (it.location as string) ?? null,
+    client: it.hideClient === true ? "" : (it.client as string) ?? null,
+    hideClient: it.hideClient === true,
+    bookingId: it.bookingId ? String(it.bookingId) : null,
+    clientId: it.hideClient === true ? null : it.clientId ? String(it.clientId) : null,
+    tags: (it.tags as string[]) ?? [],
+    meta: ((it.meta as GalleryMetaRow[]) ?? []).map((row) => ({
+      label: row.label,
+      value: row.value,
+    })),
   };
+
+  if (typeof it.width === "number" && Number.isFinite(it.width) && it.width > 0) {
+    item.width = it.width;
+  }
+  if (typeof it.height === "number" && Number.isFinite(it.height) && it.height > 0) {
+    item.height = it.height;
+  }
+
+  return item;
 }
 
 export type GalleryMetaRow = { label: string; value: string };
@@ -273,6 +316,7 @@ type CollectionPageItem = PickerItem & {
   date: string;
   location: string;
   client: string;
+  hideClient: boolean;
   meta: GalleryMetaRow[];
   tags: string[];
 };
@@ -288,18 +332,20 @@ function toCollectionPageItem(it: {
   date?: unknown;
   location?: unknown;
   client?: unknown;
+  hideClient?: unknown;
   meta?: unknown;
   tags?: unknown;
 }): CollectionPageItem {
   return {
     ...toPickerItem(it),
-    alt: (it.altText as string) || (it.caption as string) || "",
+    alt: (it.caption as string) || (it.altText as string) || "",
     width: requiredDim(it.width as number | null | undefined),
     height: requiredDim(it.height as number | null | undefined),
     title: (it.title as string) ?? "",
     date: (it.date as string) ?? "",
     location: (it.location as string) ?? "",
-    client: (it.client as string) ?? "",
+    client: it.hideClient === true ? "" : (it.client as string) ?? "",
+    hideClient: it.hideClient === true,
     meta: ((it.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
     tags: (it.tags as string[]) ?? [],
   };
@@ -352,6 +398,9 @@ export async function listCollectionItemsPage(opts: {
         date: 1,
         location: 1,
         client: 1,
+        hideClient: 1,
+        bookingId: 1,
+        clientId: 1,
         meta: 1,
         tags: 1,
       })
@@ -408,6 +457,17 @@ export async function listAllItemsPage(opts: {
         createdAt: { $first: "$createdAt" },
         caption: { $first: "$caption" },
         altText: { $first: "$altText" },
+        title: { $first: "$title" },
+        date: { $first: "$date" },
+        location: { $first: "$location" },
+        client: { $first: "$client" },
+        hideClient: { $first: "$hideClient" },
+        bookingId: { $first: "$bookingId" },
+        clientId: { $first: "$clientId" },
+        tags: { $first: "$tags" },
+        meta: { $first: "$meta" },
+        width: { $first: "$width" },
+        height: { $first: "$height" },
       },
     },
     { $sort: { createdAt: -1, docId: -1 } },
@@ -436,6 +496,17 @@ export async function listAllItemsPage(opts: {
     createdAt: Date;
     caption?: string;
     altText?: string;
+    title?: string;
+    date?: string;
+    location?: string;
+    client?: string;
+    hideClient?: boolean;
+    bookingId?: Types.ObjectId | null;
+    clientId?: Types.ObjectId | null;
+    tags?: string[];
+    meta?: GalleryMetaRow[];
+    width?: number | null;
+    height?: number | null;
   }>(pipeline);
 
   const hasMore = rows.length > limit;
@@ -444,13 +515,9 @@ export async function listAllItemsPage(opts: {
   const nextCursor =
     hasMore && last ? encodeCursor(new Date(last.createdAt).getTime(), String(last.docId)) : null;
 
-  const items: PickerItem[] = page.map((r) => ({
-    id: String(r.docId),
-    publicId: r._id,
-    thumbUrl: imageDeliveryUrl(r._id, { width: 200, height: 200, fit: "cover" }),
-    caption: (r.caption as string) || null,
-    altText: (r.altText as string) || null,
-  }));
+  const items: PickerItem[] = page.map((r) =>
+    toPickerItem({ ...r, _id: r.docId, assetId: r._id })
+  );
 
   return { items, nextCursor };
 }
@@ -470,14 +537,15 @@ export type PublicCollectionImage = {
   date: string;
   location: string;
   client: string;
+  hideClient: boolean;
   meta: GalleryMetaRow[];
   tags: string[];
 };
 
 /**
  * One page of a PUBLIC collection's images for the live portfolio page.
- * Gates on the collection's `isPublic` flag (tenant-scoped). `alt` = altText
- * || caption || "" (a11y string); `caption`/`title`/`date`/`location`/
+ * Gates on the collection's `isPublic` flag (tenant-scoped). `alt` uses the
+ * description first, with retired `altText` data as a compatibility fallback;
  * `client`/`meta`/`tags` pass through separately for the popup layouts.
  * `width`/`height` are always a positive number (defaulted to 1 for the rare
  * legacy item with no recorded dimensions) — a downstream row packer treats
@@ -531,6 +599,7 @@ export async function listPublicCollectionItemsPage(opts: {
         date: 1,
         location: 1,
         client: 1,
+        hideClient: 1,
         meta: 1,
         tags: 1,
       })
@@ -546,14 +615,15 @@ export async function listPublicCollectionItemsPage(opts: {
     items: page.map((d) => ({
       id: String(d._id),
       publicId: (d.assetId as string) ?? "",
-      alt: (d.altText as string) || (d.caption as string) || "",
+      alt: (d.caption as string) || (d.altText as string) || "",
       width: requiredDim(d.width as number | null | undefined),
       height: requiredDim(d.height as number | null | undefined),
       title: (d.title as string) ?? "",
       caption: (d.caption as string) ?? "",
       date: (d.date as string) ?? "",
       location: (d.location as string) ?? "",
-      client: (d.client as string) ?? "",
+      client: d.hideClient === true ? "" : (d.client as string) ?? "",
+      hideClient: d.hideClient === true,
       meta: ((d.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
       tags: (d.tags as string[]) ?? [],
     })),
@@ -605,11 +675,9 @@ export async function listCollectionNewest(opts: {
 }
 
 /**
- * Updates a single item's `altText` and/or `caption`. Only the keys actually
- * present in `opts` are written — a request that sends only `caption` never
- * blanks an existing `altText`, and vice versa. `altText` describes what the
- * image shows (accessibility + SEO); `caption` is optional visible context.
- * They are semantically distinct — never derive `altText` from a filename.
+ * Updates a single item's photo details. `caption` is the visible description
+ * and active accessibility/SEO alt source. `altText` remains independently
+ * writable only for compatibility with old clients and saved items.
  * Filters by `{ _id: itemId, workspaceId }` always (tenant-safe); a foreign,
  * missing, or malformed `itemId` returns `null`.
  */
@@ -620,7 +688,33 @@ export type UpdateItemMetaResult = PickerItem & {
   client: string;
   meta: GalleryMetaRow[];
   tags: string[];
+  bookingId: string | null;
+  clientId: string | null;
 };
+
+export async function galleryLinksBelongToWorkspace(opts: {
+  workspaceId: string;
+  bookingId?: string | null;
+  clientId?: string | null;
+}): Promise<boolean> {
+  const { workspaceId } = opts;
+  if (!Types.ObjectId.isValid(workspaceId)) return false;
+  await connectDB();
+  const bookingId = opts.bookingId || null;
+  const clientId = opts.clientId || null;
+  const [booking, client] = await Promise.all([
+    bookingId
+      ? Booking.findOne({ _id: bookingId, workspaceId }).select({ clientId: 1 }).lean()
+      : null,
+    clientId
+      ? Client.exists({ _id: clientId, workspaceId })
+      : null,
+  ]);
+  if (bookingId && !booking) return false;
+  if (clientId && !client) return false;
+  if (booking && clientId && String(booking.clientId) !== clientId) return false;
+  return true;
+}
 
 /**
  * Read the representative GalleryItem for a Cloudflare asset.
@@ -645,7 +739,7 @@ export async function findItemByAsset(opts: {
 
   const doc = await GalleryItem.findOne({ workspaceId, assetId })
     .sort({ createdAt: -1, _id: -1 })
-    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, meta: 1, tags: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, hideClient: 1, bookingId: 1, clientId: 1, meta: 1, tags: 1 })
     .lean();
   if (!doc) return null;
 
@@ -654,7 +748,10 @@ export async function findItemByAsset(opts: {
     title: (doc.title as string) ?? "",
     date: (doc.date as string) ?? "",
     location: (doc.location as string) ?? "",
-    client: (doc.client as string) ?? "",
+    client: doc.hideClient === true ? "" : (doc.client as string) ?? "",
+    hideClient: doc.hideClient === true,
+    bookingId: doc.bookingId ? String(doc.bookingId) : null,
+    clientId: doc.hideClient === true ? null : doc.clientId ? String(doc.clientId) : null,
     meta: ((doc.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
     tags: (doc.tags as string[]) ?? [],
   };
@@ -682,6 +779,9 @@ export async function updateItemMetaByAsset(opts: {
   date?: string;
   location?: string;
   client?: string;
+  hideClient?: boolean;
+  bookingId?: string | null;
+  clientId?: string | null;
   tags?: string[];
   meta?: GalleryMetaRow[];
 }): Promise<{ item: UpdateItemMetaResult; matched: number } | null> {
@@ -695,8 +795,15 @@ export async function updateItemMetaByAsset(opts: {
   if (opts.date !== undefined) set.date = opts.date;
   if (opts.location !== undefined) set.location = opts.location;
   if (opts.client !== undefined) set.client = opts.client;
+  if (opts.hideClient !== undefined) set.hideClient = opts.hideClient;
+  if (opts.bookingId !== undefined) set.bookingId = opts.bookingId || null;
+  if (opts.clientId !== undefined) set.clientId = opts.clientId || null;
   if (opts.tags !== undefined) set.tags = opts.tags;
   if (opts.meta !== undefined) set.meta = opts.meta;
+  if (opts.hideClient === true) {
+    set.client = "";
+    set.clientId = null;
+  }
   if (Object.keys(set).length === 0) return null;
 
   await connectDB();
@@ -718,6 +825,9 @@ export async function updateItemMeta(opts: {
   date?: string;
   location?: string;
   client?: string;
+  hideClient?: boolean;
+  bookingId?: string | null;
+  clientId?: string | null;
   tags?: string[];
   meta?: GalleryMetaRow[];
 }): Promise<UpdateItemMetaResult | null> {
@@ -731,8 +841,15 @@ export async function updateItemMeta(opts: {
   if (opts.date !== undefined) set.date = opts.date;
   if (opts.location !== undefined) set.location = opts.location;
   if (opts.client !== undefined) set.client = opts.client;
+  if (opts.hideClient !== undefined) set.hideClient = opts.hideClient;
+  if (opts.bookingId !== undefined) set.bookingId = opts.bookingId || null;
+  if (opts.clientId !== undefined) set.clientId = opts.clientId || null;
   if (opts.tags !== undefined) set.tags = opts.tags;
   if (opts.meta !== undefined) set.meta = opts.meta;
+  if (opts.hideClient === true) {
+    set.client = "";
+    set.clientId = null;
+  }
   if (Object.keys(set).length === 0) return null;
 
   await connectDB();
@@ -742,7 +859,7 @@ export async function updateItemMeta(opts: {
     { $set: set },
     { new: true }
   )
-    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, meta: 1, tags: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, hideClient: 1, bookingId: 1, clientId: 1, meta: 1, tags: 1 })
     .lean();
   if (!doc) return null;
 
@@ -751,7 +868,10 @@ export async function updateItemMeta(opts: {
     title: (doc.title as string) ?? "",
     date: (doc.date as string) ?? "",
     location: (doc.location as string) ?? "",
-    client: (doc.client as string) ?? "",
+    client: doc.hideClient === true ? "" : (doc.client as string) ?? "",
+    hideClient: doc.hideClient === true,
+    bookingId: doc.bookingId ? String(doc.bookingId) : null,
+    clientId: doc.hideClient === true ? null : doc.clientId ? String(doc.clientId) : null,
     meta: ((doc.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
     tags: (doc.tags as string[]) ?? [],
   };
@@ -965,6 +1085,15 @@ export async function copyItemsIntoCollection(opts: {
         sizeBytes: s.sizeBytes ?? 0,
         caption: s.caption ?? "",
         altText: s.altText ?? "",
+        title: s.title ?? "",
+        date: s.date ?? "",
+        location: s.location ?? "",
+        client: s.hideClient === true ? "" : s.client ?? "",
+        hideClient: s.hideClient === true,
+        bookingId: s.bookingId ?? null,
+        clientId: s.hideClient === true ? null : s.clientId ?? null,
+        tags: s.tags ?? [],
+        meta: s.meta ?? [],
         order: base + i,
       }));
       created = await GalleryItem.create(docs, { session, ordered: true });

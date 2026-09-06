@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiOrg } from "@/lib/auth/apiOrgContext";
-import { updateItemMeta, propagateItemAltText } from "@/lib/db/queries/gallery";
-import { galleryItemMetaFields } from "@/lib/validators/galleryItemMeta";
+import { updateItemMeta, propagateItemAltText, galleryLinksBelongToWorkspace } from "@/lib/db/queries/gallery";
+import { galleryItemMetaFields, galleryItemLinkFields } from "@/lib/validators/galleryItemMeta";
 
 export const runtime = "nodejs";
 
@@ -11,22 +11,20 @@ type Params = { params: Promise<{ id: string }> };
 const patchSchema = z
   .object({
     altText: z.string().trim().max(300).optional(),
-    // The visible description paragraph — longer cap than altText (a11y string).
+    // The visible description paragraph and active accessibility/SEO alt source.
     caption: z.string().trim().max(2000).optional(),
     ...galleryItemMetaFields,
+    ...galleryItemLinkFields,
   })
   .refine((d) => Object.keys(d).length > 0, { message: "invalid_input" });
 
 /**
  * PATCH /api/portfolio/gallery/items/[id]
  *
- * The single metadata write endpoint for a GalleryItem: `altText`, `caption`
- * (the description), `title`, `date` ("" or YYYY-MM-DD), `location`,
- * `client`, `tags`, and `meta` (freeform label/value rows). `altText`
- * describes what the image shows — for non-visual users and search engines;
- * `caption` is the visible description. They are distinct: only the keys
- * sent in the body are written, every other field is left untouched (see
- * updateItemMeta). Never derive alt text from a raw filename.
+ * The single metadata write endpoint for a GalleryItem. `caption` is both the
+ * visible description and the active accessibility/SEO alt source. `altText`
+ * remains accepted only for older clients and saved data. Only keys sent in
+ * the body are written; every other field remains untouched.
  *
  * Owner-only. Tenant-scoped — an item belonging to another workspace resolves
  * to the same 404 as a missing item, so existence is never leaked cross-tenant.
@@ -52,6 +50,13 @@ export async function PATCH(req: Request, { params }: Params) {
       { status: 400, headers: { "Cache-Control": "no-store" } }
     );
   }
+  if (!(await galleryLinksBelongToWorkspace({
+    workspaceId: ctx.workspace._id.toString(),
+    bookingId: parsed.data.bookingId,
+    clientId: parsed.data.clientId,
+  }))) {
+    return NextResponse.json({ error: "invalid_link" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
 
   const item = await updateItemMeta({
     workspaceId: ctx.workspace._id.toString(),
@@ -62,7 +67,7 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
 
-  // Metadata save already committed — an edited altText must reach the live
+  // Metadata save already committed — an edited description must reach the live
   // page without waiting for the next publish (see propagateItemAltText).
   // A propagation failure must not fail this request: the write it's built
   // on top of already succeeded, so log and still return 200.
@@ -71,7 +76,7 @@ export async function PATCH(req: Request, { params }: Params) {
       await propagateItemAltText({
         workspaceId: ctx.workspace._id.toString(),
         itemId: id,
-        alt: item.altText || item.caption || "",
+        alt: item.caption || item.altText || "",
       });
     } catch (err) {
       console.error("[gallery:items:patch] alt propagation to published page failed", err);

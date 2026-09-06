@@ -1476,11 +1476,12 @@ describe("EditorShell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /open in new tab/i }));
 
-    expect(openSpy).toHaveBeenCalledWith(
+    await waitFor(() => expect(openSpy).toHaveBeenCalledWith(
       expect.stringContaining("/portfolio-preview"),
       "_blank",
       "noopener,noreferrer"
-    );
+    ));
+    expect(openSpy.mock.calls[0]?.[0]).toContain("draftId=d1");
     // The snapshot action must not have been called.
     // (It's not mocked in this file — verifying the button doesn't call it by
     // ensuring no network/action mock was invoked for that path.)

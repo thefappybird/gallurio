@@ -8,6 +8,7 @@
 
 import type { LightboxImage } from "../Lightbox";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
+import type { PopupColumns } from "@/lib/page-builder/types";
 
 export type PopupImage = LightboxImage;
 
@@ -68,6 +69,9 @@ export type ImmersiveProps = {
   status: ImmersiveStatus;
   images: PopupImage[];
   collectionName: string;
+  collectionDescription?: string;
+  total?: number;
+  popupColumns: PopupColumns;
   hasMore: boolean;
   onLoadMore: () => void;
   onRetry: () => void;

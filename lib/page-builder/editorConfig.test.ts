@@ -134,8 +134,8 @@ describe("editorPuckConfig parity with production puckConfig", () => {
   it("keeps Video as a video-only manual block", () => {
     const editorFields = Object.keys(editorPuckConfig.components.Video.fields ?? {});
     const prodFields = Object.keys(puckConfig.components.Video.fields ?? {});
-    expect(editorFields).toEqual(["_style", "videoUrl"]);
-    expect(prodFields).toEqual(["_style", "videoUrl"]);
+    expect(editorFields).toEqual(["_style", "videoUrl", "aspectRatio", "size"]);
+    expect(prodFields).toEqual(["_style", "videoUrl", "aspectRatio", "size"]);
   });
 
   it("removes gallery copy inputs from GalleryGrid field keys", () => {

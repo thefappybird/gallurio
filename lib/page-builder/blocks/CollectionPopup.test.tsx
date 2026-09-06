@@ -710,9 +710,82 @@ describe("CollectionPopup popupLayout routing", () => {
     );
     const dialog = await screen.findByRole("dialog", { name: /wedding 2024/i });
     expect(dialog).toBeInTheDocument();
-    // No CollectionPopupChrome title <h2>, no data-popup-shell padded grid list.
-    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+    // The collection name now belongs to the over-image metadata card, not
+    // CollectionPopupChrome's padded header.
+    expect(document.querySelector("[data-immersive-collection-card]")).toHaveTextContent(
+      "Wedding 2024",
+    );
     expect(screen.getByRole("listbox")).toBeInTheDocument();
+    expect(document.querySelector("[data-immersive-viewer]")).toBeInTheDocument();
+  });
+
+  it("immersive: shows every photo detail in the shared one-column metadata card", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              items: [
+                {
+                  id: "img1",
+                  publicId: "workspace/photo1",
+                  alt: "Photo One",
+                  title: "Golden hour",
+                  caption: "A couple walking at sunset",
+                  date: "2026-09-06",
+                  location: "Manila",
+                  client: "Cruz Wedding",
+                  meta: [{ label: "Camera", value: "GFX100" }],
+                  tags: ["wedding", "outdoor"],
+                },
+              ],
+              nextCursor: null,
+              description: "A joyful city wedding.",
+              total: 1,
+            }),
+        }),
+      ),
+    );
+    render(
+      <CollectionPopup
+        {...defaultProps({
+          popupConfig: { popupLayout: "immersive" },
+          labels: {
+            dateLabel: "Petsa",
+            locationLabel: "Lokasyon",
+            clientLabel: "Kliyente",
+            tagsLabel: "Mga tag",
+          },
+        })}
+      />,
+    );
+
+    await screen.findByText("Golden hour");
+    const card = document.querySelector("[data-immersive-meta-card]") as HTMLElement;
+    const cardQueries = within(card);
+    expect(card.style.flexDirection).toBe("column");
+    expect(cardQueries.getByText("Petsa")).toBeInTheDocument();
+    expect(cardQueries.getByText("Lokasyon")).toBeInTheDocument();
+    expect(cardQueries.getByText("Kliyente")).toBeInTheDocument();
+    expect(cardQueries.getByText("Mga tag")).toBeInTheDocument();
+    expect(cardQueries.getByText("A couple walking at sunset")).toBeInTheDocument();
+    expect(cardQueries.getByText("2026-09-06")).toBeInTheDocument();
+    expect(cardQueries.getByText("Manila")).toBeInTheDocument();
+    expect(cardQueries.getByText("Cruz Wedding")).toBeInTheDocument();
+    expect(cardQueries.getByText("GFX100")).toBeInTheDocument();
+    expect(cardQueries.getByText("wedding, outdoor")).toBeInTheDocument();
+
+    const collectionCard = document.querySelector(
+      "[data-immersive-collection-card]",
+    ) as HTMLElement;
+    const collectionCardQueries = within(collectionCard);
+    expect(collectionCard.style.top).toBe("16px");
+    expect(collectionCard.style.insetInlineStart).toBe("16px");
+    expect(collectionCardQueries.getByText("Wedding 2024")).toBeInTheDocument();
+    expect(collectionCardQueries.getByText("A joyful city wedding.")).toBeInTheDocument();
+    expect(collectionCardQueries.getByText("1 photo")).toBeInTheDocument();
   });
 
   it("immersive: clicking a filmstrip frame swaps the main image in place — no second modal", async () => {

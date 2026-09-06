@@ -46,6 +46,7 @@ export function SidebarLayout({
   prevLabel,
   nextLabel,
   counterText,
+  additionalInformationLabel,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const facts: { label: string; value: string }[] = [];
@@ -117,6 +118,11 @@ export function SidebarLayout({
         )}
         {image.caption && (
           <p style={{ margin: 0, fontSize: "0.9375rem", lineHeight: 1.5 }}>{image.caption}</p>
+        )}
+        {(facts.length > 0 || meta.length > 0) && (
+          <h3 style={{ margin: 0, fontFamily: "var(--pf-font-heading)", fontSize: "0.8125rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {additionalInformationLabel}
+          </h3>
         )}
         {facts.length > 0 && (
           <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "auto 1fr", columnGap: "12px", rowGap: "6px", fontSize: "0.875rem" }}>

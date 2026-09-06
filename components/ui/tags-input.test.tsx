@@ -46,6 +46,22 @@ describe("TagsInput", () => {
     expect(screen.getByText("wedding")).toBeInTheDocument();
   });
 
+  it("promotes a token as soon as an input change contains a trigger", () => {
+    render(<Controlled tags={[]} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "wedding," } });
+    expect(screen.getByText("wedding")).toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
+  it("keeps text after a trigger as the next draft token", () => {
+    render(<Controlled tags={[]} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "wedding,outdoor" } });
+    expect(screen.getByText("wedding")).toBeInTheDocument();
+    expect(input).toHaveValue("outdoor");
+  });
+
   it("splits pasted text on commas and whitespace into separate tags", () => {
     render(<Controlled tags={[]} />);
     const input = screen.getByRole("textbox");

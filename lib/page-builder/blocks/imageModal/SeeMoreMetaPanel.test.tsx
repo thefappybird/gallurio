@@ -56,6 +56,86 @@ describe("SeeMoreMetaPanel", () => {
     expect(screen.getByText("outdoor")).toBeInTheDocument();
   });
 
+  it("groups primary and additional information into a centered, capped two-column grid", () => {
+    render(
+      <SeeMoreMetaPanel
+        title="Golden hour"
+        description="A couple walking at sunset"
+        facts={[{ label: "Date", value: "2026-09-06" }]}
+        meta={[{ label: "Camera", value: "Sony A7IV" }]}
+        tags={["wedding"]}
+        additionalInformationLabel="Additional information"
+        {...labels}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const primary = document.querySelector('[data-meta-column="primary"]');
+    const additional = document.querySelector('[data-meta-column="additional"]');
+    const grid = document.querySelector(".pf-photo-meta-grid") as HTMLElement;
+
+    expect(primary).toContainElement(screen.getByText("Golden hour"));
+    expect(primary).toContainElement(screen.getByText("A couple walking at sunset"));
+    expect(primary).toContainElement(screen.getByText("wedding"));
+    expect(primary).not.toContainElement(screen.getByText("Date"));
+    expect(additional).toContainElement(screen.getByText("Additional information"));
+    expect(additional).toContainElement(screen.getByText("Date"));
+    expect(additional).toContainElement(screen.getByText("Camera"));
+    expect(additional).not.toContainElement(screen.getByText("wedding"));
+    expect(grid.style.width).toBe("100%");
+    expect(grid.style.maxWidth).toBe("700px");
+    expect(grid.style.marginInline).toBe("auto");
+    expect(grid.parentElement?.querySelector("style")?.textContent).toContain(
+      "repeat(2, minmax(0, 1fr))",
+    );
+  });
+
+  it("uses the portfolio theme fonts for body copy and headings", () => {
+    render(
+      <SeeMoreMetaPanel
+        title="Golden hour"
+        facts={[{ label: "Date", value: "2026-09-06" }]}
+        meta={[]}
+        tags={[]}
+        additionalInformationLabel="Additional information"
+        {...labels}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const panelId = screen
+      .getByRole("button", { name: "See less" })
+      .getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!);
+    expect(panel?.style.fontFamily).toBe("var(--pf-font-body)");
+    expect(screen.getByRole("heading", { name: "Golden hour" }).style.fontFamily).toBe(
+      "var(--pf-font-heading)",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Additional information" }).style.fontFamily,
+    ).toBe("var(--pf-font-heading)");
+  });
+
+  it("repeats the complete photo information from title and description and animates upward", () => {
+    render(
+      <SeeMoreMetaPanel
+        title="Golden hour"
+        description="A couple walking at sunset"
+        facts={[{ label: "Date", value: "2026-09-06" }]}
+        meta={[]}
+        tags={[]}
+        {...labels}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+    expect(screen.getByText("Golden hour")).toBeInTheDocument();
+    expect(screen.getByText("A couple walking at sunset")).toBeInTheDocument();
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!)!;
+    expect(panel.style.bottom).toContain("100%");
+    expect(panel.style.animation).toContain("pf-photo-meta-expand");
+  });
+
   it("bounds the expanded panel with an internal scrollbar and a capped max-height", () => {
     render(
       <SeeMoreMetaPanel
@@ -90,8 +170,8 @@ describe("SeeMoreMetaPanel", () => {
     const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
     const panel = document.getElementById(panelId!);
     expect(panel).not.toBeNull();
-    expect(panel!.style.background).toContain("rgba(0, 0, 0, 0.5)");
-    expect(panel!.style.backdropFilter).toBe("blur(6px)");
+    expect(panel!.style.background).toContain("rgba(0, 0, 0, 0.62)");
+    expect(panel!.style.backdropFilter).toBe("blur(12px)");
     // No separate aria-hidden scrim sibling — the panel carries its own background.
     expect(document.querySelectorAll('[aria-hidden="true"]')).toHaveLength(0);
   });

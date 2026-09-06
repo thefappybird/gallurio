@@ -63,12 +63,20 @@ export type PopupTitleAlign = "left" | "center" | "right";
 export const POPUP_LAYOUTS = ["contact-sheet", "justified", "split-index", "immersive"] as const;
 export type PopupLayout = (typeof POPUP_LAYOUTS)[number];
 
+export const POPUP_COLUMN_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
+export type PopupColumns = (typeof POPUP_COLUMN_OPTIONS)[number];
+
 export const IMAGE_MODAL_LAYOUTS = ["caption", "sidebar", "cinema", "sheet"] as const;
 export type ImageModalLayout = (typeof IMAGE_MODAL_LAYOUTS)[number];
 
 /** Resolves the unset "" popup layout to its default. */
 export function resolvePopupLayout(v: PopupLayout | "" | undefined): PopupLayout {
   return v || "contact-sheet";
+}
+
+/** Resolves unset or invalid legacy popup column counts to the WYSIWYG default. */
+export function resolvePopupColumns(value: number | undefined): PopupColumns {
+  return POPUP_COLUMN_OPTIONS.includes(value as PopupColumns) ? (value as PopupColumns) : 3;
 }
 
 /** Resolves the unset "" image modal layout to its default. */
@@ -83,6 +91,8 @@ export type PortfolioCollectionsPopupConfig = {
   radius?: BrandKitRadius | "";
   /** Overall popup layout. "" resolves to "contact-sheet" at render time. */
   popupLayout?: PopupLayout | "";
+  /** Photos per row/column group for every non-immersive popup layout. */
+  popupColumns?: PopupColumns;
   /** Layout of the enlarged single-image modal. "" resolves to "caption" at
    *  render time. Inert when popupLayout is "immersive" — that layout
    *  subsumes the image modal entirely. */

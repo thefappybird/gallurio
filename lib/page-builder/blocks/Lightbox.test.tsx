@@ -190,21 +190,41 @@ describe("Lightbox — brandVars", () => {
 });
 
 describe("Lightbox — labels", () => {
-  it("uses real localized strings when provided, instead of the English defaults", () => {
-    // total > 8 so the numeric counter text renders instead of dot pagination
-    // (dots use the separate `photoOf` label, not `counter` — see Lightbox.tsx).
-    const nineImages = Array.from({ length: 9 }, (_, i) => img(String(i)));
+  it("uses localized navigation and filmstrip strings in Cinema", () => {
+    const nineImages = Array.from({ length: 9 }, (_, i) =>
+      img(String(i), i === 0 ? { date: "2026-09-06" } : {}),
+    );
     render(
       <Lightbox
         images={nineImages}
-        labels={{ previous: "Nakaraan", next: "Susunod", counter: "{current} sa {total}", filmstrip: "Filmstrip" }}
+        labels={{
+          previous: "Nakaraan",
+          next: "Susunod",
+          counter: "{current} sa {total}",
+          filmstrip: "Filmstrip",
+          date: "Petsa",
+        }}
         layout="cinema"
         onClose={() => {}}
       />
     );
     expect(screen.getByRole("button", { name: "Nakaraan" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Susunod" })).toBeInTheDocument();
-    expect(screen.getByText("1 sa 9")).toBeInTheDocument();
     expect(screen.getByRole("listbox", { name: "Filmstrip" })).toBeInTheDocument();
+    expect(screen.getByText("Petsa")).toBeInTheDocument();
+    expect(screen.queryByText("1 sa 9")).not.toBeInTheDocument();
+  });
+
+  it("uses the localized numeric counter in Caption", () => {
+    const nineImages = Array.from({ length: 9 }, (_, i) => img(String(i)));
+    render(
+      <Lightbox
+        images={nineImages}
+        labels={{ counter: "{current} sa {total}" }}
+        layout="caption"
+        onClose={() => {}}
+      />
+    );
+    expect(screen.getByText("1 sa 9")).toBeInTheDocument();
   });
 });

@@ -15,7 +15,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
@@ -922,7 +921,7 @@ type BakeableGalleryItem = {
 
 /**
  * Item 10c — the Image block's Content tab is styles/layout only now: no
- * per-placement Alt text input, no inline Photo-details form. Instead:
+ * per-placement metadata input, no inline Photo-details form. Instead:
  *  - on every pick/drop of a new photo, this bakes the GalleryItem's own
  *    metadata onto the block (`meta`) so the renderer and every image modal
  *    have it with no per-placement form (see ImageBlock in manualBlocks.tsx);
@@ -953,7 +952,7 @@ function ImageContentPanel({
         const baked: ImageBlockBakedMeta = {
           title: item.title || undefined,
           caption: item.caption || undefined,
-          altText: item.altText || undefined,
+          altText: item.caption || item.altText || undefined,
           date: item.date || undefined,
           location: item.location || undefined,
           client: item.client || undefined,
@@ -984,29 +983,24 @@ function ImageContentPanel({
           Edit
         </Button>
       </div>
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Photo details</DialogTitle>
-          </DialogHeader>
-          <ImageBlockMetaSection
-            assetId={assetId}
-            onSaved={(item) => {
-              setProp("meta", {
-                title: item.title || undefined,
-                caption: item.caption || undefined,
-                altText: item.altText || undefined,
-                date: item.date || undefined,
-                location: item.location || undefined,
-                client: item.client || undefined,
-                tags: item.tags.length > 0 ? item.tags : undefined,
-                meta: item.meta.length > 0 ? item.meta : undefined,
-                sourceAssetId: assetId,
-              } satisfies ImageBlockBakedMeta);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <ImageBlockMetaSection
+        assetId={assetId}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={(item) => {
+          setProp("meta", {
+            title: item.title || undefined,
+            caption: item.caption || undefined,
+            altText: item.caption || item.altText || undefined,
+            date: item.date || undefined,
+            location: item.location || undefined,
+            client: item.client || undefined,
+            tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
+            meta: item.meta && item.meta.length > 0 ? item.meta : undefined,
+            sourceAssetId: assetId,
+          } satisfies ImageBlockBakedMeta);
+        }}
+      />
     </div>
   );
 }
@@ -2938,6 +2932,8 @@ export function LayoutTabBody({
 // ---------------------------------------------------------------------------
 
 function VideoPanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
+  const aspectRatio = (p?.aspectRatio as string | undefined) ?? "16 / 9";
+  const size = (p?.size as string | undefined) ?? "lg";
   return (
     <div className="flex flex-col gap-3 p-3">
       <label className="flex flex-col gap-1">
@@ -2950,6 +2946,44 @@ function VideoPanel({ p, setProp }: { p: Record<string, unknown> | undefined; se
           className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </label>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Aspect ratio</span>
+        <div className="grid grid-cols-4 gap-1.5">
+          {(["16 / 9", "4 / 3", "1 / 1", "9 / 16"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={aspectRatio === value}
+              onClick={() => setProp("aspectRatio", value)}
+              className={cn(
+                "inline-flex h-7 items-center justify-center border border-border bg-background px-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                aspectRatio === value && "bg-foreground text-background"
+              )}
+            >
+              {value.replaceAll(" ", "")}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(["sm", "md", "lg"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={size === value}
+              onClick={() => setProp("size", value)}
+              className={cn(
+                "inline-flex h-7 items-center justify-center border border-border bg-background text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                size === value && "bg-foreground text-background"
+              )}
+            >
+              {value === "sm" ? "S" : value === "md" ? "M" : "L"}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

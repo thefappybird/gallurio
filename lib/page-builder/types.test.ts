@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { PortfolioCollectionsPopupConfig } from "./types";
-import { resolvePopupLayout, resolveImageModalLayout } from "./types";
+import { resolvePopupColumns, resolvePopupLayout, resolveImageModalLayout } from "./types";
 
 describe("PortfolioCollectionsPopupConfig title + button fields", () => {
   it("accepts the new optional fields", () => {
@@ -26,10 +26,25 @@ describe("PortfolioCollectionsPopupConfig title + button fields", () => {
   it("accepts popupLayout and imageModalLayout", () => {
     const c: PortfolioCollectionsPopupConfig = {
       popupLayout: "immersive",
+      popupColumns: 5,
       imageModalLayout: "cinema",
     };
     expect(c.popupLayout).toBe("immersive");
+    expect(c.popupColumns).toBe(5);
     expect(c.imageModalLayout).toBe("cinema");
+  });
+});
+
+describe("resolvePopupColumns", () => {
+  it("defaults unset and invalid values to three", () => {
+    expect(resolvePopupColumns(undefined)).toBe(3);
+    expect(resolvePopupColumns(0)).toBe(3);
+    expect(resolvePopupColumns(7)).toBe(3);
+  });
+
+  it("passes through supported column counts", () => {
+    expect(resolvePopupColumns(1)).toBe(1);
+    expect(resolvePopupColumns(6)).toBe(6);
   });
 });
 

@@ -15,11 +15,21 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async (arg?: string | { locale?: string; namespace?: string }) => {
     if (typeof arg === "string") {
-      return (key: string) => `en:${arg}:${key}`;
+      return (key: string, vars?: Record<string, unknown>) => {
+        if (key === "photoCountOther" && vars?.count !== "{count}") {
+          throw new Error("photoCountOther must preserve the {count} token");
+        }
+        return `en:${arg}:${key}`;
+      };
     }
     const locale = arg?.locale ?? "en";
     const namespace = arg?.namespace;
-    return (key: string) => `${locale}:${namespace}:${key}`;
+    return (key: string, vars?: Record<string, unknown>) => {
+      if (key === "photoCountOther" && vars?.count !== "{count}") {
+        throw new Error("photoCountOther must preserve the {count} token");
+      }
+      return `${locale}:${namespace}:${key}`;
+    };
   }),
 }));
 

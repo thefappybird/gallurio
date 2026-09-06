@@ -124,6 +124,11 @@ export function GalleryGridBlock({
     filmstrip: chromeLabels.lightboxFilmstrip,
     seeMore: chromeLabels.lightboxSeeMore,
     seeLess: chromeLabels.lightboxSeeLess,
+    additionalInformation: chromeLabels.lightboxAdditionalInformation,
+    date: chromeLabels.lightboxDate,
+    location: chromeLabels.lightboxLocation,
+    client: chromeLabels.lightboxClient,
+    tags: chromeLabels.lightboxTags,
     photoOf: chromeLabels.lightboxPhotoOf,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;

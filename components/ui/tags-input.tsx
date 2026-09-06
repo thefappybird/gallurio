@@ -68,6 +68,24 @@ export function TagsInput({
     if (next !== tags) onChange(next);
   }
 
+  function updateDraft(nextDraft: string) {
+    const separator = commitOnSpace ? /[,\s]/ : /[,\n\r]/;
+    if (!separator.test(nextDraft)) {
+      setDraft(nextDraft);
+      return;
+    }
+
+    // Some mobile keyboards/input methods do not emit a useful keydown for a
+    // delimiter. Promote completed tokens from the value change immediately.
+    const parts = nextDraft.split(commitOnSpace ? /[,\s]+/ : /[,\n\r]+/);
+    const endsWithSeparator = separator.test(nextDraft.at(-1) ?? "");
+    const remainder = endsWithSeparator ? "" : (parts.pop() ?? "");
+    let next = tags;
+    for (const part of parts) next = commitToken(next, part, maxTagLength, maxTags);
+    setDraft(remainder);
+    if (next !== tags) onChange(next);
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <Input
@@ -78,7 +96,7 @@ export function TagsInput({
         disabled={disabled || atCap}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => updateDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === "," || (commitOnSpace && e.key === " ")) {
             e.preventDefault();

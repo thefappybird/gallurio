@@ -85,6 +85,8 @@ const contactDetailsDefaultProps: ContactDetailsProps = {};
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
   VideoBlock,
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_SIZES,
   videoDefaultProps,
   type VideoBlockProps,
 } from "./blocks/VideoBlock";
@@ -772,10 +774,15 @@ export function createEditorConfig(
     fields: {
       _style: styleField,
       videoUrl: { type: "text", label: t("puckConfig.fields.videoUrl"), visible: false } as unknown as Field<string>,
+      aspectRatio: { type: "select", label: "Aspect ratio", visible: false, options: VIDEO_ASPECT_RATIOS.map((value) => ({ label: value.replaceAll(" ", ""), value })) } as unknown as Field<VideoBlockProps["aspectRatio"]>,
+      size: { type: "select", label: "Size", visible: false, options: VIDEO_SIZES.map((value) => ({ label: value.toUpperCase(), value })) } as unknown as Field<VideoBlockProps["size"]>,
     },
     resolveFields: (_data, { fields }) => {
-      // videoUrl is managed by the Content tab in StyleToolkitField.
-      const { videoUrl: _v, ...rest } = fields as Record<string, unknown>;
+      // Video props are managed by the compact Video panel in StyleToolkitField.
+      const rest = { ...(fields as Record<string, unknown>) };
+      delete rest.videoUrl;
+      delete rest.aspectRatio;
+      delete rest.size;
       return rest as typeof fields;
     },
     render: VideoBlock,

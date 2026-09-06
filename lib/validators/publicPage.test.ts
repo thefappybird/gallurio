@@ -76,6 +76,14 @@ describe("portfolioCollectionsPopupConfigSchema — popupLayout / imageModalLayo
     expect(portfolioCollectionsPopupConfigSchema.safeParse({ imageModalLayout: "fullscreen" }).success).toBe(false);
   });
 
+  it("accepts popup columns from one to six and rejects values outside the range", () => {
+    expect(portfolioCollectionsPopupConfigSchema.parse({ popupColumns: 5 })).toEqual({
+      popupColumns: 5,
+    });
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ popupColumns: 0 }).success).toBe(false);
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ popupColumns: 7 }).success).toBe(false);
+  });
+
   it("no stored field is ever lost when popupLayout/imageModalLayout change independently", () => {
     const fullConfig = {
       backgroundColor: "primary",
@@ -97,6 +105,7 @@ describe("portfolioCollectionsPopupConfigSchema — popupLayout / imageModalLayo
       closeButtonOpacity: 80,
       closeButtonBgColorToken: "background",
       popupLayout: "contact-sheet" as const,
+      popupColumns: 5,
       imageModalLayout: "caption" as const,
     };
 

@@ -144,6 +144,11 @@ export function GalleryMasonryBlock({
     filmstrip: labels.lightboxFilmstrip,
     seeMore: labels.lightboxSeeMore,
     seeLess: labels.lightboxSeeLess,
+    additionalInformation: labels.lightboxAdditionalInformation,
+    date: labels.lightboxDate,
+    location: labels.lightboxLocation,
+    client: labels.lightboxClient,
+    tags: labels.lightboxTags,
     photoOf: labels.lightboxPhotoOf,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;

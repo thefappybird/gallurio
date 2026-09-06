@@ -27,6 +27,7 @@ function baseProps(overrides: Partial<PopupLayoutBodyProps> = {}): PopupLayoutBo
     collectionName: "Wedding 2024",
     collectionDescription: undefined,
     total: images.length,
+    popupColumns: 3,
     hasMore: false,
     isLoadingMore: false,
     loadMoreError: false,
@@ -49,6 +50,13 @@ describe("ContactSheet", () => {
 
     fireEvent.click(buttons[1]);
     expect(onOpen).toHaveBeenCalledWith(1);
+  });
+
+  it("uses the configured number of columns instead of the former six-column wrap", () => {
+    render(<ContactSheet {...baseProps({ popupColumns: 4 })} />);
+    const list = screen.getByRole("list");
+    expect(list).toHaveAttribute("data-popup-columns", "4");
+    expect(list).toHaveStyle({ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" });
   });
 
   it("omits the description header when collectionDescription is absent", () => {
@@ -78,10 +86,11 @@ describe("ContactSheet", () => {
 
 describe("Justified", () => {
   it("renders a list and defers image layout until the container is measured", () => {
-    render(<Justified {...baseProps()} />);
+    render(<Justified {...baseProps({ popupColumns: 5 })} />);
     // ResizeObserver never fires in this environment, so width stays null and
     // the component renders its reserved-height skeleton, not thumbnails yet.
     expect(screen.getByRole("list")).toBeInTheDocument();
+    expect(screen.getByRole("list")).toHaveAttribute("data-popup-columns", "5");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });
@@ -92,6 +101,13 @@ describe("SplitIndex", () => {
     expect(screen.getByRole("heading", { name: "Wedding 2024" })).toBeInTheDocument();
     expect(screen.getByText("A lovely day.")).toBeInTheDocument();
     expect(screen.getByText("3 photos")).toBeInTheDocument();
+  });
+
+  it("uses the configured column count for the image index", () => {
+    render(<SplitIndex {...baseProps({ popupColumns: 4 })} />);
+    const list = screen.getByRole("list");
+    expect(list).toHaveAttribute("data-popup-columns", "4");
+    expect(list).toHaveStyle({ columnCount: "4" });
   });
 
   it("renders a thumbnail button per image and calls onOpen with its index", () => {
@@ -173,6 +189,31 @@ describe("Immersive", () => {
     expect(screen.getAllByRole("option")).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: L.close }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("shows collection metadata in a matching upper-start card", () => {
+    render(
+      <Immersive
+        status="populated"
+        images={images}
+        collectionName="Wedding 2024"
+        collectionDescription="A full-day celebration."
+        total={3}
+        hasMore={false}
+        onLoadMore={vi.fn()}
+        onRetry={vi.fn()}
+        onClose={vi.fn()}
+        labels={L}
+      />
+    );
+
+    const card = document.querySelector("[data-immersive-collection-card]") as HTMLElement;
+    expect(card).toBeInTheDocument();
+    expect(card.style.top).toBe("16px");
+    expect(card.style.insetInlineStart).toBe("16px");
+    expect(card).toHaveTextContent("Wedding 2024");
+    expect(card).toHaveTextContent("A full-day celebration.");
+    expect(card).toHaveTextContent("3 photos");
   });
 
   it("clicking a filmstrip frame changes the main image without opening a second modal", () => {

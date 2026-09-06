@@ -2083,6 +2083,21 @@ export function EditorShell({
     }
   }
 
+  function openPreviewInTab() {
+    if (demoMode) return;
+    // The draft buffer is browser-local and flushLocalDraft writes it
+    // synchronously. Keep window.open in the original click activation so
+    // popup blockers cannot discard the preview after an awaited promise.
+    flushLocalDraft();
+    const params = new URLSearchParams({
+      zone: previewZone,
+      formLocale,
+      formDir,
+    });
+    if (activeDraftId) params.set("draftId", activeDraftId);
+    window.open(`${previewBasePath}?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
   // ---- Publish from draft ----
   async function doPublish() {
     if (guideMode) return;
@@ -2692,10 +2707,7 @@ export function EditorShell({
           title={demoMode ? tDemo("previewUnavailable") : t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
           disabled={demoMode}
-          onClick={() => {
-            if (demoMode) return;
-            window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer");
-          }}
+          onClick={openPreviewInTab}
           className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <ExternalLinkIcon className="size-4" aria-hidden />

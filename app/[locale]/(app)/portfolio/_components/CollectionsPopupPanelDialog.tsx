@@ -3,18 +3,21 @@
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
+import { CountControl } from "@/lib/page-builder/CountControl";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS } from "@/lib/page-builder/fonts";
 import type { PortfolioFontKey } from "@/lib/page-builder/fonts";
 import { useBrandRadius } from "@/lib/page-builder/brandColors";
 import {
   BRAND_KIT_RADII,
+  POPUP_COLUMN_OPTIONS,
   POPUP_LAYOUTS,
   IMAGE_MODAL_LAYOUTS,
   resolvePopupLayout,
   resolveImageModalLayout,
   type BrandKitRadius,
   type PopupLayout,
+  type PopupColumns,
   type ImageModalLayout,
   type PortfolioBrandKit,
   type PortfolioCollectionsPopupConfig,
@@ -255,6 +258,30 @@ export function CollectionsPopupPanelDialog({
                 closeOnPointerLeave
               />
             </div>
+
+            {!immersiveSelected ? (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-muted-foreground">
+                  {t("collectionsDialog.popupColumnsLabel")}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {t("collectionsDialog.popupColumnsHint")}
+                </p>
+                <CountControl
+                  ariaLabel={t("collectionsDialog.popupColumnsLabel")}
+                  value={config.popupColumns}
+                  effectiveValue={3}
+                  quickValues={[...POPUP_COLUMN_OPTIONS]}
+                  min={1}
+                  max={6}
+                  allowAuto={false}
+                  hideInput
+                  onChange={(value) =>
+                    set("popupColumns", value as PopupColumns | undefined)
+                  }
+                />
+              </div>
+            ) : null}
 
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground">

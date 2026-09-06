@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
-import { resolvePopupLayout, resolveImageModalLayout } from "@/lib/page-builder/types";
+import {
+  resolvePopupColumns,
+  resolvePopupLayout,
+  resolveImageModalLayout,
+} from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "./CollectionPopupChrome";
 import { applyCollectionPopupDefaults, type CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { Lightbox, type LightboxImage } from "./Lightbox";
@@ -98,9 +102,8 @@ function buildUrl(
 
 // ---------------------------------------------------------------------------
 // Normalize API response items → PopupImage
-// `alt` is the a11y string only — the server always resolves it
-// (altText || caption || ""); it is never backfilled from `caption` here,
-// since `caption` is now a distinct, separately-rendered description field.
+// `alt` is the a11y string resolved by the server from the description
+// (`caption`), with legacy `altText` retained only as a fallback.
 // ---------------------------------------------------------------------------
 
 function normalizeItem(item: {
@@ -298,6 +301,7 @@ export function CollectionPopup({
   const total = state.status === "populated" || state.status === "loadingMore" ? state.total : undefined;
   const collectionDescription =
     state.status === "populated" || state.status === "loadingMore" ? state.description : undefined;
+  const popupColumns = resolvePopupColumns(popupConfig.popupColumns);
   const hasMore = state.status === "populated" && state.nextCursor != null;
   const isLoadingMore = state.status === "loadingMore";
   const loadMoreError = state.status === "populated" && state.loadMoreError;
@@ -313,6 +317,7 @@ export function CollectionPopup({
     collectionName,
     collectionDescription,
     total,
+    popupColumns,
     hasMore,
     isLoadingMore,
     loadMoreError,
@@ -393,6 +398,8 @@ export function CollectionPopup({
                 status={state.status}
                 images={loadedImages}
                 collectionName={collectionName}
+                collectionDescription={collectionDescription}
+                total={total}
                 hasMore={hasMore}
                 onLoadMore={handleLoadMore}
                 onRetry={() => fetchPage(null)}

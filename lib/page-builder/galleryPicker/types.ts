@@ -14,7 +14,7 @@ export type PickerItem = {
   publicId: string;
   thumbUrl: string;
   caption: string | null;
-  /** Accessibility/SEO description of what the image shows. Distinct from `caption` (visible context) — never derive from a filename. */
+  /** Legacy alt copy. New edits use `caption` for both Description and alt text; retained as a saved-data fallback. */
   altText: string | null;
   /** Extended metadata (post-upload wizard). Absent on freshly-uploaded items until saved once. */
   title?: string | null;
@@ -22,6 +22,9 @@ export type PickerItem = {
   date?: string | null;
   location?: string | null;
   client?: string | null;
+  hideClient?: boolean;
+  bookingId?: string | null;
+  clientId?: string | null;
   tags?: string[];
   meta?: GalleryMetaRow[];
   /** Natural pixel width — populated from the upload result; absent for server-fetched items. */

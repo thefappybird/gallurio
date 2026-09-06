@@ -96,6 +96,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
   const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
+  const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Published-image collection only makes sense once real gallery content
   // exists — the ComingSoon branch has no images by definition.
@@ -149,6 +150,11 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
         lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
         lightboxSeeMore: t("gallery.lightboxSeeMore"),
         lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxAdditionalInformation: t("gallery.lightboxAdditionalInformation"),
+        lightboxDate: t("gallery.lightboxDate"),
+        lightboxLocation: t("gallery.lightboxLocation"),
+        lightboxClient: t("gallery.lightboxClient"),
+        lightboxTags: t("gallery.lightboxTags"),
         lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
       },
       nav: {
@@ -172,7 +178,34 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
           kit's own heading/body Google Font is loaded by the layout. */}
       <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+      <Render data={galleryData as any} config={puckConfig as any}
+        metadata={{
+          workspace: renderWorkspace,
+          collectionPopupLabels: {
+            close: tPopup("close"),
+            loading: tPopup("loading"),
+            failed: tPopup("failed"),
+            retry: tPopup("retry"),
+            empty: tPopup("empty"),
+            fullSizeAlt: tPopup("fullSizeAlt"),
+            openPhoto: tPopup("openPhoto"),
+            photo: tPopup("photo"),
+            loadMore: tPopup("loadMore"),
+            loadingMore: tPopup("loadingMore"),
+            loadMoreFailed: tPopup("loadMoreFailed"),
+            photoCountOne: tPopup("photoCountOne"),
+            photoCountOther: tPopup("photoCountOther", { count: "{count}" }),
+            previousPhoto: tPopup("previousPhoto"),
+            nextPhoto: tPopup("nextPhoto"),
+            filmstripLabel: tPopup("filmstripLabel"),
+            dateLabel: tPopup("dateLabel"),
+            locationLabel: tPopup("locationLabel"),
+            clientLabel: tPopup("clientLabel"),
+            tagsLabel: tPopup("tagsLabel"),
+            photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+          },
+        }}
+      />
       <PoweredByGallurio label={t("poweredBy")} />
     </>
   ));

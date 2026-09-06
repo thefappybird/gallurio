@@ -181,6 +181,8 @@ describe("listCollectionItemsPage", () => {
   it("exposes alt/title/date/location/client/meta/tags/width/height, defaulting missing dims to 1", async () => {
     const ws = new Types.ObjectId();
     const col = await makeCollection(ws);
+    const bookingId = new Types.ObjectId();
+    const clientId = new Types.ObjectId();
     await GalleryItem.create({
       workspaceId: ws,
       collectionId: col._id,
@@ -193,6 +195,8 @@ describe("listCollectionItemsPage", () => {
       date: "2026-06-15",
       location: "Manila",
       client: "Reyes Family",
+      bookingId,
+      clientId,
       meta: [{ label: "Photographer", value: "J. Cruz" }],
       tags: ["wedding"],
     });
@@ -203,6 +207,8 @@ describe("listCollectionItemsPage", () => {
       date: "2026-06-15",
       location: "Manila",
       client: "Reyes Family",
+      bookingId: bookingId.toString(),
+      clientId: clientId.toString(),
       meta: [{ label: "Photographer", value: "J. Cruz" }],
       tags: ["wedding"],
       width: 1, // no width/height recorded on this doc — required-non-null default
@@ -253,6 +259,44 @@ describe("listAllItemsPage", () => {
     await seedItems(ws, col._id, 1);
     const page = await listAllItemsPage({ workspaceId: ws.toString() });
     expect(page.items[0].altText).toBe("Alt 1");
+  });
+
+  it("round-trips extended metadata and in-app links for the metadata wizard", async () => {
+    const ws = new Types.ObjectId();
+    const bookingId = new Types.ObjectId();
+    const clientId = new Types.ObjectId();
+    await GalleryItem.create({
+      workspaceId: ws,
+      collectionId: null,
+      assetId: `ws/${ws}/linked`,
+      url: "https://imagedelivery.net/hash/linked/public",
+      caption: "Visible caption",
+      altText: "A couple beneath string lights",
+      title: "Evening reception",
+      date: "2026-09-02",
+      location: "Tagaytay",
+      client: "Reyes Family",
+      bookingId,
+      clientId,
+      tags: ["wedding", "evening"],
+      meta: [{ label: "Venue", value: "The Barn" }],
+      width: 1800,
+      height: 1200,
+    });
+
+    const page = await listAllItemsPage({ workspaceId: ws.toString() });
+    expect(page.items[0]).toMatchObject({
+      title: "Evening reception",
+      date: "2026-09-02",
+      location: "Tagaytay",
+      client: "Reyes Family",
+      bookingId: bookingId.toString(),
+      clientId: clientId.toString(),
+      tags: ["wedding", "evening"],
+      meta: [{ label: "Venue", value: "The Barn" }],
+      width: 1800,
+      height: 1200,
+    });
   });
 });
 
@@ -358,6 +402,9 @@ describe("updateItemMeta", () => {
       date: "",
       location: "",
       client: "",
+      hideClient: false,
+      bookingId: null,
+      clientId: null,
       meta: [],
       tags: [],
     });
@@ -414,6 +461,30 @@ describe("updateItemMeta", () => {
     const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), caption: "New caption" });
     expect(result?.caption).toBe("New caption");
     expect(result?.altText).toBe("Original alt");
+  });
+
+  it("clears stored client details when client visibility is disabled", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws,
+      assetId: "private-client",
+      url: "u",
+      order: 0,
+      client: "Private Client",
+      clientId: new Types.ObjectId(),
+    });
+
+    const result = await updateItemMeta({
+      workspaceId: ws.toString(),
+      itemId: item._id.toString(),
+      hideClient: true,
+      client: "Should not survive",
+      clientId: new Types.ObjectId().toString(),
+    });
+
+    expect(result).toMatchObject({ client: "", clientId: null, hideClient: true });
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved).toMatchObject({ client: "", clientId: null, hideClient: true });
   });
 
   it("returns null for an item in another workspace (tenant isolation)", async () => {
@@ -482,6 +553,28 @@ describe("listPublicCollectionItemsPage", () => {
       width: 1,
       height: 1,
     });
+  });
+  it("never exposes hidden client details on the public collection response", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
+    await GalleryItem.create({
+      workspaceId: ws,
+      collectionId: col._id,
+      assetId: "private-client",
+      url: "u",
+      order: 0,
+      client: "Private Client",
+      clientId: new Types.ObjectId(),
+      hideClient: true,
+    });
+
+    const page = await listPublicCollectionItemsPage({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+    });
+
+    expect(page.items[0]).toMatchObject({ client: "", hideClient: true });
+    expect(page.items[0]).not.toHaveProperty("clientId");
   });
   it("returns empty for a PRIVATE collection", async () => {
     const ws = new Types.ObjectId();

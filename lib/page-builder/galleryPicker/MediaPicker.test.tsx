@@ -570,6 +570,20 @@ describe("MediaPicker", () => {
       expect(await screen.findByText("Add photo details")).toBeTruthy();
     });
 
+    it("uses a checkmark and hides reorder status when only one collection can be linked", async () => {
+      const selection: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+      ];
+      renderWithProviders(
+        <MediaPicker mode="collections" max={1} value={selection} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      const selected = await screen.findByRole("button", { name: "Weddings — selected" });
+      expect(selected.querySelector("svg")).not.toBeNull();
+      expect(screen.queryByText(/1\/1 selected/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/drag to reorder/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("listbox", { name: /selected collections/i })).not.toBeInTheDocument();
+    });
+
     it("(a) single mode: uploading auto-selects the photo and opens the metadata wizard immediately", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
@@ -601,7 +615,7 @@ describe("MediaPicker", () => {
       // ...but offers the wizard rather than closing right away (an upload —
       // unlike picking an existing photo — is the one moment with no metadata yet).
       expect(await screen.findByText("Add photo details")).toBeTruthy();
-      expect(screen.getByText("Photo 1 of 1")).toBeTruthy();
+      expect(screen.getByText(/Photo 1 of 1/)).toBeTruthy();
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 
@@ -657,10 +671,10 @@ describe("MediaPicker", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await screen.findByText("Add photo details");
-      expect(await screen.findByText("Photo 1 of 1")).toBeTruthy();
+      expect(await screen.findByText(/Photo 1 of 1/)).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^previous$/i })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
-      expect(screen.getByRole("button", { name: /^save and exit$/i })).toBeTruthy();
+      expect(screen.getByRole("button", { name: /^next$/i })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^save and exit$/i })).toBeNull();
     });
 
     it("multi mode: uploading appends the photo to the current selection, picker stays open", async () => {
@@ -720,7 +734,7 @@ describe("MediaPicker", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       expect(await screen.findByText("Add photo details")).toBeTruthy();
-      expect(screen.getByText("Photo 1 of 1")).toBeTruthy();
+      expect(screen.getByText(/Photo 1 of 1/)).toBeTruthy();
     });
 
     it("multi mode: closing photo details returns to the picker", async () => {
@@ -867,9 +881,9 @@ describe("MediaPicker", () => {
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
       expect(onChange).not.toHaveBeenCalled();
-      expect(await screen.findByLabelText("Alt text")).toBeTruthy();
       expect(screen.getByLabelText("Title")).toBeTruthy();
       expect(screen.getByLabelText("Description")).toBeTruthy();
+      expect(screen.getByText(/accessibility and SEO/i)).toBeTruthy();
     });
 
     it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
@@ -886,26 +900,27 @@ describe("MediaPicker", () => {
       expect(editTrigger.closest('[role="option"]')).toBeNull();
     });
 
-    it("PATCHes on save and the tile reflects the new alt text when reopened", async () => {
+    it("PATCHes Description on save and restores it when reopened", async () => {
       mockFetch.mockImplementation((u: string, init?: RequestInit) => {
         if (u === "/api/portfolio/gallery/items/a" && (init as RequestInit)?.method === "PATCH") {
-          return Promise.resolve({ ok: true, json: async () => ({ ...colItems[0], altText: "Bride and groom" }) } as Response);
+          return Promise.resolve({ ok: true, json: async () => ({ ...colItems[0], caption: "Bride and groom" }) } as Response);
         }
         return routeFetch(u);
       });
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
-      fireEvent.change(await screen.findByLabelText("Alt text"), { target: { value: "Bride and groom" } });
+      fireEvent.change(await screen.findByLabelText("Description"), { target: { value: "Bride and groom" } });
+      fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
       fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
       await waitFor(() =>
         expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
       );
-      await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
+      await waitFor(() => expect(screen.queryByLabelText("Description")).toBeNull());
 
-      fireEvent.click(screen.getByRole("button", { name: /edit photo details for A/i }));
-      expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
+      fireEvent.click(screen.getByRole("button", { name: /edit photo details for Bride and groom/i }));
+      expect(await screen.findByLabelText("Description")).toHaveValue("Bride and groom");
     });
   });
 

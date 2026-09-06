@@ -3,7 +3,11 @@
 import type React from "react";
 import { useTranslations } from "next-intl";
 import type { PortfolioBrandKit, PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
-import { resolvePopupLayout } from "@/lib/page-builder/types";
+import {
+  resolvePopupColumns,
+  resolvePopupLayout,
+  type PopupColumns,
+} from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "@/lib/page-builder/blocks/CollectionPopupChrome";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 
@@ -14,23 +18,31 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 // `resolvePopupLayout` so an unset "" still previews as contact-sheet).
 // ---------------------------------------------------------------------------
 
-function ContactSheetSwatch() {
+const SAMPLE_IMAGE_COUNT = 5;
+
+function ContactSheetSwatch({ columns }: { columns: PopupColumns }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div
+      data-popup-preview-columns={columns}
+      style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}
+    >
+      {Array.from({ length: SAMPLE_IMAGE_COUNT }).map((_, i) => (
         <div key={i} style={{ aspectRatio: "1 / 1", backgroundColor: "var(--pf-color-fg)", opacity: 0.12 }} />
       ))}
     </div>
   );
 }
 
-function JustifiedSwatch() {
-  const rows: number[][] = [
-    [1.5, 1, 0.8],
-    [1, 1, 1, 1],
-  ];
+function JustifiedSwatch({ columns }: { columns: PopupColumns }) {
+  const weights = [1.5, 1, 0.8, 1.25, 0.9];
+  const rows = Array.from({ length: Math.ceil(SAMPLE_IMAGE_COUNT / columns) }, (_, rowIndex) =>
+    weights.slice(rowIndex * columns, (rowIndex + 1) * columns),
+  );
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    <div
+      data-popup-preview-columns={columns}
+      style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+    >
       {rows.map((widths, ri) => (
         <div key={ri} style={{ display: "flex", gap: "4px" }}>
           {widths.map((w, i) => (
@@ -42,12 +54,15 @@ function JustifiedSwatch() {
   );
 }
 
-function SplitIndexSwatch() {
+function SplitIndexSwatch({ columns }: { columns: PopupColumns }) {
   return (
     <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
       <div style={{ flex: "0 0 35%", alignSelf: "stretch", backgroundColor: "var(--pf-color-secondary)" }} />
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div
+        data-popup-preview-columns={columns}
+        style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "6px" }}
+      >
+        {Array.from({ length: SAMPLE_IMAGE_COUNT }).map((_, i) => (
           <div key={i} style={{ aspectRatio: "1 / 1", backgroundColor: "var(--pf-color-fg)", opacity: 0.12 }} />
         ))}
       </div>
@@ -78,6 +93,7 @@ export function CollectionsPopupPreview({
   const t = useTranslations("app.pageBuilder.editor");
   const { cssVars, className } = resolveBrandKit(brandKit);
   const layout = resolvePopupLayout(config.popupLayout);
+  const popupColumns = resolvePopupColumns(config.popupColumns);
 
   return (
     <div data-testid="collections-popup-preview-root" className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>
@@ -93,7 +109,13 @@ export function CollectionsPopupPreview({
             maxWidth={layout === "justified" || layout === "split-index" ? 1080 : 900}
           >
             <div className="min-h-0 flex-1 overflow-auto p-4">
-              {layout === "justified" ? <JustifiedSwatch /> : layout === "split-index" ? <SplitIndexSwatch /> : <ContactSheetSwatch />}
+              {layout === "justified" ? (
+                <JustifiedSwatch columns={popupColumns} />
+              ) : layout === "split-index" ? (
+                <SplitIndexSwatch columns={popupColumns} />
+              ) : (
+                <ContactSheetSwatch columns={popupColumns} />
+              )}
             </div>
           </CollectionPopupChrome>
         )}

@@ -271,7 +271,7 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
 /**
  * GalleryItem metadata baked onto the block at pick time (Item 10c) — the
  * block is no longer a per-placement metadata form; the picked photo's own
- * title/caption/altText/date/location/client/tags/meta are copied here so the
+ * title/description/date/location/client/tags/meta are copied here so the
  * renderer and every image modal have them with no per-placement editing.
  * `sourceAssetId` is the asset this bundle was baked from, so the Content
  * tab's Edit row can tell a re-pick apart from an already-baked photo and
@@ -374,7 +374,7 @@ export function ImageBlock({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={src as string}
-                alt={alt || ""}
+                alt={alt || meta?.caption || meta?.altText || ""}
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -400,6 +400,11 @@ export function ImageBlock({
               filmstrip: chromeLabels.lightboxFilmstrip,
               seeMore: chromeLabels.lightboxSeeMore,
               seeLess: chromeLabels.lightboxSeeLess,
+              additionalInformation: chromeLabels.lightboxAdditionalInformation,
+              date: chromeLabels.lightboxDate,
+              location: chromeLabels.lightboxLocation,
+              client: chromeLabels.lightboxClient,
+              tags: chromeLabels.lightboxTags,
               photoOf: chromeLabels.lightboxPhotoOf,
             };
             return (
@@ -407,9 +412,9 @@ export function ImageBlock({
                 image={{
                   id: effectiveStyle?.bgImagePublicId ?? "image",
                   publicId: effectiveStyle?.bgImagePublicId ?? "",
-                  // Legacy per-block `alt` (if this draft still has one) wins over
-                  // the baked GalleryItem's altText — see ImageBlockProps.alt.
-                  alt: alt || meta?.altText || "",
+                  // Preserve a legacy per-block `alt` when present; otherwise the
+                  // description is the active alt source, with old altText as fallback.
+                  alt: alt || meta?.caption || meta?.altText || "",
                   title: meta?.title || undefined,
                   caption: meta?.caption || undefined,
                   date: meta?.date || undefined,

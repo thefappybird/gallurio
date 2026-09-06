@@ -19,6 +19,7 @@ export function Justified({
   collectionName,
   collectionDescription,
   total,
+  popupColumns,
   hasMore,
   isLoadingMore,
   loadMoreError,
@@ -44,9 +45,14 @@ export function Justified({
   const rows = useMemo(
     () =>
       width
-        ? packRows(images, { containerWidth: width, targetHeight: DEFAULT_TARGET_HEIGHT, gutter: DEFAULT_GUTTER })
+        ? packRows(images, {
+            containerWidth: width,
+            targetHeight: DEFAULT_TARGET_HEIGHT,
+            gutter: DEFAULT_GUTTER,
+            itemsPerRow: popupColumns,
+          })
         : [],
-    [images, width]
+    [images, popupColumns, width]
   );
   const countLabel = formatPhotoCount(total, labels);
 
@@ -74,6 +80,7 @@ export function Justified({
       <ul
         ref={containerRef}
         aria-label={collectionName}
+        data-popup-columns={popupColumns}
         style={{ listStyle: "none", margin: 0, padding: 0 }}
       >
         {width == null ? (

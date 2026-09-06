@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useActionError } from "@/lib/i18n/actionError";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -30,7 +29,7 @@ import { usePickerData } from "./usePickerData";
 import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
-import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { ImageMetaWizard, useImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerCollection, PickerItem } from "./types";
 
@@ -146,9 +145,7 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 }
 
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
-  const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
-  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
@@ -158,41 +155,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const wizardLabels: ImageWizardLabels = {
-    heading: tWizard("heading"),
-    position: (current, total) => tWizard("position", { current, total }),
-    fieldTitle: tWizard("fieldTitle"),
-    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
-    fieldCaption: tWizard("fieldCaption"),
-    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
-    fieldAlt: tWizard("fieldAlt"),
-    fieldAltHelp: tWizard("fieldAltHelp"),
-    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
-    altCounter: (count, max) => tWizard("altCounter", { count, max }),
-    fieldDate: tWizard("fieldDate"),
-    fieldLocation: tWizard("fieldLocation"),
-    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
-    fieldClient: tWizard("fieldClient"),
-    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
-    fieldTags: tWizard("fieldTags"),
-    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
-    fieldTagsHint: tWizard("fieldTagsHint"),
-    removeTag: (tag) => tWizard("removeTag", { tag }),
-    fieldMeta: tWizard("fieldMeta"),
-    fieldMetaHint: tWizard("fieldMetaHint"),
-    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
-    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
-    addMetaRow: tWizard("addMetaRow"),
-    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
-    savedBadge: tWizard("savedBadge"),
-    unsavedBadge: tWizard("unsavedBadge"),
-    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
-    previous: tWizard("previous"),
-    next: tWizard("next"),
-    finish: tWizard("finish"),
-    close: tWizard("close"),
-    errorMessage: (code) => errMsg(code),
-  };
+  const wizardLabels = useImageWizardLabels();
 
   // Post-upload "add details" offer (multi mode only — single mode auto-selects
   // and closes the picker immediately, its established "no extra click" flow).
@@ -716,7 +679,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         )}
 
         {/* Collections mode reorder strip */}
-        {mode === "collections" && collectionSelection.length > 0 && (
+        {mode === "collections" && max !== 1 && collectionSelection.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <p className="text-xs text-muted-foreground">
               {L.selectedCount(collectionSelection.length, max)} · {L.dragHint}
@@ -777,6 +740,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               collections={collections}
               isSelected={isCollectionSelected}
               orderOf={collectionOrderOf}
+              singleSelection={max === 1}
               onToggle={toggleCollection}
               onCreate={() => setCreateOpen(true)}
             />
@@ -1317,17 +1281,19 @@ function CollectionSelectGrid({
   collections,
   isSelected,
   orderOf,
+  singleSelection,
   onToggle,
   onCreate,
 }: {
   collections: PickerCollection[];
   isSelected: (id: string) => boolean;
   orderOf: (id: string) => number;
+  singleSelection: boolean;
   onToggle: (col: PickerCollection) => void;
   onCreate: () => void;
 }) {
   return (
-    <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections" aria-multiselectable="true">
+    <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections" aria-multiselectable={singleSelection ? undefined : true}>
       {collections.map((col) => {
         const selected = isSelected(col.id);
         const order = orderOf(col.id);
@@ -1336,7 +1302,7 @@ function CollectionSelectGrid({
             <button
               type="button"
               onClick={() => onToggle(col)}
-              aria-label={`${col.name}${selected ? ` — selected ${order}` : ""}`}
+              aria-label={`${col.name}${selected ? singleSelection ? " — selected" : ` — selected ${order}` : ""}`}
               className={cn(
                 "flex w-full flex-col overflow-hidden border text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 selected ? "border-foreground" : "border-border hover:bg-accent/40"
@@ -1353,7 +1319,7 @@ function CollectionSelectGrid({
                 )}
                 {selected && (
                   <span className="absolute right-1 top-1 inline-flex size-5 items-center justify-center bg-foreground text-xs font-bold text-background">
-                    {order}
+                    {singleSelection ? <CheckIcon className="size-3.5" aria-hidden /> : order}
                   </span>
                 )}
               </span>

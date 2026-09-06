@@ -5,6 +5,7 @@ import { Render, type Data } from "@measured/puck";
 import { puckConfig } from "@/lib/page-builder/config";
 import type { PuckData } from "@/lib/page-builder/types";
 import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
+import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { normalizePageBody } from "@/lib/page-builder/pageBody";
 import { usePreviewDraft } from "./PreviewDraftContext";
 
@@ -45,12 +46,14 @@ export function PreviewClient({
   workspace,
   fallbackData,
   draftId,
+  collectionPopupLabels,
 }: {
   slug: string;
   zone: "home" | "gallery";
   workspace: RenderWorkspace;
   fallbackData: PuckData;
   draftId: string | null;
+  collectionPopupLabels?: CollectionPopupLabels;
 }) {
   const { collectionsPopup } = usePreviewDraft();
   const normalizedFallback = useMemo(
@@ -82,6 +85,8 @@ export function PreviewClient({
 
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={data as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    <Render data={data as any} config={puckConfig as any}
+      metadata={{ workspace: renderWorkspace, collectionPopupLabels }}
+    />
   );
 }

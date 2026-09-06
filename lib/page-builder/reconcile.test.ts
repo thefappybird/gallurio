@@ -43,10 +43,10 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     const images = (out.content[0].props.images as Array<{ id: string; publicId: string; alt: string }>);
-    expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" }]);
+    expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Cap 0" }]);
   });
 
-  it("altText wins over caption when both are set; caption is only the fallback", async () => {
+  it("description wins over legacy altText when both are set", async () => {
     const ws = new Types.ObjectId();
     const both = await makeItem(ws, 9, { altText: "Alt wins", caption: "Cap loses" });
     const data: PuckData = {
@@ -55,7 +55,7 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     const images = out.content[0].props.images as Array<{ alt: string }>;
-    expect(images[0].alt).toBe("Alt wins");
+    expect(images[0].alt).toBe("Cap loses");
   });
 
   it("falls back alt to caption then empty string", async () => {
@@ -172,7 +172,7 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     expect(out.content[0].props.backgroundImages).toEqual([
-      { id: String(it._id), publicId: `ws/${ws}/item5`, alt: "Alt 5" },
+      { id: String(it._id), publicId: `ws/${ws}/item5`, alt: "Cap 5" },
     ]);
   });
 
@@ -253,7 +253,7 @@ describe("reconcileGalleryImages", () => {
     expect(nested[0].type).toBe("Heading");
     expect(nested[1].type).toBe("Text");
     expect(nested[2].props.images).toEqual([
-      { id: String(a._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" },
+      { id: String(a._id), publicId: `ws/${ws}/item0`, alt: "Cap 0" },
     ]);
     findSpy.mockRestore();
   });

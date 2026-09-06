@@ -39,6 +39,8 @@ export type PackOptions = {
   targetHeight?: number;
   /** Gap between items in a row, in px. Also the gap between rows. */
   gutter?: number;
+  /** When set, every complete row contains exactly this many photos. */
+  itemsPerRow?: number;
   /**
    * How far a row may stray from `targetHeight`, as a fraction. The final row
    * is the only one allowed past it — see below.
@@ -88,12 +90,31 @@ export function packRows<T extends PackableImage>(
     containerWidth,
     targetHeight = DEFAULT_TARGET_HEIGHT,
     gutter = DEFAULT_GUTTER,
+    itemsPerRow,
   } = options;
 
   if (images.length === 0) return [];
   if (!Number.isFinite(containerWidth) || containerWidth <= 0) return [];
 
   const rows: PackedRow<T>[] = [];
+
+  if (typeof itemsPerRow === "number" && Number.isFinite(itemsPerRow)) {
+    const rowSize = Math.max(1, Math.floor(itemsPerRow));
+    for (let start = 0; start < images.length; start += rowSize) {
+      const rowImages = images.slice(start, start + rowSize);
+      const isCompleteRow = rowImages.length === rowSize;
+      const aspectSum = rowImages.reduce((sum, image) => sum + aspectOf(image), 0);
+      const height = isCompleteRow
+        ? heightFor(aspectSum, rowImages.length, containerWidth, gutter)
+        : targetHeight;
+      rows.push({
+        height,
+        items: rowImages.map((item) => ({ item, width: height * aspectOf(item) })),
+      });
+    }
+    return rows;
+  }
+
   let current: T[] = [];
   let aspectSum = 0;
 

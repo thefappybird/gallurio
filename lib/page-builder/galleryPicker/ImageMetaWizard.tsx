@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, CheckIcon, PlusIcon, XIcon } from "lucide-react";
 import {
   Dialog,
@@ -14,12 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
 import { TagsInput } from "@/components/ui/tags-input";
+import { Combobox } from "@/components/ui/combobox";
+import { LocationPicker } from "@/components/ui/location-picker";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useActionError } from "@/lib/i18n/actionError";
 import type { GalleryMetaRow, PickerItem } from "./types";
 
 export const WIZARD_TITLE_MAX = 300;
 export const WIZARD_CAPTION_MAX = 2000;
-export const WIZARD_ALT_MAX = 300;
 export const WIZARD_LOCATION_MAX = 300;
 export const WIZARD_CLIENT_MAX = 300;
 export const WIZARD_TAG_MAX = 40;
@@ -28,23 +32,36 @@ export const WIZARD_META_LABEL_MAX = 120;
 export const WIZARD_META_VALUE_MAX = 120;
 export const WIZARD_META_CAP = 20;
 
-/** Fully resolved copy — no i18n call inside the component (see ImageMetaDialog). */
+/** Fully resolved copy, shared by every photo-details entry point. */
 export type ImageWizardLabels = {
   heading: string;
   position: (current: number, total: number) => string;
+  stepBasics: string;
+  stepAdditional: string;
+  stepPosition: (current: number, total: number) => string;
   fieldTitle: string;
   fieldTitlePlaceholder: string;
   fieldCaption: string;
   fieldCaptionPlaceholder: string;
-  fieldAlt: string;
-  fieldAltHelp: string;
-  fieldAltPlaceholder: string;
-  altCounter: (count: number, max: number) => string;
+  fieldCaptionHelp: string;
   fieldDate: string;
   fieldLocation: string;
   fieldLocationPlaceholder: string;
   fieldClient: string;
   fieldClientPlaceholder: string;
+  hideClient: string;
+  hideClientHelp: string;
+  linkBooking: string;
+  linkClient: string;
+  noBooking: string;
+  noClient: string;
+  searchLinks: string;
+  noLinkMatches: string;
+  linksLoading: string;
+  linksLoadError: string;
+  retryLinks: string;
+  manualDetails: string;
+  linkedRecord: string;
   fieldTags: string;
   fieldTagsPlaceholder: string;
   fieldTagsHint: string;
@@ -66,13 +83,69 @@ export type ImageWizardLabels = {
   errorMessage: (code: string | null) => string;
 };
 
+/** One localized label source for every host of the shared photo-details wizard. */
+export function useImageWizardLabels(): ImageWizardLabels {
+  const t = useTranslations("app.pageBuilder.editor.imageWizard");
+  const errorMessage = useActionError();
+  return {
+    heading: t("heading"),
+    position: (current, total) => t("position", { current, total }),
+    stepBasics: t("stepBasics"),
+    stepAdditional: t("stepAdditional"),
+    stepPosition: (current, total) => t("stepPosition", { current, total }),
+    fieldTitle: t("fieldTitle"),
+    fieldTitlePlaceholder: t("fieldTitlePlaceholder"),
+    fieldCaption: t("fieldCaption"),
+    fieldCaptionPlaceholder: t("fieldCaptionPlaceholder"),
+    fieldCaptionHelp: t("fieldCaptionHelp"),
+    fieldDate: t("fieldDate"),
+    fieldLocation: t("fieldLocation"),
+    fieldLocationPlaceholder: t("fieldLocationPlaceholder"),
+    fieldClient: t("fieldClient"),
+    fieldClientPlaceholder: t("fieldClientPlaceholder"),
+    hideClient: t("hideClient"),
+    hideClientHelp: t("hideClientHelp"),
+    linkBooking: t("linkBooking"),
+    linkClient: t("linkClient"),
+    noBooking: t("noBooking"),
+    noClient: t("noClient"),
+    searchLinks: t("searchLinks"),
+    noLinkMatches: t("noLinkMatches"),
+    linksLoading: t("linksLoading"),
+    linksLoadError: t("linksLoadError"),
+    retryLinks: t("retryLinks"),
+    manualDetails: t("manualDetails"),
+    linkedRecord: t("linkedRecord"),
+    fieldTags: t("fieldTags"),
+    fieldTagsPlaceholder: t("fieldTagsPlaceholder"),
+    fieldTagsHint: t("fieldTagsHint"),
+    removeTag: (tag) => t("removeTag", { tag }),
+    fieldMeta: t("fieldMeta"),
+    fieldMetaHint: t("fieldMetaHint"),
+    metaLabelPlaceholder: t("metaLabelPlaceholder"),
+    metaValuePlaceholder: t("metaValuePlaceholder"),
+    addMetaRow: t("addMetaRow"),
+    removeMetaRow: (n) => t("removeMetaRow", { n }),
+    savedBadge: t("savedBadge"),
+    unsavedBadge: t("unsavedBadge"),
+    jumpToPhoto: (n) => t("jumpToPhoto", { n }),
+    previous: t("previous"),
+    next: t("next"),
+    finish: t("finish"),
+    close: t("close"),
+    errorMessage,
+  };
+}
+
 type WizardForm = {
   title: string;
   caption: string;
-  altText: string;
   date: string;
   location: string;
   client: string;
+  hideClient: boolean;
+  bookingId: string;
+  clientId: string;
   tags: string[];
   meta: GalleryMetaRow[];
 };
@@ -81,10 +154,12 @@ function baselineForm(item: PickerItem): WizardForm {
   return {
     title: item.title ?? "",
     caption: item.caption ?? "",
-    altText: item.altText ?? "",
     date: item.date ?? "",
     location: item.location ?? "",
     client: item.client ?? "",
+    hideClient: item.hideClient === true,
+    bookingId: item.bookingId ?? "",
+    clientId: item.clientId ?? "",
     tags: item.tags ?? [],
     meta: item.meta ?? [],
   };
@@ -94,16 +169,29 @@ function sameForm(a: WizardForm, b: WizardForm): boolean {
   return (
     a.title === b.title &&
     a.caption === b.caption &&
-    a.altText === b.altText &&
     a.date === b.date &&
     a.location === b.location &&
     a.client === b.client &&
+    a.hideClient === b.hideClient &&
+    a.bookingId === b.bookingId &&
+    a.clientId === b.clientId &&
     a.tags.length === b.tags.length &&
     a.tags.every((t, i) => t === b.tags[i]) &&
     a.meta.length === b.meta.length &&
     a.meta.every((m, i) => m.label === b.meta[i]?.label && m.value === b.meta[i]?.value)
   );
 }
+
+type BookingOption = {
+  id: string;
+  title: string;
+  clientId: string;
+  clientName: string;
+  date: string;
+  location: string;
+};
+type ClientOption = { id: string; name: string; email: string | null };
+type LinkOptions = { bookings: BookingOption[]; clients: ClientOption[] };
 
 /**
  * Post-upload metadata wizard: one photo at a time, one PATCH per photo.
@@ -116,12 +204,18 @@ export function ImageMetaWizard({
   onOpenChange,
   onSaved,
   labels,
+  initialLinkOptions,
+  saveUrl = (item) => `/api/portfolio/gallery/items/${item.id}`,
 }: {
   items: PickerItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (updated: PickerItem) => void;
   labels: ImageWizardLabels;
+  /** Allows every host to use this shared UI while targeting its item lookup route. */
+  saveUrl?: (item: PickerItem) => string;
+  /** Optional preload for hosts/tests; when omitted the wizard loads tenant-scoped records on step 2. */
+  initialLinkOptions?: LinkOptions;
 }) {
   const [index, setIndex] = useState(0);
   const [forms, setForms] = useState<Record<string, WizardForm>>({});
@@ -129,6 +223,12 @@ export function ImageMetaWizard({
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [errorById, setErrorById] = useState<Record<string, string | null>>({});
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [linkOptions, setLinkOptions] = useState<LinkOptions>(initialLinkOptions ?? { bookings: [], clients: [] });
+  const [linksLoading, setLinksLoading] = useState(false);
+  const [linksError, setLinksError] = useState(false);
+  const [linkLoadAttempt, setLinkLoadAttempt] = useState(0);
+  const linkLoadStarted = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -140,13 +240,42 @@ export function ImageMetaWizard({
       setSavedIds(new Set());
       setErrorById({});
       setIndex(0);
+      setStep(1);
+      setLinksError(false);
+      if (initialLinkOptions === undefined && linkOptions.bookings.length === 0 && linkOptions.clients.length === 0) {
+        linkLoadStarted.current = false;
+      }
     }
     // `items` is a fixed snapshot handed to the wizard on open; re-running on
     // every identity change would wipe in-progress edits mid-session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Same workaround as ImageMetaDialog: the editor's global Puck-hotkey guard
+  useEffect(() => {
+    if (initialLinkOptions !== undefined || !open || step !== 2 || linkLoadStarted.current || linkOptions.bookings.length > 0 || linkOptions.clients.length > 0) return;
+    const controller = new AbortController();
+    linkLoadStarted.current = true;
+    setLinksLoading(true);
+    setLinksError(false);
+    fetch("/api/portfolio/gallery/metadata-options", { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("load_failed");
+        return (await res.json()) as LinkOptions;
+      })
+      .then((data) => setLinkOptions({
+        bookings: Array.isArray(data?.bookings) ? data.bookings : [],
+        clients: Array.isArray(data?.clients) ? data.clients : [],
+      }))
+      .catch(() => {
+        if (!controller.signal.aborted) setLinksError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLinksLoading(false);
+      });
+    return () => controller.abort();
+  }, [initialLinkOptions, linkLoadAttempt, linkOptions.bookings.length, linkOptions.clients.length, open, step]);
+
+  // The editor's global Puck-hotkey guard
   // is a document-level, capture-phase keydown listener that swallows Escape
   // whenever the event target is a text input/textarea (which most of this
   // wizard's fields are) — before it ever reaches this dialog. `window`
@@ -187,16 +316,20 @@ export function ImageMetaWizard({
     setSaving(true);
     setErrorById((e) => ({ ...e, [id]: null }));
     try {
-      const res = await fetch(`/api/portfolio/gallery/items/${id}`, {
+      const item = items.find((candidate) => candidate.id === id);
+      if (!item) return false;
+      const res = await fetch(saveUrl(item), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: toSave.title,
           caption: toSave.caption,
-          altText: toSave.altText,
           date: toSave.date,
           location: toSave.location,
           client: toSave.client,
+          hideClient: toSave.hideClient,
+          bookingId: toSave.bookingId || null,
+          clientId: toSave.clientId || null,
           tags: toSave.tags,
           meta: toSave.meta,
         }),
@@ -226,6 +359,7 @@ export function ImageMetaWizard({
       if (!ok) return;
     }
     setIndex(target);
+    setStep(1);
   }
 
   // The only exit path, shared by the finish button, Escape and the dialog's
@@ -241,6 +375,30 @@ export function ImageMetaWizard({
     onOpenChange(false);
   }
 
+  function selectBooking(id: string) {
+    const booking = linkOptions.bookings.find((option) => option.id === id);
+    if (!booking) {
+      updateForm({ bookingId: "" });
+      return;
+    }
+    updateForm({
+      bookingId: booking.id,
+      clientId: form.hideClient ? "" : booking.clientId,
+      client: form.hideClient ? "" : booking.clientName,
+      date: booking.date,
+      location: booking.location,
+    });
+  }
+
+  function selectClient(id: string) {
+    const client = linkOptions.clients.find((option) => option.id === id);
+    updateForm({
+      bookingId: "",
+      clientId: client?.id ?? "",
+      client: client?.name ?? form.client,
+    });
+  }
+
 
   return (
     <>
@@ -252,9 +410,28 @@ export function ImageMetaWizard({
           <DialogHeader>
             <DialogTitle>{labels.heading}</DialogTitle>
             <p aria-live="polite" className="text-xs text-muted-foreground">
-              {labels.position(index + 1, items.length)}
+              {labels.position(index + 1, items.length)} · {labels.stepPosition(step, 2)}
             </p>
           </DialogHeader>
+
+          <ol className="grid grid-cols-2 border border-border" aria-label={labels.heading}>
+            {([1, 2] as const).map((value) => (
+              <li key={value}>
+                <button
+                  type="button"
+                  aria-current={step === value ? "step" : undefined}
+                  onClick={() => setStep(value)}
+                  disabled={saving}
+                  className={cn(
+                    "h-10 w-full px-3 text-start text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    step === value ? "bg-foreground text-background" : "bg-background text-muted-foreground"
+                  )}
+                >
+                  {value}. {value === 1 ? labels.stepBasics : labels.stepAdditional}
+                </button>
+              </li>
+            ))}
+          </ol>
 
           {items.length > 1 && (
             <ul className="flex gap-1.5 overflow-x-auto pb-1" aria-label={labels.heading}>
@@ -318,6 +495,7 @@ export function ImageMetaWizard({
               </span>
             </div>
 
+            {step === 1 ? <>
             <FormField label={labels.fieldTitle}>
               {({ id }) => (
                 <Input
@@ -332,7 +510,7 @@ export function ImageMetaWizard({
               )}
             </FormField>
 
-            <FormField label={labels.fieldCaption}>
+            <FormField label={labels.fieldCaption} hint={labels.fieldCaptionHelp}>
               {({ id }) => (
                 <Textarea
                   id={id}
@@ -341,68 +519,6 @@ export function ImageMetaWizard({
                   maxLength={WIZARD_CAPTION_MAX}
                   disabled={saving}
                   onChange={(e) => updateForm({ caption: e.target.value })}
-                />
-              )}
-            </FormField>
-
-            <FormField
-              label={labels.fieldAlt}
-              hint={
-                <span className="flex flex-col gap-0.5">
-                  <span>{labels.fieldAltHelp}</span>
-                  <span aria-live={WIZARD_ALT_MAX - form.altText.length <= 20 ? "polite" : undefined}>
-                    {labels.altCounter(form.altText.length, WIZARD_ALT_MAX)}
-                  </span>
-                </span>
-              }
-            >
-              {({ id }) => (
-                <Textarea
-                  id={id}
-                  value={form.altText}
-                  placeholder={labels.fieldAltPlaceholder}
-                  maxLength={WIZARD_ALT_MAX}
-                  disabled={saving}
-                  onChange={(e) => updateForm({ altText: e.target.value })}
-                />
-              )}
-            </FormField>
-
-            <FormField label={labels.fieldDate}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="date"
-                  value={form.date}
-                  disabled={saving}
-                  onChange={(e) => updateForm({ date: e.target.value })}
-                  className="w-full sm:w-48"
-                />
-              )}
-            </FormField>
-
-            <FormField label={labels.fieldLocation}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  value={form.location}
-                  placeholder={labels.fieldLocationPlaceholder}
-                  maxLength={WIZARD_LOCATION_MAX}
-                  disabled={saving}
-                  onChange={(e) => updateForm({ location: e.target.value })}
-                />
-              )}
-            </FormField>
-
-            <FormField label={labels.fieldClient}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  value={form.client}
-                  placeholder={labels.fieldClientPlaceholder}
-                  maxLength={WIZARD_CLIENT_MAX}
-                  disabled={saving}
-                  onChange={(e) => updateForm({ client: e.target.value })}
                 />
               )}
             </FormField>
@@ -421,6 +537,141 @@ export function ImageMetaWizard({
                 />
               )}
             </FormField>
+            </> : <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label={labels.linkBooking}>
+                {({ id }) => (
+                  <Combobox
+                    id={id}
+                    groups={[{ heading: labels.linkBooking, items: linkOptions.bookings }]}
+                    getValue={(item) => item.id}
+                    getLabel={(item) => `${item.title} — ${item.clientName}`}
+                    filterItem={(item, query) => `${item.title} ${item.clientName} ${item.location}`.toLowerCase().includes(query)}
+                    value={form.bookingId}
+                    onChange={selectBooking}
+                    selectedLabel={linkOptions.bookings.find((item) => item.id === form.bookingId)?.title ?? labels.noBooking}
+                    triggerMuted={!form.bookingId}
+                    searchPlaceholder={labels.searchLinks}
+                    noMatchesLabel={linksLoading ? labels.linksLoading : labels.noLinkMatches}
+                    trailingAction={{ label: labels.manualDetails, onSelect: () => updateForm({ bookingId: "" }) }}
+                    disabled={saving}
+                  />
+                )}
+              </FormField>
+              <FormField label={labels.linkClient}>
+                {({ id }) => (
+                  <Combobox
+                    id={id}
+                    groups={[{ heading: labels.linkClient, items: linkOptions.clients }]}
+                    getValue={(item) => item.id}
+                    getLabel={(item) => item.email ? `${item.name} — ${item.email}` : item.name}
+                    value={form.clientId}
+                    onChange={selectClient}
+                    selectedLabel={linkOptions.clients.find((item) => item.id === form.clientId)?.name ?? (form.clientId ? form.client : labels.noClient)}
+                    triggerMuted={!form.clientId}
+                    searchPlaceholder={labels.searchLinks}
+                    noMatchesLabel={linksLoading ? labels.linksLoading : labels.noLinkMatches}
+                    trailingAction={{ label: labels.manualDetails, onSelect: () => updateForm({ bookingId: "", clientId: "" }) }}
+                    disabled={saving || form.hideClient}
+                  />
+                )}
+              </FormField>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 border border-border p-3">
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-medium">{labels.hideClient}</span>
+                <span className="text-xs text-muted-foreground">{labels.hideClientHelp}</span>
+              </span>
+              <Switch
+                checked={form.hideClient}
+                onCheckedChange={(checked: boolean) => {
+                  const booking = linkOptions.bookings.find((option) => option.id === form.bookingId);
+                  updateForm({
+                    hideClient: checked,
+                    client: checked ? "" : booking?.clientName ?? "",
+                    clientId: checked ? "" : booking?.clientId ?? "",
+                  });
+                }}
+                disabled={saving}
+                aria-label={labels.hideClient}
+              />
+            </div>
+
+            {linksError && (
+              <div role="alert" className="flex items-center justify-between gap-3 border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                <span>{labels.linksLoadError}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    linkLoadStarted.current = false;
+                    setLinkLoadAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  {labels.retryLinks}
+                </Button>
+              </div>
+            )}
+
+            {form.bookingId && (() => {
+              const booking = linkOptions.bookings.find((option) => option.id === form.bookingId);
+              return booking ? (
+                <section className="border border-border bg-muted/30 p-3" aria-label={labels.linkedRecord}>
+                  <p className="text-sm font-semibold">{booking.title}</p>
+                  <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                    {!form.hideClient && <><dt className="text-muted-foreground">{labels.fieldClient}</dt><dd>{booking.clientName}</dd></>}
+                    <dt className="text-muted-foreground">{labels.fieldDate}</dt><dd>{booking.date || "—"}</dd>
+                    <dt className="text-muted-foreground">{labels.fieldLocation}</dt><dd>{booking.location || "—"}</dd>
+                  </dl>
+                </section>
+              ) : null;
+            })()}
+
+            {!form.bookingId && <>
+              <p className="text-xs text-muted-foreground">{labels.manualDetails}</p>
+              <div data-testid="manual-client-date-row" className="grid gap-3 sm:grid-cols-[3fr_7fr]">
+                <FormField label={labels.fieldDate}>
+                  {({ id }) => (
+                    <Input
+                      id={id}
+                      type="date"
+                      value={form.date}
+                      disabled={saving}
+                      onChange={(e) => updateForm({ date: e.target.value })}
+                      className="w-full"
+                    />
+                  )}
+                </FormField>
+
+                <FormField label={labels.fieldClient}>
+                  {({ id }) => (
+                    <Input
+                      id={id}
+                      value={form.client}
+                      placeholder={labels.fieldClientPlaceholder}
+                      maxLength={WIZARD_CLIENT_MAX}
+                      disabled={saving || form.hideClient}
+                      onChange={(e) => updateForm({ client: e.target.value })}
+                    />
+                  )}
+                </FormField>
+              </div>
+
+              <FormField label={labels.fieldLocation}>
+                {({ id }) => (
+                  <LocationPicker
+                    id={id}
+                    editable
+                    className="w-full"
+                    value={{ address: form.location, lat: null, lng: null }}
+                    disabled={saving}
+                    onChange={(value) => updateForm({ location: value.address.slice(0, WIZARD_LOCATION_MAX) })}
+                  />
+                )}
+              </FormField>
+            </>}
 
             <MetaRowsField
               rows={form.meta}
@@ -433,6 +684,7 @@ export function ImageMetaWizard({
               removeLabel={labels.removeMetaRow}
               disabled={saving}
             />
+            </>}
 
             {currentError && (
               <p role="alert" className="text-xs text-destructive">
@@ -443,12 +695,16 @@ export function ImageMetaWizard({
 
           <DialogFooter className="items-center sm:justify-between">
             <div className="flex gap-2">
-              {items.length > 1 && (
-                <Button type="button" variant="outline" onClick={() => void goTo(index - 1)} disabled={index === 0 || saving}>
+              {(items.length > 1 || step === 2) && (
+                <Button type="button" variant="outline" onClick={() => step === 2 ? setStep(1) : void goTo(index - 1)} disabled={(step === 1 && index === 0) || saving}>
                   {labels.previous}
                 </Button>
               )}
-              {isLast ? (
+              {step === 1 ? (
+                <Button type="button" onClick={() => setStep(2)} disabled={saving}>
+                  {labels.next}
+                </Button>
+              ) : isLast ? (
                 <Button type="button" onClick={handleFinish} loading={saving} disabled={saving}>
                   {labels.finish}
                 </Button>

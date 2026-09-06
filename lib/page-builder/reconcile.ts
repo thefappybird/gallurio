@@ -53,7 +53,8 @@ function validId(id: unknown): id is string {
  *   (no N+1). `workspaceId` comes from the CALLER's session — never Puck props —
  *   so foreign ids resolve to nothing and are pruned (tenant-safe).
  * - For each stored id still present: emit `{ id, publicId: assetId,
- *   alt: altText || caption || "" }`. Refreshes a changed publicId/alt.
+ *   alt: caption || altText || "" }`. Description is the active alt source;
+ *   the retired `altText` field remains only as compatibility for old items.
  * - Drops ids whose item no longer exists. Preserves the stored order. NEVER adds.
  * - No-op (and no DB call) when NO block anywhere in the tree (including
  *   nested) is a gallery or background-image block.
@@ -91,7 +92,7 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
     for (const d of docs) {
       map.set(String(d._id), {
         publicId: d.assetId ?? "",
-        alt: d.altText || d.caption || "",
+        alt: d.caption || d.altText || "",
       });
     }
   }

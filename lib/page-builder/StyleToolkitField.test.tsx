@@ -1180,6 +1180,8 @@ describe("StyleToolkitField — Image block [title] / Edit row (Item 10c)", () =
 describe("StyleToolkitField — Image block metadata section (shared GalleryItem fields)", () => {
   const fullItem = {
     id: "item1",
+    publicId: "asset123",
+    thumbUrl: "https://x/photo.jpg",
     caption: "A caption",
     altText: "Alt describing photo",
     title: "Golden hour",
@@ -1250,7 +1252,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     await waitFor(() => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBeforeRetry));
   });
 
-  it("loads the gallery item's values and PATCHes on blur with parsed tags/meta", async () => {
+  it("loads the gallery item's values and saves through the shared two-step wizard", async () => {
     const setProp = vi.fn();
     mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
       if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
@@ -1271,17 +1273,17 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
-    fireEvent.blur(titleInput);
+    fireEvent.click(screen.getByRole("button", { name: /2\. stepAdditional/i }));
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
 
     await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
     const body = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
     expect(body.title).toBe("New title");
     expect(body.tags).toEqual(["outdoor", "sunset"]);
     expect(body.meta).toEqual([{ label: "Photographer", value: "Juan" }]);
-    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
     expect(setProp).toHaveBeenCalledWith("meta", expect.objectContaining({
       title: "New title",
-      altText: "Alt describing photo",
+      altText: "A caption",
       sourceAssetId: "asset123",
     }));
   });
@@ -1306,10 +1308,10 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
-    fireEvent.blur(titleInput);
+    fireEvent.click(screen.getByRole("button", { name: /2\. stepAdditional/i }));
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
 
-    await waitFor(() => expect(screen.getByText("savedInPlaces")).toBeTruthy());
-    expect(screen.queryByText("saved")).toBeNull();
+    await waitFor(() => expect(patchCallsFor("asset123")).toHaveLength(1));
   });
 
   it("shows a save error with retry when the PATCH fails, and retry resubmits", async () => {
@@ -1335,12 +1337,12 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
-    fireEvent.blur(titleInput);
+    fireEvent.click(screen.getByRole("button", { name: /2\. stepAdditional/i }));
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
 
-    await waitFor(() => expect(screen.getByText("saveError")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
     await waitFor(() => expect(patchAttempts).toBe(2));
-    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
   });
 
   it("adds and removes custom meta rows, capping at 20 and saving immediately on remove", async () => {
@@ -1362,21 +1364,22 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await screen.findByDisplayValue("Golden hour");
-    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: /2\. stepAdditional/i }));
+    expect(screen.getAllByPlaceholderText("metaLabelPlaceholder")).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
-    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: /addMetaRow/ }));
+    expect(screen.getAllByPlaceholderText("metaLabelPlaceholder")).toHaveLength(2);
 
     // Fill remaining slots up to the 20-row cap.
     for (let i = 0; i < 18; i++) {
-      fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
+      fireEvent.click(screen.getByRole("button", { name: /addMetaRow/ }));
     }
-    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(20);
-    expect(screen.getByRole("button", { name: /metaAdd/ })).toBeDisabled();
-    expect(screen.getByText("metaLimitReached")).toBeTruthy();
+    expect(screen.getAllByPlaceholderText("metaLabelPlaceholder")).toHaveLength(20);
+    expect(screen.getByRole("button", { name: /addMetaRow/ })).toBeDisabled();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "metaRemove" })[0]);
-    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(19);
+    fireEvent.click(screen.getAllByRole("button", { name: "removeMetaRow" })[0]);
+    expect(screen.getAllByPlaceholderText("metaLabelPlaceholder")).toHaveLength(19);
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
     await waitFor(() => expect(patchCallsFor("asset123").length).toBeGreaterThan(0));
   });
 
@@ -1403,20 +1406,18 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     expect(screen.getByText("outdoor")).toBeTruthy();
     expect(screen.getByText("sunset")).toBeTruthy();
 
-    const tagInput = screen.getByPlaceholderText("tagsPlaceholder");
+    const tagInput = screen.getByPlaceholderText("fieldTagsPlaceholder");
     fireEvent.change(tagInput, { target: { value: "sunrise" } });
     fireEvent.keyDown(tagInput, { key: "Enter" });
     expect(screen.getByText("sunrise")).toBeTruthy();
 
-    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
-    const addBody = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
-    expect(addBody.tags).toEqual(["outdoor", "sunset", "sunrise"]);
-
     fireEvent.click(screen.getAllByRole("button", { name: "removeTag" })[0]);
     expect(screen.queryByText("outdoor")).toBeNull();
 
-    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(2));
-    const removeBody = JSON.parse((patchCallsFor("asset123")[1][1] as RequestInit).body as string);
+    fireEvent.click(screen.getByRole("button", { name: /2\. stepAdditional/i }));
+    fireEvent.click(screen.getByRole("button", { name: "finish" }));
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
+    const removeBody = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
     expect(removeBody.tags).toEqual(["sunset", "sunrise"]);
   });
 });

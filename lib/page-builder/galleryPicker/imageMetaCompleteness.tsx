@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
  * Missing `altText` is the only trigger (accessibility + modal-rendering
  * signal) — an absent title/caption alone is NOT incomplete.
  */
-export function hasIncompleteMetadata(item: { altText?: string | null }): boolean {
-  return !item.altText || item.altText.trim().length === 0;
+export function hasIncompleteMetadata(item: { caption?: string | null }): boolean {
+  return !item.caption || item.caption.trim().length === 0;
 }
 
 /**

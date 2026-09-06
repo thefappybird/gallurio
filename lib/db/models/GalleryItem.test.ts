@@ -25,12 +25,14 @@ describe("GalleryItem schema defaults", () => {
     expect(item.date).toBe("");
     expect(item.location).toBe("");
     expect(item.client).toBe("");
+    expect(item.hideClient).toBe(false);
     expect(item.meta).toEqual([]);
 
     // Hydrates the same way when read back from the DB.
     const fetched = await GalleryItem.findById(item._id).lean();
     expect(fetched?.title).toBe("");
     expect(fetched?.date).toBe("");
+    expect(fetched?.hideClient).toBe(false);
     expect(fetched?.meta).toEqual([]);
   });
 
@@ -44,12 +46,14 @@ describe("GalleryItem schema defaults", () => {
       date: "2026-06-15",
       location: "Manila",
       client: "Reyes Family",
+      hideClient: true,
       meta: [{ label: "Photographer", value: "J. Cruz" }],
     });
     expect(item.title).toBe("Ceremony");
     expect(item.date).toBe("2026-06-15");
     expect(item.location).toBe("Manila");
     expect(item.client).toBe("Reyes Family");
+    expect(item.hideClient).toBe(true);
     expect(item.meta.map((m) => ({ label: m.label, value: m.value }))).toEqual([
       { label: "Photographer", value: "J. Cruz" },
     ]);
