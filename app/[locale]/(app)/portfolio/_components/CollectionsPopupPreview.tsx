@@ -86,9 +86,13 @@ function ImmersiveSwatch() {
 export function CollectionsPopupPreview({
   config,
   brandKit,
+  dir = "ltr",
 }: {
   config: PortfolioCollectionsPopupConfig;
   brandKit: PortfolioBrandKit;
+  /** Effective direction for the portfolio's own language — this swatch
+   *  mirrors the real popup's layout, so it follows the same rule. */
+  dir?: "ltr" | "rtl";
 }) {
   const t = useTranslations("app.pageBuilder.editor");
   const { cssVars, className } = resolveBrandKit(brandKit);
@@ -96,7 +100,7 @@ export function CollectionsPopupPreview({
   const popupColumns = resolvePopupColumns(config.popupColumns);
 
   return (
-    <div data-testid="collections-popup-preview-root" className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>
+    <div data-testid="collections-popup-preview-root" dir={dir} className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>
       <div className="relative h-full w-full overflow-hidden bg-black/45">
         {layout === "immersive" ? (
           <ImmersiveSwatch />

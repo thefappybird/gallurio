@@ -3,6 +3,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SidebarLayout } from "./SidebarLayout";
 import type { ImageModalLeafProps, LightboxImage } from "../Lightbox";
 
+// lucide-react path `d` data — the only reliable way to tell ChevronLeftIcon
+// from ChevronRightIcon apart in the rendered DOM.
+const CHEVRON_LEFT_D = "m15 18-6-6 6-6";
+const CHEVRON_RIGHT_D = "m9 18 6-6-6-6";
+
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
   process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
@@ -41,6 +46,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     seeLessLabel: "See less",
     additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
+    dir: "ltr",
     ...overrides,
   };
 }
@@ -103,5 +109,18 @@ describe("SidebarLayout — sticky nav footer", () => {
     render(<SidebarLayout {...baseProps({ image: img("a", { date: "2026-09-02", meta: [{ label: "Venue", value: "The Farm" }] }) })} />);
     expect(screen.getByRole("heading", { name: "Additional information" })).toBeInTheDocument();
     expect(screen.getByText("Venue")).toBeInTheDocument();
+  });
+});
+
+describe("SidebarLayout — dir (RTL)", () => {
+  it("swaps the prev/next chevrons under dir='rtl'", () => {
+    const images = [img("a"), img("b")];
+    render(
+      <SidebarLayout {...baseProps({ image: images[0], images, index: 0, total: 2, hasNav: true, dir: "rtl" })} />
+    );
+    const prevBtn = screen.getByRole("button", { name: "Previous image" });
+    const nextBtn = screen.getByRole("button", { name: "Next image" });
+    expect(prevBtn.querySelector("path")).toHaveAttribute("d", CHEVRON_RIGHT_D);
+    expect(nextBtn.querySelector("path")).toHaveAttribute("d", CHEVRON_LEFT_D);
   });
 });

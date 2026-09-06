@@ -32,6 +32,10 @@ export type CollectionPopupProps = {
    *  renders through a Portal at document.body, escaping the page wrapper that
    *  sets these — so we re-apply them here or the popup has no background. */
   brandVars?: Record<string, string>;
+  /** Effective direction for the portfolio's OWN language (never the ambient
+   *  page/CRM direction) — same Portal-escape reasoning as brandVars above.
+   *  Defaults to "ltr". */
+  dir?: "ltr" | "rtl";
 };
 
 type PopupImage = LightboxImage;
@@ -162,6 +166,7 @@ export function CollectionPopup({
   onClose,
   labels: labelsProp,
   brandVars,
+  dir = "ltr",
 }: CollectionPopupProps) {
   const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
@@ -388,6 +393,7 @@ export function CollectionPopup({
           <DialogPrimitive.Popup
             data-popup-shell=""
             aria-label={collectionName}
+            dir={dir}
             style={shellStyle}
           >
             {/* Scoped focus-visible styles for inline-styled interactive controls */}
@@ -526,6 +532,7 @@ export function CollectionPopup({
           // rather than the tenant's. Same reason this component re-applies
           // them to its own popup above.
           brandVars={brandVars}
+          dir={dir}
         />
       )}
     </>

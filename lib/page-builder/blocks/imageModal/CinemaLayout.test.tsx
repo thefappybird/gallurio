@@ -41,6 +41,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     seeLessLabel: "See less",
     additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
+    dir: "ltr",
     ...overrides,
   };
 }

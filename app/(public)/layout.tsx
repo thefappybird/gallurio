@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
-import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
 import "../globals.css";
 
@@ -25,14 +24,21 @@ export const metadata: Metadata = {
  * `app/layout.tsx`; with next-intl this is the documented "multiple root
  * layouts" setup — one per top-level branch.)
  *
- * `lang`/`dir` on <html> must be correct in the initial server HTML for
- * crawlers and assistive tech. A root layout cannot read the `[orgSlug]`
- * child segment's `params`, so proxy.ts resolves the slug (from the Host
- * header or the `/w/{slug}` path) and forwards it via PORTFOLIO_SLUG_HEADER;
- * this layout re-resolves the workspace from that slug to derive locale/dir.
- * Falls back to en/ltr when the header is missing or the slug doesn't
- * resolve to a published workspace — not-found.tsx renders through this
- * layout too and must still get a valid shell.
+ * `lang` on <html> must be correct in the initial server HTML for crawlers
+ * and assistive tech. A root layout cannot read the `[orgSlug]` child
+ * segment's `params`, so proxy.ts resolves the slug (from the Host header or
+ * the `/w/{slug}` path) and forwards it via PORTFOLIO_SLUG_HEADER; this
+ * layout re-resolves the workspace from that slug to derive the locale.
+ * Falls back to "en" when the header is missing or the slug doesn't resolve
+ * to a published workspace — not-found.tsx renders through this layout too
+ * and must still get a valid shell.
+ *
+ * `dir` is always "ltr" here — the owner's portfolio-language RTL choice is
+ * scoped to the contact form and featured-work popup only (see
+ * `RenderWorkspace.dir` / `ContactModal`'s `dir` prop), never to the whole
+ * page. General manual-block content must render identically regardless of
+ * `formLocale`/`formDir` so canvas, preview, and the published page never
+ * disagree (WYSIWYG).
  *
  * Intentionally minimal otherwise: no app ThemeProvider (portfolios are
  * styled by their own brand kit via `--pf-*` vars on the inner wrapper) and
@@ -44,14 +50,11 @@ export default async function PublicRootLayout({ children }: { children: ReactNo
   const slug = (await headers()).get(PORTFOLIO_SLUG_HEADER);
   const workspace = slug ? await findPublishedWorkspaceBySlug(slug) : null;
   const locale = workspace ? resolvePublicChromeLocale(workspace) : "en";
-  const dir = workspace
-    ? resolveEffectiveDir(workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined, locale)
-    : "ltr";
 
   return (
     <html
       lang={locale}
-      dir={dir}
+      dir="ltr"
       className={`${portfolioFontVariables} h-full antialiased`}
       suppressHydrationWarning
     >

@@ -21,6 +21,7 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
+  getEffectiveDirFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
@@ -88,6 +89,7 @@ export function FeaturedWorkBlock({
 
   const labels = getGalleryChromeLabelsFrom(puck);
   const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
+  const dir = getEffectiveDirFrom(puck);
   const list = Array.isArray(collections) ? collections : [];
 
   const tiles = list.map((c) => ({
@@ -146,6 +148,7 @@ export function FeaturedWorkBlock({
             popupConfig={popupConfig}
             popupLabels={popupLabels}
             brandVars={brandVars}
+            dir={dir}
           />
         )}
       </div>

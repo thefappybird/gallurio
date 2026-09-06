@@ -3,6 +3,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CaptionLayout } from "./CaptionLayout";
 import type { ImageModalLeafProps, LightboxImage } from "../Lightbox";
 
+// lucide-react path `d` data — the only reliable way to tell ChevronLeftIcon
+// from ChevronRightIcon apart in the rendered DOM.
+const CHEVRON_LEFT_D = "m15 18-6-6 6-6";
+const CHEVRON_RIGHT_D = "m9 18 6-6-6-6";
+
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
   process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
@@ -41,6 +46,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     seeLessLabel: "See less",
     additionalInformationLabel: "Additional information",
     dotLabelTemplate: "Photo {current} of {total}",
+    dir: "ltr",
     ...overrides,
   };
 }
@@ -137,6 +143,21 @@ describe("CaptionLayout — expanded panel overlays upward", () => {
 
     expect(counter.style.position).toBe("relative");
     expect(Number(panel.style.zIndex)).toBeGreaterThan(Number(counter.style.zIndex));
+  });
+});
+
+describe("CaptionLayout — dir (RTL)", () => {
+  it("swaps the prev/next chevrons under dir='rtl'", () => {
+    const images = [img("a"), img("b"), img("c")];
+    render(
+      <CaptionLayout
+        {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true, dir: "rtl" })}
+      />
+    );
+    const prevBtn = screen.getByRole("button", { name: "Previous image" });
+    const nextBtn = screen.getByRole("button", { name: "Next image" });
+    expect(prevBtn.querySelector("path")).toHaveAttribute("d", CHEVRON_RIGHT_D);
+    expect(nextBtn.querySelector("path")).toHaveAttribute("d", CHEVRON_LEFT_D);
   });
 });
 

@@ -99,6 +99,28 @@ vi.mock("@/lib/page-builder/seo/jsonLd", async () => {
   };
 });
 
+// Populated-branch data just needs to be truthy — real Puck-config-driven
+// block validation is exercised elsewhere (normalizePublicPageData's own tests).
+vi.mock("@/lib/page-builder/normalizePublicPageData", () => ({
+  normalizePublicPageData: vi.fn((raw: unknown) => (raw ? { root: {}, content: [] } : null)),
+  hasRenderableBlocks: vi.fn((raw: unknown) => {
+    const data = raw as { content?: unknown[] } | null | undefined;
+    return Array.isArray(data?.content) && data.content.length > 0;
+  }),
+}));
+
+// Captures the `metadata` prop <Render> receives — used only by the
+// renderWorkspace.dir tests below (RTL scoping: general blocks never mirror,
+// only the contact form + featured-work popup read `dir`). vi.hoisted keeps
+// the mock instance reachable from the (hoisted) vi.mock factory below.
+const { renderMock } = vi.hoisted(() => ({ renderMock: vi.fn() }));
+vi.mock("@measured/puck/rsc", () => ({
+  Render: (props: unknown) => {
+    renderMock(props);
+    return null;
+  },
+}));
+
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { buildHomeJsonLd } from "@/lib/page-builder/seo/jsonLd";
@@ -601,5 +623,51 @@ describe("buildRenderWorkspace — contact field regression", () => {
       })
     );
     expect(getByText("hello@studio.com")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// renderWorkspace.dir — RTL scoping (only the contact form + featured-work
+// popup read this; general blocks never mirror). See lib/page-builder/blockContext.ts.
+// ---------------------------------------------------------------------------
+
+describe("PortfolioHomePage — renderWorkspace.dir", () => {
+  const populatedHomeWorkspace = () =>
+    makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: { root: {}, content: [{ type: "Heading", props: {} }] }, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+      },
+    } as Partial<WorkspaceDoc>);
+
+  it("sets renderWorkspace.dir to 'rtl' for an Arabic (RTL) workspace locale", async () => {
+    const workspace = populatedHomeWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+    mockResolvePublicChromeLocale.mockReturnValueOnce("ar");
+
+    const element = await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    render(element);
+
+    const lastCall = renderMock.mock.calls.at(-1)?.[0] as { metadata?: { workspace?: { dir?: string } } };
+    expect(lastCall?.metadata?.workspace?.dir).toBe("rtl");
+  });
+
+  it("sets renderWorkspace.dir to 'ltr' when the workspace locale is not RTL-capable", async () => {
+    const workspace = populatedHomeWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+    mockResolvePublicChromeLocale.mockReturnValueOnce("en");
+
+    const element = await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    render(element);
+
+    const lastCall = renderMock.mock.calls.at(-1)?.[0] as { metadata?: { workspace?: { dir?: string } } };
+    expect(lastCall?.metadata?.workspace?.dir).toBe("ltr");
   });
 });

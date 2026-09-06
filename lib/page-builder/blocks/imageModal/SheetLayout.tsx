@@ -42,6 +42,7 @@ export function SheetLayout({
   nextLabel,
   counterText,
   additionalInformationLabel,
+  dir,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const facts: { label: string; value: string }[] = [];
@@ -149,11 +150,11 @@ export function SheetLayout({
               WebkitBackdropFilter: "blur(12px)",
             }}
           >
-            <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} />
+            <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} dir={dir} />
             <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
               {counterText}
             </span>
-            <NavArrowButton direction="next" variant="brand" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label={nextLabel} />
+            <NavArrowButton direction="next" variant="brand" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label={nextLabel} dir={dir} />
           </div>
         )}
       </div>

@@ -46,10 +46,10 @@ describe("PublicRootLayout", () => {
     return element.props as { lang: string; dir: string };
   }
 
-  it("renders lang=ar dir=rtl for an Arabic workspace with no formDir override", async () => {
+  it("renders lang=ar dir=ltr for an Arabic workspace with no formDir override (dir is always ltr — RTL is scoped to the contact form/featured-work popup only, never the whole page)", async () => {
     const html = await renderHtml("acme", makeWorkspace({ formLocale: "ar" }));
     expect(html.lang).toBe("ar");
-    expect(html.dir).toBe("rtl");
+    expect(html.dir).toBe("ltr");
   });
 
   it("renders lang=ar dir=ltr when formDir explicitly overrides to ltr", async () => {

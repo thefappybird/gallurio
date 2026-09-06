@@ -221,6 +221,7 @@ import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
 import { englishPuckT } from "@/lib/page-builder/editorConfig";
 import { openPresetPreview, __resetPresetPreview } from "@/lib/page-builder/presetPreviewStore";
 import { enMessages } from "@/test-utils/render";
+import arMessages from "@/messages/ar.json";
 
 /** Reads the onboarding logo's asset id off a persisted buffer's home-zone
  *  Navigation block's slot Image (the block is always seeded first). */
@@ -417,6 +418,14 @@ describe("EditorShell", () => {
     expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("min-h-svh");
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("overflow-x-auto");
+  });
+
+  it("renders the canvas root dir=ltr regardless of the CRM route locale (general blocks never mirror for RTL)", () => {
+    // Deliberately does NOT go through renderAndDismissEntry (its "Skip
+    // Guide"/"Continue" lookups assume English CRM copy) — the root shell div
+    // renders unconditionally regardless of the entry dialog's open state.
+    renderWithProviders(<EditorShell {...baseProps} />, { locale: "ar", messages: arMessages as never });
+    expect(screen.getByTestId("portfolio-editor-shell")).toHaveAttribute("dir", "ltr");
   });
 
   it("renders the zone switcher and switches the active zone", async () => {
@@ -934,6 +943,55 @@ describe("EditorShell", () => {
     const iframeAfter = container.querySelector("iframe");
     expect(iframeAfter?.getAttribute("src")).toContain("formLocale=ar");
     expect(iframeAfter?.getAttribute("src")).toContain("formDir=rtl");
+  });
+
+  async function switchToArabic() {
+    const languageTrigger = screen.getByTestId("language-control");
+    await waitFor(() => {
+      if (!screen.queryByText("العربية")) {
+        fireEvent.pointerDown(languageTrigger, { button: 0 });
+        fireEvent.click(languageTrigger);
+      }
+      expect(screen.queryByText("العربية")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("العربية"));
+  }
+
+  it("threads canvasContactDir=rtl into Puck metadata.workspace.dir and CollectionsPopupPreview after switching formLocale to Arabic — while the canvas root itself stays dir=ltr", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Before switching: canvas contact dir is ltr everywhere.
+    expect((__capturedPuckMetadata as { workspace?: { dir?: string } } | undefined)?.workspace?.dir).toBe("ltr");
+
+    await switchToArabic();
+
+    // The canvas root itself never mirrors — always ltr, formLocale notwithstanding.
+    expect(screen.getByTestId("portfolio-editor-shell")).toHaveAttribute("dir", "ltr");
+    // But the contact-form/featured-work swatches' own dir follows formLocale/formDir.
+    await waitFor(() =>
+      expect((__capturedPuckMetadata as { workspace?: { dir?: string } } | undefined)?.workspace?.dir).toBe("rtl")
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
+    expect(await screen.findByTestId("collections-popup-preview-root")).toHaveAttribute("dir", "rtl");
+  });
+
+  it("the canvas contact-form swatch follows the live formLocale, not the CRM route locale (regression: it used to read useTranslations(), bound to the CRM locale)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // CRM route locale is "en" (renderWithProviders default) throughout this
+    // test — only formLocale changes. Baseline: the English tab label.
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByRole("tab", { name: "Your details" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+
+    await switchToArabic();
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    // Real messages/ar.json publicPage.inquiryForm.tabClient — proves the
+    // swatch's copy tracks formLocale, decoupled from the (unchanged) CRM locale.
+    expect(await screen.findByRole("tab", { name: arMessages.publicPage.inquiryForm.tabClient })).toBeInTheDocument();
   });
 
   it("shows the Drafts button and draft name editor in the toolbar", async () => {

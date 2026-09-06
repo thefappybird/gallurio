@@ -33,6 +33,10 @@ export type FeaturedCollectionsClientProps = {
   popupLabels?: CollectionPopupLabels;
   /** Brand-kit CSS vars, re-applied on the popup's portaled root (see CollectionPopup). */
   brandVars?: Record<string, string>;
+  /** Effective direction for the portfolio's OWN language — the popup portals
+   *  to `document.body`, escaping the page wrapper's `dir`, so it must be
+   *  applied there directly (see CollectionPopup). Defaults to "ltr". */
+  dir?: "ltr" | "rtl";
   /** CollectionCard passes its frame/background here so the clickable tile, not
    * merely its wrapper, owns clipping and the visible corner radius. */
   tileStyle?: CSSProperties;
@@ -92,6 +96,7 @@ export function FeaturedCollectionsClient({
   popupConfig,
   popupLabels,
   brandVars,
+  dir = "ltr",
   tileStyle,
   titleStyle,
   subtitleStyle,
@@ -227,6 +232,7 @@ export function FeaturedCollectionsClient({
           onClose={() => setActive(null)}
           labels={popupLabels}
           brandVars={brandVars}
+          dir={dir}
         />
       )}
     </>

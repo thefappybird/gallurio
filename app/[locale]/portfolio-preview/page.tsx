@@ -127,12 +127,13 @@ export default async function PortfolioPreviewPage({
         labels={contactLabels.form}
         submitAppearance={resolveSubmitAppearance(dbContact)}
         addSessionAppearance={resolveAddSessionAppearance(dbContact)}
+        dir={effectiveDir}
       />
     );
   } else if (zone === "popup") {
     // Dedicated popup-preview surface: mirrors the editor's CollectionsPopupPreview.
     // No page header — the popup overlays the full viewport.
-    body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
+    body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} dir={effectiveDir} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
     let fallbackData: PuckData =
@@ -173,6 +174,7 @@ export default async function PortfolioPreviewPage({
         collectionsPopup: resolvedCollectionsPopup,
       },
       locale: chromeLocale,
+      dir: effectiveDir,
       brandVars: cssVars,
       previewNav: {
         homeHref: previewHomeHref,
@@ -259,7 +261,7 @@ export default async function PortfolioPreviewPage({
   const showHeader = zone !== "popup";
 
   return (
-    <div lang={chromeLocale} dir={effectiveDir}>
+    <div lang={chromeLocale} dir="ltr">
       <PreviewBrandShell
         slug={workspace.slug}
         draftId={requestedDraftId}
@@ -277,6 +279,7 @@ export default async function PortfolioPreviewPage({
             workspaceSlug={workspace.slug}
             dbContact={dbContact}
             labels={contactLabels}
+            dir={effectiveDir}
           />
         )}
       </PreviewBrandShell>

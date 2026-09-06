@@ -104,6 +104,7 @@ import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { useIsRtl, resolveEffectiveDir } from "@/lib/i18n/rtl";
+import { useFormLocaleTranslator } from "@/lib/i18n/useFormLocaleTranslator";
 import { useActionError } from "@/lib/i18n/actionError";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
@@ -961,9 +962,7 @@ export function EditorShell({
   const setDemoGuideChromeOpen = useDemoGuideChrome();
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
-  const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tNav = useTranslations("publicPage.nav");
-  const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
   // Declared ahead of editorConfig below (normally further down with the rest
   // of this component's state) because the Navigation field panel's detach
@@ -1013,6 +1012,12 @@ export function EditorShell({
   const [formDir, setFormDir] = useState<"ltr" | "rtl" | "">(
     (initialFormDir as "ltr" | "rtl" | "" | undefined) ?? ""
   );
+  // The canvas contact-form swatch must show copy in the live formLocale
+  // (changes without navigation), decoupled from the CRM route locale — see
+  // useFormLocaleTranslator.
+  const tCanvasContactForm = useFormLocaleTranslator(formLocale, "publicPage.inquiryForm");
+  const tCanvasLocationPicker = useFormLocaleTranslator(formLocale, "app.bookings.locationPicker");
+  const canvasContactDir = resolveEffectiveDir(formDir, formLocale);
   const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>(() => ({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
@@ -2506,8 +2511,8 @@ export function EditorShell({
         : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
   const contactLabels = buildContactLabels(
-    (key, values) => tPublicForm(key, values),
-    (key, values) => tLocationPicker(key, values)
+    (key, values) => tCanvasContactForm(key, values),
+    (key, values) => tCanvasLocationPicker(key, values)
   ).form;
   const previewZone = previewZoneFor(activeSection, activeZone);
   // Carries the active draft id so the preview route can read the ACTIVE
@@ -2897,6 +2902,12 @@ export function EditorShell({
           className,
         )}
         data-testid="portfolio-editor-shell"
+        // General canvas content (every manual block) always renders LTR-
+        // structured regardless of the owner's own CRM UI language — the
+        // portfolio's formLocale/formDir is threaded separately, only into
+        // the contact-form/featured-work swatches (see canvasContactDir),
+        // so canvas never disagrees with the preview tab or published page.
+        dir="ltr"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}
       >
@@ -2951,6 +2962,7 @@ export function EditorShell({
                 editorPreview: true,
                 publicPage: { collectionsPopup },
                 brandVars: cssVars,
+                dir: canvasContactDir,
                 // Without this, getNavChromeLabelsFrom falls back to English —
                 // the public page and the preview route both pass chrome.nav
                 // already; the canvas was the one surface missing it.
@@ -3053,6 +3065,7 @@ export function EditorShell({
                       addSessionAppearance={resolveAddSessionAppearance(contact)}
                       defaultTitle={t("contactPreview.title")}
                       defaultDescription={t("contactPreview.description")}
+                      dir={canvasContactDir}
                     />
                   </div>
                   <ContactPanelDialog
@@ -3067,7 +3080,7 @@ export function EditorShell({
               ) : collectionsPopupOpen ? (
                 <div className="flex h-full overflow-hidden">
                   <div className="flex-1 overflow-auto bg-muted/40">
-                    <CollectionsPopupPreview config={collectionsPopup} brandKit={brandKit} />
+                    <CollectionsPopupPreview config={collectionsPopup} brandKit={brandKit} dir={canvasContactDir} />
                   </div>
                   <CollectionsPopupPanelDialog
                     config={collectionsPopup}

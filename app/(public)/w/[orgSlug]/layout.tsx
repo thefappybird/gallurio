@@ -33,6 +33,12 @@ import type { PortfolioContactConfig } from "@/lib/page-builder/types";
  *
  * The brand-kit variables are scoped to this subtree only — they never reach
  * the app chrome rendered by the authenticated `[locale]/(app)` layout.
+ *
+ * The wrapper does NOT set `dir` — general manual-block content always
+ * renders LTR-structured regardless of the owner's portfolio `formLocale`.
+ * Only `ContactModal` gets the resolved `dir` explicitly (it portals to
+ * `document.body`, escaping this wrapper entirely, so it needs its own copy
+ * anyway — see the `brandVars` comment below for the same reason).
  */
 export default async function PublicPortfolioLayout({
   children,
@@ -66,7 +72,6 @@ export default async function PublicPortfolioLayout({
   return (
     <div
       lang={locale}
-      dir={effectiveDir}
       style={{ ...cssVars, backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
@@ -85,6 +90,7 @@ export default async function PublicPortfolioLayout({
         labels={contactLabels}
         brandVars={cssVars}
         timeMode={timeMode}
+        dir={effectiveDir}
       />
     </div>
   );

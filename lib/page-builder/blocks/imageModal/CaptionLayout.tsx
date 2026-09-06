@@ -34,6 +34,7 @@ export function CaptionLayout({
   seeLessLabel,
   additionalInformationLabel,
   dotLabelTemplate,
+  dir,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const hasCaptionText = Boolean(image.title || image.caption);
@@ -80,6 +81,7 @@ export function CaptionLayout({
             disabled={!canGoPrev}
             pending={false}
             label={prevLabel}
+            dir={dir}
           />
         )}
         {src ? (
@@ -100,6 +102,7 @@ export function CaptionLayout({
             disabled={!canGoNext}
             pending={isPendingMore}
             label={nextLabel}
+            dir={dir}
           />
         )}
       </div>

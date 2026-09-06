@@ -72,16 +72,25 @@ vi.mock("./_components/PreviewContactCard", () => ({
     title,
     description,
     labels,
+    dir,
   }: {
     title: string;
     description?: string;
     labels: Record<string, string>;
+    dir?: string;
   }) => (
     <div>
       <div>{title}</div>
       <div>{description}</div>
       <div data-testid="contact-label">{labels.name}</div>
+      <div data-testid="contact-card-dir">{dir}</div>
     </div>
+  ),
+}));
+
+vi.mock("./_components/PreviewPopupShell", () => ({
+  PreviewPopupShell: ({ dir }: { dir?: string }) => (
+    <div data-testid="popup-shell-dir">{dir}</div>
   ),
 }));
 
@@ -99,6 +108,7 @@ vi.mock("./_components/PreviewClient", () => ({
       chrome?: { nav?: { home?: string } };
       previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
       publicPage?: { collectionsPopup?: { imageModalLayout?: string } | null } | null;
+      dir?: string;
     };
     fallbackData: unknown;
     draftId: string | null;
@@ -114,6 +124,7 @@ vi.mock("./_components/PreviewClient", () => ({
       <div data-testid="preview-client-image-modal-layout">
         {workspace.publicPage?.collectionsPopup?.imageModalLayout ?? ""}
       </div>
+      <div data-testid="preview-client-dir">{workspace.dir ?? ""}</div>
     </div>
   ),
 }));
@@ -342,5 +353,68 @@ describe("PortfolioPreviewPage", () => {
     const fallback = screen.getByTestId("preview-client-fallback-data");
     expect(fallback).toHaveTextContent("live-asset-id");
     expect(fallback).not.toHaveTextContent("stale-asset-id");
+  });
+
+  // -------------------------------------------------------------------------
+  // RTL scoping: only the contact form + featured-work popup follow the
+  // portfolio's own formLocale/formDir. General layout (the outer wrapper)
+  // never mirrors, regardless of formDir/formLocale.
+  // -------------------------------------------------------------------------
+
+  it("keeps the outer wrapper dir=ltr even when formDir=rtl and formLocale=ar (general layout never mirrors)", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", formLocale: "ar", formDir: "rtl" }),
+    });
+
+    const { container } = render(page);
+
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toHaveAttribute("dir", "ltr");
+    expect(root).toHaveAttribute("lang", "ar");
+  });
+
+  it("sets renderWorkspace.dir to the resolved effective direction for the home zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", formLocale: "ar", formDir: "rtl" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-dir")).toHaveTextContent("rtl");
+  });
+
+  it("defaults renderWorkspace.dir to ltr when formLocale is not RTL-capable", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-dir")).toHaveTextContent("ltr");
+  });
+
+  it("forwards the resolved dir to PreviewContactCard for the contact zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "contact", formLocale: "ar", formDir: "rtl" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("contact-card-dir")).toHaveTextContent("rtl");
+  });
+
+  it("forwards the resolved dir to PreviewPopupShell for the popup zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "popup", formLocale: "ar", formDir: "rtl" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("popup-shell-dir")).toHaveTextContent("rtl");
   });
 });

@@ -5,6 +5,7 @@ import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
@@ -132,6 +133,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    dir: resolveEffectiveDir(workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined, locale),
     brandVars,
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),

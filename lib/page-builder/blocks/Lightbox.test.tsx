@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, within, act, fireEvent } from "@testing-library/react";
-import { Lightbox, type LightboxImage } from "./Lightbox";
+import { Lightbox, NavArrowButton, type LightboxImage } from "./Lightbox";
+
+// lucide-react path `d` data — the only reliable way to tell ChevronLeftIcon
+// from ChevronRightIcon apart in the rendered DOM (both are plain <svg><path>,
+// no distinguishing class/testid).
+const CHEVRON_LEFT_D = "m15 18-6-6 6-6";
+const CHEVRON_RIGHT_D = "m9 18 6-6-6-6";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
@@ -186,6 +192,54 @@ describe("Lightbox — brandVars", () => {
     render(<Lightbox images={[img("full", { title: "T" })]} layout="sidebar" onClose={() => {}} />);
     const dialog = screen.getByRole("dialog");
     expect((dialog as HTMLElement).style.getPropertyValue("--pf-color-bg")).toBe("");
+  });
+});
+
+describe("Lightbox — dir (RTL)", () => {
+  it("applies dir='rtl' on the portaled Popup when passed, and defaults to 'ltr' when omitted", () => {
+    const { rerender } = render(<Lightbox images={[img("a")]} dir="rtl" onClose={() => {}} />);
+    expect(screen.getByRole("dialog")).toHaveAttribute("dir", "rtl");
+
+    rerender(<Lightbox images={[img("a")]} onClose={() => {}} />);
+    expect(screen.getByRole("dialog")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("swaps arrow-key meaning under RTL: ArrowLeft advances, ArrowRight goes back", () => {
+    render(<Lightbox images={[img("a"), img("b")]} dir="rtl" onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    expect(screen.getByRole("button", { name: "Photo 1 of 2" })).toHaveAttribute("aria-current", "true");
+
+    fireEvent.keyDown(dialog, { key: "ArrowLeft" });
+    expect(screen.getByRole("button", { name: "Photo 2 of 2" })).toHaveAttribute("aria-current", "true");
+
+    fireEvent.keyDown(dialog, { key: "ArrowRight" });
+    expect(screen.getByRole("button", { name: "Photo 1 of 2" })).toHaveAttribute("aria-current", "true");
+  });
+});
+
+describe("NavArrowButton — chevron direction flips under RTL", () => {
+  it("ltr (default): prev renders ChevronLeft, next renders ChevronRight", () => {
+    const { rerender } = render(
+      <NavArrowButton direction="prev" onClick={() => {}} disabled={false} pending={false} label="Previous image" variant="scrim" />
+    );
+    expect(screen.getByRole("button").querySelector("path")).toHaveAttribute("d", CHEVRON_LEFT_D);
+
+    rerender(
+      <NavArrowButton direction="next" onClick={() => {}} disabled={false} pending={false} label="Next image" variant="scrim" />
+    );
+    expect(screen.getByRole("button").querySelector("path")).toHaveAttribute("d", CHEVRON_RIGHT_D);
+  });
+
+  it("rtl: prev renders ChevronRight, next renders ChevronLeft (inverse of ltr)", () => {
+    const { rerender } = render(
+      <NavArrowButton direction="prev" onClick={() => {}} disabled={false} pending={false} label="Previous image" variant="scrim" dir="rtl" />
+    );
+    expect(screen.getByRole("button").querySelector("path")).toHaveAttribute("d", CHEVRON_RIGHT_D);
+
+    rerender(
+      <NavArrowButton direction="next" onClick={() => {}} disabled={false} pending={false} label="Next image" variant="scrim" dir="rtl" />
+    );
+    expect(screen.getByRole("button").querySelector("path")).toHaveAttribute("d", CHEVRON_LEFT_D);
   });
 });
 

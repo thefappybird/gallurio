@@ -20,8 +20,11 @@ import { usePreviewDraft } from "./PreviewDraftContext";
  */
 export function PreviewPopupShell({
   fallbackConfig,
+  dir = "ltr",
 }: {
   fallbackConfig: PortfolioCollectionsPopupConfig | null;
+  /** Effective direction for the portfolio's own language. */
+  dir?: "ltr" | "rtl";
 }) {
   const { collectionsPopup } = usePreviewDraft();
   const config = collectionsPopup ?? fallbackConfig ?? {};
@@ -29,6 +32,7 @@ export function PreviewPopupShell({
   return (
     <div
       data-testid="popup-preview-surface"
+      dir={dir}
       style={{ position: "relative", height: "100dvh", overflow: "hidden" }}
       className="bg-black/45"
     >

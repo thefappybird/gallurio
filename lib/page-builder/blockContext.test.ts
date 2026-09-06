@@ -6,6 +6,7 @@ import {
   applyNavChromeDefaults,
   getNavChromeLabelsFrom,
   getPreviewNavFrom,
+  getEffectiveDirFrom,
 } from "./blockContext";
 
 // ---------------------------------------------------------------------------
@@ -272,6 +273,47 @@ describe("getPreviewNavFrom", () => {
       galleryHref: "/en/portfolio-preview?zone=gallery",
       activePath: "/en/portfolio-preview?zone=gallery",
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getEffectiveDirFrom — portfolio-own-language direction (contact form +
+// featured-work popup only; general blocks never mirror for RTL).
+// ---------------------------------------------------------------------------
+
+describe("getEffectiveDirFrom", () => {
+  it("returns 'ltr' when puck is undefined", () => {
+    expect(getEffectiveDirFrom(undefined)).toBe("ltr");
+  });
+
+  it("returns 'ltr' when puck is null", () => {
+    expect(getEffectiveDirFrom(null)).toBe("ltr");
+  });
+
+  it("returns 'ltr' when puck has no metadata", () => {
+    expect(getEffectiveDirFrom({})).toBe("ltr");
+  });
+
+  it("returns 'ltr' when puck.metadata has no workspace", () => {
+    expect(getEffectiveDirFrom({ metadata: {} })).toBe("ltr");
+  });
+
+  it("returns 'ltr' when puck.metadata.workspace has no dir", () => {
+    expect(
+      getEffectiveDirFrom({ metadata: { workspace: { _id: "ws-1", name: "Studio" } } })
+    ).toBe("ltr");
+  });
+
+  it("returns 'ltr' when the workspace's dir is explicitly 'ltr'", () => {
+    expect(
+      getEffectiveDirFrom({ metadata: { workspace: { _id: "ws-2", name: "Studio", dir: "ltr" } } })
+    ).toBe("ltr");
+  });
+
+  it("returns 'rtl' when the workspace's dir is 'rtl'", () => {
+    expect(
+      getEffectiveDirFrom({ metadata: { workspace: { _id: "ws-3", name: "Studio", dir: "rtl" } } })
+    ).toBe("rtl");
   });
 });
 

@@ -4,6 +4,7 @@ import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
@@ -157,6 +158,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    dir: resolveEffectiveDir(workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined, locale),
     brandVars,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.

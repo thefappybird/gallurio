@@ -77,6 +77,18 @@ vi.mock("@/lib/page-builder/seo/publishedImages.server", () => ({
   collectGalleryPublishedImages: vi.fn(async () => []),
 }));
 
+// Captures the `metadata` prop <Render> receives — used only by the
+// renderWorkspace.dir tests below (RTL scoping: general blocks never mirror,
+// only the contact form + featured-work popup read `dir`). vi.hoisted keeps
+// the mock instance reachable from the (hoisted) vi.mock factory below.
+const { galleryRenderMock } = vi.hoisted(() => ({ galleryRenderMock: vi.fn() }));
+vi.mock("@measured/puck/rsc", () => ({
+  Render: (props: unknown) => {
+    galleryRenderMock(props);
+    return null;
+  },
+}));
+
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 
@@ -423,5 +435,51 @@ describe("PortfolioGalleryPage — JSON-LD self-containment", () => {
 
     expect(galleryBusiness).toEqual(homeBusiness);
     expect(galleryWebsite).toEqual(homeWebsite);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// renderWorkspace.dir — RTL scoping (only the contact form + featured-work
+// popup read this; general blocks never mirror). See lib/page-builder/blockContext.ts.
+// ---------------------------------------------------------------------------
+
+describe("PortfolioGalleryPage — renderWorkspace.dir", () => {
+  const populatedGalleryWorkspace = () =>
+    makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: null, gallery: { root: {}, content: [{ type: "Gallery", props: {} }] } },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+      },
+    } as Partial<WorkspaceDoc>);
+
+  it("sets renderWorkspace.dir to 'rtl' for an Arabic (RTL) workspace locale", async () => {
+    const workspace = populatedGalleryWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+    mockResolvePublicChromeLocale.mockReturnValueOnce("ar");
+
+    const element = await PortfolioGalleryPage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    render(element);
+
+    const lastCall = galleryRenderMock.mock.calls.at(-1)?.[0] as { metadata?: { workspace?: { dir?: string } } };
+    expect(lastCall?.metadata?.workspace?.dir).toBe("rtl");
+  });
+
+  it("sets renderWorkspace.dir to 'ltr' when the workspace locale is not RTL-capable", async () => {
+    const workspace = populatedGalleryWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+    mockResolvePublicChromeLocale.mockReturnValueOnce("en");
+
+    const element = await PortfolioGalleryPage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    render(element);
+
+    const lastCall = galleryRenderMock.mock.calls.at(-1)?.[0] as { metadata?: { workspace?: { dir?: string } } };
+    expect(lastCall?.metadata?.workspace?.dir).toBe("ltr");
   });
 });

@@ -534,6 +534,29 @@ describe("CollectionPopup", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // dir: applied on the portaled shell — the popup escapes any ancestor's
+  // `dir` via the Portal (same reasoning as brandVars above).
+  // ---------------------------------------------------------------------------
+
+  it("applies dir='rtl' on the portaled shell when passed", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps({ dir: "rtl" })} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).toHaveAttribute("dir", "rtl");
+  });
+
+  it("defaults to dir='ltr' on the portaled shell when omitted", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).toHaveAttribute("dir", "ltr");
+  });
+
+  // ---------------------------------------------------------------------------
   // Focus-visible data attributes and scoped style presence
   // ---------------------------------------------------------------------------
 

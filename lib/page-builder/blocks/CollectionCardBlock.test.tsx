@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import {
   CollectionCardBlock,
   collectionCardDefaultProps,
@@ -63,5 +63,42 @@ describe("CollectionCardBlock", () => {
     expect(empty.style.color).toBe("var(--pf-color-accent)");
     expect(empty.style.fontSize).toBe("24px");
     expect(empty.style.fontWeight).toBe("700");
+  });
+
+  it("threads puck.metadata.workspace.dir='rtl' onto the opened popup's portaled shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ items: [], nextCursor: null }),
+        })
+      )
+    );
+
+    render(
+      <CollectionCardBlock
+        collection={COLLECTION}
+        puck={{
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Studio",
+              slug: "studio",
+              publicPage: { collectionsPopup: {} },
+              dir: "rtl",
+            },
+          },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Isabel & Marco/i }));
+
+    const shell = await screen.findByRole("heading", { level: 2 }).then((h) => h.closest("[data-popup-shell]"));
+    expect(shell).not.toBeNull();
+    expect(shell).toHaveAttribute("dir", "rtl");
+
+    vi.unstubAllGlobals();
   });
 });

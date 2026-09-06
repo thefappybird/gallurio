@@ -47,6 +47,7 @@ export function SidebarLayout({
   nextLabel,
   counterText,
   additionalInformationLabel,
+  dir,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const facts: { label: string; value: string }[] = [];
@@ -180,6 +181,7 @@ export function SidebarLayout({
               disabled={!canGoPrev}
               pending={false}
               label={prevLabel}
+              dir={dir}
             />
             <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
               {counterText}
@@ -191,6 +193,7 @@ export function SidebarLayout({
               disabled={!canGoNext}
               pending={isPendingMore}
               label={nextLabel}
+              dir={dir}
             />
           </div>
         )}

@@ -28,6 +28,7 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
+  getEffectiveDirFrom,
   type BlockPuck,
   type CollectionPopupLabels,
 } from "@/lib/page-builder/blockContext";
@@ -73,6 +74,7 @@ export function CollectionCardBlock({
   const editorPreview = ws?.editorPreview ?? false;
   const labels = getGalleryChromeLabelsFrom(puck);
   const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
+  const dir = getEffectiveDirFrom(puck);
 
   const hasCollection = Boolean(collection?.id);
   const presetPreview = puck?.metadata?.presetPreview === true;
@@ -132,6 +134,7 @@ export function CollectionCardBlock({
           popupConfig={ws?.publicPage?.collectionsPopup ?? {}}
           popupLabels={popupLabels}
           brandVars={ws?.brandVars}
+          dir={dir}
           tileStyle={tileStyle}
           titleStyle={buildCollectionCardCaptionStyle(_style, "title")}
           subtitleStyle={buildCollectionCardCaptionStyle(_style, "subtitle")}

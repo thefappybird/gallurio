@@ -76,6 +76,12 @@ export type ImageModalLeafProps = {
    *  (pre-formatted for currentIndex), leaves interpolate this once per dot
    *  using that dot's own index. */
   dotLabelTemplate: string;
+  /** Effective direction for the portfolio's OWN language. Only meaningful
+   *  when this lightbox is nested inside the featured-work popup (see
+   *  CollectionPopup) — the Gallery grid/masonry callers never pass it, so
+   *  they keep the "ltr" default. Flips which chevron/arrow-key means
+   *  prev/next in NavArrowButton. */
+  dir: "ltr" | "rtl";
 };
 
 /** Every string this modal introduces beyond the pre-existing closeLabel/
@@ -118,6 +124,9 @@ type LightboxNewProps = {
   /** Re-applied on the portaled root — see the comment above where it's
    *  consumed for why this can't be inferred instead. */
   brandVars?: Record<string, string>;
+  /** Effective direction for the portfolio's OWN language. See
+   *  ImageModalLeafProps.dir. Defaults to "ltr". */
+  dir?: "ltr" | "rtl";
 };
 
 /** Legacy single-image call signature (CollectionPopup and other pre-refactor
@@ -131,6 +140,7 @@ type LightboxLegacyProps = {
   closeLabel?: string;
   fullSizeAlt?: string;
   brandVars?: Record<string, string>;
+  dir?: "ltr" | "rtl";
 };
 
 export type LightboxProps = LightboxNewProps | LightboxLegacyProps;
@@ -272,6 +282,7 @@ export function NavArrowButton({
   pending,
   label,
   variant,
+  dir = "ltr",
 }: {
   direction: "prev" | "next";
   onClick: () => void;
@@ -279,8 +290,14 @@ export function NavArrowButton({
   pending: boolean;
   label: string;
   variant: "scrim" | "brand";
+  /** Effective direction for the portfolio's OWN language — flips which
+   *  chevron renders so the arrow always points the way "prev"/"next"
+   *  actually move in the current reading direction. */
+  dir?: "ltr" | "rtl";
 }) {
-  const Icon = direction === "prev" ? ChevronLeftIcon : ChevronRightIcon;
+  const isPrev = direction === "prev";
+  const pointsStart = dir === "rtl" ? !isPrev : isPrev;
+  const Icon = pointsStart ? ChevronLeftIcon : ChevronRightIcon;
   return (
     <button
       type="button"
@@ -317,6 +334,7 @@ export function Lightbox(props: LightboxProps) {
   const hasMoreProp = legacy ? false : props.hasMore ?? false;
   const onRequestMore = legacy ? undefined : props.onRequestMore;
   const { onClose, brandVars } = props;
+  const dir = props.dir ?? "ltr";
   const labels = legacy ? undefined : props.labels;
   const closeLabel = props.closeLabel ?? labels?.close ?? "Close";
   const fullSizeAlt = props.fullSizeAlt ?? "Full size photo";
@@ -385,14 +403,19 @@ export function Lightbox(props: LightboxProps) {
     [images.length]
   );
 
+  // In RTL, prev/next visually swap sides (see NavArrowButton) — the arrow
+  // keys follow the same swap so keyboard direction always matches the
+  // visible chevron position.
   function handleKeyDown(e: React.KeyboardEvent) {
     if (!hasNav) return;
-    if (e.key === "ArrowLeft") {
+    const prevKey = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
+    const nextKey = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
+    if (e.key === prevKey) {
       if (canGoPrev) {
         e.preventDefault();
         goPrev();
       }
-    } else if (e.key === "ArrowRight") {
+    } else if (e.key === nextKey) {
       if (canGoNext) {
         e.preventDefault();
         goNext();
@@ -422,6 +445,7 @@ export function Lightbox(props: LightboxProps) {
         <DialogPrimitive.Popup
           aria-label={currentImage?.title || currentImage?.alt || fullSizeAlt}
           onKeyDown={handleKeyDown}
+          dir={dir}
           style={{
             position: "fixed",
             inset: 0,
@@ -462,6 +486,7 @@ export function Lightbox(props: LightboxProps) {
               additionalInformationLabel={additionalInformationLabel}
               metadataLabels={metadataLabels}
               dotLabelTemplate={dotLabelTemplate}
+              dir={dir}
             />
           ) : null}
         </DialogPrimitive.Popup>

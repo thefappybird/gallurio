@@ -49,6 +49,15 @@ export type RenderWorkspace = {
   /** BCP-47 locale derived from workspace.country or stored form locale (en|fil|ms|id). Set by the page boundary, not the helper. */
   locale?: string;
   /**
+   * Effective text direction for the portfolio's OWN language (`formLocale`/
+   * `formDir`) — deliberately NOT the ambient page/CRM direction. Only the
+   * contact form and featured-work popup (+ its image lightbox) read this;
+   * every other block renders LTR-structured regardless, so canvas, preview,
+   * and the published page never disagree on general layout. Absent means
+   * "ltr" — see `getEffectiveDirFrom`.
+   */
+  dir?: "ltr" | "rtl";
+  /**
    * Pre-resolved chrome strings for the public page. Set by the page boundary after
    * calling getTranslations(). The `startingFrom` value is an ICU template with the
    * literal "{price}" token preserved for per-item substitution in ServicesListBlock.
@@ -299,4 +308,16 @@ export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace
  */
 export function getPreviewNavFrom(puck?: BlockPuck | null): RenderWorkspace["previewNav"] | null {
   return puck?.metadata?.workspace?.previewNav ?? null;
+}
+
+/**
+ * Client-safe: the portfolio's own effective text direction from Puck
+ * `metadata` (no ALS). Defaults to "ltr" when absent (editor canvas render
+ * paths that predate this field, isolated unit renders).
+ *
+ * Only the featured-work popup + its image lightbox read this — general
+ * blocks are never mirrored for RTL, see `RenderWorkspace.dir`.
+ */
+export function getEffectiveDirFrom(puck?: BlockPuck | null): "ltr" | "rtl" {
+  return puck?.metadata?.workspace?.dir ?? "ltr";
 }

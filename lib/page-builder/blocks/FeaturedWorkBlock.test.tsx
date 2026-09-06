@@ -288,6 +288,46 @@ describe("FeaturedWorkBlock — brand vars reach the popup (portal fix)", () => 
   });
 });
 
+describe("FeaturedWorkBlock — dir reaches the popup", () => {
+  it("threads puck.metadata.workspace.dir='rtl' onto the opened popup's portaled shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ items: [], nextCursor: null }),
+        })
+      )
+    );
+
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+        puck={{
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Studio",
+              slug: "studio",
+              publicPage: { collectionsPopup: {} },
+              dir: "rtl",
+            },
+          },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+
+    const shell = await screen.findByRole("heading", { level: 2 }).then((h) => h.closest("[data-popup-shell]"));
+    expect(shell).not.toBeNull();
+    expect(shell).toHaveAttribute("dir", "rtl");
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("FeaturedWorkBlock — banner/container props", () => {
   it("renders a background image when backgroundImages has one entry", () => {
     const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
