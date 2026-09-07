@@ -94,9 +94,12 @@ describe("nav group", () => {
 });
 
 describe("preset width structure", () => {
-  it("gives every Container preset a full outer surface and one zero-padding page-fit child", () => {
+  it("gives ordinary Container presets a full outer surface and one zero-padding page-fit child", () => {
     for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
-      if (preset.componentType === "Navigation") continue;
+      if (
+        preset.componentType === "Navigation"
+        || ["CtaMinimalPreset", "GalleryLandingMastheadPreset", "FeaturedWorkLeadPreset", "FooterDirectoryPreset", "FooterStatementPreset"].includes(key)
+      ) continue;
       const props = preset.defaultProps as {
         overallWidth?: string;
         content?: Array<{ type: string; props: Record<string, unknown> }>;
@@ -113,6 +116,28 @@ describe("preset width structure", () => {
         paddingLeft: "0px",
       });
     }
+  });
+
+  it("keeps Dividers at the full root and gives each footer content group a page-fit container", () => {
+    const directory = SECTION_PRESETS.FooterDirectoryPreset.defaultProps as {
+      overallWidth?: string;
+      content?: Array<{ type: string; props: Record<string, unknown> }>;
+    };
+    expect(directory.overallWidth).toBe("full");
+    expect(directory.content?.map((child) => child.type)).toEqual(["Divider", "Container", "Divider", "Container"]);
+    expect(directory.content?.[1]?.props.overallWidth).toBe("page-fit");
+    expect(directory.content?.[3]?.props.overallWidth).toBe("page-fit");
+
+    const statement = SECTION_PRESETS.FooterStatementPreset.defaultProps as {
+      overallWidth?: string;
+      content?: Array<{ type: string; props: Record<string, unknown> }>;
+    };
+    expect(statement.overallWidth).toBe("full");
+    expect(statement.content?.map((child) => child.type)).toEqual(["Container", "Divider", "Container"]);
+    expect(statement.content?.[0]?.props.overallWidth).toBe("page-fit");
+    expect(statement.content?.[2]?.props.overallWidth).toBe("page-fit");
+    const creditsGroup = statement.content?.[2]?.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(creditsGroup[0]?.props.overallWidth).toBe("full");
   });
 });
 

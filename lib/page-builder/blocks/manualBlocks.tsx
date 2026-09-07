@@ -738,7 +738,12 @@ export const dividerDefaultProps: DividerBlockProps = { thickness: 1 };
 export function DividerBlock({ _style, thickness, puck }: DividerBlockProps & { puck?: BlockPuck }) {
   const t = Math.min(12, Math.max(1, Number.isFinite(thickness) ? thickness : 1));
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div
+      ref={puck?.dragRef ?? undefined}
+      data-block="divider"
+      style={{ width: "100%", padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}
+      {...resolveBlockAttrs(_style)}
+    >
       <hr
         style={{
           border: 0,
@@ -1072,6 +1077,9 @@ const CONTENT_ALIGN_TO_TEXT: Record<NonNullable<BlockStyle["contentHorizontalAli
 const CONTENT_ALIGN_TO_ITEMS: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["alignItems"]> = {
   start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
 };
+const ALIGN_X_TO_CONTENT_ALIGN: Record<ContainerAlignX, NonNullable<BlockStyle["contentHorizontalAlign"]>> = {
+  left: "start", center: "center", right: "end",
+};
 /**
  * A full-width Container's content slot. A direct full-width Container child
  * uses this marker to consume the parent Container's inline padding, reaching
@@ -1123,17 +1131,9 @@ export function ContainerBlock({
   const isHugWidth = s.width === "fit-content";
   const wantsFullBleed = (overallWidth ?? (_chrome === "footer" ? "full" : "page-fit")) === "full";
   const applyFullBleed = wantsFullBleed && !isHugWidth;
-  const contentAlignmentClass = s.contentHorizontalAlign
-    ? `pf-container-align-${(id ?? "container").replace(/[^a-zA-Z0-9_-]/g, "")}`
-    : undefined;
   const contentFlowClass = s.flexDirection === "row"
     ? s.flexWrap === "wrap" ? PF_ROW_WRAP_CLASS : undefined
     : PF_COLUMN_STACK_CLASS;
-  const contentSlotClassName = [
-    contentFlowClass,
-    contentAlignmentClass,
-    applyFullBleed ? PF_FULL_WIDTH_CONTAINER_SLOT_CLASS : undefined,
-  ].filter(Boolean).join(" ") || undefined;
 
   // Resolve baked background images -> cover-layer URLs (same transform as the
   // legacy single background). Drop any that don't resolve (blank publicId / no
@@ -1173,6 +1173,26 @@ export function ContainerBlock({
       : s.alignItems
         ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
         : ax;
+  // Heading and Text blocks deliberately hug their copy. Legacy `alignX`
+  // therefore needs to place the flex item as well as set text alignment;
+  // otherwise the apparent default differs from re-applying Content alignment.
+  const effectiveContentAlignment = s.contentHorizontalAlign
+    ?? (s.align
+      ? ({ left: "start", center: "center", right: "end" } as const)[s.align]
+      : s.alignItems ?? (ax === "left" ? "stretch" : ALIGN_X_TO_CONTENT_ALIGN[ax]));
+  // Center/end alignment should position copy and CTAs, but must never shrink
+  // structural children (a nested Container/Columns/Video/etc.) to its intrinsic
+  // width. Those blocks carry the section's measurable layout and stay stretched.
+  // Include legacy alignX so untouched centered presets behave exactly like a
+  // user who re-applies the current Content alignment control.
+  const contentAlignmentClass = effectiveContentAlignment !== "stretch"
+    ? `pf-container-align-${(id ?? "container").replace(/[^a-zA-Z0-9_-]/g, "")}`
+    : undefined;
+  const contentSlotClassName = [
+    contentFlowClass,
+    contentAlignmentClass,
+    applyFullBleed ? PF_FULL_WIDTH_CONTAINER_SLOT_CLASS : undefined,
+  ].filter(Boolean).join(" ") || undefined;
 
   const effectiveGap =
     s.gap != null ? `${Math.min(96, Math.max(0, s.gap))}px` : "1rem";
@@ -1267,7 +1287,10 @@ export function ContainerBlock({
         </div>
       )}
       {contentAlignmentClass && (
-        <style>{`.${contentAlignmentClass}>*{margin-inline:0 !important;}`}</style>
+        <style>{`
+          .${contentAlignmentClass}>*{margin-inline:0 !important;}
+          .${contentAlignmentClass}>[data-block]:not([data-block="heading"]):not([data-block="text"]):not([data-block="button"]):not([data-block="video"]){align-self:stretch !important;}
+        `}</style>
       )}
       {applyFullBleed && (
         <style>{`
@@ -1306,9 +1329,7 @@ export function ContainerBlock({
           // children rather than a single wrapper sibling.
           flex: "1 1 auto",
           minHeight: 0,
-          alignItems: s.contentHorizontalAlign
-            ? CONTENT_ALIGN_TO_ITEMS[s.contentHorizontalAlign]
-            : "stretch",
+          alignItems: CONTENT_ALIGN_TO_ITEMS[effectiveContentAlignment],
           justifyContent: effectiveJustify,
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,

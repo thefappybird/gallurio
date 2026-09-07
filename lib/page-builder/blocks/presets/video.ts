@@ -30,7 +30,7 @@ export const VIDEO_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Watch our story" }),
     child("Text", { text: "A short film capturing the moments that matter most." }),
-    child("Video", { videoUrl: "" }),
+    child("Video", { videoUrl: "", size: "md" }),
   ]),
 };
 
@@ -85,13 +85,6 @@ export const VIDEO_CINEMA_PRESET: ContainerBlockProps = {
     paddingBottom: "2.5rem",
   },
   content: slot([
-    pageFitColumns({
-      columns: 1,
-      overallWidth: "full",
-      minHeight: "0px",
-      _style: { paddingLeft: "0px", paddingRight: "0px" },
-      content: slot([child("Video", { videoUrl: "" })]),
-    }),
     child("Container", {
       backgroundImages: [],
       _style: {
@@ -101,6 +94,7 @@ export const VIDEO_CINEMA_PRESET: ContainerBlockProps = {
         paddingRight: "1.5rem",
       },
       content: slot([
+        child("Video", { videoUrl: "", size: "md" }),
         child("Heading", { level: "h3", text: "Watch our story" }),
         child("Text", { text: "A short film capturing the moments that matter most." }),
       ]),

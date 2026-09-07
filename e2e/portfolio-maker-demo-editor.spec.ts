@@ -6,24 +6,18 @@ import { test, expect, type Page } from "@playwright/test";
 // left off").
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const DRAWER_ITEM_NAME = '[class*="_DrawerItem-name_"]';
-const DRAWER_CATEGORY_TITLE = '[class*="_ComponentList-title_"]';
-const DRAWER_CATEGORY = '[class*="_ComponentList_"]';
-
 async function hoverPreset(page: Page, groupName: string, presetName: RegExp) {
-  const group = page
-    .locator(DRAWER_CATEGORY)
-    .filter({
-      has: page.locator(DRAWER_CATEGORY_TITLE).filter({
-        hasText: new RegExp(`^${groupName}$`, "i"),
-      }),
-    })
-    .first();
+  // Puck's CSS-module class names are implementation details. The drawer
+  // exposes proper buttons for both category toggles and insertable presets,
+  // which are stable through Puck styling updates and reflect real user input.
+  const group = page.getByRole("button", { name: groupName, exact: true }).first();
+  await group.scrollIntoViewIfNeeded();
   await group.waitFor({ state: "visible", timeout: 15_000 });
-  if (!(await group.getAttribute("class"))?.includes("--isExpanded")) {
-    await group.locator(DRAWER_CATEGORY_TITLE).first().click();
+  if ((await group.getAttribute("aria-expanded")) !== "true") {
+    await group.click();
   }
-  const name = group.locator(DRAWER_ITEM_NAME).filter({ hasText: presetName }).first();
+  const name = page.getByRole("button", { name: presetName }).last();
+  await name.waitFor({ state: "visible", timeout: 10_000 });
   await name.scrollIntoViewIfNeeded();
   const box = await name.boundingBox();
   if (!box) throw new Error(`${groupName} preset row has no bounding box`);
@@ -131,6 +125,24 @@ test("preset hover cards paint theme-aware image, background, and cinema preview
   expect(imagePaint.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(imagePaint.border).not.toBe("rgba(0, 0, 0, 0)");
 
+  await hoverPreset(page, "Services", /^Service cards$/i);
+  const serviceGrid = panel.locator('[data-block="columns"]').first();
+  const serviceGridSize = await serviceGrid.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(serviceGridSize.width, "Service cards keeps its three-column grid at page-fit width").toBeGreaterThan(180);
+  expect(serviceGridSize.height, "Service cards keeps visible card height").toBeGreaterThan(50);
+
+  await hoverPreset(page, "Video", /^Centered film$/i);
+  const centeredFilm = panel.locator('[data-block="video"]').first();
+  const centeredFilmSize = await centeredFilm.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(centeredFilmSize.width, "Centered film keeps its video frame at page-fit width").toBeGreaterThan(160);
+  expect(centeredFilmSize.height, "Centered film keeps a visible film frame").toBeGreaterThan(80);
+
   await hoverPreset(page, "Video", /^Cinema band$/i);
   const cinema = panel.locator("[data-preset-media-placeholder='video']");
   await expect(cinema).toHaveCount(1);
@@ -140,6 +152,19 @@ test("preset hover cards paint theme-aware image, background, and cinema preview
   });
   expect(cinemaSize.width).toBeGreaterThan(160);
   expect(cinemaSize.height).toBeGreaterThan(80);
+  await expect(panel.locator('[data-block="columns"]')).toHaveCount(0);
+
+  await hoverPreset(page, "Footer", /^Directory footer$/i);
+  const directoryDividers = panel.locator('[data-block="divider"]');
+  await expect(directoryDividers).toHaveCount(2);
+  const directoryColumns = panel.locator('[data-block="columns"]');
+  await expect(directoryColumns).toHaveCount(1);
+  const directoryWidths = await Promise.all([
+    directoryDividers.first().evaluate((node) => node.getBoundingClientRect().width),
+    directoryColumns.evaluate((node) => node.getBoundingClientRect().width),
+  ]);
+  expect(directoryWidths[0], "Directory divider never shrinks below the content group").toBeGreaterThanOrEqual(directoryWidths[1]);
+  expect(directoryWidths[1], "Directory columns retain a readable page-fit measure").toBeGreaterThan(180);
 });
 
 test("clicking Publish opens the demo gate modal with the locked upsell copy, not a real publish", async ({

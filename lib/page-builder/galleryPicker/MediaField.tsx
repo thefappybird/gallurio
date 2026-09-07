@@ -83,7 +83,10 @@ export function SingleImageControl({
           {value && (
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={() => {
+                onChange("");
+                onPicked?.(null);
+              }}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
             >
               <XIcon className="size-3" aria-hidden />
@@ -96,10 +99,8 @@ export function SingleImageControl({
       <MediaPicker
         mode="single"
         value={value}
-        onChange={(v) => {
-          onChange(v as string);
-          onPicked?.(v ? byPublicId.get(v as string) ?? null : null);
-        }}
+        onChange={(v) => onChange(v as string)}
+        onItemPicked={onPicked}
         open={open}
         onOpenChange={setOpen}
       />

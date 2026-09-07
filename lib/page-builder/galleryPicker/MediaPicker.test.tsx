@@ -53,10 +53,14 @@ describe("MediaPicker", () => {
   it("single mode: picking a photo calls onChange(publicId) and closes", async () => {
     const onChange = vi.fn();
     const onOpenChange = vi.fn();
-    renderWithProviders(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={onOpenChange} />);
+    const onItemPicked = vi.fn();
+    renderWithProviders(
+      <MediaPicker mode="single" value="" onChange={onChange} onItemPicked={onItemPicked} open onOpenChange={onOpenChange} />
+    );
     fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith("pid-a");
+    expect(onItemPicked).toHaveBeenCalledWith(expect.objectContaining({ id: "a", publicId: "pid-a" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 

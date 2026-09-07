@@ -133,6 +133,15 @@ export type SectionPresetEntry = {
   metadata?: Record<string, unknown>;
 };
 
+// These are the divider-bearing presets that are not deliberate inset-divider
+// exceptions. Their dividers belong to the full-width preset root; every run of
+// editable content between them gets its own page-fit container.
+const DIVIDER_GROUP_PRESET_KEYS = new Set([
+  "CtaMinimalPreset",
+  "GalleryLandingMastheadPreset",
+  "FooterStatementPreset",
+]);
+
 // A registry row. `group` and the camelCase i18n keys are derived from the key so
 // entries cannot drift into inconsistent naming.
 function entry(
@@ -145,6 +154,8 @@ function entry(
     dependsOn?: readonly PresetDependency[];
     metadata?: Record<string, unknown>;
     componentType?: "Container" | "Navigation";
+    /** Preset composes its own full/page-fit hierarchy. */
+    skipPageFitShell?: boolean;
   }
 ): SectionPresetEntry {
   const camel = key.charAt(0).toLowerCase() + key.slice(1);
@@ -152,9 +163,11 @@ function entry(
   // owns the readable page-fit measure and all editable content. Keeping this
   // transformation at the registry boundary makes every insert, template, and
   // preview use the same structure without rewriting existing saved pages.
-  const presetProps = extra?.componentType === "Navigation"
+  const presetProps = extra?.componentType === "Navigation" || extra?.skipPageFitShell
     ? defaultProps
-    : pageFitPresetProps(defaultProps as ContainerBlockProps);
+    : DIVIDER_GROUP_PRESET_KEYS.has(key)
+      ? pageFitDividerGroupsProps(defaultProps as ContainerBlockProps)
+      : pageFitPresetProps(defaultProps as ContainerBlockProps);
   return {
     label,
     labelKey: `puckConfig.blocks.${camel}`,
@@ -170,8 +183,26 @@ function entry(
 
 function pageFitPresetProps(props: ContainerBlockProps): ContainerBlockProps {
   const originalContent = unwrapLegacyPageFitColumns(props.content);
+  const contentLayoutStyle = pageFitGroupStyle(props);
+  return {
+    ...props,
+    overallWidth: "full",
+    content: [{
+      type: "Container",
+      props: {
+        overallWidth: "page-fit",
+        alignX: props.alignX,
+        alignY: props.alignY,
+        _style: contentLayoutStyle,
+        content: originalContent,
+      },
+    }] as unknown as Slot,
+  };
+}
+
+function pageFitGroupStyle(props: ContainerBlockProps) {
   const style = props._style ?? {};
-  const contentLayoutStyle = {
+  return {
     ...(style.flexDirection !== undefined && { flexDirection: style.flexDirection }),
     ...(style.flexWrap !== undefined && { flexWrap: style.flexWrap }),
     ...(style.gap !== undefined && { gap: style.gap }),
@@ -186,19 +217,43 @@ function pageFitPresetProps(props: ContainerBlockProps): ContainerBlockProps {
     paddingLeft: "0px",
     marginBottom: "0px",
   };
-  return {
-    ...props,
-    overallWidth: "full",
-    content: [{
+}
+
+function pageFitDividerGroupsProps(props: ContainerBlockProps): ContainerBlockProps {
+  const content = unwrapLegacyPageFitColumns(props.content);
+  if (!Array.isArray(content)) return pageFitPresetProps(props);
+
+  const rootChildren: Array<{ type: string; props: Record<string, unknown> }> = [];
+  let group: Array<{ type: string; props: Record<string, unknown> }> = [];
+  const flushGroup = () => {
+    if (group.length === 0) return;
+    rootChildren.push({
       type: "Container",
       props: {
         overallWidth: "page-fit",
         alignX: props.alignX,
         alignY: props.alignY,
-        _style: contentLayoutStyle,
-        content: originalContent,
+        _style: pageFitGroupStyle(props),
+        content: group,
       },
-    }] as unknown as Slot,
+    });
+    group = [];
+  };
+
+  for (const item of content as Array<{ type: string; props: Record<string, unknown> }>) {
+    if (item.type === "Divider") {
+      flushGroup();
+      rootChildren.push(item);
+    } else {
+      group.push(item);
+    }
+  }
+  flushGroup();
+
+  return {
+    ...props,
+    overallWidth: "full",
+    content: rootChildren as unknown as Slot,
   };
 }
 
@@ -316,7 +371,7 @@ export const SECTION_PRESETS = {
     { dependsOn: ["collections"] }),
   FeaturedWorkLeadPreset: entry("FeaturedWorkLeadPreset", "featuredWork", "Lead collections",
     "Two large collections in a landscape crop under a stronger introduction.", FEATURED_WORK_LEAD_PRESET,
-    { dependsOn: ["collections"] }),
+    { dependsOn: ["collections"], skipPageFitShell: true }),
   FeaturedWorkIndexPreset: entry("FeaturedWorkIndexPreset", "featuredWork", "Compact project index",
     "Compact square collection tiles on a contrasting band.", FEATURED_WORK_INDEX_PRESET,
     { dependsOn: ["collections"] }),
@@ -354,9 +409,10 @@ export const SECTION_PRESETS = {
     "A divider, the studio name and compact Home, Gallery and Contact links.", FOOTER_SIGNATURE_PRESET),
   FooterDirectoryPreset: entry("FooterDirectoryPreset", "footer", "Directory footer",
     "Three columns for identity, navigation and contact details.", FOOTER_DIRECTORY_PRESET,
-    { dependsOn: ["contact"] }),
+    { dependsOn: ["contact"], skipPageFitShell: true }),
   FooterStatementPreset: entry("FooterStatementPreset", "footer", "Closing statement",
-    "A contrasting band with a final statement, CTA and quiet copyright line.", FOOTER_STATEMENT_PRESET),
+    "A contrasting band with a final statement, CTA and quiet copyright line.", FOOTER_STATEMENT_PRESET,
+    {}),
 } as const satisfies Record<string, SectionPresetEntry>;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

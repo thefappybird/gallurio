@@ -38,10 +38,12 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
 
 export const FEATURED_WORK_LEAD_PRESET: ContainerBlockProps = {
   backgroundImages: [],
+  overallWidth: "full",
   minHeight: "auto",
   _style: { ...pageSection, gap: 32 },
   content: slot([
     child("Container", {
+      overallWidth: "page-fit",
       _style: {
         ...accentBandSection,
         gap: 12,
@@ -51,12 +53,8 @@ export const FEATURED_WORK_LEAD_PRESET: ContainerBlockProps = {
         paddingLeft: "2rem",
       },
       content: slot([
-        child("Container", {
-          content: slot([
-            child("Heading", { level: "h2", text: "Featured work" }),
-            child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
-          ]),
-        }),
+        child("Heading", { level: "h2", text: "Featured work" }),
+        child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
       ]),
     }),
     child("Container", {

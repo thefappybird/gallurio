@@ -101,6 +101,8 @@ type Props =
       /** single: publicId string (""=none). */
       value: string;
       onChange: (next: string) => void;
+      /** The full picked record, used to persist image metadata immediately. */
+      onItemPicked?: (item: PickerItem) => void;
       max?: never;
       open: boolean;
       onOpenChange: (open: boolean) => void;
@@ -110,6 +112,7 @@ type Props =
       /** multi: ordered [{id,publicId}]. */
       value: MediaPickerSelection[];
       onChange: (next: MediaPickerSelection[]) => void;
+      onItemPicked?: never;
       /** cap on selections; omit for the default 60, `null` for unbounded. */
       max?: number | null;
       open: boolean;
@@ -120,6 +123,7 @@ type Props =
       /** collections: ordered [{id,name,coverPublicId,itemCount}]. */
       value: MediaPickerCollectionSelection[];
       onChange: (next: MediaPickerCollectionSelection[]) => void;
+      onItemPicked?: never;
       max?: number | null;
       open: boolean;
       onOpenChange: (open: boolean) => void;
@@ -144,7 +148,7 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
   return Array.isArray(value) ? value : [];
 }
 
-export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
+export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, onOpenChange }: Props) {
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
@@ -285,6 +289,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   function pickSingle(item: PickerItem) {
     if (mode !== "single") return;
     onChange(item.publicId);
+    onItemPicked?.(item);
     onOpenChange(false);
   }
 

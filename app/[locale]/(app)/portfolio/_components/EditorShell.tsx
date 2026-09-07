@@ -82,6 +82,7 @@ import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/typ
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import { getPageBodyContent, normalizePageBody } from "@/lib/page-builder/pageBody";
+import { normalizePresetLayouts } from "@/lib/page-builder/templates/normalizePresetLayouts";
 import { applyPageBodyContainerDefaults } from "@/lib/page-builder/pageBodyContainerDefaults";
 import {
   dismissPortfolioGuideAction,
@@ -790,7 +791,7 @@ function prepareForEditorWithMeta(
 ): { data: Data; repaired: boolean } {
   const seeded = ensureNavigation(data, headerFallback, workspaceName);
   const navInjected = seeded !== data;
-  const withBody = normalizePageBody(seeded as unknown as Data) as unknown as PuckData;
+  const withBody = normalizePresetLayouts(normalizePageBody(seeded as unknown as Data) as unknown as PuckData);
   const withDefaults = fillBlockDefaults(withBody as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.

@@ -58,8 +58,9 @@ export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
       content: slot([
         child("GalleryMasonry", {
           masonryLayout: "columns",
-          ...masonryColumns(["17rem", "25rem", "20rem", "28rem", "22rem", "16rem", "24rem", "19rem"], 4),
-          _style: { galleryColumns: 4, galleryGap: "tight" },
+          masonryLoop: true,
+          ...masonryColumns(["17rem", "25rem", "20rem", "28rem", "22rem", "16rem", "24rem", "19rem", "21rem", "27rem", "18rem", "23rem"], 4),
+          _style: { galleryColumns: 4, galleryGap: "tight", masonryHeightPattern: "alternating" },
         }),
       ]),
     }),
@@ -98,8 +99,9 @@ export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
         }),
         child("GalleryMasonry", {
           masonryLayout: "columns",
+          masonryLoop: true,
           ...masonryColumns(["17rem", "25rem", "20rem", "28rem", "22rem", "16rem"], 2),
-          _style: { colSpan: 3, galleryColumns: 2, galleryGap: "normal" },
+          _style: { colSpan: 3, galleryColumns: 2, galleryGap: "normal", masonryHeightPattern: "alternating" },
         }),
       ]),
     }),

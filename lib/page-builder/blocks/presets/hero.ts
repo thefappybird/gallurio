@@ -51,6 +51,11 @@ export const HERO_SPLIT_PRESET: ContainerBlockProps = {
         }),
         child("Image", { alt: "Studio portrait", _style: { height: "100%", cellVerticalAlign: "stretch" } }),
       ]),
+    }, {
+      paddingTop: "0px",
+      paddingRight: "0px",
+      paddingBottom: "0px",
+      paddingLeft: "0px",
     }),
   ]),
 };

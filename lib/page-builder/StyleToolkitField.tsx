@@ -1763,15 +1763,37 @@ function MarginControls({
   set: (p: Partial<BlockStyle>) => void;
   effectiveMargin?: EffectiveMargin;
 }) {
+  const [marginAdvanced, setMarginAdvanced] = useState(false);
+  const marginX =
+    s.marginLeft !== undefined && s.marginLeft === s.marginRight ? s.marginLeft : undefined;
+  const marginY =
+    s.marginTop !== undefined && s.marginTop === s.marginBottom ? s.marginTop : undefined;
+  const effectiveX =
+    effectiveMargin && effectiveMargin.left === effectiveMargin.right ? effectiveMargin.left : undefined;
+  const effectiveY =
+    effectiveMargin && effectiveMargin.top === effectiveMargin.bottom ? effectiveMargin.top : undefined;
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Margin</span>
-      <div className="grid grid-cols-2 gap-2">
-        <DimensionInput label="Top" value={s.marginTop} effectiveValue={effectiveMargin?.top} onChange={(v) => set({ marginTop: v })} />
-        <DimensionInput label="Right" value={s.marginRight} effectiveValue={effectiveMargin?.right} onChange={(v) => set({ marginRight: v })} />
-        <DimensionInput label="Bottom" value={s.marginBottom} effectiveValue={effectiveMargin?.bottom} onChange={(v) => set({ marginBottom: v })} />
-        <DimensionInput label="Left" value={s.marginLeft} effectiveValue={effectiveMargin?.left} onChange={(v) => set({ marginLeft: v })} />
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Margin</span>
+        <button type="button" aria-label="Margin advanced options" onClick={() => setMarginAdvanced((a) => !a)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          Advanced
+          {marginAdvanced ? <ChevronUp className="size-3" aria-hidden /> : <ChevronDown className="size-3" aria-hidden />}
+        </button>
       </div>
+      {marginAdvanced ? (
+        <div className="flex flex-col gap-2">
+          <DimensionInput label="Top" value={s.marginTop} effectiveValue={effectiveMargin?.top} onChange={(v) => set({ marginTop: v })} />
+          <DimensionInput label="Right" value={s.marginRight} effectiveValue={effectiveMargin?.right} onChange={(v) => set({ marginRight: v })} />
+          <DimensionInput label="Bottom" value={s.marginBottom} effectiveValue={effectiveMargin?.bottom} onChange={(v) => set({ marginBottom: v })} />
+          <DimensionInput label="Left" value={s.marginLeft} effectiveValue={effectiveMargin?.left} onChange={(v) => set({ marginLeft: v })} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <DimensionInput label="Horizontal (X)" value={marginX} effectiveValue={effectiveX} onChange={(v) => set({ marginLeft: v, marginRight: v })} />
+          <DimensionInput label="Vertical (Y)" value={marginY} effectiveValue={effectiveY} onChange={(v) => set({ marginTop: v, marginBottom: v })} />
+        </div>
+      )}
     </div>
   );
 }

@@ -37,13 +37,32 @@ vi.mock("./galleryPicker/MediaPicker", async () => {
       mode: string;
       open: boolean;
       onChange: (next: unknown) => void;
+      onItemPicked?: (item: unknown) => void;
     }) => {
       if (!props.open) return null;
       if (props.mode === "single") {
         // Fires with a fixed publicId that tests seed into the picker item cache.
         return React.createElement(
           "button",
-          { type: "button", onClick: () => props.onChange("mock-single-pid") },
+          {
+            type: "button",
+            onClick: () => {
+              props.onChange("mock-single-pid");
+              props.onItemPicked?.({
+                id: "item1",
+                publicId: "mock-single-pid",
+                thumbUrl: "https://x/photo.jpg",
+                caption: "Reception at dusk",
+                altText: "Bride and groom",
+                title: "Golden Hour",
+                date: "2026-06-01",
+                location: "Manila",
+                client: "Cruz Wedding",
+                tags: ["wedding"],
+                meta: [{ label: "Camera", value: "GFX100" }],
+              });
+            },
+          },
           "mock-pick-single"
         );
       }
@@ -436,8 +455,26 @@ describe("margin and leaf-width layout controls", () => {
       />,
     );
     expect(screen.getByText("Margin")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Margin advanced options" }));
     const bottom = screen.getByLabelText("Bottom unit").previousElementSibling;
     expect(bottom).toHaveAttribute("placeholder", "0");
+  });
+
+  it("uses paired horizontal/vertical margin controls until Advanced is opened", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify blockType="Container" p={{}} setProp={() => {}} />,
+    );
+    const horizontalUnits = screen.getAllByLabelText("Horizontal (X) unit");
+    expect(horizontalUnits).toHaveLength(2);
+    expect(screen.queryAllByLabelText("Top unit")).toHaveLength(0);
+    const horizontal = horizontalUnits[1].previousElementSibling as HTMLInputElement;
+    fireEvent.change(horizontal, { target: { value: "12" } });
+    expect(set).toHaveBeenLastCalledWith({ marginLeft: "12px", marginRight: "12px" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Margin advanced options" }));
+    expect(screen.getAllByLabelText("Top unit")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Horizontal (X) unit")).toHaveLength(1);
   });
 
   it.each(["Heading", "Text"])("keeps %s hug-only and removes its Layout drawer", (blockType) => {

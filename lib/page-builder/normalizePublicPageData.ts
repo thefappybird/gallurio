@@ -16,7 +16,9 @@
  */
 
 import type { Data } from "@measured/puck";
+import type { PuckData } from "./types";
 import { normalizePageBody } from "./pageBody";
+import { normalizePresetLayouts } from "./templates/normalizePresetLayouts";
 
 export type NormalizedBlock = { type: string; props: Record<string, unknown> } & Record<
   string,
@@ -99,5 +101,5 @@ export function normalizePublicPageData(
 
   const result: NormalizedPuckData = { root, content };
   if (zones) result.zones = zones;
-  return normalizePageBody(result as unknown as Data) as unknown as NormalizedPuckData;
+  return normalizePresetLayouts(normalizePageBody(result as unknown as Data) as unknown as PuckData) as unknown as NormalizedPuckData;
 }

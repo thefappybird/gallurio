@@ -217,6 +217,18 @@ describe("gallery/featured/video preset compositions", () => {
     expect(cards.every((node) => node.type === "CollectionCard")).toBe(true);
   });
 
+  it("enables loop and alternating tile rhythm for the Wall and Journal masonry presets", () => {
+    for (const preset of [GALLERY_MASONRY_WALL_PRESET, GALLERY_MASONRY_JOURNAL_PRESET]) {
+      const masonry = allNodes(preset as unknown as Record<string, unknown>).find((node) => node.type === "GalleryMasonry")!;
+      expect(masonry.props.masonryLoop).toBe(true);
+      expect((masonry.props._style as Record<string, unknown>).masonryHeightPattern).toBe("alternating");
+      const columns = (masonry.props._style as Record<string, unknown>).galleryColumns as number;
+      for (let index = 1; index <= columns; index += 1) {
+        expect((masonry.props[`column${index}`] as PresetNode[])).toHaveLength(3);
+      }
+    }
+  });
+
   it.each([
     ["FEATURED_WORK_PRESET", FEATURED_WORK_PRESET],
     ["FEATURED_WORK_LEAD_PRESET", FEATURED_WORK_LEAD_PRESET],
@@ -254,5 +266,13 @@ describe("gallery/featured/video preset compositions", () => {
       const nodes = allNodes(preset as unknown as Record<string, unknown>);
       expect(nodes.some((n) => n.type === "Button")).toBe(false);
     }
+  });
+
+  it("makes both video presets medium and removes the Cinema preset's obsolete Columns wrapper", () => {
+    const video = allNodes(VIDEO_PRESET as unknown as Record<string, unknown>).find((node) => node.type === "Video");
+    const cinema = allNodes(VIDEO_CINEMA_PRESET as unknown as Record<string, unknown>).find((node) => node.type === "Video");
+    expect(video?.props.size).toBe("md");
+    expect(cinema?.props.size).toBe("md");
+    expect(allNodes(VIDEO_CINEMA_PRESET as unknown as Record<string, unknown>).some((node) => node.type === "Columns")).toBe(false);
   });
 });

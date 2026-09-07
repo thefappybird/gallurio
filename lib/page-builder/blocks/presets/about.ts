@@ -39,7 +39,7 @@ export const ABOUT_PORTRAIT_PRESET: ContainerBlockProps = {
       minHeight: "0px",
       _style: { gap: 40 },
       content: slot([
-        child("Image", { alt: "Portrait of the photographer", _style: { cellVerticalAlign: "start" } }),
+        child("Image", { alt: "Portrait of the photographer", _style: { cellVerticalAlign: "center" } }),
         child("Container", {
           _style: {
             ...accentBandSection,
@@ -75,7 +75,13 @@ export const ABOUT_PROFILE_PRESET: ContainerBlockProps = {
     pageFitColumns({
       columns: 3,
       minHeight: "0px",
-      _style: { gap: 40 },
+      _style: {
+        gap: 40,
+        paddingTop: "0px",
+        paddingRight: "0px",
+        paddingBottom: "0px",
+        paddingLeft: "0px",
+      },
       content: slot([
         child("Container", {
           _style: { colSpan: 2, gap: 16 },
@@ -98,6 +104,11 @@ export const ABOUT_PROFILE_PRESET: ContainerBlockProps = {
           ]),
         }),
       ]),
+    }, {
+      paddingTop: "0px",
+      paddingRight: "0px",
+      paddingBottom: "0px",
+      paddingLeft: "0px",
     }),
   ]),
 };

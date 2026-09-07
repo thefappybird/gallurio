@@ -94,7 +94,6 @@ export function VideoBlock({ _style, videoUrl, aspectRatio = "16 / 9", size = "l
         fontFamily: "var(--pf-font-body)",
         width: "100%",
         maxWidth: VIDEO_MAX_WIDTH[size] ?? VIDEO_MAX_WIDTH.lg,
-        marginInline: "auto",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}

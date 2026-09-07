@@ -1215,6 +1215,13 @@ describe("SpacerBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("DividerBlock", () => {
+  it("always fills its parent so a full-root divider survives container alignment", () => {
+    const { container } = render(<DividerBlock thickness={1} />);
+    const divider = container.firstElementChild as HTMLElement;
+    expect(divider.dataset.block).toBe("divider");
+    expect(divider.style.width).toBe("100%");
+  });
+
   it("uses the current section text color for its hairline", () => {
     const { container } = render(<DividerBlock thickness={1} />);
     expect(container.querySelector("hr")).toHaveStyle({
@@ -1449,6 +1456,12 @@ describe("ContainerBlock flex defaults", () => {
       style={props?.style}
     />
   );
+  const StructuralSlot: SlotComponent = (props) => (
+    <div data-testid="structural-slot" className={props?.className} style={props?.style}>
+      <div data-block="columns" data-testid="structural-columns" />
+      <div data-block="video" data-testid="structural-video" />
+    </div>
+  );
 
   it("renders the outer section with flexGrow: 1", () => {
     const { container } = render(<ContainerBlock content={MockSlot} />);
@@ -1581,10 +1594,26 @@ describe("ContainerBlock flex defaults", () => {
     expect(inner.style.justifyContent).toBe("space-between");
   });
 
-  it("inner content wrapper defaults to alignItems: stretch", () => {
+  it("keeps legacy left alignment stretched before Content alignment is explicitly saved", () => {
     render(<ContainerBlock content={MockSlot} alignX="left" />);
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.alignItems).toBe("stretch");
+  });
+
+  it("centers legacy alignX content just as the active Content alignment control does", () => {
+    render(<ContainerBlock content={MockSlot} alignX="center" />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.alignItems).toBe("center");
+    const structuralChildRule = Array.from(document.querySelectorAll("style"))
+      .map((style) => style.textContent)
+      .join("\n");
+    expect(structuralChildRule).toContain('[data-block]:not([data-block="heading"]):not([data-block="text"]):not([data-block="button"])');
+  });
+
+  it("keeps Columns full-width but lets a Video follow centered container alignment", () => {
+    render(<ContainerBlock content={StructuralSlot} alignX="center" />);
+    expect(getComputedStyle(screen.getByTestId("structural-columns")).alignSelf).toBe("stretch");
+    expect(getComputedStyle(screen.getByTestId("structural-video")).alignSelf).toBe("");
   });
 
   it("centers child blocks on the cross axis in a horizontal container", () => {
@@ -1603,7 +1632,7 @@ describe("ContainerBlock flex defaults", () => {
     );
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.textAlign).toBe("right");
-    expect(inner.style.alignItems).toBe("stretch");
+    expect(inner.style.alignItems).toBe("flex-end");
   });
 
   it("maps _style.alignItems center to textAlign center", () => {

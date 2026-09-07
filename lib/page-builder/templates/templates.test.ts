@@ -10,6 +10,7 @@ import { brandKitSchema, portfolioContactConfigSchema } from "@/lib/validators/p
 import { puckConfig } from "@/lib/page-builder/config";
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import { columns, navigationBlock } from "./_blocks";
+import { collectBlocks } from "@/lib/page-builder/blockTree";
 
 const REGISTERED_BLOCKS = new Set(Object.keys(puckConfig.components));
 
@@ -194,6 +195,43 @@ describe("portfolio template registry", () => {
       const data = template.seedData(ctx);
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
     }
+  });
+
+  it("normalizes stale Directory footer copies to a full shell with page-fit direct children", () => {
+    for (const template of PORTFOLIO_TEMPLATES) {
+      const data = template.seedData(mockCtx);
+      const footer = [
+        ...(data.home ? collectBlocks(data.home) : []),
+        ...(data.gallery ? collectBlocks(data.gallery) : []),
+      ].find((block) => block.type === "FooterDirectoryPreset");
+      if (!footer) continue;
+
+      const content = footer.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+      expect(footer.props.overallWidth, `${template.id} footer outer width`).toBe("full");
+      expect(content.map((block) => block.type)).toEqual(["Divider", "Container", "Divider", "Container"]);
+      expect(content[1]?.props.overallWidth).toBe("page-fit");
+      const columns = content[1]?.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+      expect(columns[0]?.type).toBe("Columns");
+      expect(columns[0]?.props.overallWidth, template.id).toBe("full");
+      expect(content[3]?.props.overallWidth).toBe("page-fit");
+    }
+  });
+
+  it("normalizes Luxury's stale Lead collections copy to the current full/page-fit shell", () => {
+    const luxury = getTemplate("luxury")!;
+    const data = luxury.seedData(mockCtx);
+    const lead = [
+      ...(data.home ? collectBlocks(data.home) : []),
+      ...(data.gallery ? collectBlocks(data.gallery) : []),
+    ].find((block) => block.type === "FeaturedWorkLeadPreset");
+    expect(lead).toBeDefined();
+    const content = lead!.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(lead!.props.overallWidth).toBe("full");
+    expect(content).toHaveLength(2);
+    expect(content.every((block) => block.type === "Container" && block.props.overallWidth === "page-fit")).toBe(true);
+    const cards = content[1]?.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(cards[0]?.type).toBe("Columns");
+    expect(cards[0]?.props.overallWidth).toBe("full");
   });
 });
 

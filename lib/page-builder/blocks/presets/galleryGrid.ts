@@ -67,7 +67,7 @@ export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
     pageFitColumns({
       columns: 4,
       minHeight: "0px",
-      _style: { gap: 40 },
+      _style: { gap: 16 },
       content: slot([
         child("GalleryGrid", {
           content: gridImages(6),
@@ -86,10 +86,10 @@ export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
           _style: {
             ...accentBandSection,
             gap: 14,
-            paddingTop: "2rem",
-            paddingRight: "2rem",
-            paddingBottom: "2rem",
-            paddingLeft: "2rem",
+            paddingTop: "1.5rem",
+            paddingRight: "1.5rem",
+            paddingBottom: "1.5rem",
+            paddingLeft: "1.5rem",
           },
           content: slot([
             child("Heading", { level: "h2", text: "Gallery highlights" }),

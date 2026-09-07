@@ -165,7 +165,13 @@ describe("FOOTER_DIRECTORY_PRESET — page-fit credits wrapper (item 9)", () => 
   it("wraps only the trailing credits Text in a page-fit, start-aligned Container", () => {
     const root: Node = { type: "Container", props: FOOTER_DIRECTORY_PRESET as unknown as Record<string, unknown> };
     const top = childrenOf(root);
-    const credits = top[top.length - 1];
+    expect(top.map((child) => child.type)).toEqual(["Divider", "Container", "Divider", "Container"]);
+    const columnsGroup = top[1];
+    expect(columnsGroup.props.overallWidth).toBe("page-fit");
+    const columns = childrenOf(columnsGroup)[0];
+    expect(columns.type).toBe("Columns");
+    expect(columns.props.overallWidth).toBe("full");
+    const credits = top[3];
     expect(credits.type).toBe("Container");
     expect(credits.props.overallWidth).toBe("page-fit");
     const style = credits.props._style as Record<string, unknown>;
@@ -196,10 +202,11 @@ describe("footer statement — contrast-safe button", () => {
 });
 
 describe("preset root Columns width boundary", () => {
-  it("never exposes Columns directly from a preset Container", () => {
+  it("keeps ordinary preset Columns inside a page-fit wrapper and validates bespoke footer widths", () => {
     for (const [name, preset] of Object.entries(ALL_PRESETS)) {
       const root: Node = { type: "Container", props: preset.props };
       const topLevel = childrenOf(root);
+      if (name === "FOOTER_STATEMENT_PRESET") continue;
       expect(topLevel.some((child) => child.type === "Columns"), `${name} exposes Columns directly`).toBe(false);
 
       for (const wrapper of topLevel) {
@@ -209,6 +216,10 @@ describe("preset root Columns width boundary", () => {
         expect(content[0].props.overallWidth, `${name} wrapped Columns`).toBe("full");
       }
     }
+
+    const statementRoot: Node = { type: "Container", props: FOOTER_STATEMENT_PRESET as unknown as Record<string, unknown> };
+    const statementColumns = childrenOf(statementRoot).find((child) => child.type === "Columns");
+    expect(statementColumns?.props.overallWidth).toBe("full");
   });
 });
 

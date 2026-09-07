@@ -26,9 +26,13 @@ export const slot = (items: ReturnType<typeof child>[]): Slot => items as unknow
  * The grid itself fills that wrapper, so its maximum width is governed by the
  * immediate parent rather than by a separate Columns-specific clamp.
  */
-export const pageFitColumns = (props: Record<string, unknown>) =>
+export const pageFitColumns = (
+  props: Record<string, unknown>,
+  containerStyle: Record<string, unknown> = {},
+) =>
   child("Container", {
     overallWidth: "page-fit",
+    _style: containerStyle,
     content: slot([child("Columns", { ...props, overallWidth: "full" })]),
   });
 
