@@ -408,7 +408,7 @@ export function ImageMetaWizard({
       <Dialog open={open} onOpenChange={(next) => (next ? undefined : handleFinish())}>
         <DialogContent
           showCloseButton={false}
-          className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-xl"
+          className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-auto sm:max-h-[80vh] sm:max-w-xl"
         >
           <DialogHeader>
             <DialogTitle>{labels.heading}</DialogTitle>
@@ -697,6 +697,9 @@ export function ImageMetaWizard({
           </div>
 
           <DialogFooter className="items-center sm:justify-between">
+            <Button type="button" variant="ghost" onClick={handleFinish} disabled={saving}>
+              {labels.close}
+            </Button>
             <div className="flex gap-2">
               {(items.length > 1 || step === 2) && (
                 <Button type="button" variant="outline" onClick={() => step === 2 ? setStep(1) : void goTo(index - 1)} disabled={(step === 1 && index === 0) || saving}>
@@ -717,9 +720,6 @@ export function ImageMetaWizard({
                 </Button>
               )}
             </div>
-            <Button type="button" variant="ghost" onClick={handleFinish} disabled={saving}>
-              {labels.close}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

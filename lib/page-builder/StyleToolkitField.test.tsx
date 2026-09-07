@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, ContentTabBody, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
@@ -17,6 +17,7 @@ function openDrawer(title: string) {
 }
 import { SingleCollectionControl } from "./galleryPicker/MediaField";
 import { DemoPickerContext } from "./demoPickerContext";
+import { __clearPickerDataCache } from "./galleryPicker/usePickerData";
 
 vi.mock("next-intl", () => ({
   useTranslations: () =>
@@ -37,7 +38,16 @@ vi.mock("./galleryPicker/MediaPicker", async () => {
       open: boolean;
       onChange: (next: unknown) => void;
     }) => {
-      if (!props.open || props.mode !== "collections") return null;
+      if (!props.open) return null;
+      if (props.mode === "single") {
+        // Fires with a fixed publicId that tests seed into the picker item cache.
+        return React.createElement(
+          "button",
+          { type: "button", onClick: () => props.onChange("mock-single-pid") },
+          "mock-pick-single"
+        );
+      }
+      if (props.mode !== "collections") return null;
       return React.createElement(
         "div",
         null,
@@ -1203,6 +1213,89 @@ describe("StyleToolkitField — Image block [title] / Edit row (Item 10c)", () =
     expect(screen.queryByText("chooseImagePrompt")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+  });
+});
+
+describe("StyleToolkitField — synchronous meta bake on background-image pick (Fix 3)", () => {
+  const pickedItem = {
+    id: "item1",
+    publicId: "mock-single-pid",
+    thumbUrl: "https://x/photo.jpg",
+    caption: "Reception at dusk",
+    altText: "Bride and groom",
+    title: "Golden Hour",
+    date: "2026-06-01",
+    location: "Manila",
+    client: "Cruz Wedding",
+    tags: ["wedding"],
+    meta: [{ label: "Camera", value: "GFX100" }],
+  };
+
+  beforeEach(() => {
+    __clearPickerDataCache();
+  });
+
+  it("bakes props.meta synchronously from the already-loaded picker item, with no /by-asset fetch", async () => {
+    mockFetch.mockImplementation((url: string) =>
+      url === "/api/portfolio/gallery"
+        ? Promise.resolve({ ok: true, json: async () => ({ collections: [], items: [pickedItem] }) } as Response)
+        : Promise.reject(new Error(`unexpected fetch: ${url}`))
+    );
+    const setProp = vi.fn();
+    render(
+      <ContentTabBody
+        s={{}}
+        set={vi.fn()}
+        type="Image"
+        p={{ alt: "" }}
+        setProp={setProp}
+        showBanner={true}
+        isContainer={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /choose photo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "mock-pick-single" }));
+
+    expect(setProp).toHaveBeenCalledWith(
+      "meta",
+      expect.objectContaining({
+        title: "Golden Hour",
+        caption: "Reception at dusk",
+        date: "2026-06-01",
+        location: "Manila",
+        client: "Cruz Wedding",
+        tags: ["wedding"],
+        sourceAssetId: "mock-single-pid",
+      })
+    );
+    // No async by-asset fetch was needed for the bake to land.
+    expect(mockFetch.mock.calls.some(([url]) => String(url).includes("/by-asset/"))).toBe(false);
+  });
+
+  it("does not wire onImagePicked for non-Image block types (e.g. Container banners stay decorative)", async () => {
+    mockFetch.mockImplementation((url: string) =>
+      url === "/api/portfolio/gallery"
+        ? Promise.resolve({ ok: true, json: async () => ({ collections: [], items: [pickedItem] }) } as Response)
+        : Promise.resolve({ ok: true, json: async () => ({}) } as Response)
+    );
+    const setProp = vi.fn();
+    render(
+      <ContentTabBody
+        s={{}}
+        set={vi.fn()}
+        type="Container"
+        p={undefined}
+        setProp={setProp}
+        showBanner={true}
+        isContainer={true}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /choose photo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "mock-pick-single" }));
+
+    expect(setProp).not.toHaveBeenCalledWith("meta", expect.anything());
   });
 });
 

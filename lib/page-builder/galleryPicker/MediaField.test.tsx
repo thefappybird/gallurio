@@ -37,6 +37,17 @@ describe("SingleImageControl", () => {
     fireEvent.click(screen.getByRole("button", { name: /clear/i }));
     expect(onChange).toHaveBeenCalledWith("");
   });
+
+  it("calls onPicked with the already-loaded PickerItem synchronously on pick", async () => {
+    const onChange = vi.fn();
+    const onPicked = vi.fn();
+    renderWithProviders(<SingleImageControl value="" onChange={onChange} onPicked={onPicked} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose photo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^all photos$/i }));
+    fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
+    expect(onChange).toHaveBeenCalledWith("pid-a");
+    expect(onPicked).toHaveBeenCalledWith(items[0]);
+  });
 });
 
 describe("MultiImageControl", () => {

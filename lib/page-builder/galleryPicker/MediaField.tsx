@@ -44,7 +44,15 @@ export function useThumbLookup() {
   }, [state]);
 }
 
-export function SingleImageControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function SingleImageControl({
+  value,
+  onChange,
+  onPicked,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onPicked?: (item: PickerItem | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const { byPublicId } = useThumbLookup();
   const thumb = value ? byPublicId.get(value)?.thumbUrl ?? null : null;
@@ -88,7 +96,10 @@ export function SingleImageControl({ value, onChange }: { value: string; onChang
       <MediaPicker
         mode="single"
         value={value}
-        onChange={(v) => onChange(v as string)}
+        onChange={(v) => {
+          onChange(v as string);
+          onPicked?.(v ? byPublicId.get(v as string) ?? null : null);
+        }}
         open={open}
         onOpenChange={setOpen}
       />

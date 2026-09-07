@@ -70,6 +70,7 @@ import { SingleImageControl, MultiImageControl, MultiCollectionControl, SingleCo
 import { ImageBlockMetaSection } from "./ImageBlockMetaSection";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import type { CollectionRef } from "./galleryPicker/MediaField";
+import type { PickerItem } from "./galleryPicker/types";
 import { useDemoPicker } from "./demoPickerContext";
 import { DemoSingleImageControl, DemoMultiImageControl } from "@/app/[locale]/(app)/portfolio/_components/DemoImagePicker";
 import {
@@ -501,6 +502,7 @@ export function BannerSection({
   container,
   hideBgImage = false,
   effectiveColorToken,
+  onImagePicked,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
@@ -509,6 +511,8 @@ export function BannerSection({
   hideBgImage?: boolean;
   /** Render fallback shown without materializing a token into the block. */
   effectiveColorToken?: "background" | "foreground";
+  /** Fires with the full picked PickerItem (or null on clear) so callers can bake metadata synchronously. */
+  onImagePicked?: (item: PickerItem | null) => void;
 }) {
   const demo = useDemoPicker();
   return (
@@ -538,6 +542,7 @@ export function BannerSection({
             <SingleImageControl
               value={s.bgImagePublicId ?? ""}
               onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
+              onPicked={onImagePicked}
             />
           )}
         </div>
@@ -1018,7 +1023,9 @@ export function NavigationDesignPanel({
 
 // Shape returned by GET /api/portfolio/gallery/items/by-asset/:assetId — see
 // ImageBlockMetaSection.tsx's identical (private) GalleryItemMeta type, which
-// this mirrors just enough of to bake fields onto the block.
+// this mirrors just enough of to bake fields onto the block. Loosened
+// (optional/nullable) relative to PickerItem so both the by-asset fetch
+// response and a full PickerItem satisfy it structurally.
 type BakeableGalleryItem = {
   title?: string | null;
   caption?: string | null;
@@ -1029,6 +1036,21 @@ type BakeableGalleryItem = {
   tags?: string[] | null;
   meta?: { label: string; value: string }[] | null;
 };
+
+/** Maps a GalleryItem-shaped source (PickerItem or by-asset fetch result) onto the Image block's baked `meta` prop. */
+function toBakedMeta(item: BakeableGalleryItem, sourceAssetId: string | undefined): ImageBlockBakedMeta {
+  return {
+    title: item.title || undefined,
+    caption: item.caption || undefined,
+    altText: item.caption || item.altText || undefined,
+    date: item.date || undefined,
+    location: item.location || undefined,
+    client: item.client || undefined,
+    tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
+    meta: item.meta && item.meta.length > 0 ? item.meta : undefined,
+    sourceAssetId,
+  };
+}
 
 /**
  * Item 10c — the Image block's Content tab is styles/layout only now: no
@@ -1060,18 +1082,7 @@ function ImageContentPanel({
       .then((res) => (res.ok ? (res.json() as Promise<BakeableGalleryItem>) : null))
       .then((item) => {
         if (cancelled || !item) return;
-        const baked: ImageBlockBakedMeta = {
-          title: item.title || undefined,
-          caption: item.caption || undefined,
-          altText: item.caption || item.altText || undefined,
-          date: item.date || undefined,
-          location: item.location || undefined,
-          client: item.client || undefined,
-          tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
-          meta: item.meta && item.meta.length > 0 ? item.meta : undefined,
-          sourceAssetId: assetId,
-        };
-        setProp("meta", baked);
+        setProp("meta", toBakedMeta(item, assetId));
       })
       .catch(() => {
         // A failed bake just leaves the block without metadata for now — the
@@ -1099,17 +1110,7 @@ function ImageContentPanel({
         open={editOpen}
         onOpenChange={setEditOpen}
         onSaved={(item) => {
-          setProp("meta", {
-            title: item.title || undefined,
-            caption: item.caption || undefined,
-            altText: item.caption || item.altText || undefined,
-            date: item.date || undefined,
-            location: item.location || undefined,
-            client: item.client || undefined,
-            tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
-            meta: item.meta && item.meta.length > 0 ? item.meta : undefined,
-            sourceAssetId: assetId,
-          } satisfies ImageBlockBakedMeta);
+          setProp("meta", toBakedMeta(item, assetId));
         }}
       />
     </div>
@@ -1379,7 +1380,7 @@ export function ContentInputs({
   return null;
 }
 
-function ContentTabBody({
+export function ContentTabBody({
   s,
   set,
   type,
@@ -1446,6 +1447,13 @@ function ContentTabBody({
           container={container}
           hideBgImage={hideBgImage}
           effectiveColorToken={effectiveBannerColor}
+          onImagePicked={
+            type === "Image"
+              // item.publicId (not s.bgImagePublicId) — `s` is still the pre-pick
+              // render's style here since `set()` above hasn't re-rendered yet.
+              ? (item) => setProp("meta", item ? toBakedMeta(item, item.publicId) : undefined)
+              : undefined
+          }
         />
       )}
       {showContentInputs && p && (
