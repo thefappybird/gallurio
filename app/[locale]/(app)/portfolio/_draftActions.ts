@@ -478,6 +478,7 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
   const { demoSessionId, draft, images } = parsed.data;
 
   const failedAssetIds: string[] = [];
+  let order = await GalleryItem.countDocuments({ workspaceId, collectionId: null });
   for (const img of images) {
     try {
       const owned = await verifyImageOwnership(
@@ -494,7 +495,6 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
         .select({ _id: 1 })
         .lean();
       if (!existing) {
-        const order = await GalleryItem.countDocuments({ workspaceId, collectionId: null });
         await GalleryItem.create({
           workspaceId,
           assetId: img.publicId,
@@ -507,6 +507,7 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
           height: img.height ?? null,
           order,
         });
+        order += 1;
       }
     } catch (err) {
       console.error("[portfolio] demo import: failed to claim asset", img.publicId, err);

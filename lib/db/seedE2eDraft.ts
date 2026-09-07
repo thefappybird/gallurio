@@ -19,8 +19,11 @@
  *     The spec asserts the grid does NOT start at 3 before clicking "3", so a
  *     3-column fixture makes the assertion pass without testing anything.
  *  2. `Container` blocks as DIRECT children of that   batch2-span-verify
- *     grid, so `.pf-cols > [data-block="container"]` matches and the Column
- *     span control renders (it only appears for real grid children).
+ *     grid. The grid's CSS class is per-instance now (`pf-cols-<instanceId>`,
+ *     manualBlocks.tsx), so the intended selector is
+ *     `[class*="pf-cols-"] > [data-block="container"]`. Structurally this
+ *     fixture requirement still holds, but batch2-span-verify is currently
+ *     `test.fixme`'d pending a rewrite to that selector — not exercised live.
  *  3. A heading at h1/h2/h3 in the canvas.            batch2-block-panel
  *  4. A Hero preset, whose outline label is           batch2-block-panel
  *     "Immersive cover" — the preset library moved labels from the flat group

@@ -15,7 +15,7 @@ type Params = { params: Promise<{ orgSlug: string; id: string }> };
  * 404 before any item read). workspaceId is NEVER client-supplied. The collection's
  * isPublic gates visibility (items have no isPublic field). Response:
  * { items: { id, publicId, alt, width, height, title, caption, date,
- * location, client, meta, tags }[]; nextCursor; total }.
+ * location, client, meta, tags }[]; nextCursor; total; description }.
  */
 export async function GET(req: Request, { params }: Params) {
   const { orgSlug, id } = await params;
