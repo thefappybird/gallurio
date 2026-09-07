@@ -9,11 +9,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 - Photo lightbox layouts now offer a "see more" panel showing date, location, client, custom details, and tags — previously only visible on the Sidebar and Sheet layouts, now also on Caption and Cinema.
 - Photo galleries with 8 or fewer photos now show clickable position dots instead of a numeric counter, on the Caption, Cinema, and Featured Work (immersive) lightbox layouts.
 - Photo tag entry is now consistent everywhere it appears — the photo details editor, the post-upload wizard, SEO keywords, and CRM client tags all use the same pill-style input, committing a tag on space, comma, Enter, or a pasted list.
+- The Featured Work popup's Contact Sheet, Justified, and Split Index layouts now offer a column-count control (1-6), and the editor's popup preview matches it exactly instead of guessing a different count than the published popup.
+- Owners can now manually reorder the navigation bar's logo, home, gallery, and contact items — useful for RTL-friendly layouts, since the nav itself does not auto-mirror.
+- New page sections can now inherit an owner-set default radius, padding, margin, gap, and width when dropped into a page — existing sections are never changed retroactively.
 
 ### Changed
 - The Sidebar and Sheet lightbox layouts now keep their navigation controls reachable at the bottom of the panel while scrolling through a photo's details, instead of scrolling out of view.
 - The portfolio starter templates are now Minimal, Editorial, Luxury, Romantic, and Modern, replacing the earlier four-template lineup and filling the template picker evenly; Bold remains available as a brand theme but is no longer offered as a starter template.
 - The "Framed selection" gallery grid preset is now a split layout — a bordered photo grid alongside an introduction — instead of a single centered card.
+- RTL for an Arabic-language portfolio is now scoped to only the contact form and the featured-work photo popup/viewer, which always match the portfolio's own language; the rest of the page (and the editor canvas) always renders left-to-right regardless of the owner's own dashboard language, so what you see while editing always matches what visitors see.
 
 ### Fixed
 - The photo details editor's tags field no longer silently ignores the Enter key — it was a plain text box despite its own placeholder telling you to press Enter.
