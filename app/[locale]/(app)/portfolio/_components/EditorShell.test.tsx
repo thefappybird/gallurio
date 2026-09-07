@@ -1464,6 +1464,31 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
   });
 
+  it("switching template via the toolbar button on an existing draft keeps the draft identity and marks it dirty (does not create a new unsaved draft)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Toolbar "Switch template" button — distinct from "Add new draft".
+    fireEvent.click(screen.getByRole("button", { name: "Switch template" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use this template" }));
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    // Draft identity must be preserved — still "Test Draft", not reset to DEFAULT_DRAFT_NAME.
+    expect(screen.getByTitle("Test Draft")).toBeInTheDocument();
+
+    // The swap changed canvas content vs. the saved snapshot — must be dirty (Save enabled),
+    // not silently re-baselined to clean.
+    const saveBtn = screen.getByRole("button", { name: "Save changes" });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
+
+    // Saving must update the SAME existing draft (id "d1"), not create a new one.
+    fireEvent.click(saveBtn);
+    await waitFor(() => expect(updateDraftAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "d1", name: "Test Draft" })
+    ));
+    expect(createDraftAction).not.toHaveBeenCalled();
+  });
+
   it("unsaved-changes modal shows the draft name input and blocks Save when name is a duplicate", async () => {
     const props = {
       ...baseProps,

@@ -1064,6 +1064,10 @@ export function EditorShell({
   const pendingOpenCollectionsPopup = useRef<(() => void) | null>(null);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  // Distinguishes why the (single, shared) template picker dialog was opened:
+  // true = "add new draft" / "start from scratch" (fresh unsaved draft — default),
+  // false = the toolbar "switch template" button (applies in place to the current draft).
+  const [templatesAsNewDraft, setTemplatesAsNewDraft] = useState(true);
   const [templateId, setTemplateId] = useState(currentTemplateId);
   // JSON snapshot of the zone data at the time the last template was applied.
   // Compared against renderDraftData to detect canvas divergence for the "Current" badge.
@@ -2312,8 +2316,15 @@ export function EditorShell({
     collectionsPopupHasSaved.current = true;
   }
 
-  // ---- Apply template as a new unsaved draft ----
-  async function applyTemplate(nextTemplateId: string) {
+  // ---- Apply template ----
+  // asNewDraft=true (default): the "create new draft from a template" flow — resets
+  // draft identity to a fresh unsaved draft (applyWelcomeTemplate and other callers
+  // that mean "start a new draft").
+  // asNewDraft=false: the "switch the CURRENT draft's template" flow (toolbar button) —
+  // applies the template's layout/theme in place, keeping activeDraftId/draftName, and
+  // leaves savedSnapshot untouched so isDirty naturally becomes true (Save is required).
+  async function applyTemplate(nextTemplateId: string, opts?: { asNewDraft?: boolean }) {
+    const asNewDraft = opts?.asNewDraft ?? true;
     if (guideMode) return false;
     if (demoMode) return false; // demo uses applyDemoTemplate (client-side seedData, no seedTemplateAction)
     setSwitching(true);
@@ -2352,24 +2363,29 @@ export function EditorShell({
     // Snapshot the seed data so the template picker can show the "Current" badge
     // only while the canvas matches this exact seed (B2).
     setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
-    setActiveDraftId(null);
-    setIsNewUnsavedDraft(true);
-    setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
-    // Re-baseline savedSnapshot to the just-applied state so isDirty is false
-    // immediately after applyTemplate. Mirrors applyDraft's pattern exactly —
-    // field order must match the isDirty serialisation (~line 574).
-    setSavedSnapshot(JSON.stringify({
-      name: DEFAULT_DRAFT_NAME,
-      templateId: seed.templateId,
-      data: zoneDataRef.current,
-      brandKit: seed.brandKit as PortfolioBrandKit,
-      contact: seed.contact as PortfolioContactConfig,
-      header: {},
-      collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
-      formLocale,
-      formDir,
-    }));
+    if (asNewDraft) {
+      setActiveDraftId(null);
+      setIsNewUnsavedDraft(true);
+      setDraftName(DEFAULT_DRAFT_NAME);
+      // Re-baseline savedSnapshot to the just-applied state so isDirty is false
+      // immediately after applyTemplate. Mirrors applyDraft's pattern exactly —
+      // field order must match the isDirty serialisation (~line 574).
+      setSavedSnapshot(JSON.stringify({
+        name: DEFAULT_DRAFT_NAME,
+        templateId: seed.templateId,
+        data: zoneDataRef.current,
+        brandKit: seed.brandKit as PortfolioBrandKit,
+        contact: seed.contact as PortfolioContactConfig,
+        header: {},
+        collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
+        formLocale,
+        formDir,
+      }));
+    }
+    // asNewDraft=false: keep activeDraftId/isNewUnsavedDraft/draftName as-is, and
+    // leave savedSnapshot untouched (still the last-persisted state) so isDirty
+    // naturally flips true — the template swap on an existing draft must be saved.
     // Already prepared — pass directly to Puck without double-prepareForEditor.
     seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
@@ -2437,6 +2453,7 @@ export function EditorShell({
   // ---- Add New Draft ----
   function handleAddNewDraft() {
     setDraftsOpen(false);
+    setTemplatesAsNewDraft(true);
     setTemplatesOpen(true);
   }
 
@@ -3117,7 +3134,7 @@ export function EditorShell({
                       formDir={formDir}
                       onFormLocaleChange={handleFormLocaleChange}
                       onFormDirChange={setFormDir}
-                      onOpenTemplates={() => setTemplatesOpen(true)}
+                      onOpenTemplates={() => { setTemplatesAsNewDraft(false); setTemplatesOpen(true); }}
                     />,
                     <Button
                       type="button"
@@ -3265,7 +3282,7 @@ export function EditorShell({
         isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
-        onConfirm={(id) => guardThenRun(() => void applyTemplate(id), true)}
+        onConfirm={(id) => guardThenRun(() => void applyTemplate(id, { asNewDraft: templatesAsNewDraft }), true)}
       />
       {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. Never used in demoMode (its own 2-option entry screen replaces this branching entirely). */}
       {!demoMode && (
@@ -3407,7 +3424,7 @@ export function EditorShell({
             setDraftsSelectionMode(true);
             setDraftsOpen(true);
           }}
-          onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
+          onStartScratch={() => { setEntryOpen(false); setTemplatesAsNewDraft(true); setTemplatesOpen(true); }}
         />
       )}
       {demoMode && (
