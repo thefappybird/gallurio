@@ -44,7 +44,7 @@ describe("fillBlockDefaults", () => {
     expect(result.content[0].props.bgAnimation).toBeUndefined();
   });
 
-  it("fills the PageBody margin and defaults for its nested slot children", () => {
+  it("leaves PageBody margin unset (effective default) and fills defaults for its nested slot children", () => {
     const result = fillBlockDefaults({
       content: [
         {
@@ -53,7 +53,7 @@ describe("fillBlockDefaults", () => {
         },
       ],
     });
-    expect(result.content[0].props.marginX).toBe("1.5rem");
+    expect(result.content[0].props.marginX).toBeUndefined();
     const children = result.content[0].props.content as BlockEntry[];
     expect(children[0].props.text).toBe("Heading");
     expect(children[0].props.level).toBe("h2");
