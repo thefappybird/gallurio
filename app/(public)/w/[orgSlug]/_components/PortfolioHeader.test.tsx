@@ -495,7 +495,7 @@ describe("PortfolioHeader template render contract", () => {
         tokenVar(config.contactButtonColor, "var(--pf-color-primary)"),
       );
       expect(contact.style.color).toBe(
-        tokenVar(config.contactButtonTextColor, "var(--pf-color-bg)"),
+        tokenVar(config.contactButtonTextColor, "var(--pf-color-fg)"),
       );
       expect(contact.style.borderRadius).toBe(
         config.contactButtonRadius === "sharp"

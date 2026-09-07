@@ -51,8 +51,12 @@ export const FEATURED_WORK_LEAD_PRESET: ContainerBlockProps = {
         paddingLeft: "2rem",
       },
       content: slot([
-        child("Heading", { level: "h2", text: "Featured work" }),
-        child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
+        child("Container", {
+          content: slot([
+            child("Heading", { level: "h2", text: "Featured work" }),
+            child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
+          ]),
+        }),
       ]),
     }),
     child("Container", {

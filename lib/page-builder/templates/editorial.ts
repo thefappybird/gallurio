@@ -45,7 +45,6 @@ export const editorialTemplate: PortfolioTemplate = {
                       textColorToken: "foreground",
                       bold: true,
                       align: "center",
-                      selfAlign: "left",
                     },
                   },
                 },
@@ -56,7 +55,6 @@ export const editorialTemplate: PortfolioTemplate = {
                     text: "Fine art photography for weddings, portraits, and events.",
                     _style: {
                       textColorToken: "foreground",
-                      selfAlign: "left",
                     },
                   },
                 },
@@ -266,18 +264,46 @@ export const editorialTemplate: PortfolioTemplate = {
                     id: "Container-79762f46-e789-4921-a48a-228b74999473",
                     content: [
                       {
-                        type: "Heading",
+                        type: "Container",
                         props: {
-                          id: "Heading-d9c0a809-a0d0-4c56-a88c-b6334a181416",
-                          level: "h2",
-                          text: "Featured work",
+                          id: "Container-79762f46-e789-4921-a48a-228b74999474",
+                          content: [
+                            {
+                              type: "Heading",
+                              props: {
+                                id: "Heading-d9c0a809-a0d0-4c56-a88c-b6334a181416",
+                                level: "h2",
+                                text: "Featured work",
+                              },
+                            },
+                            {
+                              type: "Text",
+                              props: {
+                                id: "Text-18b69836-c14c-4aec-8c2d-5d0b03a072c0",
+                                text: "Two projects that say most of what I'd want to say in a first meeting.",
+                              },
+                            },
+                          ],
+                          backgroundImages: [],
+                          bgAnimation: "crossfade",
+                          bgSpeed: "medium",
+                          overlayOpacity: 0,
+                          minHeight: "auto",
+                          alignX: "left",
+                          alignY: "top",
+                          _style: {
+                            paddingLeft: "0px",
+                            paddingRight: "0px",
+                            paddingTop: "0px",
+                            paddingBottom: "0px",
+                          },
                         },
                       },
                       {
-                        type: "Text",
+                        type: "ContainerAnchor",
                         props: {
-                          id: "Text-18b69836-c14c-4aec-8c2d-5d0b03a072c0",
-                          text: "Two projects that say most of what I'd want to say in a first meeting.",
+                          id: "Container-79762f46-e789-4921-a48a-228b74999473--anchor",
+                          height: 0,
                         },
                       },
                     ],
@@ -291,6 +317,7 @@ export const editorialTemplate: PortfolioTemplate = {
                       paddingLeft: "2rem",
                     },
                     overallWidth: "full",
+                    backgroundImages: [],
                   },
                 },
                 {

@@ -2,7 +2,7 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { Puck, Drawer, type Config, type Data } from "@measured/puck";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
@@ -16,6 +16,7 @@ import {
   ExternalLinkIcon,
   Files,
   Images,
+  LayoutTemplate,
   Loader2,
   Monitor,
   Palette,
@@ -176,6 +177,17 @@ export function previewZoneFor(
   if (activeSection === "contact") return "contact";
   if (activeSection === "collectionsPopup") return "popup";
   return activeZone;
+}
+
+/**
+ * The DOM element Puck itself scrolls for canvas overflow — the parent of
+ * `[data-tour-id="canvas"]`, matching `RootCanvasStyle.tsx`'s
+ * `CANVAS_PUCK_LAYOUT_GROWTH_CSS` selector (`:has(> [data-tour-id="canvas"])`),
+ * which is the element that gets `overflow-y: auto`. Queried fresh on every
+ * call since a `<Puck key>` remount replaces this element entirely.
+ */
+function getCanvasScrollOwner(): HTMLElement | null {
+  return document.querySelector('[data-tour-id="canvas"]')?.parentElement ?? null;
 }
 
 /** Serializable starter-template summary for the in-editor switcher. */
@@ -430,11 +442,13 @@ function EditCanvasControls({
   formDir,
   onFormLocaleChange,
   onFormDirChange,
+  onOpenTemplates,
 }: {
   formLocale: string;
   formDir: "ltr" | "rtl" | "";
   onFormLocaleChange: (v: string) => void;
   onFormDirChange: (v: "ltr" | "rtl") => void;
+  onOpenTemplates: () => void;
 }) {
   const t = useTranslations("app.pageBuilder.editor");
   const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
@@ -502,6 +516,17 @@ function EditCanvasControls({
         dir={resolveEffectiveDir(formDir, formLocale)}
         onDirChange={onFormDirChange}
       />
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label={t("controls.switchTemplate")}
+        title={t("controls.switchTemplate")}
+        onClick={onOpenTemplates}
+      >
+        <LayoutTemplate className="size-4" aria-hidden />
+      </Button>
     </div>
   );
 }
@@ -1282,6 +1307,20 @@ export function EditorShell({
     setPuckSeed(next);
   }, []);
   const [seedNonce, setSeedNonce] = useState(0);
+  // Puck's own canvas scroll owner is the parent of `[data-tour-id="canvas"]`
+  // (see RootCanvasStyle.tsx's CANVAS_PUCK_LAYOUT_GROWTH_CSS — the element the
+  // `overflow-y: auto` rule targets). A `seedNonce` bump remounts the whole
+  // <Puck> tree, recreating that element from scratch at scrollTop 0 — so a
+  // self-correcting reseed after an ordinary drop (chrome reorder / PageBody
+  // container defaults) silently threw the user back to the top of the page.
+  // Captured right before such a reseed, restored once the new canvas mounts.
+  const pendingCanvasScrollRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (pendingCanvasScrollRef.current === null) return;
+    const owner = getCanvasScrollOwner();
+    if (owner) owner.scrollTop = pendingCanvasScrollRef.current;
+    pendingCanvasScrollRef.current = null;
+  }, [seedNonce]);
   // Demo sessions use a distinct namespace (keyed by demoSessionId, not slug)
   // so a demo session can never collide with or leak into a real workspace's draft.
   const draftKey = demoMode ? demoDraftKey(demoSessionId) : `gallurio:portfolio-draft:${slug}`;
@@ -1695,6 +1734,7 @@ export function EditorShell({
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
       if (chromeOrderCorrected) {
+        pendingCanvasScrollRef.current = getCanvasScrollOwner()?.scrollTop ?? null;
         seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig, workspaceName));
         setSeedNonce((n) => n + 1);
       }
@@ -3077,6 +3117,7 @@ export function EditorShell({
                       formDir={formDir}
                       onFormLocaleChange={handleFormLocaleChange}
                       onFormDirChange={setFormDir}
+                      onOpenTemplates={() => setTemplatesOpen(true)}
                     />,
                     <Button
                       type="button"

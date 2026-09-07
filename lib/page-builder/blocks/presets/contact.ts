@@ -107,18 +107,31 @@ export const CONTACT_BAR_PRESET: ContainerBlockProps = {
         child("Text", { text: "Available for 2026 dates." }),
       ]),
     }),
-    child("ContactDetails", {
-      _style: {
-        labelColorToken: "foreground",
-        valueColorToken: "foreground",
-        iconColorToken: "foreground",
-      },
+    child("Container", {
+      // Same hugging convention as the intro above, so ContactDetails gets its
+      // own independently positionable/stylable row cell instead of sharing
+      // the row's default flexGrow:1 split.
+      _style: { width: "fit-content" },
+      content: slot([
+        child("ContactDetails", {
+          _style: {
+            labelColorToken: "foreground",
+            valueColorToken: "foreground",
+            iconColorToken: "foreground",
+          },
+        }),
+      ]),
     }),
-    child("Button", {
-      label: "Send a Message",
-      action: "open-contact",
-      align: "right",
-      _style: onAccentBand,
+    child("Container", {
+      _style: { width: "fit-content" },
+      content: slot([
+        child("Button", {
+          label: "Send a Message",
+          action: "open-contact",
+          align: "right",
+          _style: onAccentBand,
+        }),
+      ]),
     }),
   ]),
 };

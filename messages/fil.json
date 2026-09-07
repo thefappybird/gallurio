@@ -2628,6 +2628,7 @@
           "zoomReset": "I-reset ang zoom sa 100%",
           "undoTitle": "I-undo (Ctrl+Z)",
           "redoTitle": "I-redo (Ctrl+Shift+Z)",
+          "switchTemplate": "Palitan ang template",
           "language": "Wika ng pahina",
           "directionLabel": "Direksyon",
           "directionLtr": "Kaliwa patungong kanan",

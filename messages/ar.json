@@ -2628,6 +2628,7 @@
           "zoomReset": "إعادة التكبير إلى 100%",
           "undoTitle": "تراجع (Ctrl+Z)",
           "redoTitle": "إعادة (Ctrl+Shift+Z)",
+          "switchTemplate": "تبديل القالب",
           "language": "لغة الصفحة",
           "directionLabel": "الاتجاه",
           "directionLtr": "من اليسار إلى اليمين",

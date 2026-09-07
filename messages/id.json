@@ -2628,6 +2628,7 @@
           "zoomReset": "Atur ulang zoom ke 100%",
           "undoTitle": "Urungkan (Ctrl+Z)",
           "redoTitle": "Ulangi (Ctrl+Shift+Z)",
+          "switchTemplate": "Ganti templat",
           "language": "Bahasa halaman",
           "directionLabel": "Arah",
           "directionLtr": "Kiri ke kanan",

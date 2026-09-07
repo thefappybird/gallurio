@@ -2628,6 +2628,7 @@
           "zoomReset": "รีเซ็ตซูมเป็น 100%",
           "undoTitle": "เลิกทำ (Ctrl+Z)",
           "redoTitle": "ทำซ้ำ (Ctrl+Shift+Z)",
+          "switchTemplate": "เปลี่ยนเทมเพลต",
           "language": "ภาษาของหน้าเว็บ",
           "directionLabel": "ทิศทาง",
           "directionLtr": "ซ้ายไปขวา",

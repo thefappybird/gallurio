@@ -2378,6 +2378,18 @@ function ContentLayoutControls({
         onChange={(v) => set({ contentVerticalDistribution: v })}
         onReset={() => set({ contentVerticalDistribution: undefined })}
       />
+      {/* This block's OWN position along its parent's row/column — distinct from
+          the two rows above (which govern how THIS container arranges ITS
+          children). Reuses the same selfAlign/margin-auto mechanism the leaf
+          blocks' "Block position" control already writes (resolveBlockStyle,
+          styleToolkit.ts); like those, it only has a visible effect once this
+          container's own Width is Hug or Fixed rather than the default Fill. */}
+      <IconRow
+        label="Block position"
+        value={s.selfAlign}
+        options={BLOCK_POSITION_OPTIONS}
+        onChange={(v) => set({ selfAlign: v })}
+      />
     </>
   );
 }

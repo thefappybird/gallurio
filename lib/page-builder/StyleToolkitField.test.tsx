@@ -2079,6 +2079,17 @@ describe("Item 5: LayoutTabBody — Direction control (Container only)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.queryByRole("button", { name: "↓ Vertical" })).toBeNull();
   });
+
+  it("shows a Block position control for a Container so it can be self-positioned inside a horizontal parent", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" p={{}} setProp={() => {}} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByText("Block position")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Align block center" }));
+    expect(set).toHaveBeenCalledWith({ selfAlign: "center" });
+  });
 });
 
 describe("LayoutTabBody — cell placement controls", () => {

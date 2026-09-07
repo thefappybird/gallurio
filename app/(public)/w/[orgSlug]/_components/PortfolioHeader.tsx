@@ -375,7 +375,9 @@ export function PortfolioHeader({
               resolveColor(config?.contactButtonColor, "var(--pf-color-primary)"),
               config?.contactButtonOpacity ?? 100,
             ),
-            color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+            // Same fill/text pairing as ContactButton above, and the same fix:
+            // contrast the FILL, not the page background.
+            color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-fg)"),
             border: "none",
             borderRadius: config?.contactButtonRadius
               ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")
@@ -580,7 +582,11 @@ function ContactButton({
     padding: "0 1rem",
     marginTop: block ? "0.25rem" : 0,
     backgroundColor: buildColorWithOpacity(contactButtonFill, config?.contactButtonOpacity ?? 100),
-    color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+    // Default text color must contrast the FILL (contactButtonFill, effectively
+    // var(--pf-color-primary)), not the page background — those tokens can be
+    // equally light (e.g. Editorial's primary/background are both near-white),
+    // which made the default-styled contact button unreadable.
+    color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-fg)"),
     border: "none",
     borderRadius: config?.contactButtonRadius
       ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")

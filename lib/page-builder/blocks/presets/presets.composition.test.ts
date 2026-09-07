@@ -146,8 +146,13 @@ describe("CONTACT_BAR_PRESET — horizontal row, no Columns (item 4)", () => {
     expect(style.flexDirection).toBe("row");
     expect(style.justifyContent).toBe("between");
 
+    // Each of the 3 row cells is its own hugging Container (matching the intro's
+    // pre-existing wrapper convention) so ContactDetails/Button are each
+    // independently positionable/stylable, not bare row children.
     const children = childrenOf(root);
-    expect(children.map((c) => c.type)).toEqual(["Container", "ContactDetails", "Button"]);
+    expect(children.map((c) => c.type)).toEqual(["Container", "Container", "Container"]);
+    expect(childrenOf(children[1]).map((c) => c.type)).toEqual(["ContactDetails"]);
+    expect(childrenOf(children[2]).map((c) => c.type)).toEqual(["Button"]);
   });
 
   it("opts the row into wrapping so it stacks instead of compressing at 375px", () => {

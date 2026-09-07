@@ -593,6 +593,13 @@ describe("EditorShell", () => {
     // unit-tested in CanvasViewportControls.test.tsx.
   });
 
+  it("opens the template picker from the Switch template button beside the language control", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(screen.queryByRole("heading", { name: "Choose a template" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Switch template" }));
+    expect(await screen.findByRole("heading", { name: "Choose a template" })).toBeInTheDocument();
+  });
+
   it("stops keydown propagation past the editor root when the target is an input", async () => {
     const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;

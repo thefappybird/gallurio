@@ -46,11 +46,14 @@ const PANEL_GAP = 8;
 const PANEL_MAX_HEIGHT = 320 + 96;
 
 /**
- * Layout width the mini-render lays out at. Keeping it just above the portfolio
- * tablet breakpoint preserves the real desktop composition while making type
- * legible at thumbnail scale.
+ * Layout width the mini-render lays out at — the same desktop width the canvas
+ * itself uses (`DEVICES` desktop = 1280px), so a preset with a wide/narrow split
+ * (e.g. Framed selection's grid-plus-sidebar) resolves to the SAME proportions
+ * in the preview as it does on the real canvas. A narrower width here previously
+ * gave the sidebar column noticeably less room than the canvas does, cramping
+ * its heading/copy in a way that looked broken next to the real render.
  */
-export const PREVIEW_WIDTH = 960;
+export const PREVIEW_WIDTH = 1280;
 /** Rendered width of the frame in the panel. This is only 32px wider than the
  * original card, but makes the live preset materially easier to judge. */
 export const FRAME_WIDTH = 280;

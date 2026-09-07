@@ -2628,6 +2628,7 @@
           "zoomReset": "Reset zoom to 100%",
           "undoTitle": "Undo (Ctrl+Z)",
           "redoTitle": "Redo (Ctrl+Shift+Z)",
+          "switchTemplate": "Switch template",
           "language": "Page language",
           "directionLabel": "Direction",
           "directionLtr": "Left to right",

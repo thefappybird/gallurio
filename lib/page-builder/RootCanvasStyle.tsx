@@ -73,8 +73,17 @@ const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
 // horizontal overflow scrollable so constrained screens can still reach the full
 // canvas, while the growth rules below make the preview surface itself wrap tall
 // content instead of clipping its page background.
+//
+// `scrollbar-gutter: stable` reserves the vertical scrollbar's width whether or
+// not it's currently needed. Without it, selecting a block whose Layout-tab
+// panel is tall enough to toggle the RIGHT sidebar's own scrollbar (PageBody's
+// panel is the tallest — see PageBodyContainerDefaultsControl) reflows this
+// element's available width and visibly jitters the canvas's horizontal
+// scrollbar in the same frame — this element and `.gallurio-editor`'s
+// container-query width are mutually dependent (see editor.css's `cqw`-based
+// side-bar widths), so any width change here can toggle the horizontal one too.
 const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
-  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow-x: auto; overflow-y: auto; }`;
+  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow-x: auto; overflow-y: auto; scrollbar-gutter: stable; }`;
 
 // In edit mode Puck wraps the preview surface (`[data-puck-preview]`) in an
 // absolutely-positioned `._PuckCanvas-root_` (top: 0; bottom: 0), which pins the
