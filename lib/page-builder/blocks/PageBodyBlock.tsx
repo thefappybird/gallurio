@@ -67,7 +67,7 @@ export function PageBodyBlock({
       } as CSSProperties}
     >
       <style>{`
-        .${PAGE_BODY_SLOT_CLASS} > [data-block="container"][data-pf-full-width] {
+        .${PAGE_BODY_SLOT_CLASS} > [data-pf-full-width] {
           width: calc(100% + var(--pf-page-body-margin-x) + var(--pf-page-body-margin-x)) !important;
           margin-left: calc(0px - var(--pf-page-body-margin-x)) !important;
           margin-right: calc(0px - var(--pf-page-body-margin-x)) !important;

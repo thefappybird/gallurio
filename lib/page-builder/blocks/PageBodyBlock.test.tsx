@@ -62,7 +62,7 @@ describe("PageBodyBlock", () => {
     const { container } = render(<PageBodyBlock content={Content} marginX="4rem" />);
     const css = container.querySelector("style")?.textContent;
 
-    expect(css).toContain(`.${PAGE_BODY_SLOT_CLASS} > [data-block="container"][data-pf-full-width]`);
+    expect(css).toContain(`.${PAGE_BODY_SLOT_CLASS} > [data-pf-full-width]`);
     expect(css).toContain("calc(100% + var(--pf-page-body-margin-x) + var(--pf-page-body-margin-x))");
     expect(css).toContain("calc(0px - var(--pf-page-body-margin-x))");
   });

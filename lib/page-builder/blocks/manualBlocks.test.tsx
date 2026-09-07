@@ -1694,7 +1694,7 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
     expect(parent.style.getPropertyValue("--pf-container-padding-inline-end")).toBe("1.5rem");
     expect(screen.getByTestId("full-parent-slot")).toHaveClass(PF_FULL_WIDTH_CONTAINER_SLOT_CLASS);
     const css = container.querySelector("style")?.textContent ?? "";
-    expect(css).toContain(`.${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-block="container"][data-pf-full-width]`);
+    expect(css).toContain(`.${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-pf-full-width]`);
     expect(css).toContain("calc(100% + var(--pf-container-padding-inline-start) + var(--pf-container-padding-inline-end))");
   });
 
@@ -2119,6 +2119,20 @@ describe("A7: ColumnsBlock overallWidth prop", () => {
       <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} />
     );
     expect(html).toContain("width:100%");
+  });
+
+  it("overallWidth=full sets data-pf-full-width so the page-body/container full-bleed CSS can target it", () => {
+    const { container } = render(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} />
+    );
+    const root = container.querySelector('[data-block="columns"]');
+    expect(root).toHaveAttribute("data-pf-full-width", "");
+  });
+
+  it("overallWidth='page-fit' (default) does not set data-pf-full-width", () => {
+    const { container } = render(<ColumnsBlock columns={2} content={stubSlot} />);
+    const root = container.querySelector('[data-block="columns"]');
+    expect(root).not.toHaveAttribute("data-pf-full-width");
   });
 });
 

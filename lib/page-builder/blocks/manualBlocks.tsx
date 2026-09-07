@@ -930,6 +930,8 @@ export function ColumnsBlock({
         containerType: "inline-size",
         containerName: instanceContainer,
       }}
+      data-block="columns"
+      data-pf-full-width={overallWidth === "full" ? "" : undefined}
       {...resolveBlockAttrs(_style)}
     >
       {/* Per-instance scoped @container rules: each Columns block gets its own
@@ -1269,7 +1271,7 @@ export function ContainerBlock({
       )}
       {applyFullBleed && (
         <style>{`
-          .${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-block="container"][data-pf-full-width] {
+          .${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-pf-full-width] {
             width: calc(100% + var(--pf-container-padding-inline-start) + var(--pf-container-padding-inline-end)) !important;
             margin-inline-start: calc(0px - var(--pf-container-padding-inline-start)) !important;
             margin-inline-end: calc(0px - var(--pf-container-padding-inline-end)) !important;

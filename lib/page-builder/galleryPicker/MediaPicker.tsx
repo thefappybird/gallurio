@@ -936,7 +936,7 @@ function CollectionGrid({
                     if (state === "checked") onDeselectAllFromCollection(col.id);
                     else onSelectAllFromCollection(col.id);
                   }}
-                  className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                  className="absolute end-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
                 >
                   {bulkLoadingId === col.id ? (
                     <Loader2Icon className="size-3.5 animate-spin" aria-hidden />

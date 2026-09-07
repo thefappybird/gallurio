@@ -50,7 +50,7 @@ export function IncompleteMetadataBadge({
         >
           <AlertTriangleIcon className="size-3.5" aria-hidden />
         </TooltipTrigger>
-        <TooltipContent side="top" align="center" className="max-w-60 text-left leading-snug">
+        <TooltipContent side="top" align="center" className="max-w-60 text-start leading-snug">
           {label}
         </TooltipContent>
       </Tooltip>
