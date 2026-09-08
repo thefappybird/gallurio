@@ -519,6 +519,21 @@ describe("EditorShell", () => {
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
   });
 
+  it("keeps the switch-template button available while the Contact Form panel is open", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Switch template" })).toBeInTheDocument();
+  });
+
+  it("keeps the switch-template button available while the Featured Popup panel is open", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
+    expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Switch template" })).toBeInTheDocument();
+  });
+
   it("does not drop the first genuine edit after closing a side panel by re-selecting the already-active zone", async () => {
     // Opening Contact Form while on Home, then clicking Home again to return
     // to the canvas, re-selects the zone you're already on while a side panel
@@ -1462,6 +1477,47 @@ describe("EditorShell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
     expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
+  });
+
+  it("switching template while viewing the Gallery tab returns to Home and does not corrupt the gallery zone", async () => {
+    // Regression guard: applyTemplate used to reseed Puck with the new home
+    // data but never reset activeZone away from "gallery". The next Puck
+    // mount-echo then wrote that home data into zoneDataRef.gallery, silently
+    // discarding the newly-seeded gallery zone.
+    seedTemplateAction.mockResolvedValueOnce({
+      ok: true,
+      seed: {
+        templateId: "minimal",
+        data: {
+          home: { content: [], root: {} },
+          gallery: { content: [{ type: "Heading", props: { id: "gallery-marker", text: "Gallery-only marker block" } }], root: {} },
+        },
+        brandKit: DEFAULT_BRAND_KIT,
+        contact: { title: "" },
+        header: {},
+        collectionsPopup: {},
+      },
+    });
+
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await screen.findByText("Studio Aurora · Gallery");
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch template" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use this template" }));
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    // The switch always lands on Home, matching every other reseed path.
+    expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
+    const homeSeedLen = screen.getByTestId("puck").getAttribute("data-seed-len");
+
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await screen.findByText("Studio Aurora · Gallery");
+    const gallerySeedLen = screen.getByTestId("puck").getAttribute("data-seed-len");
+
+    // Corrupted state would make the gallery zone byte-identical to home's.
+    expect(gallerySeedLen).not.toBe(homeSeedLen);
   });
 
   it("switching template via the toolbar button on an existing draft keeps the draft identity and marks it dirty (does not create a new unsaved draft)", async () => {

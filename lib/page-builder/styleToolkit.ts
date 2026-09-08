@@ -687,13 +687,13 @@ export function buildContactIconColor(style?: BlockStyle | null): string {
  * Resolve the flex `justify-content` for a ContactDetails social-icon row.
  * Prefers the explicit `contactIconAlign`; falls back to `valueAlign` (the
  * icon row used to follow the value/text alignment, so unset stays put on
- * saved pages) and defaults to center when both are unset.
+ * saved pages) and defaults to left when both are unset.
  */
 export function buildContactIconAlign(style?: BlockStyle | null): "flex-start" | "center" | "flex-end" {
   const align = style?.contactIconAlign ?? style?.valueAlign;
-  if (align === "left") return "flex-start";
+  if (align === "center") return "center";
   if (align === "right") return "flex-end";
-  return "center";
+  return "flex-start";
 }
 
 /** Resolve the pixel size for ContactDetails social icons. Default 20px. */

@@ -1460,6 +1460,7 @@ describe("ContainerBlock flex defaults", () => {
     <div data-testid="structural-slot" className={props?.className} style={props?.style}>
       <div data-block="columns" data-testid="structural-columns" />
       <div data-block="video" data-testid="structural-video" />
+      <div data-block="container" data-pf-hug="" data-testid="structural-hug-container" />
     </div>
   );
 
@@ -1614,6 +1615,15 @@ describe("ContainerBlock flex defaults", () => {
     render(<ContainerBlock content={StructuralSlot} alignX="center" />);
     expect(getComputedStyle(screen.getByTestId("structural-columns")).alignSelf).toBe("stretch");
     expect(getComputedStyle(screen.getByTestId("structural-video")).alignSelf).toBe("");
+  });
+
+  // A hug-width Container (button-row / copy wrapper) opted out of stretching
+  // via its own explicit width. Forcing align-self:stretch on it anyway falls
+  // back to flex-start per spec (fixed cross-size), silently pinning it left
+  // instead of respecting the parent's centered alignment.
+  it("does not force a hug-width nested Container to stretch under centered alignment", () => {
+    render(<ContainerBlock content={StructuralSlot} alignX="center" />);
+    expect(getComputedStyle(screen.getByTestId("structural-hug-container")).alignSelf).toBe("");
   });
 
   it("centers child blocks on the cross axis in a horizontal container", () => {

@@ -185,6 +185,7 @@ export const modernTemplate: PortfolioTemplate = {
               bgSpeed: "medium",
               overlayOpacity: 0,
               alignX: "left",
+              overallWidth: "full",
             },
           },
           {

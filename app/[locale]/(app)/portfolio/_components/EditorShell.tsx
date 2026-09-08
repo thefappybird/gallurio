@@ -53,6 +53,7 @@ import {
   findChrome,
   syncChrome,
   normalizeChrome,
+  displacedByNormalize,
   reanchorChrome,
   canDetach,
   rescueNestedChrome,
@@ -141,7 +142,7 @@ import { StoryPromptDialog } from "./StoryPromptDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
 import { SuppressedActionBar } from "./SuppressedActionBar";
-import { BlockActionsToolbar } from "./BlockActionsToolbar";
+import { BlockActionsToolbar, scrollParent } from "./BlockActionsToolbar";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { DemoGateModal, type DemoGateType } from "./DemoGateModal";
 import {
@@ -181,14 +182,27 @@ export function previewZoneFor(
 }
 
 /**
- * The DOM element Puck itself scrolls for canvas overflow — the parent of
- * `[data-tour-id="canvas"]`, matching `RootCanvasStyle.tsx`'s
- * `CANVAS_PUCK_LAYOUT_GROWTH_CSS` selector (`:has(> [data-tour-id="canvas"])`),
- * which is the element that gets `overflow-y: auto`. Queried fresh on every
- * call since a `<Puck key>` remount replaces this element entirely.
+ * The DOM element that actually scrolls the canvas.
+ *
+ * `RootCanvasStyle.tsx`'s `CANVAS_PUCK_LAYOUT_GROWTH_CSS` gives `overflow-y:
+ * auto` to the parent of `[data-tour-id="canvas"]`, intending that to be the
+ * one scroll owner — but Puck's own internal `_PuckCanvas-root_` wrapper
+ * (several levels further in, around `[data-puck-preview]`) still ends up
+ * with the real overflow in practice (verified in-browser: the intended
+ * outer element reports zero overflow while `_PuckCanvas-root_` does not),
+ * so capturing/restoring scroll on the "intended" element was a silent
+ * no-op. `scrollParent` (BlockActionsToolbar.tsx) already solves this same
+ * problem for the block toolbar's own anchor — reuse it instead of trusting
+ * either the doc comment or a hardcoded selector: walk up from the Puck
+ * preview surface for whichever ancestor actually has `overflow-y:
+ * auto/scroll/overlay` right now. Queried fresh on every call since a
+ * `<Puck key>` remount replaces the whole chain.
  */
 function getCanvasScrollOwner(): HTMLElement | null {
-  return document.querySelector('[data-tour-id="canvas"]')?.parentElement ?? null;
+  const surface =
+    document.querySelector<HTMLElement>("[data-puck-preview]") ??
+    document.querySelector<HTMLElement>('[data-tour-id="canvas"]');
+  return scrollParent(surface ?? null) ?? surface ?? null;
 }
 
 /** Serializable starter-template summary for the in-editor switcher. */
@@ -1312,19 +1326,36 @@ export function EditorShell({
     setPuckSeed(next);
   }, []);
   const [seedNonce, setSeedNonce] = useState(0);
-  // Puck's own canvas scroll owner is the parent of `[data-tour-id="canvas"]`
-  // (see RootCanvasStyle.tsx's CANVAS_PUCK_LAYOUT_GROWTH_CSS — the element the
-  // `overflow-y: auto` rule targets). A `seedNonce` bump remounts the whole
-  // <Puck> tree, recreating that element from scratch at scrollTop 0 — so a
+  // A `seedNonce` bump remounts the whole <Puck> tree, recreating the real
+  // scroll owner (getCanvasScrollOwner) from scratch at scrollTop 0 — so a
   // self-correcting reseed after an ordinary drop (chrome reorder / PageBody
   // container defaults) silently threw the user back to the top of the page.
   // Captured right before such a reseed, restored once the new canvas mounts.
   const pendingCanvasScrollRef = useRef<number | null>(null);
+  // When the reseed is specifically a chrome-order correction (a block landed
+  // above Navigation or below Footer and got bumped back out), this is the id
+  // of THAT block — the one the user was actually dragging, as opposed to nav/
+  // footer itself. Restoring scroll position alone can still leave it outside
+  // the viewport (it moved relative to the rest of the page); nudge it into
+  // view, minimally, only if the restored position doesn't already show it.
+  const pendingNudgeBlockIdRef = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (pendingCanvasScrollRef.current === null) return;
     const owner = getCanvasScrollOwner();
     if (owner) owner.scrollTop = pendingCanvasScrollRef.current;
     pendingCanvasScrollRef.current = null;
+
+    const nudgeBlockId = pendingNudgeBlockIdRef.current;
+    pendingNudgeBlockIdRef.current = null;
+    if (owner && nudgeBlockId) {
+      const el = document.querySelector<HTMLElement>(`[data-puck-component="${nudgeBlockId}"]`);
+      if (el) {
+        const ownerRect = owner.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const offScreen = elRect.bottom < ownerRect.top || elRect.top > ownerRect.bottom;
+        if (offScreen) el.scrollIntoView({ block: "nearest" });
+      }
+    }
   }, [seedNonce]);
   // Demo sessions use a distinct namespace (keyed by demoSessionId, not slug)
   // so a demo session can never collide with or leak into a real workspace's draft.
@@ -1731,6 +1762,9 @@ export function EditorShell({
       const preNormalize = zones[activeZone];
       const normalizedActive = normalizePageBody(normalizeChrome(preNormalize));
       const chromeOrderCorrected = normalizedActive !== preNormalize || rescued || pageBodyDefaultsApplied;
+      // Only meaningful when normalizeChrome itself is what changed the order —
+      // null for a rescued/pageBodyDefaults-only reseed, correctly skipping the nudge.
+      const displacedBlockId = displacedByNormalize(preNormalize);
       zones = { ...zones, [activeZone]: normalizedActive };
       const updated = zones as unknown as Record<Zone, PuckData>;
 
@@ -1740,6 +1774,7 @@ export function EditorShell({
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
       if (chromeOrderCorrected) {
         pendingCanvasScrollRef.current = getCanvasScrollOwner()?.scrollTop ?? null;
+        pendingNudgeBlockIdRef.current = displacedBlockId;
         seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig, workspaceName));
         setSeedNonce((n) => n + 1);
       }
@@ -2390,6 +2425,7 @@ export function EditorShell({
     // Already prepared — pass directly to Puck without double-prepareForEditor.
     seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
+    setActiveZone("home");
     setSwitching(false);
     setTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
@@ -2445,6 +2481,7 @@ export function EditorShell({
     }));
     seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
+    setActiveZone("home");
     setSwitching(false);
     setDemoTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
@@ -2957,6 +2994,17 @@ export function EditorShell({
           dir={resolveEffectiveDir(formDir, formLocale)}
           onDirChange={setFormDir}
         />
+        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t("controls.switchTemplate")}
+          title={t("controls.switchTemplate")}
+          onClick={() => { setTemplatesAsNewDraft(false); setTemplatesOpen(true); }}
+        >
+          <LayoutTemplate className="size-4" aria-hidden />
+        </Button>
       </div>
     );
   }

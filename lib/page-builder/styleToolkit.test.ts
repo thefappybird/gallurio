@@ -376,8 +376,8 @@ describe("buildContactIconAlign", () => {
     expect(buildContactIconAlign({ contactIconAlign: "left", valueAlign: "right" })).toBe("flex-start");
   });
 
-  it("defaults to center when both unset / style is undefined", () => {
-    expect(buildContactIconAlign({})).toBe("center");
-    expect(buildContactIconAlign(undefined)).toBe("center");
+  it("defaults to left when both unset / style is undefined", () => {
+    expect(buildContactIconAlign({})).toBe("flex-start");
+    expect(buildContactIconAlign(undefined)).toBe("flex-start");
   });
 });

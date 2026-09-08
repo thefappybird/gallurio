@@ -135,11 +135,11 @@ describe("ContactDetailsBlock — null socials skipped", () => {
 });
 
 describe("ContactDetailsBlock — SocialsRow justifyContent", () => {
-  it("defaults to justifyContent center when valueAlign is unset", () => {
+  it("defaults to justifyContent flex-start when valueAlign is unset", () => {
     const { container } = renderBlock(makeWorkspace(), {});
     const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
     expect(dd).not.toBeNull();
-    expect(dd.style.justifyContent).toBe("center");
+    expect(dd.style.justifyContent).toBe("flex-start");
   });
 
   it("uses flex-start when valueAlign is left", () => {
@@ -170,10 +170,10 @@ describe("ContactDetailsBlock — contactIconAlign (independent of valueAlign)",
     expect(dd.style.justifyContent).toBe("flex-start");
   });
 
-  it("both unset defaults to center", () => {
+  it("both unset defaults to flex-start", () => {
     const { container } = renderBlock(makeWorkspace(), {});
     const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
-    expect(dd.style.justifyContent).toBe("center");
+    expect(dd.style.justifyContent).toBe("flex-start");
   });
 });
 

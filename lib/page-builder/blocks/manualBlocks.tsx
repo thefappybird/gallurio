@@ -1185,6 +1185,11 @@ export function ContainerBlock({
   // width. Those blocks carry the section's measurable layout and stay stretched.
   // Include legacy alignX so untouched centered presets behave exactly like a
   // user who re-applies the current Content alignment control.
+  // EXCEPT a Container explicitly set to hug width (`data-pf-hug`, isHugWidth
+  // above) — forcing align-self:stretch on a fixed-width box doesn't stretch it
+  // (its width is already set), but per spec it DOES fall back the box's
+  // cross-axis position to flex-start, silently pinning left a centered
+  // button-row/copy wrapper that intentionally opted out of stretching.
   const contentAlignmentClass = effectiveContentAlignment !== "stretch"
     ? `pf-container-align-${(id ?? "container").replace(/[^a-zA-Z0-9_-]/g, "")}`
     : undefined;
@@ -1208,6 +1213,7 @@ export function ContainerBlock({
       ref={puck?.dragRef ?? undefined}
       data-block="container"
       data-pf-full-width={applyFullBleed ? "" : undefined}
+      data-pf-hug={isHugWidth ? "" : undefined}
       style={{
         position: "relative",
         display: "flex",
@@ -1289,7 +1295,7 @@ export function ContainerBlock({
       {contentAlignmentClass && (
         <style>{`
           .${contentAlignmentClass}>*{margin-inline:0 !important;}
-          .${contentAlignmentClass}>[data-block]:not([data-block="heading"]):not([data-block="text"]):not([data-block="button"]):not([data-block="video"]){align-self:stretch !important;}
+          .${contentAlignmentClass}>[data-block]:not([data-block="heading"]):not([data-block="text"]):not([data-block="button"]):not([data-block="video"]):not([data-pf-hug]){align-self:stretch !important;}
         `}</style>
       )}
       {applyFullBleed && (

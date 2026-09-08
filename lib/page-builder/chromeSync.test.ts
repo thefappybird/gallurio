@@ -5,6 +5,7 @@ import {
   syncChrome,
   reanchorChrome,
   normalizeChrome,
+  displacedByNormalize,
   canDetach,
   rescueNestedChrome,
   type Zones,
@@ -397,6 +398,33 @@ describe("normalizeChrome", () => {
       zoneWith([block("Hero", "hero-1"), navBlock("nav-1"), navBlock("nav-2"), footerBlock("footer-1"), footerBlock("footer-2")]),
     );
     expect(() => normalizeChrome(zone)).not.toThrow();
+  });
+});
+
+describe("displacedByNormalize", () => {
+  it("returns the id of the block sitting in nav's pinned front slot", () => {
+    const zone = zoneWith([block("Hero", "hero-1"), navBlock("nav-1"), block("Text", "text-1")]);
+    expect(displacedByNormalize(zone)).toBe("hero-1");
+  });
+
+  it("returns the id of the block sitting in footer's pinned back slot", () => {
+    const zone = zoneWith([navBlock("nav-1"), footerBlock("footer-1"), block("Text", "text-1")]);
+    expect(displacedByNormalize(zone)).toBe("text-1");
+  });
+
+  it("returns null when nav and footer are already correctly pinned", () => {
+    const zone = zoneWith([navBlock("nav-1"), block("Hero", "hero-1"), footerBlock("footer-1")]);
+    expect(displacedByNormalize(zone)).toBeNull();
+  });
+
+  it("returns null for a zone with no nav or footer at all", () => {
+    const zone = zoneWith([block("Hero", "hero-1"), block("Text", "text-1")]);
+    expect(displacedByNormalize(zone)).toBeNull();
+  });
+
+  it("prefers the front violation when both slots are simultaneously wrong", () => {
+    const zone = zoneWith([footerBlock("footer-1"), block("Hero", "hero-1"), navBlock("nav-1")]);
+    expect(displacedByNormalize(zone)).toBe("footer-1");
   });
 });
 

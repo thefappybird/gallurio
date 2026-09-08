@@ -145,6 +145,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               bgSpeed: "medium",
               overlayOpacity: 0,
               alignX: "left",
+              overallWidth: "full",
             },
           },
           {
@@ -812,7 +813,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              overallWidth: "page-fit",
+              overallWidth: "full",
               _style: {
                 bgColorToken: "background",
                 flexDirection: "row",

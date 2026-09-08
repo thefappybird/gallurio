@@ -259,6 +259,33 @@ export function rescueNestedChrome(zone: Data, kind: ChromeKind): Data {
 }
 
 /**
+ * The id of the ordinary (non-chrome) block currently sitting in nav's
+ * pinned front slot or footer's pinned back slot, if any — i.e. exactly the
+ * block `normalizeChrome` is about to bump out of the way. Used to scroll
+ * that block back into view after the correction remounts the canvas, since
+ * it (not nav/footer) is what the user was actually dragging.
+ */
+export function displacedByNormalize(zone: Data): string | null {
+  const content = zone.content ?? [];
+  if (content.length === 0) return null;
+
+  const navBlocks = content.filter((block) => chromeKindOf(block) === "nav");
+  const footerBlocks = content.filter((block) => chromeKindOf(block) === "footer");
+  const firstNav = navBlocks[0] ?? null;
+  const firstFooter = footerBlocks[0] ?? null;
+
+  const front = content[0];
+  if (firstNav && front !== firstNav && chromeKindOf(front) !== "nav") {
+    return (front.props as ChromeProps).id;
+  }
+  const back = content[content.length - 1];
+  if (firstFooter && back !== firstFooter && chromeKindOf(back) !== "footer") {
+    return (back.props as ChromeProps).id;
+  }
+  return null;
+}
+
+/**
  * Guarantees two chrome invariants at once: exactly one `_chrome === "nav"`
  * block at index 0, and at most one `_chrome === "footer"` block at the LAST
  * index. Displaced blocks move back to their pinned slot (the rest of the
