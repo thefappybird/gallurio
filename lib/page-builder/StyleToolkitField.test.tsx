@@ -409,6 +409,7 @@ describe("CarouselTextPadding heading gap control", () => {
     const spinbuttons = screen.getAllByRole("spinbutton");
     const headingGapInput = spinbuttons[spinbuttons.length - 1];
     fireEvent.change(headingGapInput, { target: { value: "20" } });
+    fireEvent.blur(headingGapInput);
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ headingGap: 20 }));
   });
 });
@@ -470,6 +471,7 @@ describe("margin and leaf-width layout controls", () => {
     expect(screen.queryAllByLabelText("Top unit")).toHaveLength(0);
     const horizontal = horizontalUnits[1].previousElementSibling as HTMLInputElement;
     fireEvent.change(horizontal, { target: { value: "12" } });
+    fireEvent.blur(horizontal);
     expect(set).toHaveBeenLastCalledWith({ marginLeft: "12px", marginRight: "12px" });
 
     fireEvent.click(screen.getByRole("button", { name: "Margin advanced options" }));
@@ -2386,6 +2388,7 @@ describe("NumberInputRow (gap) — edit writes real value", () => {
     const gapRow = gapLabel.closest("div")!;
     const gapInput = within(gapRow).getByRole("spinbutton");
     fireEvent.change(gapInput, { target: { value: "24" } });
+    fireEvent.blur(gapInput);
     // style setter is called with { gap: 24 } — the real typed value, not the effective default (16)
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
@@ -2506,6 +2509,7 @@ describe("Heading/Text padding — grabbable drag strip, effective-default displ
     fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(spinbuttons[0], { target: { value: "0" } });
+    fireEvent.blur(spinbuttons[0]);
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
     expect(lastCall.paddingTop).toBe("0px");

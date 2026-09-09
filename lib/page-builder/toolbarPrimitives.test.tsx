@@ -1,6 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow, FontFamilyRow, NumberInputRow } from "./toolbarPrimitives";
+import {
+  ColorSwatchRow,
+  DimensionInput,
+  FloatingLabelInput,
+  IconRow,
+  FontFamilyRow,
+  NumberInputRow,
+  STYLE_COMMIT_DEBOUNCE_MS,
+} from "./toolbarPrimitives";
 import { AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, Maximize2 } from "lucide-react";
 
 // Mock brandColors so tests don't need the full provider
@@ -269,12 +277,131 @@ describe("DimensionInput — rem→px display conversion", () => {
     expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "50");
   });
 
-  it("typing a number when effectiveValue is rem writes px value to onChange", () => {
+  it("typing a number when effectiveValue is rem writes px value to onChange after the debounce delay", () => {
+    vi.useFakeTimers();
     const onChange = vi.fn();
     render(
       <DimensionInput label="Padding" value={undefined} onChange={onChange} effectiveValue="1.5rem" />
     );
     fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "30" } });
+    expect(onChange).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(STYLE_COMMIT_DEBOUNCE_MS);
     expect(onChange).toHaveBeenCalledWith("30px");
+    vi.useRealTimers();
+  });
+});
+
+describe("DimensionInput — debounced commit (canvas typing lag)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("does not call onChange per keystroke — only after the user pauses", () => {
+    const onChange = vi.fn();
+    render(<DimensionInput label="Padding" value={undefined} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "1" } });
+    fireEvent.change(input, { target: { value: "12" } });
+    expect(onChange).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(STYLE_COMMIT_DEBOUNCE_MS);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("12px");
+  });
+
+  it("shows the freshly typed number immediately even though the commit is deferred", () => {
+    const onChange = vi.fn();
+    render(<DimensionInput label="Padding" value={undefined} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "12" } });
+    expect(input).toHaveValue(12);
+  });
+
+  it("blurring commits immediately without waiting for the debounce delay", () => {
+    const onChange = vi.fn();
+    render(<DimensionInput label="Padding" value={undefined} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "12" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith("12px");
+  });
+
+  it("resyncs the displayed value when the prop changes externally (e.g. Reset, block switch)", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<DimensionInput label="Padding" value="12px" onChange={onChange} />);
+    rerender(<DimensionInput label="Padding" value={undefined} onChange={onChange} />);
+    expect(screen.getByRole("spinbutton")).toHaveValue(null);
+  });
+});
+
+describe("NumberInputRow — debounced commit (canvas typing lag)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("does not call onChange per keystroke — only after the user pauses", () => {
+    const onChange = vi.fn();
+    render(<NumberInputRow label="Gap" value={undefined} min={0} max={64} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "2" } });
+    fireEvent.change(input, { target: { value: "24" } });
+    expect(onChange).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(STYLE_COMMIT_DEBOUNCE_MS);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(24);
+  });
+
+  it("shows the freshly typed number immediately even though the commit is deferred", () => {
+    const onChange = vi.fn();
+    render(<NumberInputRow label="Gap" value={undefined} min={0} max={64} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "24" } });
+    expect(input).toHaveValue(24);
+  });
+
+  it("blurring commits the clamped value immediately without waiting for the debounce delay", () => {
+    const onChange = vi.fn();
+    render(<NumberInputRow label="Gap" value={undefined} min={0} max={64} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "999" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith(64);
+  });
+
+  it("Reset commits undefined immediately, not debounced", () => {
+    const onChange = vi.fn();
+    render(<NumberInputRow label="Gap" value={20} min={0} max={64} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reset Gap" }));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
+describe("FloatingLabelInput — debounced commit (canvas typing lag)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("does not call onChange per keystroke — only after the user pauses", () => {
+    const onChange = vi.fn();
+    render(<FloatingLabelInput label="Email" value="" onChange={onChange} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "a" } });
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    expect(onChange).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(STYLE_COMMIT_DEBOUNCE_MS);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("a@b.com");
+  });
+
+  it("shows the freshly typed text immediately even though the commit is deferred", () => {
+    render(<FloatingLabelInput label="Email" value="" onChange={vi.fn()} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    expect(input).toHaveValue("a@b.com");
+  });
+
+  it("blurring commits immediately without waiting for the debounce delay", () => {
+    const onChange = vi.fn();
+    render(<FloatingLabelInput label="Email" value="" onChange={onChange} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith("a@b.com");
   });
 });

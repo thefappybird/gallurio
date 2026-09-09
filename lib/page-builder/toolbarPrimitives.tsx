@@ -8,7 +8,7 @@
  * Editor chrome is intentionally English-only.
  */
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { RotateCcw } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -31,6 +31,69 @@ export const COLOR_LABEL: Record<StyleColorToken, string> = {
   background: "Background",
   foreground: "Text",
 };
+
+/**
+ * Every keystroke in the style panel used to commit straight to the Puck
+ * store, which re-renders the whole canvas synchronously — typing into a
+ * padding/margin/gap/text field felt laggy because each character paid for
+ * a full canvas repaint. This buffers the value locally (instant, cheap
+ * local re-render) and defers the real commit until the user pauses.
+ */
+export const STYLE_COMMIT_DEBOUNCE_MS = 350;
+
+/**
+ * Buffers a controlled `value` locally so typing feels instant, and defers
+ * calling `onChange` (the expensive canvas-repainting commit) until the user
+ * pauses for `delay`. Callers must invoke `flush` on blur/Enter/discrete
+ * actions (unit switch, Reset) to commit immediately instead of waiting.
+ *
+ * Resyncs the draft from `value` whenever it changes for a reason OTHER than
+ * our own commit (block switch, Reset, undo) — the same render-time
+ * adjustment trick FontFamilyRow already used for its draft/prevDisplayText
+ * pair, generalized so every debounced control shares one implementation.
+ */
+export function useDebouncedCommit<T>(
+  value: T,
+  onChange: (next: T) => void,
+  delay: number = STYLE_COMMIT_DEBOUNCE_MS,
+): [T, (next: T) => void, (next: T) => void] {
+  const [draft, setDraft] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
+  if (!Object.is(value, prevValue)) {
+    setPrevValue(value);
+    setDraft(value);
+  }
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
+  function change(next: T) {
+    setDraft(next);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      onChangeRef.current(next);
+    }, delay);
+  }
+
+  function flush(next: T) {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setDraft(next);
+    onChangeRef.current(next);
+  }
+
+  return [draft, change, flush];
+}
 
 export const toolbarButtonBase =
   "inline-flex size-9 cursor-pointer items-center justify-center border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -380,6 +443,8 @@ export function DimensionInput({
     return num;
   }
 
+  const [draft, change, flush] = useDebouncedCommit(value, onChange);
+
   // Persist the unit independently — clearing the number value must not reset the unit.
   // Note: the UI select only offers px / % — "rem" is a read-only legacy unit.
   // If a block carries an explicit rem value (e.g. "1.5rem" from old defaults),
@@ -388,19 +453,19 @@ export function DimensionInput({
   // edit the owner makes will write the value back as px. If the dev DB is ever
   // seeded with explicit rem padding, this is the place to add a rem option.
   const [localUnit, setLocalUnit] = useState<"px" | "%">(() => {
-    const u = parse(value).unit;
+    const u = parse(draft).unit;
     return u === "rem" ? "px" : u;
   });
-  // When value is defined, reflect its actual unit; when undefined, keep the last known unit.
+  // When draft is defined, reflect its actual unit; when undefined, keep the last known unit.
   // rem coerces to px so the select never holds an option it can't display.
-  const parsedUnit = value ? parse(value).unit : localUnit;
+  const parsedUnit = draft ? parse(draft).unit : localUnit;
   const activeUnit: "px" | "%" = parsedUnit === "rem" ? "px" : parsedUnit;
   // Raw numeric part kept for compose-on-unit-change; displayN converts rem→px for the input.
-  const n = value ? parse(value).n : "";
-  const displayN = toDisplayNumber(value || undefined, activeUnit);
+  const n = draft ? parse(draft).n : "";
+  const displayN = toDisplayNumber(draft || undefined, activeUnit);
 
-  // Derive placeholder text (px-converted) from effectiveValue when value is unset.
-  const placeholder = value === undefined && effectiveValue !== undefined
+  // Derive placeholder text (px-converted) from effectiveValue when draft is unset.
+  const placeholder = draft === undefined && effectiveValue !== undefined
     ? toDisplayNumber(effectiveValue, activeUnit) || undefined
     : undefined;
 
@@ -412,26 +477,26 @@ export function DimensionInput({
   }
 
   function handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
-    onChange(compose(e.target.value, activeUnit));
+    change(compose(e.target.value, activeUnit));
   }
 
   function handleUnitChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const u = e.target.value as "px" | "%";
     setLocalUnit(u);
-    onChange(compose(n, u));
+    flush(compose(n, u));
   }
 
   function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
     const raw = e.target.value;
-    if (raw === "") { onChange(undefined); return; }
+    if (raw === "") { flush(undefined); return; }
     let num = Number(raw);
-    if (!Number.isFinite(num)) { onChange(undefined); return; }
+    if (!Number.isFinite(num)) { flush(undefined); return; }
     if (min !== undefined && num < min) num = min;
     if (max !== undefined && num > max) num = max;
-    onChange(`${num}${activeUnit}`);
+    flush(`${num}${activeUnit}`);
   }
 
-  const isEffective = value === undefined && effectiveValue !== undefined;
+  const isEffective = draft === undefined && effectiveValue !== undefined;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -465,7 +530,7 @@ export function DimensionInput({
             <option value="%">%</option>
           </select>
         </span>
-        <ResetButton onClick={() => onChange(undefined)} label={label} />
+        <ResetButton onClick={() => flush(undefined)} label={label} />
       </div>
     </div>
   );
@@ -500,6 +565,7 @@ export function NumberInputRow({
   /** Show this number as the placeholder when value is unset (theme-coupled). */
   effectiveValue?: number;
 }) {
+  const [draft, change, flush] = useDebouncedCommit(value, onChange);
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="min-w-0 break-words text-xs text-muted-foreground">{label}</span>
@@ -511,20 +577,20 @@ export function NumberInputRow({
             min={min}
             max={max}
             step={step}
-            value={value ?? ""}
-            placeholder={value === undefined && effectiveValue !== undefined ? String(effectiveValue) : undefined}
+            value={draft ?? ""}
+            placeholder={draft === undefined && effectiveValue !== undefined ? String(effectiveValue) : undefined}
             onChange={(e) => {
               const raw = e.target.value;
-              if (raw === "") { onChange(undefined); return; }
+              if (raw === "") { change(undefined); return; }
               const n = Number(raw);
-              if (Number.isFinite(n)) onChange(n);
+              if (Number.isFinite(n)) change(n);
             }}
             onBlur={(e) => {
               const raw = e.target.value;
-              if (raw === "") return;
+              if (raw === "") { flush(undefined); return; }
               const n = Number(raw);
-              if (!Number.isFinite(n)) { onChange(undefined); return; }
-              onChange(Math.min(max, Math.max(min, n)));
+              if (!Number.isFinite(n)) { flush(undefined); return; }
+              flush(Math.min(max, Math.max(min, n)));
             }}
             className={cn(
               "h-7 w-16 border border-border bg-background pl-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -537,7 +603,7 @@ export function NumberInputRow({
             </span>
           )}
         </span>
-        <ResetButton onClick={() => onChange(undefined)} label={label} />
+        <ResetButton onClick={() => flush(undefined)} label={label} />
       </div>
     </div>
   );
@@ -615,6 +681,7 @@ export function FloatingLabelInput({
   placeholder?: string;
 }) {
   const id = useId();
+  const [draft, change, flush] = useDebouncedCommit(value, onChange);
   return (
     <div className="relative">
       <input
@@ -627,8 +694,9 @@ export function FloatingLabelInput({
         // and visible on focus — :placeholder-shown still works correctly because
         // any non-empty placeholder counts as "shown" when the field is empty.
         placeholder={placeholder ?? " "}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={draft}
+        onChange={(e) => change(e.target.value)}
+        onBlur={(e) => flush(e.target.value)}
         className={cn(
           "peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
           placeholder && "placeholder:text-transparent focus:placeholder:text-muted-foreground"

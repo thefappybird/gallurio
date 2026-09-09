@@ -82,6 +82,7 @@ import {
   ResetButton,
   FloatingLabelInput,
   FontFamilyRow,
+  useDebouncedCommit,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
 import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
@@ -1141,6 +1142,23 @@ export function ContentInputs({
 }) {
   const workspaceContact = useContext(ContactDetailsDefaultsContext);
   const demo = useDemoPicker();
+  // Every keystroke here used to commit straight to the Puck store (full
+  // canvas repaint per character). Debounced like the style-panel number
+  // fields — see useDebouncedCommit. One hook per mutually-exclusive `type`
+  // branch below (hooks can't be called conditionally); unused ones just
+  // carry idle local state.
+  const [headingTextDraft, changeHeadingText, flushHeadingText] = useDebouncedCommit(
+    (props.text as string) ?? "",
+    (v) => setProp("text", v),
+  );
+  const [textDraft, changeText, flushText] = useDebouncedCommit(
+    (props.text as string) ?? "",
+    (v) => setProp("text", v),
+  );
+  const [buttonLabelDraft, changeButtonLabel, flushButtonLabel] = useDebouncedCommit(
+    (props.label as string) ?? "",
+    (v) => setProp("label", v),
+  );
   if (type === "Heading") {
     return (
       <div className="flex flex-col gap-3">
@@ -1148,8 +1166,9 @@ export function ContentInputs({
           <span>Text</span>
           <input
             type="text"
-            value={(props.text as string) ?? ""}
-            onChange={(e) => setProp("text", e.target.value)}
+            value={headingTextDraft}
+            onChange={(e) => changeHeadingText(e.target.value)}
+            onBlur={(e) => flushHeadingText(e.target.value)}
             className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
@@ -1169,8 +1188,9 @@ export function ContentInputs({
         <span>Text</span>
         <textarea
           rows={4}
-          value={(props.text as string) ?? ""}
-          onChange={(e) => setProp("text", e.target.value)}
+          value={textDraft}
+          onChange={(e) => changeText(e.target.value)}
+          onBlur={(e) => flushText(e.target.value)}
           className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </label>
@@ -1183,8 +1203,9 @@ export function ContentInputs({
           <span>Button text</span>
           <input
             type="text"
-            value={(props.label as string) ?? ""}
-            onChange={(e) => setProp("label", e.target.value)}
+            value={buttonLabelDraft}
+            onChange={(e) => changeButtonLabel(e.target.value)}
+            onBlur={(e) => flushButtonLabel(e.target.value)}
             className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
@@ -3119,14 +3140,19 @@ export function LayoutTabBody({
 function VideoPanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
   const aspectRatio = (p?.aspectRatio as string | undefined) ?? "16 / 9";
   const size = (p?.size as string | undefined) ?? "lg";
+  const [videoUrlDraft, changeVideoUrl, flushVideoUrl] = useDebouncedCommit(
+    (p?.videoUrl as string) ?? "",
+    (v) => setProp("videoUrl", v),
+  );
   return (
     <div className="flex flex-col gap-3 p-3">
       <label className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">Video URL</span>
         <input
           type="url"
-          value={(p?.videoUrl as string) ?? ""}
-          onChange={(e) => setProp("videoUrl", e.target.value)}
+          value={videoUrlDraft}
+          onChange={(e) => changeVideoUrl(e.target.value)}
+          onBlur={(e) => flushVideoUrl(e.target.value)}
           placeholder="YouTube or Vimeo URL"
           className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
