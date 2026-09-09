@@ -46,6 +46,38 @@ describe("PageBodyBlock", () => {
     expect(style.flex).toBe("1 1 auto");
   });
 
+  it("renders no background layer when backgroundImages is empty", () => {
+    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
+    const { container } = render(<PageBodyBlock content={Content} backgroundImages={[]} />);
+    expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
+  });
+
+  it("renders a single static <img> spanning the whole page body (edge-to-edge, past the margin)", () => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
+    const { container } = render(
+      <PageBodyBlock content={Content} backgroundImages={[{ id: "a", publicId: "ws/a" }]} />,
+    );
+    const layer = container.querySelector('[data-block="page-body"] > [data-bg-opacity-layer]');
+    const img = layer?.querySelector("img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain("ws/a");
+    vi.unstubAllEnvs();
+  });
+
+  it("renders the slideshow island for two or more images", () => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
+    const { container } = render(
+      <PageBodyBlock
+        content={Content}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+      />,
+    );
+    expect(container.querySelector("[data-bg-slideshow]")).toBeInTheDocument();
+    vi.unstubAllEnvs();
+  });
+
   it("uses an explicitly selected horizontal margin", () => {
     const Content = vi.fn(() => <div />) as unknown as SlotComponent;
     render(<PageBodyBlock content={Content} marginX="4rem" />);

@@ -2906,6 +2906,8 @@
           "fields": {
             "style": "Gaya",
             "pageStyle": "Gaya halaman",
+            "pageBodySettingsTitle": "Pengaturan Page Body",
+            "pageBodySettingsDescription": "Pengaturan ini memengaruhi page body secara langsung — bingkai bersama tempat setiap bagian halaman ini berada.",
             "pageBodyMargin": "Margin horizontal halaman",
             "pageBodyContainerDefaults": "Default container baru",
             "pageBodyContainerDefaultsDescription": "Nilai ini hanya diterapkan pada container yang Anda tambahkan mulai sekarang. Container yang ada tidak berubah.",

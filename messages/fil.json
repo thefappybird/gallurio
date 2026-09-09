@@ -2906,6 +2906,8 @@
           "fields": {
             "style": "Estilo",
             "pageStyle": "Estilo ng pahina",
+            "pageBodySettingsTitle": "Mga Setting ng Page Body",
+            "pageBodySettingsDescription": "Direktang naaapektuhan ng mga setting na ito ang page body — ang shared frame kung saan nakalagay ang bawat seksyon ng pahinang ito.",
             "pageBodyMargin": "Pahalang na margin ng pahina",
             "pageBodyContainerDefaults": "Mga default ng bagong container",
             "pageBodyContainerDefaultsDescription": "Ilalapat lang ang mga value na ito sa mga container na idaragdag mo mula ngayon. Hindi magbabago ang mga kasalukuyang container.",

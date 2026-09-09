@@ -2,7 +2,18 @@
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { CSSProperties } from "react";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
-import type { CssLength } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  colorTokenToVar,
+  productionStyleField,
+  STYLE_COLOR_TOKENS,
+  type BlockStyle,
+  type CssLength,
+  type StyleColorToken,
+} from "@/lib/page-builder/styleToolkit";
+import { cfImageUrl } from "./manualBlocks";
+import type { GalleryImage } from "./GalleryGridBlock";
+import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 
 export const PAGE_BODY_MARGIN_X_DEFAULT: CssLength = "1.5rem";
 export const PAGE_BODY_SLOT_CLASS = "pf-page-body-slot";
@@ -27,6 +38,15 @@ export type PageBodyContainerDefaults = {
 };
 
 export type PageBodyBlockProps = {
+  _style?: BlockStyle;
+  /** Same background-image/overlay banner as Container/Columns, but spans the
+   *  WHOLE page body edge-to-edge — rendered on the outer wrapper, behind the
+   *  margin gutters, not just the padded content slot. */
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   /** Horizontal inset shared by all ordinary page content. */
   marginX?: CssLength;
   /** Defaults for new descendant Containers. Existing blocks are never changed. */
@@ -41,15 +61,41 @@ export const pageBodyDefaultProps: PageBodyBlockProps = {
   // every other containerDefaults field, and never retrofitted onto existing
   // content (see applyPageBodyContainerDefaults's doc comment).
   containerDefaults: { paddingLeft: "0px", paddingRight: "0px" },
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
+  overlayOpacity: 0,
   content: [],
 };
 
 export function PageBodyBlock({
+  _style,
+  backgroundImages,
+  bgAnimation,
+  bgSpeed,
+  overlayOpacity,
+  overlayColorToken,
   marginX,
   content: Content,
   puck,
 }: Omit<PageBodyBlockProps, "content"> & { content: SlotComponent; puck?: BlockPuck }) {
   const horizontalMargin = marginX ?? PAGE_BODY_MARGIN_X_DEFAULT;
+
+  // Same baked-background resolution as Container/Columns — see those for the
+  // shared shape (single <img> for one image, slideshow island for 2+).
+  const layers = (Array.isArray(backgroundImages) ? backgroundImages : [])
+    .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
+    .filter((l): l is { id: string; src: string } => Boolean(l.src));
+  const hasBg = layers.length > 0;
+  const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
+  const overlayAlpha = overlayPercent / 100;
+  const scrimColor =
+    overlayColorToken && (STYLE_COLOR_TOKENS as readonly string[]).includes(overlayColorToken)
+      ? `color-mix(in srgb, ${colorTokenToVar(overlayColorToken)} ${overlayPercent}%, transparent)`
+      : `rgba(0,0,0,${overlayAlpha})`;
+  const bgImageAlpha = Math.min(100, Math.max(0, _style?.bgImageOpacity ?? 100)) / 100;
+  const sectionStyle = resolveBlockStyle(_style);
+
   return (
     <main
       ref={puck?.dragRef ?? undefined}
@@ -67,11 +113,40 @@ export function PageBodyBlock({
         flex: "1 1 auto",
         minWidth: 0,
         minHeight: 0,
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
+        ...sectionStyle,
         // A direct full-width Container uses this to offset only the PageBody
         // inset. Nested Containers never see the page-body slot selector.
         "--pf-page-body-margin-x": horizontalMargin,
       } as CSSProperties}
     >
+      {/* Banner spans the WHOLE body (edge-to-edge, behind the margin gutters
+          too) — rendered here on the outer wrapper, not the padded slot. */}
+      {hasBg && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
+      )}
+      {hasBg && (
+        <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
+          {layers.length === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={layers[0].src}
+              alt=""
+              aria-hidden="true"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+          {layers.length >= 2 && (
+            <ContainerBackgroundSlideshow
+              images={layers}
+              animation={bgAnimation ?? "crossfade"}
+              speed={bgSpeed ?? "medium"}
+            />
+          )}
+        </div>
+      )}
       <style>{`
         .${PAGE_BODY_SLOT_CLASS} > [data-pf-full-width] {
           width: calc(100% + var(--pf-page-body-margin-x) + var(--pf-page-body-margin-x)) !important;
@@ -83,6 +158,8 @@ export function PageBodyBlock({
         className: PAGE_BODY_SLOT_CLASS,
         style: {
           boxSizing: "border-box",
+          position: "relative",
+          zIndex: 1,
           // Block flow, NOT flex: the slot stretches to fill the body row (so the
           // whole gap between Navigation and Footer stays droppable), but its
           // children lay out like the page canvas -- each block keeps its own
@@ -111,6 +188,40 @@ export const pageBodyPermissions: ComponentConfig<PageBodyBlockProps>["permissio
 };
 
 export const pageBodyFields = {
+  // Inert placeholder in production — StyleToolkitField only renders in the
+  // editor bundle (see editorConfig.tsx's `pageBody` for the real fields).
+  _style: productionStyleField,
+  bgAnimation: {
+    type: "select",
+    label: "Background animation",
+    options: [
+      { label: "Crossfade", value: "crossfade" },
+      { label: "Ken Burns", value: "kenburns" },
+      { label: "Slide", value: "slide" },
+    ],
+  } as Field<PageBodyBlockProps["bgAnimation"]>,
+  bgSpeed: {
+    type: "select",
+    label: "Animation speed",
+    options: [
+      { label: "Slow (7s)", value: "slow" },
+      { label: "Medium (5s)", value: "medium" },
+      { label: "Fast (3s)", value: "fast" },
+    ],
+  } as Field<PageBodyBlockProps["bgSpeed"]>,
+  overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
+  overlayColorToken: {
+    type: "select",
+    label: "Overlay color",
+    options: [
+      { label: "None (black)", value: "" },
+      { label: "Primary", value: "primary" },
+      { label: "Secondary", value: "secondary" },
+      { label: "Accent", value: "accent" },
+      { label: "Background", value: "background" },
+      { label: "Foreground", value: "foreground" },
+    ],
+  } as unknown as Field<StyleColorToken | undefined>,
   marginX: { type: "text", label: "Horizontal page margin" } as Field<CssLength | undefined>,
   // Puck's shared <Render> walks object fields even outside the editor. Keep
   // the complete nested schema here; omitting objectFields lets the editor

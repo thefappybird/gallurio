@@ -158,10 +158,15 @@ const NAV_CONFIG_TYPES = new Set<string>([
   ...(LEGACY_NAV_PRESET_KEYS as readonly string[]),
 ]);
 
+const CONTENT_ONLY_TAB: readonly BlockTab[] = ["content"];
 const CONTENT_DESIGN_TABS: readonly BlockTab[] = ["content", "design"];
 const ALL_BLOCK_TABS: readonly BlockTab[] = ["content", "design", "layout"];
 
 export function blockTabsForType(type: string): readonly BlockTab[] {
+  // PageBody's own margin/container-defaults controls are separate, dedicated
+  // Puck fields outside this panel (see editorConfig.tsx) — this panel exists
+  // only for its banner, so Design/Layout would be empty tabs.
+  if (type === "PageBody") return CONTENT_ONLY_TAB;
   return type === "ContactDetails" || NAV_CONFIG_TYPES.has(type)
     ? CONTENT_DESIGN_TABS
     : ALL_BLOCK_TABS;
@@ -3325,8 +3330,8 @@ function BlockAwarePanel({
             p={p}
             setProp={setProp}
             setProps={setProps}
-            showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image" || type === "Columns"}
-            isContainer={isContainer || isGalleryContainer || type === "Columns"}
+            showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image" || type === "Columns" || type === "PageBody"}
+            isContainer={isContainer || isGalleryContainer || type === "Columns" || type === "PageBody"}
             navDetach={navDetach}
             t={t}
           />

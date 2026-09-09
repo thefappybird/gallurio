@@ -2906,6 +2906,8 @@
           "fields": {
             "style": "สไตล์",
             "pageStyle": "สไตล์หน้าเว็บ",
+            "pageBodySettingsTitle": "การตั้งค่า Page Body",
+            "pageBodySettingsDescription": "การตั้งค่านี้มีผลโดยตรงต่อ page body ซึ่งเป็นกรอบที่ทุกส่วนของหน้านี้อยู่ภายใน",
             "pageBodyMargin": "ระยะขอบแนวนอนของหน้า",
             "pageBodyContainerDefaults": "ค่าเริ่มต้นสำหรับคอนเทนเนอร์ใหม่",
             "pageBodyContainerDefaultsDescription": "ค่าเหล่านี้จะใช้กับคอนเทนเนอร์ที่คุณเพิ่มตั้งแต่นี้ไปเท่านั้น คอนเทนเนอร์ที่มีอยู่จะไม่เปลี่ยนแปลง",

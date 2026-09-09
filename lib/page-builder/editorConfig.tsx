@@ -335,6 +335,8 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.navigation": "Navigation",
   "puckConfig.fields.style": "Style",
   "puckConfig.fields.pageStyle": "Page style",
+  "puckConfig.fields.pageBodySettingsTitle": "Page Body Settings",
+  "puckConfig.fields.pageBodySettingsDescription": "These settings affect the page body directly — the shared frame every section of this page sits inside.",
   "puckConfig.fields.pageBodyMargin": "Horizontal page margin",
   "puckConfig.fields.pageBodyContainerDefaults": "New container defaults",
   "puckConfig.fields.pageBodyContainerDefaultsDescription": "These values are applied only to containers you add from now on. Existing containers stay unchanged.",
@@ -615,7 +617,15 @@ export function createEditorConfig(
     type: "custom",
     label: t("puckConfig.fields.pageBodyMargin"),
     render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-      <div className="p-3">
+      <div className="flex flex-col gap-3 p-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-foreground">
+            {t("puckConfig.fields.pageBodySettingsTitle")}
+          </span>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("puckConfig.fields.pageBodySettingsDescription")}
+          </p>
+        </div>
         <DimensionInput
           label={t("puckConfig.fields.pageBodyMargin")}
           value={value as PageBodyBlockProps["marginX"]}
@@ -1243,6 +1253,43 @@ export function createEditorConfig(
     inline: true,
     defaultProps: pageBodyDefaultProps,
     fields: {
+      // Same banner fields as Container (editorContainerFields above) — the
+      // panel this feeds shows only the Content tab (blockTabsForType).
+      _style: styleField,
+      bgAnimation: {
+        type: "select",
+        label: t("puckConfig.fields.bgAnimation"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" },
+          { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" },
+          { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" },
+        ],
+      } as unknown as Field<PageBodyBlockProps["bgAnimation"]>,
+      bgSpeed: {
+        type: "select",
+        label: t("puckConfig.fields.bgSpeed"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.bgSpeed.slow"), value: "slow" },
+          { label: t("puckConfig.options.bgSpeed.medium"), value: "medium" },
+          { label: t("puckConfig.options.bgSpeed.fast"), value: "fast" },
+        ],
+      } as unknown as Field<PageBodyBlockProps["bgSpeed"]>,
+      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), min: 0, max: 100, visible: false } as unknown as Field<number | undefined>,
+      overlayColorToken: {
+        type: "select",
+        label: t("puckConfig.fields.overlayColor"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.overlayColor.none"), value: "" },
+          { label: t("puckConfig.options.overlayColor.primary"), value: "primary" },
+          { label: t("puckConfig.options.overlayColor.secondary"), value: "secondary" },
+          { label: t("puckConfig.options.overlayColor.accent"), value: "accent" },
+          { label: t("puckConfig.options.overlayColor.background"), value: "background" },
+          { label: t("puckConfig.options.overlayColor.foreground"), value: "foreground" },
+        ],
+      } as unknown as Field<StyleColorToken | undefined>,
       marginX: pageBodyMarginField,
       containerDefaults: pageBodyContainerDefaultsField,
       content: { type: "slot" },

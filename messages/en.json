@@ -2906,6 +2906,8 @@
           "fields": {
             "style": "Style",
             "pageStyle": "Page style",
+            "pageBodySettingsTitle": "Page Body Settings",
+            "pageBodySettingsDescription": "These settings affect the page body directly — the shared frame every section of this page sits inside.",
             "pageBodyMargin": "Horizontal page margin",
             "pageBodyContainerDefaults": "New container defaults",
             "pageBodyContainerDefaultsDescription": "These values are applied only to containers you add from now on. Existing containers stay unchanged.",

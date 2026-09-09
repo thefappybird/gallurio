@@ -750,6 +750,10 @@ describe("Navigation tabs", () => {
     expect(blockTabsForType("Container")).toEqual(["content", "design", "layout"]);
   });
 
+  it("offers only Content for PageBody — margin/container-defaults live in their own dedicated fields", () => {
+    expect(blockTabsForType("PageBody")).toEqual(["content"]);
+  });
+
   it("renders the two-tab Navigation inspector without generic Design controls", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Navigation" />);
 
@@ -2655,6 +2659,23 @@ describe("StyleToolkitField — GalleryMasonry flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     expect(screen.getByText(/add at least 3 images to each active column/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "On" })).toBeDisabled();
+  });
+});
+
+describe("ContentTabBody — PageBody banner", () => {
+  it("shows the banner/background section and nothing else — PageBody has no other content controls", () => {
+    render(
+      <ContentTabBody
+        s={{}}
+        set={vi.fn()}
+        type="PageBody"
+        p={{}}
+        setProp={vi.fn()}
+        showBanner={true}
+        isContainer={true}
+      />
+    );
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
   });
 });
 

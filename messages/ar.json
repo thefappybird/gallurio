@@ -2906,6 +2906,8 @@
           "fields": {
             "style": "النمط",
             "pageStyle": "نمط الصفحة",
+            "pageBodySettingsTitle": "إعدادات نص الصفحة",
+            "pageBodySettingsDescription": "تؤثر هذه الإعدادات على نص الصفحة مباشرة — الإطار المشترك الذي يحتوي كل قسم في هذه الصفحة.",
             "pageBodyMargin": "الهامش الأفقي للصفحة",
             "pageBodyContainerDefaults": "الإعدادات الافتراضية للحاويات الجديدة",
             "pageBodyContainerDefaultsDescription": "تُطبق هذه القيم على الحاويات التي تضيفها من الآن فقط. لا تتغير الحاويات الموجودة.",

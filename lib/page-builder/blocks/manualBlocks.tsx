@@ -72,7 +72,7 @@ import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { GalleryImage } from "./GalleryGridBlock";
 
 // Returns null when imageId is missing or env is unset, so existing `url(...) || imageUrl` fallbacks still work.
-function cfImageUrl(publicId: string, w = 1200): string | null {
+export function cfImageUrl(publicId: string, w = 1200): string | null {
   return imageDeliveryUrl(publicId, { width: w, height: w * 4, fit: "scale-down" }) || null;
 }
 
