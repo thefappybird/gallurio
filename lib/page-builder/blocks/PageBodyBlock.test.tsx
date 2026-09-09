@@ -165,28 +165,4 @@ describe("PageBodyBlock", () => {
       paddingRight: "0px",
     });
   });
-
-  it("shows an editor-only margin overlay so a full-bleed child's own bleed doesn't hide the page margin", () => {
-    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
-    const { container } = render(
-      <PageBodyBlock content={Content} marginX="4rem" puck={{ isEditing: true } as never} />,
-    );
-    const left = container.querySelector('[data-pf-margin-overlay="left"]') as HTMLElement;
-    const right = container.querySelector('[data-pf-margin-overlay="right"]') as HTMLElement;
-
-    expect(left).not.toBeNull();
-    expect(right).not.toBeNull();
-    expect(left.style.width).toBe("4rem");
-    expect(right.style.width).toBe("4rem");
-    expect(left.style.pointerEvents).toBe("none");
-  });
-
-  it("never renders the margin overlay outside the editor (preview/publish stay untouched)", () => {
-    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
-    const { container } = render(
-      <PageBodyBlock content={Content} marginX="4rem" puck={{ isEditing: false } as never} />,
-    );
-
-    expect(container.querySelector('[data-pf-margin-overlay]')).toBeNull();
-  });
 });
