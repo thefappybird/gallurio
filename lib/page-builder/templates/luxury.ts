@@ -252,7 +252,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "accent",
                 gap: 0,
               },
@@ -476,7 +476,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 32,
               },
@@ -610,7 +610,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 textColorToken: "foreground",
                 gap: 24,
@@ -1017,7 +1017,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 32,
               },
@@ -1128,7 +1128,7 @@ export const luxuryTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 0,
               },

@@ -250,7 +250,7 @@ export const romanticTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 0,
                 marginBottom: "0px",
@@ -621,7 +621,7 @@ export const romanticTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "secondary",
                 textColorToken: "foreground",
                 gap: 0,
@@ -735,7 +735,7 @@ export const romanticTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 0,
               },
@@ -1195,7 +1195,7 @@ export const romanticTemplate: PortfolioTemplate = {
                 },
               ],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 0,
               },
@@ -1335,7 +1335,7 @@ export const romanticTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 textColorToken: "foreground",
                 gap: 24,

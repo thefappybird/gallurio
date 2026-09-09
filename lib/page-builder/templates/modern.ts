@@ -604,7 +604,7 @@ export const modernTemplate: PortfolioTemplate = {
               minHeight: "auto",
               alignX: "center",
               alignY: "top",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
               },
               bgAnimation: "crossfade",
@@ -761,7 +761,7 @@ export const modernTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 textColorToken: "foreground",
                 gap: 0,
@@ -778,6 +778,8 @@ export const modernTemplate: PortfolioTemplate = {
         marginX: "1.5rem",
         containerDefaults: {
           radius: 0,
+          paddingLeft: "0px",
+          paddingRight: "0px",
         },
       },
     },
@@ -1481,7 +1483,7 @@ export const modernTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 32,
               },
@@ -1557,7 +1559,7 @@ export const modernTemplate: PortfolioTemplate = {
               minHeight: "medium",
               alignX: "center",
               alignY: "center",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "accent",
                 contentHorizontalAlign: "center",
                 radius: 0,
@@ -1571,6 +1573,8 @@ export const modernTemplate: PortfolioTemplate = {
         marginX: "1.5rem",
         containerDefaults: {
           radius: 0,
+          paddingLeft: "0px",
+          paddingRight: "0px",
         },
       },
     },

@@ -177,6 +177,32 @@ describe("portfolio template registry", () => {
           .toContain(secondBlock?.type);
       });
 
+      it("gives every direct PageBody child 0px x-axis padding — the page margin is the only horizontal inset", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const pageBody = zone?.content.find((b) => b.type === "PageBody") as
+            | { props: { content?: unknown[] } }
+            | undefined;
+          if (!pageBody) continue;
+          for (const child of pageBody.props.content ?? []) {
+            const style = (child as { type: string; props: { _style?: { paddingLeft?: string; paddingRight?: string } } });
+            expect(style.props._style?.paddingLeft, `${template.id}: ${style.type} paddingLeft`).toBe("0px");
+            expect(style.props._style?.paddingRight, `${template.id}: ${style.type} paddingRight`).toBe("0px");
+          }
+        }
+      });
+
+      it("never overrides PageBody's containerDefaults without keeping the 0px x-axis padding default", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const pageBody = zone?.content.find((b) => b.type === "PageBody") as
+            | { props: { containerDefaults?: { paddingLeft?: string; paddingRight?: string } } }
+            | undefined;
+          const defaults = pageBody?.props.containerDefaults;
+          if (!defaults) continue; // absent → code-level pageBodyDefaultProps applies, already 0px
+          expect(defaults.paddingLeft, `${template.id}: PageBody containerDefaults.paddingLeft`).toBe("0px");
+          expect(defaults.paddingRight, `${template.id}: PageBody containerDefaults.paddingRight`).toBe("0px");
+        }
+      });
+
       it("every top-level home and gallery block has a stable id", () => {
         const allBlocks = [
           ...(data.home?.content ?? []),

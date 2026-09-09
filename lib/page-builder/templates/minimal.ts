@@ -342,7 +342,7 @@ export const minimalTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 textColorToken: "foreground",
                 gap: 24,
@@ -627,7 +627,7 @@ export const minimalTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 textColorToken: "foreground",
                 gap: 0,
@@ -742,7 +742,7 @@ export const minimalTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "secondary",
                 textColorToken: "foreground",
                 gap: 0,

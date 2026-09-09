@@ -303,7 +303,7 @@ export const editorialTemplate: PortfolioTemplate = {
               minHeight: "auto",
               alignX: "left",
               alignY: "top",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
               },
               bgAnimation: "crossfade",
@@ -439,7 +439,7 @@ export const editorialTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 32,
               },
@@ -566,7 +566,7 @@ export const editorialTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 gap: 0,
               },
@@ -973,7 +973,7 @@ export const editorialTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "primary",
                 textColorToken: "foreground",
                 gap: 24,
@@ -1089,7 +1089,7 @@ export const editorialTemplate: PortfolioTemplate = {
               ],
               backgroundImages: [],
               minHeight: "auto",
-              _style: {
+              _style: { paddingLeft: "0px", paddingRight: "0px",
                 bgColorToken: "background",
                 gap: 0,
               },
