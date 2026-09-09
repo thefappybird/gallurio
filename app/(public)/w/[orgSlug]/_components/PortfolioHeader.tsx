@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import { resolveNavOrder, type PortfolioHeaderConfig, type NavItemKey } from "@/lib/page-builder/types";
 import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
 import { useImageRetry } from "@/hooks/useImageRetry";
 
@@ -111,6 +111,8 @@ export function PortfolioHeader({
   activePath,
   homeHref: homeHrefProp,
   galleryHref: galleryHrefProp,
+  brandSlot,
+  overallWidth = "page-fit",
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
@@ -124,6 +126,15 @@ export function PortfolioHeader({
    * rendering inside the editor preview iframe so the link stays within the
    * draft-aware preview instead of navigating to the published public site. */
   galleryHref?: string;
+  /** Custom brand-region content (the Navigation block's editable logo/title
+   * slot) — replaces the default logo+brand-text link in the SAME row as the
+   * nav links when provided. Absent = today's default rendering, unchanged. */
+  brandSlot?: React.ReactNode;
+  /** Layout: "page-fit" (default) clamps the inner nav row to 80rem, matching
+   * today's rendering for any caller that omits this prop. "full" lets the row
+   * span the header's full width (NavigationBlock passes this, defaulting to
+   * "full" itself). */
+  overallWidth?: "page-fit" | "full";
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const logo = useImageRetry(config?.logoUrl);
@@ -158,6 +169,20 @@ export function PortfolioHeader({
 
   function getActiveLinkExtraStyle(): React.CSSProperties {
     const style: React.CSSProperties = { color: activeLinkColor };
+    if (config?.activeLinkBackgroundColor) {
+      style.backgroundColor = buildColorWithOpacity(
+        resolveColor(config.activeLinkBackgroundColor, "transparent"),
+        config.activeLinkOpacity ?? 100,
+      );
+    }
+    if (config?.activeLinkBorderWidth !== undefined) {
+      style.border = config.activeLinkBorderWidth > 0
+        ? `${config.activeLinkBorderWidth}px solid ${resolveColor(config.activeLinkBorderColor, "var(--pf-color-fg)")}`
+        : "none";
+    }
+    if (config?.activeLinkRadius) {
+      style.borderRadius = RADIUS_MAP[config.activeLinkRadius] ?? "var(--pf-radius)";
+    }
     if (config?.activeLinkScale) {
       style.transform = "scale(1.08)";
       style.fontWeight = 700;
@@ -184,33 +209,46 @@ export function PortfolioHeader({
   }
 
   const activeLinkExtra = getActiveLinkExtraStyle();
+  const inactiveLinkExtra: React.CSSProperties = {
+    ...(config?.inactiveLinkBackgroundColor && {
+      backgroundColor: buildColorWithOpacity(
+        resolveColor(config.inactiveLinkBackgroundColor, "transparent"),
+        config.inactiveLinkOpacity ?? 100,
+      ),
+    }),
+    ...(config?.inactiveLinkBorderWidth !== undefined && {
+      border: config.inactiveLinkBorderWidth > 0
+        ? `${config.inactiveLinkBorderWidth}px solid ${resolveColor(config.inactiveLinkBorderColor, "var(--pf-color-fg)")}`
+        : "none",
+    }),
+    ...(config?.inactiveLinkRadius && {
+      borderRadius: RADIUS_MAP[config.inactiveLinkRadius] ?? "var(--pf-radius)",
+    }),
+  };
   const brandText = config && "brandText" in config ? config.brandText?.trim() ?? "" : labels.brand;
+  const navOrder = resolveNavOrder(config?.navOrder);
 
-  return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        backgroundColor: buildBg(config),
-        borderBottom: borderBottomStyle,
-        boxShadow: shadow,
-        fontFamily: "var(--pf-font-body)",
-      }}
-    >
-      <nav
-        aria-label={labels.navLandmark}
-        style={{
-          maxWidth: "80rem",
-          margin: "0 auto",
-          padding: navbarSize.navPadding,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1rem",
-        }}
-      >
+  function renderNavItem(key: NavItemKey): React.ReactNode {
+    if (key === "logo") {
+      return brandSlot ? (
+        <div
+          key="logo"
+          className="pf-nav-brand"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
+            width: "100%",
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          {brandSlot}
+        </div>
+      ) : (
         <Link
+          key="logo"
           href={homeHref}
           style={{
             fontFamily: "var(--pf-font-heading)",
@@ -221,6 +259,7 @@ export function PortfolioHeader({
             display: "flex",
             alignItems: "center",
             gap: "0.625rem",
+            flex: "1 1 auto",
             minWidth: 0,
             overflow: "hidden",
           }}
@@ -246,32 +285,79 @@ export function PortfolioHeader({
             {brandText}
           </span>
         </Link>
-
-        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})` }}>
+      );
+    }
+    if (key === "home") {
+      return (
+        <span key="home" className="pf-nav-collapsible">
           <HeaderLink
             href={homeHref}
             isActive={isHomeActive}
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            inactiveStyle={inactiveLinkExtra}
             minHeight={navbarSize.linkMinHeight}
             paddingX={navbarSize.linkPaddingX}
           >
             {labels.home}
           </HeaderLink>
+        </span>
+      );
+    }
+    if (key === "gallery") {
+      return (
+        <span key="gallery" className="pf-nav-collapsible">
           <HeaderLink
             href={galleryHref}
             isActive={isGalleryActive}
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            inactiveStyle={inactiveLinkExtra}
             minHeight={navbarSize.linkMinHeight}
             paddingX={navbarSize.linkPaddingX}
           >
             {labels.gallery}
           </HeaderLink>
-          <ContactButton label={labels.contact} config={config} minHeight={navbarSize.contactMinHeight} />
-        </div>
+        </span>
+      );
+    }
+    return (
+      <span key="contact" className="pf-nav-collapsible">
+        <ContactButton label={labels.contact} config={config} minHeight={navbarSize.contactMinHeight} />
+      </span>
+    );
+  }
+
+  return (
+    <header
+      // Never mirrors for RTL — the owner reorders `navOrder` by hand instead
+      // (see resolveNavOrder). General blocks stay LTR-structured everywhere
+      // (canvas/preview/published) regardless of any ambient direction.
+      dir={config?.navDirection ?? "ltr"}
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        backgroundColor: buildBg(config),
+        borderBottom: borderBottomStyle,
+        boxShadow: shadow,
+        fontFamily: "var(--pf-font-body)",
+      }}
+    >
+      <nav
+        aria-label={labels.navLandmark}
+        style={{
+          maxWidth: overallWidth === "full" ? undefined : "80rem",
+          margin: overallWidth === "full" ? undefined : "0 auto",
+          padding: navbarSize.navPadding,
+          display: "flex",
+          alignItems: "center",
+          gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})`,
+        }}
+      >
+        {navOrder.map(renderNavItem)}
 
         <button
           type="button"
@@ -289,7 +375,9 @@ export function PortfolioHeader({
               resolveColor(config?.contactButtonColor, "var(--pf-color-primary)"),
               config?.contactButtonOpacity ?? 100,
             ),
-            color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+            // Same fill/text pairing as ContactButton above, and the same fix:
+            // contrast the FILL, not the page background.
+            color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-fg)"),
             border: "none",
             borderRadius: config?.contactButtonRadius
               ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")
@@ -314,45 +402,76 @@ export function PortfolioHeader({
             borderTop: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
           }}
         >
-          <HeaderLink
-            href={homeHref}
-            onNavigate={() => setMenuOpen(false)}
-            block
-            isActive={isHomeActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.home}
-          </HeaderLink>
-          <HeaderLink
-            href={galleryHref}
-            onNavigate={() => setMenuOpen(false)}
-            block
-            isActive={isGalleryActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.gallery}
-          </HeaderLink>
-          <ContactButton
-            label={labels.contact}
-            block
-            config={config}
-            onActivate={() => setMenuOpen(false)}
-            minHeight={navbarSize.contactMinHeight}
-          />
+          {navOrder
+            .filter((key): key is Exclude<NavItemKey, "logo"> => key !== "logo")
+            .map((key) =>
+              key === "home" ? (
+                <HeaderLink
+                  key="home"
+                  href={homeHref}
+                  onNavigate={() => setMenuOpen(false)}
+                  block
+                  isActive={isHomeActive}
+                  linkColor={linkColor}
+                  fontSize={fontSize}
+                  activeStyle={activeLinkExtra}
+                  inactiveStyle={inactiveLinkExtra}
+                  minHeight={navbarSize.linkMinHeight}
+                  paddingX={navbarSize.linkPaddingX}
+                >
+                  {labels.home}
+                </HeaderLink>
+              ) : key === "gallery" ? (
+                <HeaderLink
+                  key="gallery"
+                  href={galleryHref}
+                  onNavigate={() => setMenuOpen(false)}
+                  block
+                  isActive={isGalleryActive}
+                  linkColor={linkColor}
+                  fontSize={fontSize}
+                  activeStyle={activeLinkExtra}
+                  inactiveStyle={inactiveLinkExtra}
+                  minHeight={navbarSize.linkMinHeight}
+                  paddingX={navbarSize.linkPaddingX}
+                >
+                  {labels.gallery}
+                </HeaderLink>
+              ) : (
+                <ContactButton
+                  key="contact"
+                  label={labels.contact}
+                  block
+                  config={config}
+                  onActivate={() => setMenuOpen(false)}
+                  minHeight={navbarSize.contactMinHeight}
+                />
+              )
+            )}
         </div>
       )}
 
       <style>{`
-        .pf-nav-desktop { display: none; }
+        .pf-nav-collapsible { display: none; }
         .pf-nav-toggle { display: flex !important; }
+        .pf-nav-brand-content { width: 100%; min-width: 0; }
+        .pf-nav-brand-content > * { min-width: 0; max-width: 100%; }
+        .pf-nav-brand-content [data-block="image"] {
+          max-height: 75px !important;
+          max-width: 100% !important;
+          flex-shrink: 1;
+        }
+        .pf-nav-brand-content h1,
+        .pf-nav-brand-content h2,
+        .pf-nav-brand-content h3,
+        .pf-nav-brand-content h4,
+        .pf-nav-brand-content h5,
+        .pf-nav-brand-content h6 {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         .pf-nav-link:focus-visible,
         .pf-nav-contact:focus-visible,
         .pf-nav-toggle:focus-visible {
@@ -371,7 +490,11 @@ export function PortfolioHeader({
           .pf-nav-contact { min-width: 0; padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
         }
         @media (min-width: 640px) {
-          .pf-nav-desktop { display: flex !important; }
+          /* display:contents drops the wrapper's own box so each collapsible
+             item becomes a direct flex child of <nav> at its ordered
+             position — the logo (never wrapped) stays visible at every
+             width; only the wrapped items collapse below this breakpoint. */
+          .pf-nav-collapsible { display: contents; }
           .pf-nav-toggle { display: none !important; }
           .pf-nav-mobile { display: none !important; }
         }
@@ -389,6 +512,7 @@ function HeaderLink({
   linkColor,
   fontSize,
   activeStyle,
+  inactiveStyle,
   minHeight,
   paddingX,
 }: {
@@ -400,6 +524,7 @@ function HeaderLink({
   linkColor: string;
   fontSize: string;
   activeStyle: React.CSSProperties;
+  inactiveStyle: React.CSSProperties;
   minHeight: string;
   paddingX: string;
 }) {
@@ -418,7 +543,7 @@ function HeaderLink({
     transition: "background-color 0.15s",
   };
   return (
-    <Link href={href} onClick={onNavigate} className="pf-nav-link" style={isActive ? { ...baseStyle, ...activeStyle } : baseStyle}>
+    <Link href={href} onClick={onNavigate} className="pf-nav-link" style={isActive ? { ...baseStyle, ...activeStyle } : { ...baseStyle, ...inactiveStyle }}>
       {children}
     </Link>
   );
@@ -457,7 +582,11 @@ function ContactButton({
     padding: "0 1rem",
     marginTop: block ? "0.25rem" : 0,
     backgroundColor: buildColorWithOpacity(contactButtonFill, config?.contactButtonOpacity ?? 100),
-    color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+    // Default text color must contrast the FILL (contactButtonFill, effectively
+    // var(--pf-color-primary)), not the page background — those tokens can be
+    // equally light (e.g. Editorial's primary/background are both near-white),
+    // which made the default-styled contact button unreadable.
+    color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-fg)"),
     border: "none",
     borderRadius: config?.contactButtonRadius
       ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")

@@ -3,6 +3,7 @@ import {
   loadOnboardingContext,
   stepIndex,
 } from "@/lib/auth/onboardingStep";
+import { hasDemoImportMarker } from "@/lib/auth/demoImportMarker";
 import { connectDB } from "@/lib/db/mongoose";
 import { ONBOARDING_STEPS, User, Workspace, type PlanTier } from "@/lib/db/models";
 import { reconcileLemonSqueezySubscription } from "@/lib/actions/onboarding";
@@ -16,8 +17,11 @@ import { DoneStepForm } from "./done-form";
 // gating on a query param.
 export default async function DoneStepPage() {
   const ctx = await loadOnboardingContext();
+  const hasDemoImport = await hasDemoImportMarker();
 
-  if (ctx.user?.onboardingCompletedAt) redirect("/dashboard");
+  if (ctx.user?.onboardingCompletedAt) {
+    redirect(hasDemoImport ? "/portfolio" : "/dashboard");
+  }
 
   if (stepIndex(ctx.currentStep) < stepIndex("plan")) {
     redirect(`/onboarding/${ctx.currentStep}`);
@@ -52,6 +56,7 @@ export default async function DoneStepPage() {
       furthestStep="done"
       workspaceName={workspaceName}
       plan={plan}
+      finishDestination={hasDemoImport ? "portfolio" : "dashboard"}
     />
   );
 }

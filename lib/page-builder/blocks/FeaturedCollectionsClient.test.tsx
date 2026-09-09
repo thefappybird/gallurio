@@ -18,12 +18,14 @@ vi.mock("./CollectionPopup", () => ({
     open,
     onClose,
     brandVars,
+    dir,
   }: {
     collectionId: string;
     collectionName: string;
     open: boolean;
     onClose: () => void;
     brandVars?: Record<string, string>;
+    dir?: "ltr" | "rtl";
   }) => {
     if (!open) return null;
     return (
@@ -31,6 +33,7 @@ vi.mock("./CollectionPopup", () => ({
         data-testid="collection-popup"
         data-collection-id={collectionId}
         data-brand-vars={brandVars ? JSON.stringify(brandVars) : undefined}
+        data-dir={dir}
       >
         <span>{collectionName}</span>
         <button type="button" onClick={onClose} data-testid="popup-close">
@@ -215,6 +218,18 @@ describe("FeaturedCollectionsClient", () => {
       fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
       const popup = screen.getByTestId("collection-popup");
       expect(popup.getAttribute("data-brand-vars")).toBe(JSON.stringify({ "--pf-color-bg": "#ff00aa" }));
+    });
+
+    it("passes dir through to CollectionPopup, defaulting to 'ltr'", () => {
+      render(<FeaturedCollectionsClient {...baseProps} />);
+      fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+      expect(screen.getByTestId("collection-popup").getAttribute("data-dir")).toBe("ltr");
+    });
+
+    it("passes dir='rtl' through to CollectionPopup when set", () => {
+      render(<FeaturedCollectionsClient {...baseProps} dir="rtl" />);
+      fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+      expect(screen.getByTestId("collection-popup").getAttribute("data-dir")).toBe("rtl");
     });
 
     it("passes mode, slug, and popupConfig to CollectionPopup", () => {

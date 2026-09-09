@@ -155,6 +155,28 @@ describe("ContactDetailsBlock — SocialsRow justifyContent", () => {
   });
 });
 
+describe("ContactDetailsBlock — contactIconAlign (independent of valueAlign)", () => {
+  it("contactIconAlign overrides valueAlign for the icon row only", () => {
+    const { container } = renderBlock(makeWorkspace(), {
+      _style: { valueAlign: "left", contactIconAlign: "right" },
+    });
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("flex-end");
+  });
+
+  it("contactIconAlign unset falls back to valueAlign (no shift on saved pages)", () => {
+    const { container } = renderBlock(makeWorkspace(), { _style: { valueAlign: "left" } });
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("flex-start");
+  });
+
+  it("both unset defaults to center", () => {
+    const { container } = renderBlock(makeWorkspace(), {});
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("center");
+  });
+});
+
 describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
   it("renders email + phone from a built workspace doc", () => {
     const doc = {

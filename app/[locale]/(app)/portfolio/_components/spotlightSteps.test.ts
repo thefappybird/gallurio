@@ -46,22 +46,21 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.body).toContain("Switch between the different parts of your portfolio website");
   });
 
-  it("step 8 (header-tab) remains gated (1f gate must still function)", () => {
-    const step = SPOTLIGHT_STEPS.find((s) => s.id === "header-tab");
+  it("contact-tab remains gated (Navigation/Footer have no dedicated tour step)", () => {
+    const step = SPOTLIGHT_STEPS.find((s) => s.id === "contact-tab");
     expect(step).toBeDefined();
     expect(step?.gated).toBe(true);
-    expect(step?.anchorId).toBe("header-tab");
+    expect(step?.anchorId).toBe("contact-tab");
+    expect(SPOTLIGHT_STEPS.find((s) => s.id === "header-tab")).toBeUndefined();
   });
 
-  it("panel inner-tab steps use bottom placement; logo-uploader keeps left", () => {
-    const bottomIds = ["header-setup-tab", "header-design-tab", "contact-setup-tab", "contact-design-tab"];
+  it("panel inner-tab steps use bottom placement", () => {
+    const bottomIds = ["contact-setup-tab", "contact-design-tab"];
     for (const id of bottomIds) {
       const step = SPOTLIGHT_STEPS.find((s) => s.id === id);
       expect(step).toBeDefined();
       expect(step?.placement).toBe("bottom");
     }
-    const logo = SPOTLIGHT_STEPS.find((s) => s.id === "logo-uploader");
-    expect(logo?.placement).toBe("left");
   });
 
   it("step 3 (properties-panel) uses properties-panel-full anchor for full right sidebar (1c fix)", () => {
@@ -98,12 +97,8 @@ describe("SPOTLIGHT_STEPS", () => {
 
 describe("guideStepPanel", () => {
   it("returns the correct panel for each step bucket", () => {
-    expect(guideStepPanel("header-setup-tab")).toBe("nav");
-    expect(guideStepPanel("logo-uploader")).toBe("nav");
-    expect(guideStepPanel("header-design-tab")).toBe("nav");
     expect(guideStepPanel("contact-setup-tab")).toBe("contact");
     expect(guideStepPanel("contact-design-tab")).toBe("contact");
-    expect(guideStepPanel("header-tab")).toBe("none");
     expect(guideStepPanel("contact-tab")).toBe("none");
     expect(guideStepPanel("drag-block")).toBe("none");
     expect(guideStepPanel(undefined)).toBe("none");
@@ -112,21 +107,18 @@ describe("guideStepPanel", () => {
 
 describe("guidePanelActions", () => {
   it("returns the correct open/close flags given step id and current panel state", () => {
-    // nav step + header closed -> openHeader
-    expect(guidePanelActions("header-setup-tab", { headerOpen: false, contactOpen: false }))
-      .toEqual({ openHeader: true, openContact: false, closeHeader: false, closeContact: false });
-    // nav step + header already open -> all false (no-op)
-    expect(guidePanelActions("logo-uploader", { headerOpen: true, contactOpen: false }))
-      .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
     // contact step + contact closed -> openContact
-    expect(guidePanelActions("contact-setup-tab", { headerOpen: false, contactOpen: false }))
-      .toEqual({ openHeader: false, openContact: true, closeHeader: false, closeContact: false });
-    // none step + header open -> closeHeader
-    expect(guidePanelActions("drag-block", { headerOpen: true, contactOpen: false }))
-      .toEqual({ openHeader: false, openContact: false, closeHeader: true, closeContact: false });
-    // none step + both closed -> all false
-    expect(guidePanelActions("drag-block", { headerOpen: false, contactOpen: false }))
-      .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
+    expect(guidePanelActions("contact-setup-tab", { contactOpen: false }))
+      .toEqual({ openContact: true, closeContact: false });
+    // contact step + contact already open -> no-op
+    expect(guidePanelActions("contact-design-tab", { contactOpen: true }))
+      .toEqual({ openContact: false, closeContact: false });
+    // none step + contact open -> closeContact
+    expect(guidePanelActions("drag-block", { contactOpen: true }))
+      .toEqual({ openContact: false, closeContact: true });
+    // none step + contact closed -> all false
+    expect(guidePanelActions("drag-block", { contactOpen: false }))
+      .toEqual({ openContact: false, closeContact: false });
   });
 });
 
@@ -148,25 +140,17 @@ describe("applyGuidePanelActions", () => {
   it("invokes only the callbacks that correspond to true flags", () => {
     const calls: string[] = [];
     const cbs = {
-      openHeader: () => calls.push("openHeader"),
       openContact: () => calls.push("openContact"),
-      closeHeader: () => calls.push("closeHeader"),
       closeContact: () => calls.push("closeContact"),
     };
 
-    // openHeader true — only openHeader should fire
-    applyGuidePanelActions(
-      { openHeader: true, openContact: false, closeHeader: false, closeContact: false },
-      cbs,
-    );
-    expect(calls).toEqual(["openHeader"]);
+    // openContact true — only openContact should fire
+    applyGuidePanelActions({ openContact: true, closeContact: false }, cbs);
+    expect(calls).toEqual(["openContact"]);
 
-    // closeHeader + closeContact true — opens must not fire
+    // closeContact true — open must not fire
     calls.length = 0;
-    applyGuidePanelActions(
-      { openHeader: false, openContact: false, closeHeader: true, closeContact: true },
-      cbs,
-    );
-    expect(calls).toEqual(["closeHeader", "closeContact"]);
+    applyGuidePanelActions({ openContact: false, closeContact: true }, cbs);
+    expect(calls).toEqual(["closeContact"]);
   });
 });

@@ -19,6 +19,7 @@ describe("RootStyleField", () => {
     expect(screen.getByText(/background opacity/i)).toBeInTheDocument();
     const input = screen.getByRole("spinbutton");
     fireEvent.change(input, { target: { value: "40" } });
+    fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ bgOpacity: 40 }));
   });
 
@@ -59,6 +60,7 @@ describe("RootStyleField", () => {
     // Entering a numeric value ("20") produces "20px" from compose().
     const inputs = screen.getAllByRole("spinbutton");
     fireEvent.change(inputs[0], { target: { value: "20" } });
+    fireEvent.blur(inputs[0]);
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ paddingLeft: "20px", paddingRight: "20px", paddingX: undefined }),
     );
@@ -72,6 +74,7 @@ describe("RootStyleField", () => {
     const inputs = screen.getAllByRole("spinbutton");
     // First input in the advanced padding block is Top (numeric value → "10px")
     fireEvent.change(inputs[0], { target: { value: "10" } });
+    fireEvent.blur(inputs[0]);
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ paddingTop: "10px" }));
   });
 

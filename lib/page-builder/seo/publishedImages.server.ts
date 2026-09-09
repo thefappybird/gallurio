@@ -66,7 +66,7 @@ export async function collectCollectionImages(opts: {
     if (typeof d.assetId !== "string" || !d.assetId.trim()) continue;
     const url = imageDeliveryUrl(d.assetId);
     if (!url) continue;
-    images.push({ url, alt: d.altText || d.caption || "" });
+    images.push({ url, alt: d.caption || d.altText || "" });
   }
   // The DB query is already bounded to `limit` docs — this cap only dedupes
   // by URL (copies can share an assetId). Silent: the combiner below owns

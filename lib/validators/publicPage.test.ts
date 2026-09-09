@@ -4,10 +4,11 @@ import {
   portfolioPuckDataSchema,
   portfolioContactConfigSchema,
   portfolioCollectionsPopupConfigSchema,
+  portfolioHeaderConfigSchema,
   savedThemeSchema,
   savedThemesSchema,
 } from "./publicPage";
-import { DEFAULT_BRAND_KIT, SAVED_THEMES_MAX } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, SAVED_THEMES_MAX, POPUP_LAYOUTS, IMAGE_MODAL_LAYOUTS } from "@/lib/page-builder/types";
 
 // ---------------------------------------------------------------------------
 // portfolioCollectionsPopupConfigSchema
@@ -55,6 +56,112 @@ describe("portfolioCollectionsPopupConfigSchema new fields", () => {
     expect(parsed.closeButtonSize).toBe(44);
     expect(parsed.closeButtonRadius).toBe("rounded");
     expect(parsed.closeButtonBgColorToken).toBe("background");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// portfolioHeaderConfigSchema — navOrder
+// ---------------------------------------------------------------------------
+
+describe("portfolioHeaderConfigSchema — navOrder", () => {
+  it("accepts an empty object (navOrder optional)", () => {
+    expect(portfolioHeaderConfigSchema.parse({})).toEqual({});
+  });
+  it("accepts a full valid permutation of the 4 nav items", () => {
+    const v = { navOrder: ["contact", "gallery", "home", "logo"] as const };
+    expect(portfolioHeaderConfigSchema.parse(v)).toEqual(v);
+  });
+  it("accepts a partial order (resolveNavOrder fills the rest at render time)", () => {
+    const v = { navOrder: ["logo", "contact"] as const };
+    expect(portfolioHeaderConfigSchema.parse(v)).toEqual(v);
+  });
+  it("rejects an unknown nav item key", () => {
+    expect(portfolioHeaderConfigSchema.safeParse({ navOrder: ["sidebar"] }).success).toBe(false);
+  });
+  it("rejects more than 4 entries", () => {
+    expect(
+      portfolioHeaderConfigSchema.safeParse({ navOrder: ["logo", "home", "gallery", "contact", "home"] }).success
+    ).toBe(false);
+  });
+
+  it("accepts independent active and inactive link frame settings", () => {
+    const value = {
+      inactiveLinkBackgroundColor: "background",
+      inactiveLinkOpacity: 70,
+      inactiveLinkBorderWidth: 1,
+      inactiveLinkBorderColor: "foreground",
+      inactiveLinkRadius: "subtle",
+      activeLinkBackgroundColor: "accent",
+      activeLinkOpacity: 90,
+      activeLinkBorderWidth: 2,
+      activeLinkBorderColor: "primary",
+    } as const;
+    expect(portfolioHeaderConfigSchema.parse(value)).toEqual(value);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema — popupLayout / imageModalLayout
+// ---------------------------------------------------------------------------
+
+describe("portfolioCollectionsPopupConfigSchema — popupLayout / imageModalLayout", () => {
+  it("accepts '' for both (unset)", () => {
+    const result = portfolioCollectionsPopupConfigSchema.safeParse({ popupLayout: "", imageModalLayout: "" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a bogus popupLayout", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ popupLayout: "grid" }).success).toBe(false);
+  });
+
+  it("rejects a bogus imageModalLayout", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ imageModalLayout: "fullscreen" }).success).toBe(false);
+  });
+
+  it("accepts popup columns from one to six and rejects values outside the range", () => {
+    expect(portfolioCollectionsPopupConfigSchema.parse({ popupColumns: 5 })).toEqual({
+      popupColumns: 5,
+    });
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ popupColumns: 0 }).success).toBe(false);
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ popupColumns: 7 }).success).toBe(false);
+  });
+
+  it("no stored field is ever lost when popupLayout/imageModalLayout change independently", () => {
+    const fullConfig = {
+      backgroundColor: "primary",
+      borderColor: "#1a1a1a",
+      borderWidth: 2,
+      radius: "subtle" as const,
+      titleText: "Galleries",
+      titleFontFamily: "playfair" as const,
+      titleFontSize: 24,
+      titleColorToken: "foreground",
+      titleBold: true,
+      titleItalic: true,
+      titleUnderline: true,
+      titleAlign: "center" as const,
+      closeButtonSize: 44,
+      closeButtonRadius: "rounded" as const,
+      closeButtonBorderWidth: 2,
+      closeButtonBorderColorToken: "foreground",
+      closeButtonOpacity: 80,
+      closeButtonBgColorToken: "background",
+      popupLayout: "contact-sheet" as const,
+      popupColumns: 5,
+      imageModalLayout: "caption" as const,
+    };
+
+    for (const popupLayout of POPUP_LAYOUTS) {
+      const input = { ...fullConfig, popupLayout };
+      const parsed = portfolioCollectionsPopupConfigSchema.parse(input);
+      expect(parsed).toEqual(input);
+    }
+
+    for (const imageModalLayout of IMAGE_MODAL_LAYOUTS) {
+      const input = { ...fullConfig, imageModalLayout };
+      const parsed = portfolioCollectionsPopupConfigSchema.parse(input);
+      expect(parsed).toEqual(input);
+    }
   });
 });
 

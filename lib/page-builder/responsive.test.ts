@@ -38,8 +38,9 @@ describe("responsive helpers", () => {
   });
 
   it("scopes every rule to the pfpage container, never @media", () => {
+    // 3 shared-var breakpoint blocks + 1 for the opt-in row-wrap helper.
     const containerRules = PF_RESPONSIVE_CSS.match(/@container/g) ?? [];
-    expect(containerRules.length).toBe(3);
+    expect(containerRules.length).toBe(4);
     expect(PF_RESPONSIVE_CSS).not.toContain("@media");
     for (const bp of [PF_BP_TABLET_MAX, PF_BP_COMPACT, PF_BP_NARROW]) {
       expect(PF_RESPONSIVE_CSS).toContain(`@container ${PF_CONTAINER_NAME} (max-width: ${bp}px)`);
@@ -47,9 +48,12 @@ describe("responsive helpers", () => {
   });
 
   it("orders breakpoints widest -> narrowest so the cascade steps down", () => {
-    const tablet = PF_RESPONSIVE_CSS.indexOf(`${PF_BP_TABLET_MAX}px`);
-    const compact = PF_RESPONSIVE_CSS.indexOf(`${PF_BP_COMPACT}px`);
-    const narrow = PF_RESPONSIVE_CSS.indexOf(`${PF_BP_NARROW}px`);
+    // Target the shared `[data-block]` var blocks specifically — the row-wrap
+    // helper's own @container (600px) sits earlier in the string and would
+    // otherwise be mistaken for the compact breakpoint.
+    const tablet = PF_RESPONSIVE_CSS.indexOf(`(max-width: ${PF_BP_TABLET_MAX}px) {\n  [data-block]`);
+    const compact = PF_RESPONSIVE_CSS.indexOf(`(max-width: ${PF_BP_COMPACT}px) {\n  [data-block]`);
+    const narrow = PF_RESPONSIVE_CSS.indexOf(`(max-width: ${PF_BP_NARROW}px) {\n  [data-block]`);
     expect(tablet).toBeLessThan(compact);
     expect(compact).toBeLessThan(narrow);
   });

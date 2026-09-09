@@ -50,6 +50,7 @@ export function ContactModal({
   labels,
   brandVars,
   timeMode,
+  dir = "ltr",
 }: {
   workspaceSlug: string;
   contact?: PortfolioContactConfig | null;
@@ -60,6 +61,10 @@ export function ContactModal({
   brandVars?: Record<string, string>;
   /** Workspace owner's saved time-format preference (see ContactForm). */
   timeMode?: TimeMode;
+  /** Effective direction for the portfolio's OWN language — the modal portals
+   *  to `document.body`, escaping the page wrapper's `dir`, so it must be
+   *  applied here directly. Defaults to "ltr". */
+  dir?: "ltr" | "rtl";
 }) {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -106,6 +111,7 @@ export function ContactModal({
         />
         <DialogPrimitive.Popup
           className="pf-contact-popup"
+          dir={dir}
           style={{
             // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
             ...(brandVars as React.CSSProperties),

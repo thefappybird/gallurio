@@ -4,6 +4,7 @@ import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
@@ -62,6 +63,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   const ogImageUrl = seo.ogImageUrl || undefined;
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   // Use the resolved DB slug (always lowercase), never the raw route param —
@@ -125,6 +128,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // at the page boundary so blocks stay synchronous and unit-testable.
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
@@ -154,6 +158,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    dir: resolveEffectiveDir(workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined, locale),
     brandVars,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.
@@ -166,9 +171,29 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         unavailable: t("gallery.unavailable"),
         error: t("gallery.error"),
         featuredEmpty: t("gallery.featuredEmpty"),
+        featuredSelect: t("gallery.featuredSelect"),
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+        lightboxClose: t("gallery.lightboxClose"),
+        lightboxCounter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+        lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
+        lightboxSeeMore: t("gallery.lightboxSeeMore"),
+        lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxAdditionalInformation: t("gallery.lightboxAdditionalInformation"),
+        lightboxDate: t("gallery.lightboxDate"),
+        lightboxLocation: t("gallery.lightboxLocation"),
+        lightboxClient: t("gallery.lightboxClient"),
+        lightboxTags: t("gallery.lightboxTags"),
+        lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };
@@ -182,6 +207,26 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       retry: tPopup("retry"),
       empty: tPopup("empty"),
       fullSizeAlt: tPopup("fullSizeAlt"),
+      openPhoto: tPopup("openPhoto"),
+      photo: tPopup("photo"),
+      loadMore: tPopup("loadMore"),
+      loadingMore: tPopup("loadingMore"),
+      loadMoreFailed: tPopup("loadMoreFailed"),
+      photoCountOne: tPopup("photoCountOne"),
+      photoCountOther: tPopup("photoCountOther", { count: "{count}" }),
+      previousPhoto: tPopup("previousPhoto"),
+      nextPhoto: tPopup("nextPhoto"),
+      filmstripLabel: tPopup("filmstripLabel"),
+      dateLabel: tPopup("dateLabel"),
+      locationLabel: tPopup("locationLabel"),
+      clientLabel: tPopup("clientLabel"),
+      tagsLabel: tPopup("tagsLabel"),
+      photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+      // Reused from the Gallery blocks' own chrome — same concept, same copy.
+      counter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+      seeMore: t("gallery.lightboxSeeMore"),
+      seeLess: t("gallery.lightboxSeeLess"),
+      additionalInformation: t("gallery.lightboxAdditionalInformation"),
     },
   };
 

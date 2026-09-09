@@ -54,6 +54,13 @@ describe("PATCH collection", () => {
     expect(col?.name).toBe("New name");
     expect(col?.slug).toBe("old");
   });
+  it("sets a description", async () => {
+    const res = (await PATCH(req({ description: "Full-day coverage." }), params())) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    expect((res.body as { description: string }).description).toBe("Full-day coverage.");
+    const col = await GalleryCollection.findById(colA).lean();
+    expect(col?.description).toBe("Full-day coverage.");
+  });
   it("sets a cover that belongs to the collection", async () => {
     const res = (await PATCH(req({ coverItemId: itemInA.toString() }), params())) as unknown as MockResp;
     expect(res.status).toBe(200);

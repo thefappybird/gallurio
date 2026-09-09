@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, buildContactIconAlign, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -82,6 +82,25 @@ describe("resolveBlockStyle", () => {
   it("defaults border color to foreground when no token is given", () => {
     const css = resolveBlockStyle({ borderWidth: 1 });
     expect(css.borderColor).toBe("var(--pf-color-fg)");
+  });
+
+  it("applies independently selected border sides together", () => {
+    const css = resolveBlockStyle({ borderWidth: 2, borderSides: ["left", "bottom"] });
+    expect(css.borderStyle).toBe("solid");
+    expect(css.borderWidth).toBe("0px");
+    expect(css.borderLeftWidth).toBe("2px");
+    expect(css.borderBottomWidth).toBe("2px");
+    expect(css.borderTopWidth).toBeUndefined();
+  });
+
+  it("keeps full borders as the default, including all selected sides", () => {
+    expect(resolveBlockStyle({ borderWidth: 2 }).borderWidth).toBe("2px");
+    expect(resolveBlockStyle({ borderWidth: 2, borderSides: ["top", "right", "bottom", "left"] }).borderWidth).toBe("2px");
+    expect(resolveBlockStyle({ borderWidth: 2, borderPreset: "all" }).borderWidth).toBe("2px");
+  });
+
+  it("continues to render legacy single-side draft data", () => {
+    expect(resolveBlockStyle({ borderWidth: 2, borderPreset: "left" }).borderLeftWidth).toBe("2px");
   });
 
   it("ignores a zero border width", () => {
@@ -252,6 +271,17 @@ describe("flex layout fields", () => {
     expect(resolveBlockStyle({ justifyContent: "between" }).justifySelf).toBeUndefined();
     expect(resolveBlockStyle({ justifyContent: "around" }).justifySelf).toBeUndefined();
   });
+
+  it("uses the dedicated cell fields for grid placement and lets them override legacy data", () => {
+    const css = resolveBlockStyle({
+      alignItems: "start",
+      justifyContent: "end",
+      cellHorizontalAlign: "center",
+      cellVerticalAlign: "stretch",
+    });
+    expect(css.justifySelf).toBe("center");
+    expect(css.alignSelf).toBe("stretch");
+  });
 });
 
 
@@ -276,19 +306,23 @@ describe("default textColorToken — no materialization", () => {
 
 describe("effectiveButtonTextToken", () => {
   it("solid button style → 'background'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("background");
+    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("foreground");
   });
 
   it("soft button with buttonColorToken set → returns that token", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("accent");
+    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("foreground");
   });
 
   it("soft button with no buttonColorToken → 'primary'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("primary");
+    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("foreground");
   });
 
   it("outline button with no buttonColorToken → 'primary'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("primary");
+    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("foreground");
+  });
+
+  it("link button ignores buttonColorToken and follows portfolio foreground", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "link", buttonColorToken: "accent" })).toBe("foreground");
   });
 
   it("no buttonStyle (legacy/unset) → 'foreground'", () => {
@@ -307,5 +341,43 @@ describe("BlockStyle — galleryColumns", () => {
 
   it("GALLERY_GAP_OPTIONS contains tight, normal, loose", () => {
     expect(GALLERY_GAP_OPTIONS).toEqual(["tight", "normal", "loose"]);
+  });
+});
+
+describe("BlockStyle — galleryStagger", () => {
+  it("resolveBlockStyle does not emit any CSS for galleryStagger (consumed directly by the block, not the shared resolver)", () => {
+    const withStagger = resolveBlockStyle({ galleryStagger: true });
+    const without = resolveBlockStyle({});
+    expect(withStagger).toEqual(without);
+  });
+});
+
+describe("BlockStyle — masonry tile rhythm", () => {
+  it("exposes bounded alternating-height values without emitting unrelated shared CSS", () => {
+    expect(resolveBlockStyle({ masonryHeightPattern: "alternating", masonryOddHeight: 220, masonryEvenHeight: 380, masonryEvenColumnOddHeight: 410, masonryEvenColumnEvenHeight: 250 })).toEqual(
+      resolveBlockStyle({}),
+    );
+  });
+});
+
+describe("buildContactIconAlign", () => {
+  it("maps left/center/right to flex-start/center/flex-end via contactIconAlign", () => {
+    expect(buildContactIconAlign({ contactIconAlign: "left" })).toBe("flex-start");
+    expect(buildContactIconAlign({ contactIconAlign: "center" })).toBe("center");
+    expect(buildContactIconAlign({ contactIconAlign: "right" })).toBe("flex-end");
+  });
+
+  it("falls back to valueAlign when contactIconAlign is unset", () => {
+    expect(buildContactIconAlign({ valueAlign: "left" })).toBe("flex-start");
+    expect(buildContactIconAlign({ valueAlign: "right" })).toBe("flex-end");
+  });
+
+  it("contactIconAlign wins when both are set", () => {
+    expect(buildContactIconAlign({ contactIconAlign: "left", valueAlign: "right" })).toBe("flex-start");
+  });
+
+  it("defaults to center when both unset / style is undefined", () => {
+    expect(buildContactIconAlign({})).toBe("center");
+    expect(buildContactIconAlign(undefined)).toBe("center");
   });
 });

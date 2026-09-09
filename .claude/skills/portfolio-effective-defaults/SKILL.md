@@ -85,6 +85,9 @@ font NAME must equal the dropdown option value or pre-selection silently fails.
   shared by BOTH the render fallback and the control so they can't drift.
 - button opacity → `100` · padding (Container/Columns/presets/galleries) → per-block render
   fallback (Container `1.5rem`; Columns `1rem`/`1.5rem`), display-only, de-materialized.
+- PageBody horizontal margin (`marginX`) → `PAGE_BODY_MARGIN_X_DEFAULT` (`1.5rem`), a render
+  fallback in `PageBodyBlock.tsx` — `pageBodyDefaultProps` deliberately does NOT set it (moved
+  off materializing it in 2026-09, same pattern as everything else here).
 
 ## When NOT to float
 - Only surface defaults where a control already EXISTS. Don't add controls for structural

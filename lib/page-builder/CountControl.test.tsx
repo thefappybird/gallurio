@@ -17,6 +17,25 @@ describe("CountControl — quick-pick buttons", () => {
     expect(auto.getAttribute("aria-pressed")).toBe("true");
   });
 
+  it("shows an unset effective value without writing it until clicked", () => {
+    const onChange = vi.fn();
+    render(
+      <CountControl
+        value={undefined}
+        effectiveValue={3}
+        onChange={onChange}
+        quickValues={[1, 2, 3]}
+      />,
+    );
+    const effective = screen.getByRole("button", { name: "3" });
+    expect(effective).toHaveAttribute("aria-pressed", "true");
+    expect(effective).toHaveClass("opacity-70");
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(effective);
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
   it("clamped number input: typing a value above max calls onChange with max", () => {
     const onChange = vi.fn();
     render(<CountControl value={2} onChange={onChange} min={1} max={6} />);

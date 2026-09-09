@@ -7,10 +7,13 @@ type BlockLike = { type?: string; props?: { content?: unknown } };
  * dropped into a Container/Columns nest children in their `content` slot, so a
  * top-level-only scan would miss the most common insertion path.
  */
+/** Blocks that render collections and are therefore governed by the popup config. */
+const COLLECTION_BLOCK_TYPES = new Set(["FeaturedWork", "CollectionCard"]);
+
 function containsFeaturedWork(items: readonly unknown[]): boolean {
   return items.some((item) => {
     const block = item as BlockLike;
-    if (block.type === "FeaturedWork") return true;
+    if (block.type && COLLECTION_BLOCK_TYPES.has(block.type)) return true;
     const nested = block.props?.content;
     return Array.isArray(nested) && containsFeaturedWork(nested);
   });

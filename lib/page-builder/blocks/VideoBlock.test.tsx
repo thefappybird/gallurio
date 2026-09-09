@@ -137,6 +137,17 @@ describe("VideoBlock — empty state", () => {
     );
     expect(document.querySelector("iframe")).toBeNull();
   });
+
+  it("shows a visible film frame in the preset hover preview", () => {
+    const { container } = render(
+      <VideoBlock videoUrl="" puck={{ metadata: { presetPreview: true } }} />
+    );
+
+    expect(screen.queryByText(/Paste a YouTube or Vimeo link/i)).not.toBeInTheDocument();
+    expect(
+      container.querySelector("[data-preset-media-placeholder='video']")
+    ).toBeInTheDocument();
+  });
 });
 
 describe("VideoBlock — populated state", () => {
@@ -218,12 +229,25 @@ describe("VideoBlock — data-empty attribute", () => {
 });
 
 describe("VideoBlock — default spacing", () => {
-  it("imposes no section-level padding or background of its own — no framing box", () => {
+  it("imposes no section-level padding or background of its own", () => {
     // A Container preset (or standalone wrap) supplies spacing; the block itself
     // must not also pad/background its section, or nesting the two double-frames.
     const html = renderToStaticMarkup(<VideoBlock videoUrl="" />);
     expect(html).not.toContain("padding");
-    expect(html).not.toContain("max-width");
+    expect(html).toContain("max-width:100%");
     expect(html).not.toContain("var(--pf-color-bg)");
+  });
+
+  it("applies aspect-ratio and size presets", () => {
+    const { container } = render(<VideoBlock videoUrl="" aspectRatio="1 / 1" size="sm" />);
+    const section = container.querySelector("[data-block='video']") as HTMLElement;
+    expect(section.style.maxWidth).toBe("30rem");
+    expect((section.firstElementChild as HTMLElement).style.aspectRatio).toBe("1 / 1");
+  });
+
+  it("uses a selectable linked-video placeholder instead of an iframe in the editor", () => {
+    render(<VideoBlock videoUrl="https://youtu.be/dQw4w9WgXcQ" puck={{ isEditing: true }} />);
+    expect(document.querySelector("iframe")).toBeNull();
+    expect(screen.getByText("Video linked. Open Preview to play it.")).toBeInTheDocument();
   });
 });

@@ -42,7 +42,7 @@ describe("collectCollectionImages", () => {
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Public", slug: "public", isPublic: true });
     await makeItem(ws, col._id, 0);
     const result = await collectCollectionImages({ workspaceId: ws.toString(), collectionIds: [col._id.toString()], limit: 10 });
-    expect(result).toEqual([{ url: "https://cdn.example.com/asset-0", alt: "Alt 0" }]);
+    expect(result).toEqual([{ url: "https://cdn.example.com/asset-0", alt: "Cap 0" }]);
   });
 
   it("never returns a foreign-workspace item", async () => {

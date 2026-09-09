@@ -2,7 +2,6 @@ import type {
   PortfolioBrandKit,
   PortfolioCollectionsPopupConfig,
   PortfolioContactConfig,
-  PortfolioHeaderConfig,
   PortfolioPuckData,
 } from "@/lib/page-builder/types";
 
@@ -11,10 +10,11 @@ import type {
 // makes it persistable everywhere. Pure data (no React/block imports) so it is
 // safe to import from server models and validators without cycles.
 export const PORTFOLIO_TEMPLATE_IDS = [
-  "bold",
-  "luxury",
-  "editorial",
   "minimal",
+  "editorial",
+  "luxury",
+  "romantic",
+  "modern",
   "scratch",
 ] as const;
 
@@ -51,8 +51,6 @@ export type PortfolioTemplate = {
   defaultBrandKit: PortfolioBrandKit;
   /** Seeded contact-modal copy/presentation (form fields stay fixed). */
   defaultContact: PortfolioContactConfig;
-  /** Seeded navigation/header chrome config. */
-  defaultHeader: PortfolioHeaderConfig;
   /** Seeded collections popup config. */
   defaultCollectionsPopup: PortfolioCollectionsPopupConfig;
   /**

@@ -5,6 +5,7 @@ import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
@@ -43,6 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     galleryTitle,
   });
 
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
@@ -93,6 +96,8 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
 
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
+  const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Published-image collection only makes sense once real gallery content
   // exists — the ComingSoon branch has no images by definition.
@@ -128,6 +133,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    dir: resolveEffectiveDir(workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined, locale),
     brandVars,
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),
@@ -138,9 +144,29 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
         unavailable: t("gallery.unavailable"),
         error: t("gallery.error"),
         featuredEmpty: t("gallery.featuredEmpty"),
+        featuredSelect: t("gallery.featuredSelect"),
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+        lightboxClose: t("gallery.lightboxClose"),
+        lightboxCounter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+        lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
+        lightboxSeeMore: t("gallery.lightboxSeeMore"),
+        lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxAdditionalInformation: t("gallery.lightboxAdditionalInformation"),
+        lightboxDate: t("gallery.lightboxDate"),
+        lightboxLocation: t("gallery.lightboxLocation"),
+        lightboxClient: t("gallery.lightboxClient"),
+        lightboxTags: t("gallery.lightboxTags"),
+        lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };
@@ -155,7 +181,39 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
           kit's own heading/body Google Font is loaded by the layout. */}
       <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+      <Render data={galleryData as any} config={puckConfig as any}
+        metadata={{
+          workspace: renderWorkspace,
+          collectionPopupLabels: {
+            close: tPopup("close"),
+            loading: tPopup("loading"),
+            failed: tPopup("failed"),
+            retry: tPopup("retry"),
+            empty: tPopup("empty"),
+            fullSizeAlt: tPopup("fullSizeAlt"),
+            openPhoto: tPopup("openPhoto"),
+            photo: tPopup("photo"),
+            loadMore: tPopup("loadMore"),
+            loadingMore: tPopup("loadingMore"),
+            loadMoreFailed: tPopup("loadMoreFailed"),
+            photoCountOne: tPopup("photoCountOne"),
+            photoCountOther: tPopup("photoCountOther", { count: "{count}" }),
+            previousPhoto: tPopup("previousPhoto"),
+            nextPhoto: tPopup("nextPhoto"),
+            filmstripLabel: tPopup("filmstripLabel"),
+            dateLabel: tPopup("dateLabel"),
+            locationLabel: tPopup("locationLabel"),
+            clientLabel: tPopup("clientLabel"),
+            tagsLabel: tPopup("tagsLabel"),
+            photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+            // Reused from the Gallery blocks' own chrome — same concept, same copy.
+            counter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+            seeMore: t("gallery.lightboxSeeMore"),
+            seeLess: t("gallery.lightboxSeeLess"),
+            additionalInformation: t("gallery.lightboxAdditionalInformation"),
+          },
+        }}
+      />
       <PoweredByGallurio label={t("poweredBy")} />
     </>
   ));

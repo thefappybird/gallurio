@@ -12,6 +12,9 @@ type Props = {
   addSessionAppearance: ButtonAppearance;
   defaultTitle: string;
   defaultDescription: string;
+  /** Effective direction for the portfolio's own language (formLocale/formDir) —
+   *  never the CRM UI locale. */
+  dir?: "ltr" | "rtl";
 };
 
 const CONTACT_RADIUS_MAP: Record<string, string> = {
@@ -45,12 +48,13 @@ export function ContactFormPreview({
   addSessionAppearance,
   defaultTitle,
   defaultDescription,
+  dir = "ltr",
 }: Props) {
   const title = contact.title?.trim() || defaultTitle;
   const description = contact.description?.trim() || defaultDescription;
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-auto bg-black/45 p-4">
+    <div dir={dir} className="relative flex h-full w-full items-center justify-center overflow-auto bg-black/45 p-4">
       <style>{`
         @media (max-width: 400px) {
           .pf-preview-popup-header { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 1rem !important; }

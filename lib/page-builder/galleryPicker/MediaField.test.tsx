@@ -37,6 +37,17 @@ describe("SingleImageControl", () => {
     fireEvent.click(screen.getByRole("button", { name: /clear/i }));
     expect(onChange).toHaveBeenCalledWith("");
   });
+
+  it("calls onPicked with the already-loaded PickerItem synchronously on pick", async () => {
+    const onChange = vi.fn();
+    const onPicked = vi.fn();
+    renderWithProviders(<SingleImageControl value="" onChange={onChange} onPicked={onPicked} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose photo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^all photos$/i }));
+    fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
+    expect(onChange).toHaveBeenCalledWith("pid-a");
+    expect(onPicked).toHaveBeenCalledWith(items[0]);
+  });
 });
 
 describe("MultiImageControl", () => {
@@ -50,5 +61,14 @@ describe("MultiImageControl", () => {
   it("round-trips an ordered array value", () => {
     renderWithProviders(<MultiImageControl value={[{ id: "a", publicId: "pid-a" }, { id: "b", publicId: "pid-b" }]} onChange={vi.fn()} />);
     expect(screen.getByText(/2 photos/i)).toBeTruthy();
+  });
+
+  it("resolves a nested Image publicId to its gallery item thumbnail", async () => {
+    const { container } = renderWithProviders(
+      <MultiImageControl value={[{ id: "pid-a", publicId: "pid-a" }]} onChange={vi.fn()} />
+    );
+    await waitFor(() =>
+      expect(container.querySelector("img")?.getAttribute("src")).toBe("https://x/a.jpg")
+    );
   });
 });

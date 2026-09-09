@@ -137,6 +137,17 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
+  it("attaches the rejected format and accepted list as detail on format_not_accepted", async () => {
+    const res = (await POST(makeReq(validPayload({ format: "gif" })))) as unknown as MockResp;
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "format_not_accepted",
+      format: "gif",
+    });
+    expect(
+      (res.body as { detail: { acceptedTypes: string[] } }).detail.acceptedTypes,
+    ).toEqual(expect.arrayContaining(["jpg", "png"]));
+  });
+
   it("rejects a pdf format with format_not_accepted", async () => {
     const res = (await POST(makeReq(validPayload({ format: "pdf" })))) as unknown as MockResp;
     expect(res.status).toBe(400);
@@ -156,6 +167,17 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(res.status).toBe(400);
     expect((res.body as { error: string }).error).toBe("file_too_large");
     expect(await GalleryItem.countDocuments({})).toBe(0);
+  });
+
+  it("attaches the actual and max byte counts as detail on file_too_large", async () => {
+    const res = (await POST(
+      makeReq(validPayload({ sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES + 1 }))
+    )) as unknown as MockResp;
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "file_too_large",
+      actualBytes: PORTFOLIO_PHOTO_MAX_BYTES + 1,
+      maxBytes: PORTFOLIO_PHOTO_MAX_BYTES,
+    });
   });
 
   it("accepts a file exactly at the 15 MB portfolio cap", async () => {
@@ -181,6 +203,18 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
+  it("attaches the actual dimensions and minimum as detail on dimension_too_small", async () => {
+    const res = (await POST(
+      makeReq(validPayload({ width: 400, height: 800 }))
+    )) as unknown as MockResp;
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "dimension_too_small",
+      actualWidth: 400,
+      actualHeight: 800,
+      minShortSide: 600,
+    });
+  });
+
   it("rejects 300×300 with dimension_too_small", async () => {
     const res = (await POST(
       makeReq(validPayload({ width: 300, height: 300 }))
@@ -194,6 +228,37 @@ describe("POST /api/portfolio/gallery/items", () => {
       makeReq(validPayload({ width: 600, height: 600 }))
     )) as unknown as MockResp;
     expect(res.status).toBe(201);
+  });
+
+  it("persists title/date/location/client/tags/meta when supplied at creation", async () => {
+    const res = (await POST(
+      makeReq(
+        validPayload({
+          title: "Ceremony",
+          date: "2026-06-15",
+          location: "Manila",
+          client: "Reyes Family",
+          tags: ["wedding"],
+          meta: [{ label: "Photographer", value: "J. Cruz" }],
+        })
+      )
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+    const body = res.body as { id: string };
+    const saved = await GalleryItem.findById(body.id).lean();
+    expect(saved?.title).toBe("Ceremony");
+    expect(saved?.date).toBe("2026-06-15");
+    expect(saved?.location).toBe("Manila");
+    expect(saved?.client).toBe("Reyes Family");
+    expect(saved?.tags).toEqual(["wedding"]);
+    expect(saved?.meta?.map((m) => ({ label: m.label, value: m.value }))).toEqual([
+      { label: "Photographer", value: "J. Cruz" },
+    ]);
+  });
+
+  it("rejects a malformed date at creation with 400", async () => {
+    const res = (await POST(makeReq(validPayload({ date: "not-a-date" })))) as unknown as MockResp;
+    expect(res.status).toBe(400);
   });
 
   it("tenant isolation: org B cannot see org A items after org A creates one", async () => {

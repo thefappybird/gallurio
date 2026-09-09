@@ -29,7 +29,7 @@ vi.mock("@/lib/auth/apiOrgContext", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem, Workspace } from "@/lib/db/models";
+import { Booking, Client, GalleryItem, Workspace } from "@/lib/db/models";
 import { PATCH } from "./route";
 
 let workspaceId: Types.ObjectId;
@@ -151,6 +151,111 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a malformed date with 400", async () => {
+    const res = (await PATCH(
+      makeReq({ date: "06/15/2026" }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts an empty-string date (unset)", async () => {
+    const res = (await PATCH(makeReq({ date: "" }), makeParams(itemId.toString()))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects more than 20 meta rows with 400", async () => {
+    const meta = Array.from({ length: 21 }, (_, i) => ({ label: `L${i}`, value: `V${i}` }));
+    const res = (await PATCH(makeReq({ meta }), makeParams(itemId.toString()))) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
+  it("sets title/date/location/client/tags/meta and returns them on the response", async () => {
+    const res = (await PATCH(
+      makeReq({
+        title: "Ceremony",
+        date: "2026-06-15",
+        location: "Manila",
+        client: "Reyes Family",
+        tags: ["wedding", "outdoor"],
+        meta: [{ label: "Photographer", value: "J. Cruz" }],
+      }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      tags: ["wedding", "outdoor"],
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+    });
+
+    const saved = await GalleryItem.findById(itemId).lean();
+    expect(saved?.title).toBe("Ceremony");
+    expect(saved?.tags).toEqual(["wedding", "outdoor"]);
+  });
+
+  it("stores workspace-owned booking/client links and rejects foreign links", async () => {
+    const client = await Client.create({ workspaceId, name: "Ana Reyes" });
+    const booking = await Booking.create({
+      workspaceId,
+      clientId: client._id,
+      clientName: client.name,
+      title: "Sunset wedding",
+      status: "completed",
+      firstSessionStart: new Date("2026-09-02T10:00:00Z"),
+      lastSessionEnd: new Date("2026-09-02T12:00:00Z"),
+      sessions: [{ startAt: new Date("2026-09-02T10:00:00Z"), endAt: new Date("2026-09-02T12:00:00Z") }],
+    });
+    const linked = (await PATCH(
+      makeReq({ bookingId: booking._id.toString(), clientId: client._id.toString() }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(linked.status).toBe(200);
+    expect(linked.body).toMatchObject({ bookingId: booking._id.toString(), clientId: client._id.toString() });
+
+    const unrelatedClient = await Client.create({ workspaceId, name: "Unrelated client" });
+    const mismatched = (await PATCH(
+      makeReq({ bookingId: booking._id.toString(), clientId: unrelatedClient._id.toString() }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(mismatched.status).toBe(400);
+    expect(mismatched.body).toEqual({ error: "invalid_link" });
+
+    const otherWs = await Workspace.create({ slug: "link-foreign", name: "Foreign", ownerUserId: "foreign", currency: "PHP" });
+    const foreignClient = await Client.create({ workspaceId: otherWs._id, name: "Foreign client" });
+    const rejected = (await PATCH(
+      makeReq({ bookingId: null, clientId: foreignClient._id.toString() }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(rejected.status).toBe(400);
+    expect(rejected.body).toEqual({ error: "invalid_link" });
+  });
+
+  it("returns 404 (tenant isolation) when patching title on another workspace's item", async () => {
+    const otherWs = await Workspace.create({
+      slug: "ws-item-meta-c",
+      name: "C",
+      ownerUserId: "user_c",
+      currency: "PHP",
+    });
+    const foreignItem = await GalleryItem.create({
+      workspaceId: otherWs._id,
+      assetId: "img_foreign2",
+      url: "https://imagedelivery.net/hash/img_foreign2/public",
+      order: 0,
+    });
+    const res = (await PATCH(
+      makeReq({ title: "Hijacked" }),
+      makeParams(foreignItem._id.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(404);
+    const saved = await GalleryItem.findById(foreignItem._id).lean();
+    expect(saved?.title).toBe("");
+  });
+
   it("sets altText and returns the updated PickerItem", async () => {
     const res = (await PATCH(
       makeReq({ altText: "A bride and groom at sunset" }),
@@ -196,7 +301,8 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(saved?.altText).toBe("New alt");
   });
 
-  it("propagates a changed altText to the item's entry on the published home page", async () => {
+  it("keeps legacy altText as a published fallback when description is blank", async () => {
+    await GalleryItem.updateOne({ _id: itemId }, { $set: { caption: "" } });
     await Workspace.updateOne(
       { _id: workspaceId },
       {
@@ -229,7 +335,7 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(home.content[0].props.images[0].alt).toBe("Updated live alt");
   });
 
-  it("does not propagate when only caption changes (altText untouched, no page write needed)", async () => {
+  it("propagates a changed description as the published alt text", async () => {
     await Workspace.updateOne(
       { _id: workspaceId },
       {
@@ -248,7 +354,7 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
 
     const ws = await Workspace.findById(workspaceId).lean();
     const home = ws!.publicPage!.data!.home as { content: Array<{ props: { images: Array<{ id: string; alt: string }> } }> };
-    expect(home.content[0].props.images[0].alt).toBe("Original alt");
+    expect(home.content[0].props.images[0].alt).toBe("New caption only");
   });
 
   it("propagates a changed caption when it is the effective alt fallback", async () => {
