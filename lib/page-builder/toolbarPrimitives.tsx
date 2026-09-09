@@ -554,6 +554,7 @@ export function NumberInputRow({
   suffix = "px",
   onChange,
   effectiveValue,
+  commitOnChange = false,
 }: {
   label: string;
   value: number | undefined;
@@ -564,6 +565,8 @@ export function NumberInputRow({
   onChange: (next: number | undefined) => void;
   /** Show this number as the placeholder when value is unset (theme-coupled). */
   effectiveValue?: number;
+  /** Commit each valid value immediately, for controls driving a live preview. */
+  commitOnChange?: boolean;
 }) {
   const [draft, change, flush] = useDebouncedCommit(value, onChange);
   return (
@@ -583,7 +586,10 @@ export function NumberInputRow({
               const raw = e.target.value;
               if (raw === "") { change(undefined); return; }
               const n = Number(raw);
-              if (Number.isFinite(n)) change(n);
+              if (Number.isFinite(n)) {
+                change(n);
+                if (commitOnChange) flush(n);
+              }
             }}
             onBlur={(e) => {
               const raw = e.target.value;

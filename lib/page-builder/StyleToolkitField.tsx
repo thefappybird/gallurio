@@ -2026,7 +2026,7 @@ export function DesignTab({
               label="Icon align"
               value={s.contactIconAlign}
               options={CONTACT_ICON_ALIGN_OPTIONS}
-              effectiveValue={s.valueAlign ?? "left"}
+              effectiveValue={s.valueAlign ?? "center"}
               onChange={(v) => set({ contactIconAlign: v })}
             />
           </EditorDrawerSection>

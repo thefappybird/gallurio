@@ -341,7 +341,7 @@ describe("ContactDetails: label/value/icon effective defaults", () => {
 
 // ---------------------------------------------------------------------------
 // ContactDetails — icon align effective default. The Icons section's "Icon
-// align" control floats `s.valueAlign ?? "left"` (StyleToolkitField.tsx);
+// align" control floats `s.valueAlign ?? "center"` (StyleToolkitField.tsx);
 // it must agree with buildContactIconAlign's own fallback chain, which the
 // render actually applies.
 // ---------------------------------------------------------------------------
@@ -355,9 +355,9 @@ describe("ContactDetails: icon align effective default matches the control's flo
     expect(buildContactIconAlign({ valueAlign })).toBe(justify);
   });
 
-  it("both unset default to left (control's own effectiveValue fallback)", () => {
-    expect(buildContactIconAlign({})).toBe("flex-start");
-    expect(buildContactIconAlign(undefined)).toBe("flex-start");
+  it("both unset default to center (control's own effectiveValue fallback)", () => {
+    expect(buildContactIconAlign({})).toBe("center");
+    expect(buildContactIconAlign(undefined)).toBe("center");
   });
 
   it("explicit contactIconAlign wins over valueAlign", () => {

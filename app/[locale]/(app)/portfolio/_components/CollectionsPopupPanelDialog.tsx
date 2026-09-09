@@ -116,6 +116,7 @@ function BorderRow({
         max={12}
         onChange={onWidthChange}
         effectiveValue={effectiveWidth}
+        commitOnChange
       />
       {!!width && (
         // borderColor fallback: var(--pf-color-border, rgba(0,0,0,0.12)) — no clean single token

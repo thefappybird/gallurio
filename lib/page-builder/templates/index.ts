@@ -29,10 +29,17 @@ const RAW_PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
 // source. A few were authored before the current preset width hierarchy, so
 // normalize those known stale shapes at the shared seed boundary used by both
 // server application and the client-only demo.
-export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = RAW_PORTFOLIO_TEMPLATES.map((template) => ({
-  ...template,
-  seedData: (ctx) => normalizeTemplatePresetLayouts(template.seedData(ctx)),
-}));
+export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = RAW_PORTFOLIO_TEMPLATES.map((template) => {
+  // Scratch contains only the pinned Navigation blocks, so it has no legacy
+  // preset geometry to normalize. Preserve its exported identity for callers
+  // that use it as the canonical empty-template singleton.
+  if (template.id === "scratch") return template;
+
+  return {
+    ...template,
+    seedData: (ctx) => normalizeTemplatePresetLayouts(template.seedData(ctx)),
+  };
+});
 
 const BY_ID = new Map<PortfolioTemplateId, PortfolioTemplate>(
   PORTFOLIO_TEMPLATES.map((t) => [t.id, t])
