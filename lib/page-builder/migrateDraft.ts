@@ -29,6 +29,10 @@ export async function ensureLegacyDraftMigrated(workspaceId: Types.ObjectId): Pr
       data: { home, gallery },
       brandKit: pp?.brandKit ?? null,
       contact: pp?.contact ?? null,
+      // pp?.header is DEPRECATED/read-only legacy (Workspace.ts) — Mixed-typed
+      // on both models, so any shape (including a stale pre-Navigation-block
+      // config) round-trips here without validation and never throws. A later
+      // load-time pass consumes it to seed a Navigation block.
       header: pp?.header ?? null,
       collectionsPopup: pp?.collectionsPopup ?? null,
       formLocale: pp?.formLocale ?? "",

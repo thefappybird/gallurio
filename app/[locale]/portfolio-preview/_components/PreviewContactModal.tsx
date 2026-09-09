@@ -18,10 +18,13 @@ export function PreviewContactModal({
   workspaceSlug,
   dbContact,
   labels,
+  dir,
 }: {
   workspaceSlug: string;
   dbContact: PortfolioContactConfig | null;
   labels: ContactModalLabels;
+  /** Effective direction for the portfolio's own language — see ContactModal. */
+  dir?: "ltr" | "rtl";
 }) {
   const { contact: draftContact, cssVars } = usePreviewDraft();
   const contact = draftContact ?? dbContact;
@@ -34,6 +37,7 @@ export function PreviewContactModal({
         contact={contact}
         labels={labels}
         brandVars={cssVars}
+        dir={dir}
       />
     </>
   );

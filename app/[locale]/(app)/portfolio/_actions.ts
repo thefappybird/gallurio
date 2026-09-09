@@ -8,7 +8,6 @@ import {
   puckDataSchema,
   brandKitSchema,
   portfolioContactConfigSchema,
-  portfolioHeaderConfigSchema,
   portfolioCollectionsPopupConfigSchema,
 } from "@/lib/validators/publicPage";
 import { slugSchema } from "@/lib/validators/workspace";
@@ -152,29 +151,6 @@ export async function updateContactConfigAction(
   );
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
-  return { ok: true };
-}
-
-/** Persist the public portfolio navigation header configuration. Owner-only. */
-export async function updateHeaderConfigAction(
-  input: unknown
-): Promise<EditorActionResult> {
-  const ctx = await requireOrg();
-  if (ctx.role !== "owner") return { error: "owner_only" };
-
-  const parsed = portfolioHeaderConfigSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? "invalid_header" };
-  }
-
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.header": parsed.data } }
-  );
-
-  revalidatePath(`/w/${ctx.workspace.slug}`);
-  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
 }
 

@@ -17,9 +17,9 @@ import {
   buildContactValueStyle,
   buildContactIconColor,
   buildContactIconSize,
+  buildContactIconAlign,
   contactGridTemplate,
   type BlockStyle,
-  type TextAlign,
 } from "@/lib/page-builder/styleToolkit";
 import { SocialIconLink, type SocialPlatform } from "./SocialIconLink";
 
@@ -102,6 +102,7 @@ export function ContactDetailsBlock({
   const valueStyle = buildContactValueStyle(_style);
   const iconColor = buildContactIconColor(_style);
   const iconSize = buildContactIconSize(_style);
+  const iconJustify = buildContactIconAlign(_style);
 
   return (
     <dl
@@ -164,7 +165,7 @@ export function ContactDetailsBlock({
           iconColor={iconColor}
           iconSize={iconSize}
           confirmMessage={confirmMessage}
-          valueAlign={_style?.valueAlign}
+          justifyContent={iconJustify}
         />
       )}
     </dl>
@@ -196,15 +197,15 @@ function SocialsRow({
   iconColor,
   iconSize,
   confirmMessage,
-  valueAlign,
+  justifyContent,
 }: {
   socials: Socials;
   labelStyle: React.CSSProperties;
   iconColor: string;
   iconSize: number;
   confirmMessage?: string;
-  /** Controls flex justify-content of the icons row. Unset → center (default). */
-  valueAlign?: TextAlign;
+  /** Flex justify-content of the icons row — resolved by buildContactIconAlign. */
+  justifyContent: "flex-start" | "center" | "flex-end";
 }) {
   const links: { label: string; href: string; platform: SocialPlatform }[] = [];
   if (socials.instagram) {
@@ -224,11 +225,6 @@ function SocialsRow({
     if (href) links.push({ label: "Website", href, platform: "website" });
   }
   if (links.length === 0) return null;
-
-  const justifyContent =
-    valueAlign === "left" ? "flex-start" :
-    valueAlign === "right" ? "flex-end" :
-    "center";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>

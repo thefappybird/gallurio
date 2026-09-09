@@ -6,6 +6,16 @@ import {
   type PortfolioHeaderLabels,
 } from "./PortfolioHeader";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import type { PortfolioHeaderConfig, NavItemKey } from "@/lib/page-builder/types";
+import type { PortfolioTemplate } from "@/lib/page-builder/templates/types";
+
+/** Each template no longer carries `defaultHeader` — its header look now lives
+ *  on the Navigation block seeded first into the home zone. */
+function templateNavConfig(template: PortfolioTemplate): PortfolioHeaderConfig {
+  const data = template.seedData({ workspace: { name: "Test Studio" } });
+  const nav = data.home?.content.find((b) => b.type === "Navigation");
+  return (nav?.props ?? {}) as PortfolioHeaderConfig;
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/w/luna-studio",
@@ -25,6 +35,20 @@ describe("PortfolioHeader", () => {
   it("renders a labelled Portfolio nav", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     expect(screen.getByRole("navigation", { name: "Portfolio" })).toBeInTheDocument();
+  });
+
+  it("clamps the inner nav row to 80rem by default (preserves today's rendering for callers that omit overallWidth)", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("80rem");
+    expect(nav.style.margin).toBe("0px auto");
+  });
+
+  it("overallWidth='full' drops the inner nav row's 80rem clamp", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} overallWidth="full" />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("");
+    expect(nav.style.margin).toBe("");
   });
 
   it("links Home and Gallery to the correct workspace URLs", () => {
@@ -285,6 +309,138 @@ describe("PortfolioHeader", () => {
     // Gallery is inactive so it uses linkColor, not activeLinkColor
     expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
   });
+  it("renders brandSlot content in place of the default logo/text link when provided", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    expect(screen.getByTestId("brand-slot")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
+  });
+
+  it("keeps brandSlot content in the same row (same nav) as the Home/Gallery links", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(within(nav).getByTestId("brand-slot")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
+  });
+
+  it("without brandSlot renders the default logo/brand-text link exactly as before", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    expect(screen.getByRole("link", { name: "Luna Studio" })).toBeInTheDocument();
+  });
+
+  describe("navOrder", () => {
+    it("desktop row honors a custom navOrder exactly", () => {
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          config={{ navOrder: ["contact", "gallery", "home", "logo"] }}
+        />,
+      );
+      const nav = screen.getByRole("navigation", { name: "Portfolio" });
+      // nav.children = 4 nav items (in navOrder) + trailing hamburger toggle.
+      const order = Array.from(nav.children).slice(0, 4).map((el) => el.textContent);
+      expect(order[0]).toContain("Contact");
+      expect(order[1]).toContain("Gallery");
+      expect(order[2]).toContain("Home");
+      expect(order[3]).toContain("Luna Studio");
+    });
+
+    it("logo is never wrapped in pf-nav-collapsible even when it isn't first in navOrder", () => {
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          config={{ navOrder: ["home", "logo", "gallery", "contact"] }}
+        />,
+      );
+      expect(
+        screen.getByRole("link", { name: "Luna Studio" }).closest(".pf-nav-collapsible"),
+      ).toBeNull();
+      expect(
+        screen.getByRole("link", { name: "Home" }).closest(".pf-nav-collapsible"),
+      ).not.toBeNull();
+      expect(
+        screen.getByRole("link", { name: "Gallery" }).closest(".pf-nav-collapsible"),
+      ).not.toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Contact" }).closest(".pf-nav-collapsible"),
+      ).not.toBeNull();
+    });
+
+    it("brandSlot logo region is also never wrapped in pf-nav-collapsible, regardless of position", () => {
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          brandSlot={<span>Custom Brand</span>}
+          config={{ navOrder: ["gallery", "contact", "logo", "home"] }}
+        />,
+      );
+      const brandDiv = screen.getByText("Custom Brand").closest(".pf-nav-brand");
+      expect(brandDiv).not.toBeNull();
+      expect(brandDiv!.closest(".pf-nav-collapsible")).toBeNull();
+    });
+
+    it("mobile menu list follows navOrder, excluding the logo (never duplicated below the header row)", () => {
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          config={{ navOrder: ["contact", "logo", "gallery", "home"] }}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText("Open menu"));
+      const mobileList = document.querySelector(".pf-nav-mobile");
+      expect(mobileList).not.toBeNull();
+      const items = Array.from(mobileList!.children).map((el) => el.textContent);
+      expect(items).toEqual(["Contact", "Gallery", "Home"]);
+    });
+
+    it("a partial/invalid navOrder still renders all 4 items, resolved via resolveNavOrder's dedupe/fill (nothing dropped)", () => {
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          config={{ navOrder: ["contact", "bogus", "contact"] as unknown as NavItemKey[] }}
+        />,
+      );
+      const nav = screen.getByRole("navigation", { name: "Portfolio" });
+      // 4 nav items + trailing hamburger toggle — none dropped or duplicated.
+      expect(nav.children).toHaveLength(5);
+      expect(within(nav).getByRole("link", { name: "Luna Studio" })).toBeInTheDocument();
+      expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
+      expect(within(nav).getByRole("link", { name: "Gallery" })).toBeInTheDocument();
+      expect(within(nav).getByRole("button", { name: "Contact" })).toBeInTheDocument();
+      // resolveNavOrder(["contact","bogus","contact"]) => ["contact","logo","home","gallery"]
+      const order = Array.from(nav.children).slice(0, 4).map((el) => el.textContent);
+      expect(order[0]).toContain("Contact");
+      expect(order[1]).toContain("Luna Studio");
+      expect(order[2]).toContain("Home");
+      expect(order[3]).toContain("Gallery");
+    });
+
+    it("keeps dir=\"ltr\" on the header even nested inside an RTL ancestor (general blocks never mirror for RTL)", () => {
+      render(
+        <div dir="rtl">
+          <PortfolioHeader slug="luna-studio" labels={labels} />
+        </div>,
+      );
+      const header = screen.getByRole("navigation", { name: "Portfolio" }).closest("header");
+      expect(header).toHaveAttribute("dir", "ltr");
+    });
+  });
 });
 
 describe("PortfolioHeader template render contract", () => {
@@ -294,7 +450,7 @@ describe("PortfolioHeader template render contract", () => {
   it.each(PORTFOLIO_TEMPLATES)(
     "$id renders every seeded header value and effective fallback",
     (template) => {
-      const config = template.defaultHeader;
+      const config = templateNavConfig(template);
       render(
         <PortfolioHeader
           slug="luna-studio"
@@ -339,7 +495,7 @@ describe("PortfolioHeader template render contract", () => {
         tokenVar(config.contactButtonColor, "var(--pf-color-primary)"),
       );
       expect(contact.style.color).toBe(
-        tokenVar(config.contactButtonTextColor, "var(--pf-color-bg)"),
+        tokenVar(config.contactButtonTextColor, "var(--pf-color-fg)"),
       );
       expect(contact.style.borderRadius).toBe(
         config.contactButtonRadius === "sharp"

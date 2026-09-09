@@ -94,4 +94,21 @@ describe("PreviewPopupShell", () => {
     expect(screen.getByTestId("popup-preview-surface")).toBeInTheDocument();
     expect(screen.getByTestId("popup-chrome")).toBeInTheDocument();
   });
+
+  it("passes the dir prop through onto the popup-preview surface", () => {
+    render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{}}
+        fallbackClassName=""
+      >
+        <PreviewPopupShell
+          fallbackConfig={null}
+          dir="rtl"
+        />
+      </PreviewBrandShell>,
+    );
+
+    expect(screen.getByTestId("popup-preview-surface")).toHaveAttribute("dir", "rtl");
+  });
 });

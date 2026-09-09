@@ -11,39 +11,66 @@
  */
 
 import type { PuckBlockEntry, PuckData } from "@/lib/page-builder/types";
-import {
-  HERO_PRESET,
-  ABOUT_PRESET,
-  SERVICES_PRESET,
-  CTA_PRESET,
-  CONTACT_PRESET,
-  GALLERY_LANDING_PRESET,
-} from "@/lib/page-builder/blocks/sectionPresets";
+import { SECTION_PRESETS } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
+import {
+  navigationDefaultProps,
+  type NavigationBlockProps,
+} from "@/lib/page-builder/blocks/NavigationBlock";
+import { child, slot } from "@/lib/page-builder/blocks/presets/_helpers";
+
+// ---------------------------------------------------------------------------
+// Navigation factory — every template seeds one of these as the first content
+// item in BOTH the home and gallery zones, carrying that template's own header
+// look (see each template file). `config` overrides navigationDefaultProps'
+// PortfolioHeaderConfig fields; `_chrome` stays the shared default. `content`
+// seeds a Heading with the workspace's real name (falls back to the generic
+// "Studio Name" default when no name is given) instead of publishing the
+// literal placeholder — still no Image child, so no "unavailable" placeholder
+// box ships either; the owner adds a logo Image block themselves.
+// ---------------------------------------------------------------------------
+
+export function navigationBlock(
+  id: string,
+  config: Partial<NavigationBlockProps> = {},
+  workspaceName?: string,
+): PuckBlockEntry {
+  const name = workspaceName?.trim();
+  return {
+    type: "Navigation",
+    props: {
+      ...navigationDefaultProps,
+      ...config,
+      id,
+      _chrome: "nav",
+      content: name ? slot([child("Heading", { level: "h3", text: name })]) : navigationDefaultProps.content,
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Preset section factories
 // ---------------------------------------------------------------------------
 
 export function heroPreset(id: string): PuckBlockEntry {
-  return { type: "HeroPreset", props: { id, ...HERO_PRESET } };
+  return { type: "HeroPreset", props: { id, ...SECTION_PRESETS.HeroPreset.defaultProps } };
 }
 
 export function aboutPreset(id: string): PuckBlockEntry {
-  return { type: "AboutPreset", props: { id, ...ABOUT_PRESET } };
+  return { type: "AboutPreset", props: { id, ...SECTION_PRESETS.AboutPreset.defaultProps } };
 }
 
 export function servicesPreset(id: string): PuckBlockEntry {
-  return { type: "ServicesPreset", props: { id, ...SERVICES_PRESET } };
+  return { type: "ServicesPreset", props: { id, ...SECTION_PRESETS.ServicesPreset.defaultProps } };
 }
 
 export function ctaPreset(id: string): PuckBlockEntry {
-  return { type: "CtaPreset", props: { id, ...CTA_PRESET } };
+  return { type: "CtaPreset", props: { id, ...SECTION_PRESETS.CtaPreset.defaultProps } };
 }
 
 export function contactPreset(id: string): PuckBlockEntry {
-  return { type: "ContactPreset", props: { id, ...CONTACT_PRESET } };
+  return { type: "ContactPreset", props: { id, ...SECTION_PRESETS.ContactPreset.defaultProps } };
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +98,7 @@ export function galleryMasonry(
 }
 
 export function galleryLandingPreset(id: string): PuckBlockEntry {
-  return { type: "GalleryLandingPreset", props: { id, ...GALLERY_LANDING_PRESET } };
+  return { type: "GalleryLandingPreset", props: { id, ...SECTION_PRESETS.GalleryLandingPreset.defaultProps } };
 }
 
 // ---------------------------------------------------------------------------

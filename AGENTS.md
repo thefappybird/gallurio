@@ -116,6 +116,15 @@ provider, and repository configuration rather than a stale checklist.
   bypass it). Only the orchestrator runs the full typecheck, build, and
   Playwright, queued serially after an agent reports green. Subagents run only
   scoped tests + eslint on their own files. Read-only agents may parallelize.
+- Playwright is rationed — batch it, never sprinkle it (standing rule, 2026-09-03,
+  after a session lost nearly a full day to browser runs). Plan a multi-item
+  task's browser runs up front as a small numbered set (typically 2-3 for a
+  whole wave); one run covers many items, never one run per item; a run must
+  answer a question unit tests cannot; one session, one login, no re-navigation
+  between assertions; editor-internal/in-app chrome is 1280px only, while the
+  375/768/1280 x 5-locale x light/dark sweep applies to public-facing surfaces
+  and happens inside the batched run. Land static implementation plus unit tests
+  across every item first, then do one batched runtime pass.
 - Verify production behavior separately from development: the current Lemon
   Squeezy build requires HTTPS origins, live Lemon Squeezy mode, matching
   Cloudflare account hashes, strong cookie secrets, and no seed/debug flags.

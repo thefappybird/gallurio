@@ -21,10 +21,13 @@ vi.mock("@/lib/auth/activeWorkspace", () => ({
 // next/cache, next/navigation, and next/headers are not available in the test environment.
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+const mockCookieGet = vi.fn().mockReturnValue(undefined);
+const mockCookieDelete = vi.fn();
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
-    get: vi.fn().mockReturnValue(undefined),
+    get: (...a: unknown[]) => mockCookieGet(...a),
     set: vi.fn(),
+    delete: (...a: unknown[]) => mockCookieDelete(...a),
   }),
 }));
 
@@ -497,6 +500,20 @@ describe("completeOnboardingAction", () => {
     expect(user!.onboardingCompletedAt).not.toBeNull();
 
     expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("redirects to /portfolio and clears the marker when the demo-import cookie is present", async () => {
+    const { redirect } = await import("next/navigation");
+    const mockRedirect = redirect as MockedFunction<typeof redirect>;
+
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+    mockCookieGet.mockReturnValueOnce({ value: "1" });
+
+    await completeOnboardingAction();
+
+    expect(mockRedirect).toHaveBeenCalledWith("/portfolio");
+    expect(mockCookieDelete).toHaveBeenCalledWith("gw_demo_import");
   });
 
   it("seeds sample clients when seedSampleData is true in development", async () => {

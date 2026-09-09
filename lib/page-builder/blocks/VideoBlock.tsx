@@ -16,14 +16,30 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
   videoUrl: string;
+  aspectRatio?: VideoAspectRatio;
+  size?: VideoSize;
 };
+
+export const VIDEO_ASPECT_RATIOS = ["16 / 9", "4 / 3", "1 / 1", "9 / 16"] as const;
+export type VideoAspectRatio = (typeof VIDEO_ASPECT_RATIOS)[number];
+export const VIDEO_SIZES = ["sm", "md", "lg"] as const;
+export type VideoSize = (typeof VIDEO_SIZES)[number];
 
 export const videoDefaultProps: VideoBlockProps = {
   videoUrl: "",
+  aspectRatio: "16 / 9",
+  size: "lg",
+};
+
+const VIDEO_MAX_WIDTH: Record<VideoSize, string> = {
+  sm: "30rem",
+  md: "48rem",
+  lg: "100%",
 };
 
 // ---------------------------------------------------------------------------
@@ -64,8 +80,9 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // Component
 // ---------------------------------------------------------------------------
 
-export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?: BlockPuck }) {
+export function VideoBlock({ _style, videoUrl, aspectRatio = "16 / 9", size = "lg", puck }: VideoBlockProps & { puck?: BlockPuck }) {
   const embed = parseVideoEmbed(videoUrl);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <section
@@ -75,16 +92,33 @@ export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?
       style={{
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
+        width: "100%",
+        maxWidth: VIDEO_MAX_WIDTH[size] ?? VIDEO_MAX_WIDTH.lg,
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {embed ? (
+      {embed && puck?.isEditing ? (
+        <div
+          style={{
+            width: "100%",
+            aspectRatio,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid color-mix(in srgb, var(--pf-color-fg) 15%, transparent)",
+          }}
+        >
+          <p style={{ margin: 0, opacity: 0.6, fontSize: "0.9375rem" }}>
+            Video linked. Open Preview to play it.
+          </p>
+        </div>
+      ) : embed ? (
         <div
           style={{
             position: "relative",
             width: "100%",
-            aspectRatio: "16 / 9",
+            aspectRatio,
             overflow: "hidden",
             borderRadius: "var(--pf-radius)",
             backgroundColor: "var(--pf-color-fg)",
@@ -96,14 +130,23 @@ export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?
             loading="lazy"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              border: 0,
+              pointerEvents: puck?.isEditing ? "none" : "auto",
+            }}
           />
         </div>
+      ) : presetPreview ? (
+        <PresetMediaPlaceholder kind="video" />
       ) : (
         <div
           style={{
             width: "100%",
-            aspectRatio: "16 / 9",
+            aspectRatio,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -130,6 +173,16 @@ export const videoBlockConfig: ComponentConfig<VideoBlockProps> = {
   fields: {
     _style: productionStyleField,
     videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
+    aspectRatio: {
+      type: "select",
+      label: "Aspect ratio",
+      options: VIDEO_ASPECT_RATIOS.map((value) => ({ label: value.replaceAll(" ", ""), value })),
+    },
+    size: {
+      type: "select",
+      label: "Size",
+      options: VIDEO_SIZES.map((value) => ({ label: value.toUpperCase(), value })),
+    },
   },
   render: VideoBlock,
 };

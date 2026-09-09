@@ -34,20 +34,58 @@ export type BlockActions = {
   remove: RemoveAction;
 };
 
+export type ParentSelector = { index: number; zone: string };
+
+/**
+ * Extracts the parent block id from a Puck slot zone id (`${parentBlockId}:${slotName}`).
+ * Returns null when the zone has no colon (malformed) — caller falls back.
+ */
+function parentBlockIdFromZone(zone: string): string | null {
+  const lastColon = zone.lastIndexOf(":");
+  if (lastColon <= 0) return null;
+  return zone.slice(0, lastColon);
+}
+
 /**
  * Derives all toolbar dispatch actions for the selected block from the public
  * `appState.ui.itemSelector`. Returns null when no block is selected.
+ *
+ * `resolveParent` looks up the parent block's own selector (its index + the
+ * zone it lives in) by parent block id — the caller supplies this from the
+ * Puck store's `getSelectorForId` so this function stays pure/testable.
  */
 export function selectedBlockActions(
   itemSelector: { index: number; zone?: string } | null,
   rootContentLength: number,
+  resolveParent: (parentBlockId: string) => ParentSelector | null = () => null,
 ): BlockActions | null {
   if (!itemSelector) return null;
 
   const sourceZone = itemSelector.zone ?? ROOT_ZONE;
-  const moveOut: MoveAction | null = sourceZone !== ROOT_ZONE
-    ? { type: "move", sourceIndex: itemSelector.index, sourceZone, destinationZone: ROOT_ZONE, destinationIndex: rootContentLength }
-    : null;
+
+  let moveOut: MoveAction | null = null;
+  if (sourceZone !== ROOT_ZONE) {
+    const parentBlockId = parentBlockIdFromZone(sourceZone);
+    const parentSelector = parentBlockId ? resolveParent(parentBlockId) : null;
+    moveOut = parentSelector
+      ? {
+          type: "move",
+          sourceIndex: itemSelector.index,
+          sourceZone,
+          destinationZone: parentSelector.zone,
+          destinationIndex: parentSelector.index + 1,
+        }
+      // Fallback: malformed zone id or parent lookup failed — dump at the end
+      // of root (old behaviour) rather than hiding the button. Findable but
+      // imprecise beats a dead control.
+      : {
+          type: "move",
+          sourceIndex: itemSelector.index,
+          sourceZone,
+          destinationZone: ROOT_ZONE,
+          destinationIndex: rootContentLength,
+        };
+  }
 
   const sourceIndex = itemSelector.index;
 

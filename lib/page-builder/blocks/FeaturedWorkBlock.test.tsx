@@ -60,7 +60,21 @@ describe("FeaturedWorkBlock — empty state", () => {
 
   it("renders the empty label (English default)", () => {
     render(<FeaturedWorkBlock {...featuredWorkDefaultProps} collections={[]} />);
-    expect(screen.getByText(/no featured photos selected yet/i)).toBeTruthy();
+    expect(screen.getAllByText(/no featured photos selected yet/i)).toHaveLength(3);
+  });
+
+  it("shows collection-card shapes in an empty preset hover preview", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[]}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+
+    expect(screen.queryByText(/no featured photos selected yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-media-placeholder='collections']")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(3);
   });
 });
 
@@ -269,6 +283,46 @@ describe("FeaturedWorkBlock — brand vars reach the popup (portal fix)", () => 
     const shell = await screen.findByRole("heading", { level: 2 }).then((h) => h.closest("[data-popup-shell]"));
     expect(shell).not.toBeNull();
     expect((shell as HTMLElement).style.getPropertyValue("--pf-color-bg")).toBe("#ff00aa");
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("FeaturedWorkBlock — dir reaches the popup", () => {
+  it("threads puck.metadata.workspace.dir='rtl' onto the opened popup's portaled shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ items: [], nextCursor: null }),
+        })
+      )
+    );
+
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+        puck={{
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Studio",
+              slug: "studio",
+              publicPage: { collectionsPopup: {} },
+              dir: "rtl",
+            },
+          },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+
+    const shell = await screen.findByRole("heading", { level: 2 }).then((h) => h.closest("[data-popup-shell]"));
+    expect(shell).not.toBeNull();
+    expect(shell).toHaveAttribute("dir", "rtl");
 
     vi.unstubAllGlobals();
   });

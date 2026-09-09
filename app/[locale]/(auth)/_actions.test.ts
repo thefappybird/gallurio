@@ -370,6 +370,25 @@ describe("signInAction", () => {
     ).rejects.toThrow("REDIRECT:/api/invites/accept");
   });
 
+  it("sends a completed owner with demo intent to Portfolio and consumes the marker", async () => {
+    const { ensureUser } = await import("@/lib/auth/ensureUser");
+    vi.mocked(ensureUser).mockResolvedValueOnce({
+      memberships: [{ role: "owner" }],
+      onboardingCompletedAt: new Date(),
+    } as never);
+    mockCookieJar["gw_demo_import"] = "1";
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue(sealedResponse());
+
+    await expect(
+      signInAction(null, fd({
+        email: "owner@example.com",
+        password: "Password1!",
+        "cf-turnstile-response": "valid-token",
+      })),
+    ).rejects.toThrow("REDIRECT:/portfolio");
+    expect(mockCookieJar["gw_demo_import"]).toBeUndefined();
+  });
+
   it("redirects to MFA page on mfa_challenge code", async () => {
     const ex = Object.assign(new Error("mfa required"), {
       code: "mfa_challenge",

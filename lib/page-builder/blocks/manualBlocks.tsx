@@ -15,7 +15,7 @@
 import { isValidElement, type ReactNode } from "react";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
-import { portfolioGalleryPath } from "@/lib/portfolio/publicUrl";
+import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -25,10 +25,17 @@ import {
   productionStyleField,
   FLEX_JUSTIFY_MAP,
   bgImageUrl,
+  STYLE_COLOR_TOKENS,
   type BlockStyle,
   type HighlightShape,
   type HighlightSize,
+  type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
+import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "@/lib/page-builder/responsive";
+import { resolveImageModalLayout } from "@/lib/page-builder/types";
+import { getGalleryChromeLabelsFrom, getPreviewNavFrom } from "@/lib/page-builder/blockContext";
+import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import type { LightboxLabels } from "./Lightbox";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
 // use the same visual output without a shared import cycle.
@@ -59,11 +66,13 @@ function highlightBandStyle(
   };
 }
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import type { ChromeKind } from "@/lib/page-builder/chromeSync";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { GalleryImage } from "./GalleryGridBlock";
 
 // Returns null when imageId is missing or env is unset, so existing `url(...) || imageUrl` fallbacks still work.
-function cfImageUrl(publicId: string, w = 1200): string | null {
+export function cfImageUrl(publicId: string, w = 1200): string | null {
   return imageDeliveryUrl(publicId, { width: w, height: w * 4, fit: "scale-down" }) || null;
 }
 
@@ -90,6 +99,26 @@ export type HeadingBlockProps = {
 
 export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
+/**
+ * Effective padding constants for Heading and Text — render fallback + control
+ * effectiveValue. Gives the inline-editable block a grabbable strip around the
+ * text so it isn't 100% covered by Puck's contentEditable overlay.
+ */
+export const TEXT_EFFECTIVE_PAD = {
+  top: "4px",
+  right: "4px",
+  bottom: "4px",
+  left: "4px",
+} as const;
+
+/** Small outer breathing room keeps ordinary leaf blocks easy to select. */
+export const LEAF_EFFECTIVE_MARGIN = {
+  top: "4px",
+  right: "4px",
+  bottom: "4px",
+  left: "4px",
+} as const;
+
 /** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
   h1: "clamp(2rem, 1.4rem + 4cqi, 3rem)",
@@ -112,7 +141,19 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
         color:
           colorTokenToVar(_style?.textColorToken) ??
           "var(--pf-block-text-color, var(--pf-color-fg))",
-        ...resolveBlockStyle(_style),
+        paddingTop: _style?.paddingTop ?? TEXT_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
+        marginTop: _style?.marginTop ?? LEAF_EFFECTIVE_MARGIN.top,
+        marginRight: _style?.marginRight ?? LEAF_EFFECTIVE_MARGIN.right,
+        marginBottom: _style?.marginBottom ?? LEAF_EFFECTIVE_MARGIN.bottom,
+        marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
+        width: _style?.width ?? "fit-content",
+        maxWidth: "100%",
+        // Heading/Text always hug their copy. Alignment controls position this
+        // block in its parent; they no longer change the text inside it.
+        ...resolveBlockStyle({ ..._style, align: undefined, alignItems: undefined }),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -182,7 +223,17 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
         color:
           colorTokenToVar(_style?.textColorToken) ??
           "var(--pf-block-text-color, var(--pf-color-fg))",
-        ...resolveBlockStyle(_style),
+        paddingTop: _style?.paddingTop ?? TEXT_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
+        marginTop: _style?.marginTop ?? LEAF_EFFECTIVE_MARGIN.top,
+        marginRight: _style?.marginRight ?? LEAF_EFFECTIVE_MARGIN.right,
+        marginBottom: _style?.marginBottom ?? LEAF_EFFECTIVE_MARGIN.bottom,
+        marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
+        width: _style?.width ?? "fit-content",
+        maxWidth: "100%",
+        ...resolveBlockStyle({ ..._style, align: undefined, alignItems: undefined }),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -219,9 +270,37 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
 // (F4) fades only the image layer, never the placeholder.
 // ---------------------------------------------------------------------------
 
+/**
+ * GalleryItem metadata baked onto the block at pick time (Item 10c) — the
+ * block is no longer a per-placement metadata form; the picked photo's own
+ * title/description/date/location/client/tags/meta are copied here so the
+ * renderer and every image modal have them with no per-placement editing.
+ * `sourceAssetId` is the asset this bundle was baked from, so the Content
+ * tab's Edit row can tell a re-pick apart from an already-baked photo and
+ * refetch/rebake instead of leaving stale metadata attached.
+ */
+export type ImageBlockBakedMeta = {
+  title?: string;
+  caption?: string;
+  altText?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  tags?: string[];
+  meta?: { label: string; value: string }[];
+  sourceAssetId?: string;
+};
+
 export type ImageBlockProps = {
   _style?: BlockStyle;
-  alt: string;
+  /** Legacy per-placement alt override (pre-Item 10c). No longer editable —
+   *  the Content tab now only bakes `meta.altText` from the picked photo —
+   *  but still read here so drafts saved before this change keep their alt
+   *  text. New picks leave this empty and rely on `meta.altText` instead.
+   *  Optional because it no longer has an editor field: Puck derives a config's
+   *  required `fields` keys from the required props. */
+  alt?: string;
+  meta?: ImageBlockBakedMeta;
 };
 
 // Back-compat only: the pre-redesign Image block (before commit ee5084d)
@@ -234,11 +313,12 @@ type LegacyImageBlockProps = {
   imageUrl?: string;
 };
 
-export const imageDefaultProps: ImageBlockProps = { alt: "" };
+export const imageDefaultProps: ImageBlockProps = {};
 
 export function ImageBlock({
   _style,
   alt,
+  meta,
   puck,
   imagePublicId,
   imageUrl,
@@ -266,10 +346,13 @@ export function ImageBlock({
   // asset id at all (mirrors the legacy-migration precedence above).
   const src = effectiveStyle?.bgImagePublicId ? bgImageUrl(effectiveStyle.bgImagePublicId) : imageUrl || null;
   const hasImage = Boolean(src);
+  const presetPreview = puck?.metadata?.presetPreview === true;
+  const isEditing = puck?.isEditing === true;
 
   return (
     <div
       ref={puck?.dragRef ?? undefined}
+      data-block="image"
       style={{
         position: "relative",
         overflow: "hidden",
@@ -288,22 +371,74 @@ export function ImageBlock({
             opacity,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src as string}
-            alt={alt || ""}
-            loading="lazy"
-            decoding="async"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center",
-            }}
-          />
+          {(() => {
+            const picture = (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src as string}
+                alt={alt || meta?.caption || meta?.altText || ""}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: effectiveStyle?.imageFit ?? "cover",
+                  objectPosition: "center",
+                }}
+              />
+            );
+            // Clicking opens the view-image modal, except while the editor
+            // would otherwise treat the click as a block-select, and never in
+            // the drawer's decorative preset preview.
+            if (isEditing || presetPreview) return picture;
+            const chromeLabels = getGalleryChromeLabelsFrom(puck);
+            const lightboxLabels: LightboxLabels = {
+              close: chromeLabels.lightboxClose,
+              previous: chromeLabels.carouselPrev,
+              next: chromeLabels.carouselNext,
+              counter: chromeLabels.lightboxCounter,
+              filmstrip: chromeLabels.lightboxFilmstrip,
+              seeMore: chromeLabels.lightboxSeeMore,
+              seeLess: chromeLabels.lightboxSeeLess,
+              additionalInformation: chromeLabels.lightboxAdditionalInformation,
+              date: chromeLabels.lightboxDate,
+              location: chromeLabels.lightboxLocation,
+              client: chromeLabels.lightboxClient,
+              tags: chromeLabels.lightboxTags,
+              photoOf: chromeLabels.lightboxPhotoOf,
+            };
+            return (
+              <GalleryLightboxTrigger
+                image={{
+                  id: effectiveStyle?.bgImagePublicId ?? "image",
+                  publicId: effectiveStyle?.bgImagePublicId ?? "",
+                  // Preserve a legacy per-block `alt` when present; otherwise the
+                  // description is the active alt source, with old altText as fallback.
+                  alt: alt || meta?.caption || meta?.altText || "",
+                  title: meta?.title || undefined,
+                  caption: meta?.caption || undefined,
+                  date: meta?.date || undefined,
+                  location: meta?.location || undefined,
+                  client: meta?.client || undefined,
+                  meta: meta?.meta,
+                  tags: meta?.tags,
+                }}
+                buttonStyle={{ position: "absolute", inset: 0, height: "100%" }}
+                labels={lightboxLabels}
+                brandVars={puck?.metadata?.workspace?.brandVars}
+                layout={resolveImageModalLayout(
+                  puck?.metadata?.workspace?.publicPage?.collectionsPopup?.imageModalLayout,
+                )}
+              >
+                {picture}
+              </GalleryLightboxTrigger>
+            );
+          })()}
         </div>
+      ) : presetPreview ? (
+        <PresetMediaPlaceholder kind="image" />
       ) : (
         <div
           style={{
@@ -319,7 +454,7 @@ export function ImageBlock({
             fontSize: "0.875rem",
           }}
         >
-          Pick an image
+          {isEditing ? "Pick an image" : "Image unavailable"}
         </div>
       )}
     </div>
@@ -330,9 +465,11 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   label: "Image",
   inline: true,
   defaultProps: imageDefaultProps,
+  // `alt` is deliberately absent (Item 10c): it's no longer editable per
+  // placement, only baked from the picked photo's GalleryItem (`meta`) —
+  // see StyleToolkitField.tsx's Image content branch.
   fields: {
     _style: productionStyleField,
-    alt: { type: "text", label: "Alt text" },
   },
   render: ImageBlock,
 };
@@ -363,7 +500,7 @@ const BUTTON_SIZE_STYLES = {
 export type ButtonBlockProps = {
   _style?: BlockStyle;
   label: string;
-  action: "open-contact" | "go-to-gallery";
+  action: "open-contact" | "go-to-gallery" | "go-to-home";
   align: "left" | "center" | "right";
   size?: "sm" | "md" | "lg";
 };
@@ -377,7 +514,14 @@ export const buttonDefaultProps: ButtonBlockProps = {
 
 export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
   const slug = gallerySlugFrom(puck);
-  const href = action === "go-to-gallery" && slug ? portfolioGalleryPath(slug) : "#";
+  const previewNav = getPreviewNavFrom(puck);
+  const href = slug
+    ? action === "go-to-gallery"
+      ? previewNav?.galleryHref ?? portfolioGalleryPath(slug)
+      : action === "go-to-home"
+        ? previewNav?.homeHref ?? portfolioHomePath(slug)
+        : "#"
+    : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
   const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
@@ -388,34 +532,60 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   let buttonText: string;
   let tkBorderWidth: string;
   let tkBorderColor: string;
+  let isLink = false;
 
-  if (_style?.buttonStyle === "outline") {
+  if (_style?.buttonStyle === "link") {
+    // Link: no fill, no frame — a hairline underline in the portfolio
+    // foreground. borderBottom/borderRadius/padding are applied
+    // directly on aStyle below, overriding the size preset and the frame fields.
+    isLink = true;
+    buttonBg = "transparent";
+    // Follow the section text cascade the way Heading/Text do, so a link button
+    // dropped on a primary/accent band stays legible instead of painting the
+    // theme foreground on top of it. Still a var with a concrete fallback --
+    // never `inherit` -- so Puck's selected-block chrome cannot become the
+    // inheritance source in the editor canvas.
+    buttonText = customTextColor ?? "var(--pf-block-text-color, var(--pf-color-fg))";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
+  } else if (_style?.buttonStyle === "outline") {
     // Outline: transparent fill, always 2px border in the button color.
     // borderWidth/borderColorToken from _style are ignored (deprecated in Pass 2).
     buttonBg = "transparent";
-    buttonText = customTextColor ?? colorVar;
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "2px";
     tkBorderColor = colorVar;
   } else if (_style?.buttonStyle === "soft") {
     // Soft: tinted fill at 15%, no border. borderWidth/borderColorToken ignored (deprecated in Pass 2).
     buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
-    buttonText = customTextColor ?? colorVar;
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "solid") {
     // Opacity applies to the fill; 100 is a no-op (no color-mix overhead).
     // borderWidth/borderColorToken are ignored for named button styles (deprecated in Pass 2).
     buttonBg = buildColorWithOpacity(colorVar, _style?.buttonOpacity ?? 100);
-    buttonText = customTextColor ?? "var(--pf-color-bg)";
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
+  } else if (_style?.buttonStyle === "naked") {
+    // Naked keeps the normal button hit area while removing both fill and
+    // frame. An explicit Frame drawer choice below can add a selected border.
+    buttonBg = "transparent";
+    buttonText = customTextColor ?? "var(--pf-block-text-color, var(--pf-color-fg))";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
     const hasColor = _style?.buttonColorToken !== undefined;
+    // Label and stroke follow the section text cascade (as Heading/Text do), so
+    // an unstyled button on a primary/accent band does not paint the theme
+    // foreground on top of it. See the link branch above.
+    const cascadedFg = "var(--pf-block-text-color, var(--pf-color-fg))";
     buttonBg = hasColor ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent") : "transparent";
-    buttonText = customTextColor ?? "var(--pf-color-fg)";
+    buttonText = customTextColor ?? cascadedFg;
     tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
-    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : "var(--pf-color-fg)");
+    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : cascadedFg);
   }
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
@@ -424,15 +594,35 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   // Shadow and border-frame are intentionally NOT applied to buttons — they are
   // deprecated fields for the button variant (old data is simply ignored).
   const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
+  const hasExplicitFrame = _style?.borderWidth !== undefined;
+  const explicitFrameStyle: React.CSSProperties = hasExplicitFrame
+    ? _style.borderWidth && _style.borderWidth > 0
+      ? {
+        ...(resolved.borderStyle !== undefined && { borderStyle: resolved.borderStyle as string }),
+        ...(resolved.borderColor !== undefined && { borderColor: resolved.borderColor as string }),
+        ...(resolved.borderWidth !== undefined && { borderWidth: resolved.borderWidth as string }),
+        ...(resolved.borderTopWidth !== undefined && { borderTopWidth: resolved.borderTopWidth as string }),
+        ...(resolved.borderRightWidth !== undefined && { borderRightWidth: resolved.borderRightWidth as string }),
+        ...(resolved.borderBottomWidth !== undefined && { borderBottomWidth: resolved.borderBottomWidth as string }),
+        ...(resolved.borderLeftWidth !== undefined && { borderLeftWidth: resolved.borderLeftWidth as string }),
+      }
+      : { borderWidth: "0px", borderColor: "transparent" }
+    : {};
 
   const wrapperStyle: React.CSSProperties = {
     width: "fit-content",
+    marginTop: LEAF_EFFECTIVE_MARGIN.top,
+    marginBottom: LEAF_EFFECTIVE_MARGIN.bottom,
     ...legacyMargin,
   };
   if (resolved.marginLeft !== undefined) wrapperStyle.marginLeft = resolved.marginLeft as string;
   if (resolved.marginRight !== undefined) wrapperStyle.marginRight = resolved.marginRight as string;
   if (resolved.marginTop !== undefined) wrapperStyle.marginTop = resolved.marginTop as string;
   if (resolved.marginBottom !== undefined) wrapperStyle.marginBottom = resolved.marginBottom as string;
+  // _style.cellVerticalAlign (e.g. from a Columns grid cell) resolves to
+  // alignSelf on `resolved`, but this wrapper only copied margins from it —
+  // alignSelf had nowhere to land, so the button never centered in its cell.
+  if (resolved.alignSelf !== undefined) wrapperStyle.alignSelf = resolved.alignSelf as string;
 
   const aStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -449,11 +639,22 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     borderWidth: tkBorderWidth,
     borderColor: tkBorderColor,
     borderRadius: tkBorderRadius,
+    ...explicitFrameStyle,
     backgroundColor: buttonBg,
     color: buttonText,
     // Shadow suppressed: button no longer reads _style.shadow (deprecated for buttons).
     ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
     ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
+    // Link: a hairline underline only — overrides the size preset's box (padding/
+    // min-height/min-width) and the frame fields above with a bottom edge only.
+    ...(isLink && {
+      padding: "0.25rem 0",
+      minHeight: "auto",
+      minWidth: "auto",
+      borderBottom: "1px solid currentColor",
+      borderRadius: "0",
+      fontWeight: _style?.bold ? 700 : 500,
+    }),
   };
 
   return (
@@ -478,6 +679,7 @@ export const buttonBlockConfig: ComponentConfig<ButtonBlockProps> = {
       options: [
         { label: "Open contact form", value: "open-contact" },
         { label: "Go to Gallery page", value: "go-to-gallery" },
+        { label: "Go to Home page", value: "go-to-home" },
       ],
     },
     align: {
@@ -536,13 +738,19 @@ export const dividerDefaultProps: DividerBlockProps = { thickness: 1 };
 export function DividerBlock({ _style, thickness, puck }: DividerBlockProps & { puck?: BlockPuck }) {
   const t = Math.min(12, Math.max(1, Number.isFinite(thickness) ? thickness : 1));
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div
+      ref={puck?.dragRef ?? undefined}
+      data-block="divider"
+      style={{ width: "100%", padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}
+      {...resolveBlockAttrs(_style)}
+    >
       <hr
         style={{
           border: 0,
           borderTopWidth: `${t}px`,
           borderTopStyle: "solid",
-          borderTopColor: "color-mix(in srgb, var(--pf-color-fg) 20%, transparent)",
+          borderTopColor:
+            "color-mix(in srgb, var(--pf-block-text-color, var(--pf-color-fg)) 20%, transparent)",
           margin: 0,
         }}
       />
@@ -570,6 +778,13 @@ export type ColumnsBlockProps = {
    *  Columns blocks never share @container rules (prevents cross-contamination). */
   id?: string;
   _style?: BlockStyle;
+  /** Same background-image/overlay banner as Container — Columns is a
+   *  container-class object too. See ContainerBlockProps for field docs. */
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
   columns: number;
   /** Explicit row count 1–6. When set to 2 or more, the grid defines that many
@@ -593,9 +808,20 @@ export const COLUMNS_EFFECTIVE_PAD = {
   left: "1.5rem",
 } as const;
 
+/** Containers no longer manufacture an 8px spacing band. Owners can still set
+ * an explicit margin whenever a section needs one. */
+export const CONTAINER_EFFECTIVE_MARGIN_BOTTOM = "0px";
+
 export const columnsDefaultProps: ColumnsBlockProps = {
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
+  overlayOpacity: 0,
   columns: 2,
   rows: undefined,
+  // Match the Container "short" editor footprint so a freshly dropped Columns
+  // block has a real drop surface before it contains any child blocks.
+  minHeight: "320px",
   overallWidth: "page-fit",
   content: [],
   _style: {
@@ -606,6 +832,11 @@ export const columnsDefaultProps: ColumnsBlockProps = {
 export function ColumnsBlock({
   id,
   _style,
+  backgroundImages,
+  bgAnimation,
+  bgSpeed,
+  overlayOpacity,
+  overlayColorToken,
   columns,
   rows,
   minHeight,
@@ -615,6 +846,11 @@ export function ColumnsBlock({
 }: {
   id?: string;
   _style?: BlockStyle;
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   columns: number;
   rows?: number;
   minHeight?: string;
@@ -622,6 +858,19 @@ export function ColumnsBlock({
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
+  // Same baked-background resolution as ContainerBlock — Columns is a
+  // container-class object too (see containerAnchorPredicate.isContainerClass).
+  const layers = (Array.isArray(backgroundImages) ? backgroundImages : [])
+    .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
+    .filter((l): l is { id: string; src: string } => Boolean(l.src));
+  const hasBg = layers.length > 0;
+  const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
+  const overlayAlpha = overlayPercent / 100;
+  const scrimColor =
+    overlayColorToken && (STYLE_COLOR_TOKENS as readonly string[]).includes(overlayColorToken)
+      ? `color-mix(in srgb, ${colorTokenToVar(overlayColorToken)} ${overlayPercent}%, transparent)`
+      : `rgba(0,0,0,${overlayAlpha})`;
+  const bgImageAlpha = Math.min(100, Math.max(0, _style?.bgImageOpacity ?? 100)) / 100;
   // Clamp columns to 1–6; accept legacy 2|3 values as-is.
   const cols = Math.min(6, Math.max(1, Math.floor(columns ?? 2)));
   // Tablet breakpoint shows min(2, cols) columns; desktop shows the full count.
@@ -699,27 +948,60 @@ export function ColumnsBlock({
     <div
       ref={puck?.dragRef ?? undefined}
       style={{
+        // A min-height must be available to the actual grid, not just this
+        // wrapper. The flex column makes the grid fill that lower bound while
+        // keeping Hug-content behaviour when no minHeight is set.
+        display: "flex",
+        flexDirection: "column",
         paddingTop: _style?.paddingTop ?? COLUMNS_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        marginBottom: _style?.marginBottom ?? CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
         minHeight: minHeight ?? undefined,
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...outerStyle,
-        // A7: full-bleed breaks out of any max-width parent container.
-        // Placed after outerStyle so full-bleed width/marginLeft always wins.
-        // Bug #9: cap to canvas width in editor so 100vw (= full viewport with
-        // both Puck panels) does not overflow the narrow canvas (~428px). On the
-        // public page the true 100vw full-bleed is kept intact.
+        // Full means the maximum width available from the immediate parent.
+        // A page-body child therefore reaches the page edge, while a nested
+        // child remains inside its page-fit parent instead of escaping via 100vw.
         ...(overallWidth === "full"
-          ? isEditing
-            ? { width: "100%", marginLeft: 0 }
-            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          ? { width: "100%", marginLeft: 0, marginRight: 0, maxWidth: "none" }
           : {}),
         containerType: "inline-size",
         containerName: instanceContainer,
       }}
+      data-block="columns"
+      data-pf-full-width={overallWidth === "full" ? "" : undefined}
       {...resolveBlockAttrs(_style)}
     >
+      {/* Same banner background layering as ContainerBlock — scrim renders
+          first but sits above the image layer via zIndex, both below the grid
+          content (zIndex:1 on the Content slot below). */}
+      {hasBg && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
+      )}
+      {hasBg && (
+        <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
+          {layers.length === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={layers[0].src}
+              alt=""
+              aria-hidden="true"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+          {layers.length >= 2 && (
+            <ContainerBackgroundSlideshow
+              images={layers}
+              animation={bgAnimation ?? "crossfade"}
+              speed={bgSpeed ?? "medium"}
+            />
+          )}
+        </div>
+      )}
       {/* Per-instance scoped @container rules: each Columns block gets its own
           unique containerName and CSS class so multiple blocks on the same page
           are fully isolated. Container queries (not viewport media queries) are
@@ -736,6 +1018,10 @@ export function ColumnsBlock({
         // CSS specificity so these always take priority. Public: empty objects —
         // @container rules drive the responsive layout.
         style: {
+          position: "relative",
+          zIndex: 1,
+          flex: "1 1 auto",
+          minHeight: 0,
           ...(editorGridCols ? { gridTemplateColumns: editorGridCols } : {}),
           ...(editorGridRows ? { gridTemplateRows: editorGridRows } : {}),
         },
@@ -750,6 +1036,38 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   defaultProps: columnsDefaultProps,
   fields: {
     _style: productionStyleField,
+    // Same banner fields as Container — see containerFields below for docs.
+    bgAnimation: {
+      type: "select",
+      label: "Background animation",
+      options: [
+        { label: "Crossfade", value: "crossfade" },
+        { label: "Ken Burns", value: "kenburns" },
+        { label: "Slide", value: "slide" },
+      ],
+    } as Field<ColumnsBlockProps["bgAnimation"]>,
+    bgSpeed: {
+      type: "select",
+      label: "Animation speed",
+      options: [
+        { label: "Slow (7s)", value: "slow" },
+        { label: "Medium (5s)", value: "medium" },
+        { label: "Fast (3s)", value: "fast" },
+      ],
+    } as Field<ColumnsBlockProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
+    overlayColorToken: {
+      type: "select",
+      label: "Overlay color",
+      options: [
+        { label: "None (black)", value: "" },
+        { label: "Primary", value: "primary" },
+        { label: "Secondary", value: "secondary" },
+        { label: "Accent", value: "accent" },
+        { label: "Background", value: "background" },
+        { label: "Foreground", value: "foreground" },
+      ],
+    } as unknown as Field<StyleColorToken | undefined>,
     columns: {
       type: "number",
       label: "Columns",
@@ -780,11 +1098,27 @@ export type ContainerBlockProps = {
   bgSpeed?: "slow" | "medium" | "fast";
   /** Dark scrim over the background, 0-100. Only meaningful with >=1 image. */
   overlayOpacity?: number;
+  /** Palette token tinting the scrim. Unset keeps the legacy black scrim, so
+   *  already-saved pages are unchanged. */
+  overlayColorToken?: StyleColorToken;
   minHeight?: ContainerHeight;
   /** CSS length value when minHeight === "custom", e.g. "200px" or "30%". */
   minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
+  /** Layout: "page-fit" keeps the content slot clamped to max-width:80rem;margin:0 auto
+   *  and the outer section unbroken. "full" breaks the outer section out to 100vw
+   *  (100% in the editor canvas, to stay inside the narrow preview) AND drops the
+   *  slot's 80rem clamp — band and content both edge-to-edge.
+   *  Unset falls back to "full" when `_chrome === "footer"`, else "page-fit" — see
+   *  the render. Not written into `containerDefaultProps` on purpose: that keeps
+   *  the fallback theme-coupled (effective-default DISPLAY, not materialized) so a
+   *  pre-existing footer without this key still renders full in BOTH the editor
+   *  canvas and the public page (same render function, same fallback — no drift). */
+  overallWidth?: "page-fit" | "full";
+  /** Marks chrome blocks (footer) for chromeSync's mirroring — same marker prop as
+   *  NavigationBlockProps. Only read here for the overallWidth chrome fallback above. */
+  _chrome?: ChromeKind;
   content: Slot;
 };
 
@@ -829,40 +1163,74 @@ export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   custom: 128,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
-// Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
-// "stretch" has no text-align equivalent; falls back to the legacy alignX (ax) value.
+// Maps the legacy overloaded alignItems field to text alignment for old drafts.
+// "stretch" has no text-align equivalent; it falls back to legacy alignX.
 const ALIGN_TO_TEXT: Record<string, string | undefined> = {
   start: "left", center: "center", end: "right", stretch: undefined,
 };
+const CONTENT_ALIGN_TO_TEXT: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["textAlign"]> = {
+  start: "start", center: "center", end: "end", stretch: undefined,
+};
+const CONTENT_ALIGN_TO_ITEMS: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["alignItems"]> = {
+  start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
+};
+const ALIGN_X_TO_CONTENT_ALIGN: Record<ContainerAlignX, NonNullable<BlockStyle["contentHorizontalAlign"]>> = {
+  left: "start", center: "center", right: "end",
+};
+/**
+ * A full-width Container's content slot. A direct full-width Container child
+ * uses this marker to consume the parent Container's inline padding, reaching
+ * exactly the parent's outer width (not the page viewport).
+ */
+export const PF_FULL_WIDTH_CONTAINER_SLOT_CLASS = "pf-full-width-container-slot";
 
 export function ContainerBlock({
+  id,
   _style,
   backgroundImages,
   bgAnimation,
   bgSpeed,
   overlayOpacity,
+  overlayColorToken,
   minHeight,
   minHeightValue,
   alignX,
   alignY,
+  overallWidth,
+  _chrome,
   content: Content,
   puck,
 }: {
+  id?: string;
   _style?: BlockStyle;
   backgroundImages?: GalleryImage[];
   bgAnimation?: "crossfade" | "kenburns" | "slide";
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   minHeight?: ContainerHeight;
   minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
+  overallWidth?: "page-fit" | "full";
+  _chrome?: ChromeKind;
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
   const ax = alignX ?? "left";
   const ay = alignY ?? "top";
   const s = _style ?? {};
+  // Effective-default DISPLAY (portfolio-effective-defaults skill): the prop stays
+  // unset until the user edits it explicitly. Footer chrome defaults to "full";
+  // every other Container (manual or preset) keeps the pre-existing page-fit
+  // behaviour so already-saved drafts render unchanged. Hug width (fit-content)
+  // always wins over a full-bleed breakout — the two are contradictory.
+  const isHugWidth = s.width === "fit-content";
+  const wantsFullBleed = (overallWidth ?? (_chrome === "footer" ? "full" : "page-fit")) === "full";
+  const applyFullBleed = wantsFullBleed && !isHugWidth;
+  const contentFlowClass = s.flexDirection === "row"
+    ? s.flexWrap === "wrap" ? PF_ROW_WRAP_CLASS : undefined
+    : PF_COLUMN_STACK_CLASS;
 
   // Resolve baked background images -> cover-layer URLs (same transform as the
   // legacy single background). Drop any that don't resolve (blank publicId / no
@@ -871,25 +1239,62 @@ export function ContainerBlock({
     .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
     .filter((l): l is { id: string; src: string } => Boolean(l.src));
   const hasBg = layers.length > 0;
-  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+  const previewBackground =
+    !hasBg && puck?.metadata?.presetPreview === true && (overlayOpacity ?? 0) > 0;
+  const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
+  const overlayAlpha = overlayPercent / 100;
+  const scrimColor =
+    overlayColorToken && (STYLE_COLOR_TOKENS as readonly string[]).includes(overlayColorToken)
+      ? `color-mix(in srgb, ${colorTokenToVar(overlayColorToken)} ${overlayPercent}%, transparent)`
+      : `rgba(0,0,0,${overlayAlpha})`;
   // F4: bgImageOpacity fades only the image layer (the wrapper div below), never
   // the dark scrim or the content slot — both render outside this wrapper.
   const bgImageAlpha = Math.min(100, Math.max(0, s.bgImageOpacity ?? 100)) / 100;
 
-  // Vertical positioning of the content block within the section height.
-  const effectiveJustify = s.justifyContent
-    ? FLEX_JUSTIFY_MAP[s.justifyContent as keyof typeof FLEX_JUSTIFY_MAP] ?? ALIGN_Y_MAP[ay]
-    : ALIGN_Y_MAP[ay];
+  // New dedicated fields always win. Legacy reads retain the prior visual
+  // result, but all new controls write only the unambiguous fields.
+  const effectiveJustify = s.contentVerticalDistribution
+    ? FLEX_JUSTIFY_MAP[s.contentVerticalDistribution]
+    : s.justifyContent
+      ? FLEX_JUSTIFY_MAP[s.justifyContent] ?? ALIGN_Y_MAP[ay]
+      : ALIGN_Y_MAP[ay];
 
   // Horizontal TEXT alignment inside child blocks. Children always stretch to full
   // width so that text-align, button justify, etc. have the full container width to
   // work within. _style.align (typography toolbar) takes highest priority, then
   // _style.alignItems maps to text-align semantics (start->left, end->right).
-  const effectiveTextAlign = s.align
-    ? s.align
-    : s.alignItems
-    ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
-    : ax;
+  const effectiveTextAlign = s.contentHorizontalAlign
+    ? CONTENT_ALIGN_TO_TEXT[s.contentHorizontalAlign]
+    : s.align
+      ? s.align
+      : s.alignItems
+        ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
+        : ax;
+  // Heading and Text blocks deliberately hug their copy. Legacy `alignX`
+  // therefore needs to place the flex item as well as set text alignment;
+  // otherwise the apparent default differs from re-applying Content alignment.
+  const effectiveContentAlignment = s.contentHorizontalAlign
+    ?? (s.align
+      ? ({ left: "start", center: "center", right: "end" } as const)[s.align]
+      : s.alignItems ?? (ax === "left" ? "stretch" : ALIGN_X_TO_CONTENT_ALIGN[ax]));
+  // Center/end alignment should position copy and CTAs, but must never shrink
+  // structural children (a nested Container/Columns/Video/etc.) to its intrinsic
+  // width. Those blocks carry the section's measurable layout and stay stretched.
+  // Include legacy alignX so untouched centered presets behave exactly like a
+  // user who re-applies the current Content alignment control.
+  // EXCEPT a Container explicitly set to hug width (`data-pf-hug`, isHugWidth
+  // above) — forcing align-self:stretch on a fixed-width box doesn't stretch it
+  // (its width is already set), but per spec it DOES fall back the box's
+  // cross-axis position to flex-start, silently pinning left a centered
+  // button-row/copy wrapper that intentionally opted out of stretching.
+  const contentAlignmentClass = effectiveContentAlignment !== "stretch"
+    ? `pf-container-align-${(id ?? "container").replace(/[^a-zA-Z0-9_-]/g, "")}`
+    : undefined;
+  const contentSlotClassName = [
+    contentFlowClass,
+    contentAlignmentClass,
+    applyFullBleed ? PF_FULL_WIDTH_CONTAINER_SLOT_CLASS : undefined,
+  ].filter(Boolean).join(" ") || undefined;
 
   const effectiveGap =
     s.gap != null ? `${Math.min(96, Math.max(0, s.gap))}px` : "1rem";
@@ -904,13 +1309,24 @@ export function ContainerBlock({
     <section
       ref={puck?.dragRef ?? undefined}
       data-block="container"
+      data-pf-full-width={applyFullBleed ? "" : undefined}
+      data-pf-hug={isHugWidth ? "" : undefined}
       style={{
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        flexGrow: 1,
-        justifyContent: effectiveJustify,
-        minHeight: puck?.isEditing
+        // A hugging Container (Width=Hug, s.width==="fit-content") must not also
+        // grow to fill its flex parent's main axis — that would defeat the hug.
+        // Growing is only wanted along a ROW (siblings share the width); a COLUMN
+        // parent cancels it via PF_COLUMN_STACK_CLASS — see the content slot below.
+        flexGrow: isHugWidth ? 0 : 1,
+        // Hug means the section hugs both axes. Without this explicit height
+        // guard a flex ancestor can stretch an otherwise width-hugging section
+        // vertically even though its content is short.
+        height: isHugWidth ? "fit-content" : undefined,
+        minHeight: isHugWidth
+          ? undefined
+          : puck?.isEditing
           ? minHeight === "custom"
             ? (minHeightValue ?? "128px")
             : `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
@@ -921,9 +1337,22 @@ export function ContainerBlock({
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
+        ...({
+          "--pf-container-padding-inline-start": _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
+          "--pf-container-padding-inline-end": _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
+        } as React.CSSProperties),
+        marginBottom:
+          _style?.marginBottom ?? (_chrome === "footer" ? undefined : CONTAINER_EFFECTIVE_MARGIN_BOTTOM),
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
+        // Full-width is constrained by this section's immediate parent, placed after sectionStyle so it always wins over any
+        // explicit _style.width — EXCEPT when Hug is active (applyFullBleed is false
+        // in that case, so sectionStyle's fit-content width stands). Editor canvas
+        // and never bypasses an enclosing page-fit container.
+        ...(applyFullBleed
+          ? { width: "100%", marginLeft: 0, marginRight: 0, maxWidth: "none" }
+          : {}),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -932,8 +1361,8 @@ export function ContainerBlock({
           slot (also zIndex:1, later in DOM order). Order is load-bearing — the
           slideshow island root is itself a `section > div[aria-hidden]`, so the
           scrim must precede it. Do not reorder. */}
-      {hasBg && overlayAlpha > 0 && (
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
+      {(hasBg || previewBackground) && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
       )}
       {hasBg && (
         <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
@@ -955,16 +1384,56 @@ export function ContainerBlock({
           )}
         </div>
       )}
+      {previewBackground && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <PresetMediaPlaceholder kind="background" />
+        </div>
+      )}
+      {contentAlignmentClass && (
+        <style>{`
+          .${contentAlignmentClass}>*{margin-inline:0 !important;}
+          .${contentAlignmentClass}>[data-block]:not([data-block="heading"]):not([data-block="text"]):not([data-block="button"]):not([data-block="video"]):not([data-pf-hug]){align-self:stretch !important;}
+        `}</style>
+      )}
+      {applyFullBleed && (
+        <style>{`
+          .${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-pf-full-width] {
+            width: calc(100% + var(--pf-container-padding-inline-start) + var(--pf-container-padding-inline-end)) !important;
+            margin-inline-start: calc(0px - var(--pf-container-padding-inline-start)) !important;
+            margin-inline-end: calc(0px - var(--pf-container-padding-inline-end)) !important;
+          }
+        `}</style>
+      )}
       {Content({
+        // A column stack cancels its child Containers' `flexGrow: 1`, which would
+        // otherwise let one nested section swallow all the free vertical space —
+        // the parent's background bleeding down with it — and would make the
+        // vertical-distribution control a no-op. A row stack keeps the growth:
+        // there it shares the WIDTH between siblings (load-bearing for the split
+        // presets). See PF_COLUMN_STACK_CSS for why this is a stylesheet rule.
+        // A row stack additionally opts into wrap-to-stack on narrow pages when
+        // it asks for it — see PF_ROW_WRAP_CSS.
+        ...(contentSlotClassName ? { className: contentSlotClassName } : {}),
         style: {
           position: "relative",
           zIndex: 1,
           width: "100%",
-          maxWidth: "80rem",
-          margin: "0 auto",
+          // "full" breaks the content slot's clamp out too — band and content both
+          // edge-to-edge. Hug already shrinks the section itself (applyFullBleed is
+          // false in that case), so the slot keeps its normal page-fit clamp.
+          ...(applyFullBleed ? {} : { maxWidth: "80rem", margin: "0 auto" }),
           display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
+          // _style.flexDirection lets a Container lay its children out as a row
+          // (e.g. a bundled, centered group of Buttons) instead of the default
+          // stack. Unset stays "column" — every existing preset is unaffected.
+          flexDirection: s.flexDirection ?? "column",
+          // The slot contains the real Puck children. Giving it the section's
+          // available height means center/between/around distribute those
+          // children rather than a single wrapper sibling.
+          flex: "1 1 auto",
+          minHeight: 0,
+          alignItems: CONTENT_ALIGN_TO_ITEMS[effectiveContentAlignment],
+          justifyContent: effectiveJustify,
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,
         },
@@ -1002,6 +1471,18 @@ export const containerFields = {
     ],
   } as Field<ContainerBlockProps["bgSpeed"]>,
   overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
+  overlayColorToken: {
+    type: "select",
+    label: "Overlay color",
+    options: [
+      { label: "None (black)", value: "" },
+      { label: "Primary", value: "primary" },
+      { label: "Secondary", value: "secondary" },
+      { label: "Accent", value: "accent" },
+      { label: "Background", value: "background" },
+      { label: "Foreground", value: "foreground" },
+    ],
+  } as unknown as Field<StyleColorToken | undefined>,
   minHeight: {
     type: "select",
     label: "Min height",
@@ -1030,14 +1511,43 @@ export const containerFields = {
       { label: "Bottom", value: "bottom" },
     ],
   } as Field<ContainerAlignY | undefined>,
+  overallWidth: {
+    type: "select",
+    label: "Overall width",
+    options: [
+      { label: "Page fit", value: "page-fit" },
+      { label: "Full", value: "full" },
+    ],
+  } as Field<ContainerBlockProps["overallWidth"]>,
   content: { type: "slot" },
 } as unknown as ComponentConfig<ContainerBlockProps>["fields"];
+
+// Every Container-shaped registration (base Container + the 33 non-nav
+// section presets, editor and production alike) shares this one function so
+// the footer lock lives in exactly one place instead of being hand-copied at
+// each of those registration sites. Puck calls it per INSTANCE (it receives
+// that block's own `data`), so an ordinary Container (no `_chrome`, or any
+// `_chrome` other than "footer") passes `permissions` through untouched —
+// only a block actually carrying `_chrome: "footer"` gets duplicate/drag
+// locked. `delete` is deliberately left alone: unlike the pinned nav header,
+// the footer stays deletable.
+export const containerResolvePermissions: ComponentConfig<ContainerBlockProps>["resolvePermissions"] = (
+  data,
+  { permissions },
+) => {
+  const chrome = (data.props as ContainerBlockProps & { _chrome?: string })._chrome;
+  if (chrome === "footer") {
+    return { ...permissions, duplicate: false, drag: false };
+  }
+  return permissions;
+};
 
 export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   inline: true,
   defaultProps: containerDefaultProps,
   fields: containerFields,
+  resolvePermissions: containerResolvePermissions,
   render: ContainerBlock,
 };
 
@@ -1060,6 +1570,7 @@ export function ContainerAnchorBlock({
   if (!puck?.isEditing) return <></>;
   return (
     <div
+      className="pf-container-anchor"
       aria-hidden
       style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
     />

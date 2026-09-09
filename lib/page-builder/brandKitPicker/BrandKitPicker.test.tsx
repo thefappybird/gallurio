@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BrandKitPicker } from "./BrandKitPicker";
+import { THEME_PRESET_DEFINITIONS } from "./themePresetDefinitions";
 import { DEFAULT_BRAND_KIT, type PortfolioSavedTheme } from "@/lib/page-builder/types";
 
 function setup(overrides: Partial<Parameters<typeof BrandKitPicker>[0]> = {}) {
@@ -17,9 +18,7 @@ describe("BrandKitPicker", () => {
     const { onChange } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
     const applied = onChange.mock.calls.at(-1)![0];
-    expect(applied.themePreset).toBe("editorial");
-    expect(applied.accentColor).toBe("#7e6a52");
-    expect(applied.headingFont).toBe("playfair");
+    expect(applied).toEqual(THEME_PRESET_DEFINITIONS.editorial.brandKit);
   });
 
   it("still renders the color and font editors", () => {

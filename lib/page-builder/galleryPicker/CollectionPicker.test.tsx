@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CollectionPicker } from "./CollectionPicker";
 import { __clearPickerDataCache } from "./usePickerData";
 
+vi.mock("@/lib/storage/uploadImage.client", () => ({ uploadImage: vi.fn() }));
+import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError } from "@/lib/uploads/uploadError";
+
 // Mock fetch globally.
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -19,6 +23,7 @@ function makePickerData(collections: PickerCollection[] = [], items: unknown[] =
 beforeEach(() => {
   __clearPickerDataCache();
   mockFetch.mockReset();
+  vi.mocked(uploadImage).mockReset();
   // Default: empty workspace.
   mockFetch.mockResolvedValue(makePickerData());
 });
@@ -108,5 +113,66 @@ describe("CollectionPicker", () => {
     fireEvent.click(screen.getByText(/create new collection/i));
     const createBtn = screen.getByRole("button", { name: /create collection/i });
     expect(createBtn).toBeDisabled();
+  });
+});
+
+describe("CollectionPicker upload errors", () => {
+  async function openCreateForm() {
+    render(<CollectionPicker value="" onChange={vi.fn()} />);
+    await waitFor(() => screen.getByText(/create new collection/i));
+    fireEvent.click(screen.getByText(/create new collection/i));
+  }
+
+  it("reports a per-file error for an unsupported type without touching the network", async () => {
+    await openCreateForm();
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["d"], "clip.gif", { type: "image/gif" })] } });
+
+    expect(await screen.findByText(/clip\.gif/i)).toBeTruthy();
+    expect(screen.getByText(/isn't a supported format/i)).toBeTruthy();
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
+  it("reports per-file errors for a mixed batch without collapsing to one message", async () => {
+    vi.mocked(uploadImage).mockImplementation(async (file: File) => {
+      if (file.name === "big.png") throw new UploadError({ code: "file_too_large", actualBytes: 20 * 1024 * 1024, maxBytes: 15 * 1024 * 1024 });
+      return { assetId: `a-${file.name}`, url: `https://x/${file.name}`, width: 900, height: 600, format: "jpeg", sizeBytes: 20000 };
+    });
+    await openCreateForm();
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, {
+      target: {
+        files: [
+          new File(["d"], "good.jpg", { type: "image/jpeg" }),
+          new File(["d"], "big.png", { type: "image/png" }),
+        ],
+      },
+    });
+
+    const line = await screen.findByText(/big\.png/i);
+    expect(line.closest("li")?.textContent).toMatch(/20\.0 MB/);
+    await waitFor(() => expect(document.querySelector('img[src*="good.jpg"]')).toBeTruthy());
+  });
+
+  it("shows the server's specific reason when creating the collection fails validation", async () => {
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/collections" && init?.method === "POST")
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: "dimension_too_small",
+            detail: { code: "dimension_too_small", actualWidth: 300, actualHeight: 300, minShortSide: 600 },
+          }),
+        } as Response);
+      return Promise.resolve(makePickerData());
+    });
+    await openCreateForm();
+    fireEvent.change(screen.getByLabelText(/collection title/i), { target: { value: "My collection" } });
+    fireEvent.click(screen.getByRole("button", { name: /^create collection$/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/300/);
+    expect(alert.textContent).not.toMatch(/Could not create the collection/i);
   });
 });

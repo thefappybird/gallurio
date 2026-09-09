@@ -221,9 +221,17 @@ describe("ClientFormModal", () => {
 
   it("adds a tag on Enter key", async () => {
     renderWithProviders(<ClientFormModal {...defaultProps} />);
-    const tagInput = screen.getByPlaceholderText(/add tag/i);
+    const tagInput = screen.getByPlaceholderText(/add a tag/i);
     fireEvent.change(tagInput, { target: { value: "vip" } });
     fireEvent.keyDown(tagInput, { key: "Enter" });
+    await waitFor(() => expect(screen.getByText("vip")).toBeInTheDocument());
+  });
+
+  it("adds a tag on space key", async () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    const tagInput = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(tagInput, { target: { value: "vip" } });
+    fireEvent.keyDown(tagInput, { key: " " });
     await waitFor(() => expect(screen.getByText("vip")).toBeInTheDocument());
   });
 

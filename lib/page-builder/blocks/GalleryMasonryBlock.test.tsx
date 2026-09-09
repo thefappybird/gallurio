@@ -3,6 +3,8 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
+import { ImageBlock } from "./manualBlocks";
+import type { SlotComponent } from "@measured/puck";
 import { puckConfig } from "@/lib/page-builder/config";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
@@ -35,6 +37,35 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 4)");
   });
 
+  it("shows the configured column count in the narrow editor canvas", () => {
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: imgs(4), _style: { galleryColumns: 4 }, puck: { isEditing: true } })
+    );
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.columnCount).toBe("4");
+  });
+
+  it("shows the configured column count for explicit preset lanes", () => {
+    const lane: SlotComponent = (props = {}) => <div className={props.className} />;
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        id: "editor-lanes",
+        images: [],
+        masonryLayout: "columns",
+        column1: lane,
+        column2: lane,
+        column3: lane,
+        column4: lane,
+        _style: { galleryColumns: 4 },
+        puck: { isEditing: true },
+      } as Parameters<typeof GalleryMasonryBlock>[0])
+    );
+    const lanes = container.querySelector(".pf-masonry-editor-lanes-columns") as HTMLElement;
+    expect(lanes.style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+    expect(container.querySelectorAll("[data-masonry-column]")).toHaveLength(4);
+  });
+
   it("defaults to 3 columns when _style.galleryColumns is unset", () => {
     const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
     const col = container.querySelector(".pf-masonry") as HTMLElement;
@@ -45,6 +76,33 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     render(GalleryMasonryBlock({ ...base, images: [] }));
     expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
     expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
+  });
+
+  it("shows varied masonry tiles in an empty preset hover preview", () => {
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 3, galleryGap: "normal" },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+
+    expect(screen.queryByText(/no photos in this collection yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-media-placeholder='masonry']")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(6);
+  });
+
+  it("keeps a two-column preview to two complete tiles per column", () => {
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 2 },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(4);
   });
 
   it("uses a localized empty label from puck.metadata chrome when present", () => {
@@ -67,14 +125,19 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
 });
 
 describe("GalleryMasonryBlock — banner/container props", () => {
-  it("renders a background image when backgroundImages has one entry", () => {
-    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
-    const { container } = render(
-      GalleryMasonryBlock({ ...base, images: imgs(1), backgroundImages: bgImages })
-    );
-    const bgImg = container.querySelector("img[aria-hidden='true']");
-    expect(bgImg).toBeTruthy();
-    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
+  it("ignores legacy backgroundImages data surviving in saved data — no background image", () => {
+    // Masonry dropped background images (docs/portfolio/navigation-block-plan.md,
+    // Workstream A). A saved draft may still carry the key from before the
+    // change; the block must not read it.
+    const legacy = {
+      ...base,
+      images: imgs(1),
+      backgroundImages: [{ id: "bg1", publicId: "bg-pid1" }],
+    } as GalleryMasonryProps & Record<string, unknown>;
+    const { container } = render(GalleryMasonryBlock(legacy));
+    expect(container.querySelector("img[aria-hidden='true']")).toBeNull();
+    const section = container.querySelector("[data-block='gallery-masonry']") as HTMLElement;
+    expect(section.style.backgroundColor).toBe("var(--pf-color-bg)");
   });
 });
 
@@ -103,6 +166,93 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
   });
 });
 
+describe("GalleryMasonryBlock — true masonry flow", () => {
+  it("uses independent CSS columns", () => {
+    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(3) }));
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.display).toBe("");
+    expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 3)");
+    const figure = container.querySelector("figure") as HTMLElement;
+    expect(figure.style.marginTop).toBe("0px");
+    expect(figure.style.breakInside).toBe("avoid");
+    expect(figure.style.display).toBe("inline-block");
+    expect(figure.style.width).toBe("100%");
+  });
+
+  it("ignores a saved legacy galleryStagger value", () => {
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } })
+    );
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 3)");
+  });
+
+  it("keeps the empty state when legacy galleryStagger data is present", () => {
+    render(GalleryMasonryBlock({ ...base, images: [], _style: { galleryStagger: true } }));
+    expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
+  });
+
+  it("keeps the lightbox working when legacy galleryStagger data is present", () => {
+    render(GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } }));
+    fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
+  });
+
+  it("applies configured alternating heights to every editable Image slot child", () => {
+    const slot: SlotComponent = () => <div data-testid="masonry-slot-child" />;
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        content: slot,
+        _style: { masonryHeightPattern: "alternating", masonryOddHeight: 220, masonryEvenHeight: 380 },
+      }),
+    );
+
+    const rules = container.querySelector("style")?.textContent ?? "";
+    expect(rules).toContain(":nth-child(odd){height:220px !important");
+    expect(rules).toContain(":nth-child(even){height:380px !important");
+  });
+
+  it("uses different alternate rhythms for odd/even column lanes", () => {
+    const lane = (name: string): SlotComponent => {
+      function MasonryLaneSlot(props: NonNullable<Parameters<SlotComponent>[0]> = {}) {
+        return <div className={props.className} data-testid={name}><div /><div /><div /></div>;
+      }
+      return MasonryLaneSlot;
+    };
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        id: "loop-lanes",
+        images: [],
+        masonryLayout: "columns",
+        column1: lane("lane-1"),
+        column2: lane("lane-2"),
+        column3: lane("lane-3"),
+        _style: {
+          galleryColumns: 3,
+          masonryHeightPattern: "alternating",
+          masonryOddHeight: 220,
+          masonryEvenHeight: 380,
+          masonryEvenColumnOddHeight: 410,
+          masonryEvenColumnEvenHeight: 250,
+        },
+      } as Parameters<typeof GalleryMasonryBlock>[0]),
+    );
+
+    const lanes = container.querySelectorAll("[data-masonry-column]");
+    expect(lanes).toHaveLength(3);
+    expect(screen.getAllByTestId(/lane-/)).toHaveLength(3);
+    const rules = container.querySelector("style")?.textContent ?? "";
+    expect(rules).toContain("pf-masonry-loop-lanes-column-1");
+    expect(rules).toContain("height:220px !important");
+    expect(rules).toContain("pf-masonry-loop-lanes-column-2");
+    expect(rules).toContain("height:410px !important");
+  });
+});
+
 describe("GalleryMasonryBlock — lightbox", () => {
   it("clicking an image opens the shared Lightbox with that image's data", () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
@@ -113,5 +263,59 @@ describe("GalleryMasonryBlock — lightbox", () => {
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
+  });
+
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+    render(
+      GalleryMasonryBlock({
+        ...base,
+        images: imgs(1),
+        puck: {
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Workspace",
+              publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+            },
+          },
+        },
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
+
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+});
+
+// Item 11 — same gap as GalleryGridBlock (see its test file's matching
+// describe): a slot-built masonry's Image children each only know their own
+// photo, so nav must come from the block-scoped GallerySlotLightboxContext.
+describe("GalleryMasonryBlock — nav across slot-composed Image children (Item 11)", () => {
+  const imageSlot: SlotComponent = () => (
+    <>
+      {Array.from({ length: 5 }, (_, i) => (
+        <ImageBlock key={i} alt={`Photo ${i}`} _style={{ bgImagePublicId: `pid${i}` }} />
+      ))}
+    </>
+  );
+
+  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", () => {
+    render(GalleryMasonryBlock({ ...base, images: [], content: imageSlot }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /next image/i }));
+    expect(within(dialog).getByAltText("Photo 2")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Photo 3 of 5" })).toHaveAttribute("aria-current", "true");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /previous image/i }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /previous image/i }));
+    expect(within(dialog).getByAltText("Photo 0")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /previous image/i })).toBeDisabled();
   });
 });

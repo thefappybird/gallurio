@@ -43,10 +43,10 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     const images = (out.content[0].props.images as Array<{ id: string; publicId: string; alt: string }>);
-    expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" }]);
+    expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Cap 0" }]);
   });
 
-  it("altText wins over caption when both are set; caption is only the fallback", async () => {
+  it("description wins over legacy altText when both are set", async () => {
     const ws = new Types.ObjectId();
     const both = await makeItem(ws, 9, { altText: "Alt wins", caption: "Cap loses" });
     const data: PuckData = {
@@ -55,7 +55,7 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     const images = out.content[0].props.images as Array<{ alt: string }>;
-    expect(images[0].alt).toBe("Alt wins");
+    expect(images[0].alt).toBe("Cap loses");
   });
 
   it("falls back alt to caption then empty string", async () => {
@@ -172,7 +172,7 @@ describe("reconcileGalleryImages", () => {
     };
     const out = await reconcileGalleryImages(ws.toString(), data);
     expect(out.content[0].props.backgroundImages).toEqual([
-      { id: String(it._id), publicId: `ws/${ws}/item5`, alt: "Alt 5" },
+      { id: String(it._id), publicId: `ws/${ws}/item5`, alt: "Cap 5" },
     ]);
   });
 
@@ -253,7 +253,7 @@ describe("reconcileGalleryImages", () => {
     expect(nested[0].type).toBe("Heading");
     expect(nested[1].type).toBe("Text");
     expect(nested[2].props.images).toEqual([
-      { id: String(a._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" },
+      { id: String(a._id), publicId: `ws/${ws}/item0`, alt: "Cap 0" },
     ]);
     findSpy.mockRestore();
   });
@@ -308,6 +308,24 @@ describe("reconcileFeaturedCollections", () => {
     await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "x", url: "u", order: 0 });
     const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(col._id) }])] });
     expect((out.content[0].props.collections as Array<{ itemCount: number }>)[0].itemCount).toBe(0);
+  });
+
+  it("refreshes the current CollectionCard primitive alongside legacy FeaturedWork", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "Fresh work", slug: "fresh", isPublic: true });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "new-cover", url: "u", order: 0 });
+    const data: PuckData = {
+      root: {},
+      content: [
+        fwBlock([{ id: String(col._id), name: "Old", coverPublicId: "old", itemCount: 0 }]),
+        { type: "CollectionCard", props: { id: "card", collection: { id: String(col._id), name: "Old", coverPublicId: "old", itemCount: 0 } } },
+      ],
+    };
+
+    const out = await reconcileFeaturedCollections(ws.toString(), data);
+    const expected = { id: String(col._id), name: "Fresh work", coverPublicId: "new-cover", itemCount: 1 };
+    expect(out.content[0].props.collections).toEqual([expected]);
+    expect(out.content[1].props.collection).toEqual(expected);
   });
 
   it("falls back coverPublicId to newest item when no coverItemId; '' for empty collection", async () => {

@@ -132,4 +132,25 @@ describe("PreviewContactCard", () => {
 
     expect(screen.getByTestId("contact-active-tab-color")).toHaveTextContent("no-tab-color");
   });
+
+  it("applies dir=\"rtl\" on the wrapper when passed", () => {
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{}}
+        fallbackClassName=""
+      >
+        <PreviewContactCard
+          workspaceSlug={SLUG}
+          title="Contact"
+          labels={LABELS}
+          submitAppearance={SUBMIT_APPEARANCE}
+          addSessionAppearance={ADD_SESSION_APPEARANCE}
+          dir="rtl"
+        />
+      </PreviewBrandShell>,
+    );
+
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
 });

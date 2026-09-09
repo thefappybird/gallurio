@@ -155,4 +155,20 @@ describe("ContactModal", () => {
     await waitFor(() => expect(screen.getByText("Get in touch")).toBeInTheDocument());
     vi.unstubAllGlobals();
   });
+
+  it("applies dir=\"rtl\" on the popup element when passed", async () => {
+    render(<ContactModal workspaceSlug="luna" labels={labels} dir="rtl" />);
+    open();
+    await waitFor(() => expect(screen.getByText("Get in touch")).toBeInTheDocument());
+    const popup = document.querySelector(".pf-contact-popup") as HTMLElement;
+    expect(popup).toHaveAttribute("dir", "rtl");
+  });
+
+  it("defaults to dir=\"ltr\" on the popup element when dir is omitted", async () => {
+    render(<ContactModal workspaceSlug="luna" labels={labels} />);
+    open();
+    await waitFor(() => expect(screen.getByText("Get in touch")).toBeInTheDocument());
+    const popup = document.querySelector(".pf-contact-popup") as HTMLElement;
+    expect(popup).toHaveAttribute("dir", "ltr");
+  });
 });

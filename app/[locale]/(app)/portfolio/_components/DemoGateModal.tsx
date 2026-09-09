@@ -12,7 +12,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DEMO_PROMO_CODE, isDemoPromoClaimed, markDemoPromoClaimed } from "@/lib/page-builder/demoSession";
+import {
+  DEMO_PROMO_CODE,
+  isDemoPromoClaimed,
+  markDemoPromoClaimed,
+  markDemoSignupIntent,
+} from "@/lib/page-builder/demoSession";
 
 /** Which demo restriction the visitor just hit. `null` = modal closed. */
 export type DemoGateType = "imageCap" | "blockCap" | "publish" | "theme" | null;
@@ -55,6 +60,11 @@ export function DemoGateModal({ gate, onClose }: Props) {
     if (gate && !isDemoPromoClaimed()) markDemoPromoClaimed();
   }, [gate]);
 
+  function continueToAuth() {
+    markDemoSignupIntent();
+    onClose();
+  }
+
   return (
     <Dialog open={gate !== null} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="sm:max-w-md">
@@ -65,11 +75,22 @@ export function DemoGateModal({ gate, onClose }: Props) {
             {showPromo ? ` ${t("promoReveal", { code: DEMO_PROMO_CODE })}` : ""}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="sm:flex-wrap">
           <Button type="button" variant="outline" onClick={onClose}>
             {t("dismiss")}
           </Button>
-          <Link href="/sign-up" className={buttonVariants({ variant: "brand" })} onClick={onClose}>
+          <Link
+            href="/sign-in"
+            className={buttonVariants({ variant: "outline" })}
+            onClick={continueToAuth}
+          >
+            {t("signInCta")}
+          </Link>
+          <Link
+            href="/sign-up"
+            className={buttonVariants({ variant: "brand" })}
+            onClick={continueToAuth}
+          >
             {t("cta")}
           </Link>
         </DialogFooter>

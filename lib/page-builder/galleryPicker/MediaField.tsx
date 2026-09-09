@@ -44,7 +44,15 @@ export function useThumbLookup() {
   }, [state]);
 }
 
-export function SingleImageControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function SingleImageControl({
+  value,
+  onChange,
+  onPicked,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onPicked?: (item: PickerItem | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const { byPublicId } = useThumbLookup();
   const thumb = value ? byPublicId.get(value)?.thumbUrl ?? null : null;
@@ -75,7 +83,10 @@ export function SingleImageControl({ value, onChange }: { value: string; onChang
           {value && (
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={() => {
+                onChange("");
+                onPicked?.(null);
+              }}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
             >
               <XIcon className="size-3" aria-hidden />
@@ -89,6 +100,7 @@ export function SingleImageControl({ value, onChange }: { value: string; onChang
         mode="single"
         value={value}
         onChange={(v) => onChange(v as string)}
+        onItemPicked={onPicked}
         open={open}
         onOpenChange={setOpen}
       />
@@ -103,17 +115,22 @@ export function MultiImageControl({
 }: {
   value: MediaPickerSelection[];
   onChange: (v: MediaPickerSelection[]) => void;
-  max?: number;
+  max?: number | null;
 }) {
   const [open, setOpen] = useState(false);
-  const { byId } = useThumbLookup();
+  const { byId, byPublicId } = useThumbLookup();
   const selection = Array.isArray(value) ? value : [];
+  const normalizedSelection = selection.map((item) => {
+    if (byId.has(item.id)) return item;
+    const resolved = byPublicId.get(item.publicId);
+    return resolved ? { ...item, id: resolved.id } : item;
+  });
 
   return (
     <div className="flex flex-col gap-2">
       {selection.length > 0 && (
         <ul className="flex flex-wrap gap-1.5" aria-label="Selected photos">
-          {selection.slice(0, 6).map((s) => {
+          {normalizedSelection.slice(0, 6).map((s) => {
             const thumb = byId.get(s.id)?.thumbUrl ?? null;
             return (
               <li key={s.id} className="size-10 overflow-hidden border border-border bg-muted">
@@ -145,7 +162,7 @@ export function MultiImageControl({
       <MediaPicker
         mode="multi"
         max={max}
-        value={selection}
+        value={normalizedSelection}
         onChange={(v) => onChange(v as MediaPickerSelection[])}
         open={open}
         onOpenChange={setOpen}
@@ -156,7 +173,20 @@ export function MultiImageControl({
 
 // ---------------------------------------------------------------------------
 // MultiCollectionControl — collections-mode picker for FeaturedWork
+// SingleCollectionControl — collections-mode picker for CollectionCard
 // ---------------------------------------------------------------------------
+
+/** Maps the picker's raw collection selection to the block-facing CollectionRef shape. */
+function toCollectionRefs(selection: MediaPickerCollectionSelection[]): CollectionRef[] {
+  return selection.map(
+    (c): CollectionRef => ({
+      id: c.id,
+      name: c.name,
+      coverPublicId: c.coverPublicId,
+      itemCount: c.itemCount,
+    })
+  );
+}
 
 export function MultiCollectionControl({
   value,
@@ -169,15 +199,7 @@ export function MultiCollectionControl({
   const selection = Array.isArray(value) ? value : [];
 
   function handleChange(next: unknown) {
-    const cols = (next as MediaPickerCollectionSelection[]).map(
-      (c): CollectionRef => ({
-        id: c.id,
-        name: c.name,
-        coverPublicId: c.coverPublicId,
-        itemCount: c.itemCount,
-      })
-    );
-    onChange(cols);
+    onChange(toCollectionRefs(next as MediaPickerCollectionSelection[]));
   }
 
   return (
@@ -200,6 +222,62 @@ export function MultiCollectionControl({
 
       <MediaPicker
         mode="collections"
+        value={selection as MediaPickerCollectionSelection[]}
+        onChange={handleChange}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </div>
+  );
+}
+
+export function SingleCollectionControl({
+  value,
+  onChange,
+}: {
+  value: CollectionRef | undefined;
+  onChange: (v: CollectionRef | undefined) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selection = value ? [value] : [];
+
+  function handleChange(next: unknown) {
+    // Take the first entry; an empty selection clears to undefined.
+    const cols = toCollectionRefs(next as MediaPickerCollectionSelection[]);
+    onChange(cols[0]);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {value ? value.name : "No collection selected"}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 border border-border px-2 py-1 text-xs hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <ImagePlusIcon className="size-3.5" aria-hidden />
+            {value ? "Change collection" : "Choose collection"}
+          </button>
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange(undefined)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+            >
+              <XIcon className="size-3" aria-hidden />
+              {L.clear}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <MediaPicker
+        mode="collections"
+        max={1}
         value={selection as MediaPickerCollectionSelection[]}
         onChange={handleChange}
         open={open}

@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
+import {
+  resolvePopupColumns,
+  resolvePopupLayout,
+  resolveImageModalLayout,
+} from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "./CollectionPopupChrome";
 import { applyCollectionPopupDefaults, type CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { Lightbox, type LightboxImage } from "./Lightbox";
+import { ContactSheet, Justified, SplitIndex, Immersive, type PopupLayoutBodyProps } from "./popupLayouts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,6 +32,10 @@ export type CollectionPopupProps = {
    *  renders through a Portal at document.body, escaping the page wrapper that
    *  sets these — so we re-apply them here or the popup has no background. */
   brandVars?: Record<string, string>;
+  /** Effective direction for the portfolio's OWN language (never the ambient
+   *  page/CRM direction) — same Portal-escape reasoning as brandVars above.
+   *  Defaults to "ltr". */
+  dir?: "ltr" | "rtl";
 };
 
 type PopupImage = LightboxImage;
@@ -35,8 +44,8 @@ type FetchState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "populated"; images: PopupImage[]; nextCursor: string | null; loadMoreError: boolean }
-  | { status: "loadingMore"; images: PopupImage[]; nextCursor: string }
+  | { status: "populated"; images: PopupImage[]; nextCursor: string | null; loadMoreError: boolean; total?: number; description?: string }
+  | { status: "loadingMore"; images: PopupImage[]; nextCursor: string; total?: number; description?: string }
   | { status: "empty" };
 
 // ---------------------------------------------------------------------------
@@ -50,6 +59,9 @@ const RADIUS_PX: Record<BrandKitRadius, string> = {
 };
 
 const BRAND_KIT_RADII_SET = new Set<string>(["sharp", "subtle", "rounded"]);
+
+/** Layouts that need the wider 1080px shell (justified rows, split-index masonry). */
+const WIDE_SHELL_LAYOUTS = new Set(["justified", "split-index"]);
 
 // ---------------------------------------------------------------------------
 // Color resolver — resolves token name or hex to a CSS color value.
@@ -94,19 +106,37 @@ function buildUrl(
 
 // ---------------------------------------------------------------------------
 // Normalize API response items → PopupImage
-// Owner items may have `caption` instead of `alt`.
+// `alt` is the a11y string resolved by the server from the description
+// (`caption`), with legacy `altText` retained only as a fallback.
 // ---------------------------------------------------------------------------
 
 function normalizeItem(item: {
   id: string;
   publicId: string;
   alt?: string;
+  title?: string;
   caption?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  meta?: { label: string; value: string }[];
+  tags?: string[];
+  width?: number;
+  height?: number;
 }): PopupImage {
   return {
     id: item.id,
     publicId: item.publicId,
-    alt: item.alt ?? item.caption ?? "",
+    alt: item.alt ?? "",
+    title: item.title,
+    caption: item.caption,
+    date: item.date,
+    location: item.location,
+    client: item.client,
+    meta: item.meta,
+    tags: item.tags,
+    width: item.width,
+    height: item.height,
   };
 }
 
@@ -122,6 +152,23 @@ const FOCUS_VISIBLE_STYLES = `
 }
 `;
 
+/** Layout-faithful first-page loading surface. It reserves the exact card
+ * count/column structure selected by the owner instead of replacing the popup
+ * with a generic spinner. */
+function PopupLayoutSkeleton({ layout, columns }: { layout: ReturnType<typeof resolvePopupLayout>; columns: number }) {
+  const cell = (key: number, ratio = "1 / 1") => (
+    <div key={key} data-popup-skeleton-card="" aria-hidden style={{ aspectRatio: ratio, background: "color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)", animation: "pf-popup-pulse 1.1s ease-in-out infinite" }} />
+  );
+  if (layout === "split-index") {
+    return <div style={{ display: "flex", gap: "24px" }}><div style={{ flex: "0 0 35%", minHeight: "16rem", background: "color-mix(in srgb, var(--pf-color-fg, #111) 10%, transparent)" }} /><div data-popup-columns={columns} style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}>{Array.from({ length: 4 }, (_, i) => cell(i, i % 2 ? "4 / 5" : "1 / 1"))}</div></div>;
+  }
+  if (layout === "justified") {
+    const weights = [1.5, 1, .8, 1.25, .9, 1.2, .7];
+    return <div data-popup-columns={columns} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>{Array.from({ length: Math.ceil(7 / columns) }, (_, row) => <div key={row} style={{ display: "flex", gap: "8px" }}>{weights.slice(row * columns, (row + 1) * columns).map((weight, i) => <div key={i} data-popup-skeleton-card="" style={{ flex: weight, aspectRatio: "4 / 3", background: "color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)", animation: "pf-popup-pulse 1.1s ease-in-out infinite" }} />)}</div>)}</div>;
+  }
+  return <div data-popup-columns={columns} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}>{Array.from({ length: 6 }, (_, i) => cell(i))}</div>;
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -136,10 +183,15 @@ export function CollectionPopup({
   onClose,
   labels: labelsProp,
   brandVars,
+  dir = "ltr",
 }: CollectionPopupProps) {
   const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
-  const [lightboxImage, setLightboxImage] = useState<PopupImage | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const layout = resolvePopupLayout(popupConfig.popupLayout);
+  const isImmersive = layout === "immersive";
+  const shellMaxWidth = WIDE_SHELL_LAYOUTS.has(layout) ? 1080 : 900;
 
   // Resolved popup styles
   const bg = resolveColorValue(popupConfig.backgroundColor);
@@ -157,7 +209,7 @@ export function CollectionPopup({
   // ---------------------------------------------------------------------------
 
   const fetchPage = useCallback(
-    async (cursor: string | null, appendTo?: PopupImage[]) => {
+    async (cursor: string | null, appendTo?: PopupImage[], priorTotal?: number, priorDescription?: string) => {
       const url = buildUrl(mode, collectionId, slug, cursor);
       const isAppending = appendTo !== undefined;
 
@@ -168,6 +220,8 @@ export function CollectionPopup({
           status: "loadingMore",
           images: appendTo,
           nextCursor: cursor as string,
+          total: priorTotal,
+          description: priorDescription,
         });
       }
 
@@ -177,11 +231,29 @@ export function CollectionPopup({
           throw new Error(`HTTP ${res.status}`);
         }
         const data = (await res.json()) as {
-          items: Array<{ id: string; publicId: string; alt?: string; caption?: string }>;
+          items: Array<{
+            id: string;
+            publicId: string;
+            alt?: string;
+            title?: string;
+            caption?: string;
+            date?: string;
+            location?: string;
+            client?: string;
+            meta?: { label: string; value: string }[];
+            tags?: string[];
+            width?: number;
+            height?: number;
+          }>;
           nextCursor: string | null;
+          total?: number;
+          description?: string;
         };
         const normalized = data.items.map(normalizeItem);
         const merged = appendTo ? [...appendTo, ...normalized] : normalized;
+        const resolvedTotal = data.total ?? priorTotal;
+        // Only the first page carries it; later pages inherit rather than blank it.
+        const resolvedDescription = data.description ?? priorDescription;
         if (merged.length === 0 && !data.nextCursor) {
           setState({ status: "empty" });
         } else {
@@ -190,6 +262,8 @@ export function CollectionPopup({
             images: merged,
             nextCursor: data.nextCursor,
             loadMoreError: false,
+            total: resolvedTotal,
+            description: resolvedDescription,
           });
         }
       } catch (err) {
@@ -205,6 +279,8 @@ export function CollectionPopup({
                 images: prev.images,
                 nextCursor: prev.nextCursor,
                 loadMoreError: true,
+                total: prev.total,
+                description: prev.description,
               };
             }
             return {
@@ -212,6 +288,8 @@ export function CollectionPopup({
               images: appendTo,
               nextCursor: cursor as string,
               loadMoreError: true,
+              total: priorTotal,
+              description: priorDescription,
             };
           });
         } else {
@@ -230,35 +308,83 @@ export function CollectionPopup({
     }
   }, [open, fetchPage]);
 
+  const handleLoadMore = useCallback(() => {
+    if (state.status === "populated" && state.nextCursor) {
+      void fetchPage(state.nextCursor, state.images, state.total, state.description);
+    }
+  }, [state, fetchPage]);
+
+  // ---------------------------------------------------------------------------
+  // Derived body props — every non-immersive layout receives the same shape.
+  // ---------------------------------------------------------------------------
+
+  const loadedImages =
+    state.status === "populated" || state.status === "loadingMore" ? state.images : [];
+  const total = state.status === "populated" || state.status === "loadingMore" ? state.total : undefined;
+  const collectionDescription =
+    state.status === "populated" || state.status === "loadingMore" ? state.description : undefined;
+  const popupColumns = resolvePopupColumns(popupConfig.popupColumns, layout);
+  const hasMore = state.status === "populated" && state.nextCursor != null;
+  const isLoadingMore = state.status === "loadingMore";
+  const loadMoreError = state.status === "populated" && state.loadMoreError;
+
+  // Single source of truth for "is the nested Lightbox actually rendered" —
+  // shared by its own render condition below and by hideCloseButton, so the
+  // two can never drift apart (e.g. a stale non-null openIndex during the
+  // brief refetch-loading window after a reopen, when loadedImages is still []).
+  const lightboxOpen = open && !isImmersive && openIndex != null && loadedImages.length > 0;
+
+  const bodyProps: PopupLayoutBodyProps = {
+    images: loadedImages,
+    collectionName,
+    collectionDescription,
+    total,
+    popupColumns,
+    hasMore,
+    isLoadingMore,
+    loadMoreError,
+    onLoadMore: handleLoadMore,
+    onOpen: (index) => setOpenIndex(index),
+    labels: L,
+  };
+
   // ---------------------------------------------------------------------------
   // Popup shell styles
   // ---------------------------------------------------------------------------
 
-  const shellStyle: React.CSSProperties = {
-    // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
-    ...(brandVars as React.CSSProperties),
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    zIndex: 100,
-    maxHeight: "90vh",
-    minWidth: "90vw",
-    maxWidth: "900px",
-    width: "90vw",
-    backgroundColor: bg ?? "var(--pf-color-bg)",
-    borderWidth: borderWidth > 0 ? `${borderWidth}px` : "1px",
-    borderStyle: "solid",
-    borderColor:
-      borderWidth > 0 && borderColor
-        ? borderColor
-        : "color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
-    borderRadius,
-    fontFamily: "var(--pf-font-body)",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-  };
+  const shellStyle: React.CSSProperties = isImmersive
+    ? {
+        // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
+        ...(brandVars as React.CSSProperties),
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+      }
+    : {
+        // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
+        ...(brandVars as React.CSSProperties),
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 100,
+        maxHeight: "90vh",
+        minWidth: "90vw",
+        maxWidth: `${shellMaxWidth}px`,
+        width: "90vw",
+        backgroundColor: bg ?? "var(--pf-color-bg)",
+        borderWidth: borderWidth > 0 ? `${borderWidth}px` : "1px",
+        borderStyle: "solid",
+        borderColor:
+          borderWidth > 0 && borderColor
+            ? borderColor
+            : "color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
+        borderRadius,
+        fontFamily: "var(--pf-font-body)",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+      };
 
   // ---------------------------------------------------------------------------
   // Render
@@ -284,275 +410,150 @@ export function CollectionPopup({
           <DialogPrimitive.Popup
             data-popup-shell=""
             aria-label={collectionName}
+            dir={dir}
             style={shellStyle}
           >
             {/* Scoped focus-visible styles for inline-styled interactive controls */}
             <style>{FOCUS_VISIBLE_STYLES}</style>
 
-            <CollectionPopupChrome
-              collectionName={collectionName}
-              config={popupConfig}
-              onClose={onClose}
-              closeDataAttr="data-popup-close"
-              noShell
-            >
-            {/* Scrollable body */}
-            <div
-              style={{
-                overflowY: "auto",
-                flex: 1,
-                padding: "16px",
-              }}
-            >
-              {state.status === "idle" || state.status === "loading" ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "48px",
-                    gap: "8px",
-                    color: "var(--pf-color-fg, #111)",
-                  }}
-                >
-                  <Loader2Icon
-                    aria-hidden
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      animation: "spin 1s linear infinite",
-                    }}
-                  />
-                  <span>{L.loading}</span>
-                </div>
-              ) : state.status === "error" ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "48px",
-                    textAlign: "center",
-                    color: "var(--pf-color-fg, #111)",
-                  }}
-                >
-                  <p style={{ margin: 0 }}>{L.failed}</p>
-                  <button
-                    type="button"
-                    onClick={() => fetchPage(null)}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 16px",
-                      border: "1px solid currentColor",
-                      borderRadius: "4px",
-                      background: "transparent",
-                      color: "inherit",
-                      cursor: "pointer",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <RefreshCwIcon aria-hidden style={{ width: "14px", height: "14px" }} />
-                    {L.retry}
-                  </button>
-                </div>
-              ) : state.status === "empty" ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "48px",
-                    color: "color-mix(in srgb, var(--pf-color-fg, #111) 62%, transparent)",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {L.empty}
-                </div>
-              ) : (
-                /* populated or loadingMore */
-                <>
-                  {/* Image grid, roughly six per row, reflowing on smaller screens */}
+            {isImmersive ? (
+              <Immersive
+                status={state.status}
+                images={loadedImages}
+                collectionName={collectionName}
+                collectionDescription={collectionDescription}
+                total={total}
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
+                onRetry={() => fetchPage(null)}
+                onClose={onClose}
+                labels={L}
+              />
+            ) : (
+              <CollectionPopupChrome
+                collectionName={collectionName}
+                config={popupConfig}
+                onClose={onClose}
+                closeDataAttr="data-popup-close"
+                noShell
+                maxWidth={shellMaxWidth}
+                hideCloseButton={lightboxOpen}
+              >
+              {/* Scrollable body */}
+              <div
+                style={{
+                  overflowY: "auto",
+                  flex: 1,
+                  padding: "16px",
+                }}
+              >
+                {state.status === "idle" || state.status === "loading" ? (
+                  <div aria-busy="true" aria-label={L.loading}>
+                    <style>{`@keyframes pf-popup-pulse{50%{opacity:.45}}`}</style>
+                    <span className="sr-only">{L.loading}</span>
+                    <PopupLayoutSkeleton layout={layout} columns={popupColumns} />
+                  </div>
+                ) : state.status === "error" ? (
                   <div
                     style={{
                       display: "flex",
-                      flexWrap: "wrap",
-                      gap: "8px",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "48px",
+                      textAlign: "center",
+                      color: "var(--pf-color-fg, #111)",
                     }}
                   >
-                    {state.images.map((img) => {
-                      const thumbSrc = imageDeliveryUrl(img.publicId, {
-                        width: 400,
-                        height: 400,
-                        fit: "cover",
-                      });
-                      return (
-                        <button
-                          key={img.id}
-                          type="button"
-                          aria-label={img.alt || "Open photo"}
-                          data-popup-thumb=""
-                          onClick={() => setLightboxImage(img)}
-                          style={{
-                            flex: "0 0 calc(100% / 6 - 7px)",
-                            minWidth: "120px",
-                            aspectRatio: "1 / 1",
-                            padding: 0,
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            overflow: "hidden",
-                            display: "block",
-                          }}
-                        >
-                          {thumbSrc ? (
-                            <img
-                              src={thumbSrc}
-                              alt={img.alt}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                display: "block",
-                                transition: "opacity 0.15s",
-                              }}
-                              onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.opacity = "0.85";
-                              }}
-                              onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.opacity = "1";
-                              }}
-                            />
-                          ) : (
-                            <div
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                background: "var(--pf-color-muted, #f0f0f0)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "0.75rem",
-                                color: "#888",
-                              }}
-                            >
-                              {img.alt || "Photo"}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Load more / loading more / inline load-more error */}
-                  {state.status === "populated" && state.nextCursor && !state.loadMoreError ? (
-                    <div
+                    <p style={{ margin: 0 }}>{L.failed}</p>
+                    <button
+                      type="button"
+                      onClick={() => fetchPage(null)}
                       style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        padding: "24px 0 8px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          fetchPage(
-                            (state as { status: "populated"; images: PopupImage[]; nextCursor: string }).nextCursor,
-                            state.images
-                          )
-                        }
-                        style={{
-                          padding: "8px 24px",
-                          border: "1px solid var(--pf-color-fg, #111)",
-                          borderRadius: "4px",
-                          background: "transparent",
-                          color: "var(--pf-color-fg, #111)",
-                          cursor: "pointer",
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        Load more
-                      </button>
-                    </div>
-                  ) : state.status === "populated" && state.loadMoreError ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
+                        display: "inline-flex",
                         alignItems: "center",
-                        gap: "8px",
-                        padding: "16px 0 8px",
-                        textAlign: "center",
-                        color: "var(--pf-color-fg, #111)",
+                        gap: "6px",
+                        padding: "8px 16px",
+                        border: "1px solid currentColor",
+                        borderRadius: "4px",
+                        background: "transparent",
+                        color: "inherit",
+                        cursor: "pointer",
                         fontSize: "0.875rem",
                       }}
                     >
-                      <span>Failed to load more photos.</span>
-                      <button
-                        type="button"
-                        data-testid="load-more-retry"
-                        onClick={() =>
-                          fetchPage(
-                            (state as { status: "populated"; images: PopupImage[]; nextCursor: string | null }).nextCursor,
-                            state.images
-                          )
-                        }
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 14px",
-                          border: "1px solid currentColor",
-                          borderRadius: "4px",
-                          background: "transparent",
-                          color: "inherit",
-                          cursor: "pointer",
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        <RefreshCwIcon aria-hidden style={{ width: "14px", height: "14px" }} />
-                        Retry
-                      </button>
-                    </div>
-                  ) : state.status === "loadingMore" ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "24px 0 8px",
-                        gap: "8px",
-                        color: "var(--pf-color-fg, #111)",
-                      }}
-                    >
-                      <Loader2Icon
-                        aria-hidden
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          animation: "spin 1s linear infinite",
-                        }}
-                      />
-                      <span>Loading more...</span>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
-            </CollectionPopupChrome>
+                      <RefreshCwIcon aria-hidden style={{ width: "14px", height: "14px" }} />
+                      {L.retry}
+                    </button>
+                  </div>
+                ) : state.status === "empty" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "48px",
+                      color: "color-mix(in srgb, var(--pf-color-fg, #111) 62%, transparent)",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    {L.empty}
+                  </div>
+                ) : layout === "justified" ? (
+                  <Justified {...bodyProps} />
+                ) : layout === "split-index" ? (
+                  <SplitIndex {...bodyProps} />
+                ) : (
+                  <ContactSheet {...bodyProps} />
+                )}
+              </div>
+              </CollectionPopupChrome>
+            )}
           </DialogPrimitive.Popup>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
 
-      {/* Nested lightbox rendered outside the popup dialog but controlled by popup state */}
-      {open && lightboxImage && (
+      {/* Nested lightbox — contact-sheet/justified/split-index only. Immersive
+       *  has no second modal by design (see popupLayouts/Immersive.tsx).
+       *  `openIndex` is a position within the currently loaded `images` array;
+       *  `onRequestMore` bridges into the same cursor-paging fetch as the
+       *  body's "Load more" so navigating past the loaded end still pages. */}
+      {lightboxOpen && (
         <Lightbox
-          image={lightboxImage}
-          onClose={() => setLightboxImage(null)}
+          images={loadedImages}
+          initialIndex={openIndex}
+          onClose={() => setOpenIndex(null)}
+          layout={resolveImageModalLayout(popupConfig.imageModalLayout)}
+          total={total}
+          hasMore={hasMore}
+          onRequestMore={handleLoadMore}
           closeLabel={L.close}
           fullSizeAlt={L.fullSizeAlt}
+          // The lightbox otherwise falls back to its own English-only
+          // defaults — CollectionPopupLabels already resolves every one of
+          // these at the page boundary, so thread them through instead of
+          // leaving the popup's own image viewer unlocalized.
+          labels={{
+            close: L.close,
+            previous: L.previousPhoto,
+            next: L.nextPhoto,
+            counter: L.counter,
+            filmstrip: L.filmstripLabel,
+            seeMore: L.seeMore,
+            seeLess: L.seeLess,
+            additionalInformation: L.additionalInformation,
+            date: L.dateLabel,
+            location: L.locationLabel,
+            client: L.clientLabel,
+            tags: L.tagsLabel,
+            photoOf: L.photoOf,
+          }}
+          // The lightbox portals to document.body, escaping the wrapper that
+          // declares --pf-*; without these it renders in the default palette
+          // rather than the tenant's. Same reason this component re-applies
+          // them to its own popup above.
+          brandVars={brandVars}
+          dir={dir}
         />
       )}
     </>

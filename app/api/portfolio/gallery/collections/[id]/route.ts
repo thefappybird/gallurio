@@ -16,11 +16,14 @@ type Params = { params: Promise<{ id: string }> };
  *
  * Owner-only paginated feed of a collection's photos for the MediaPicker.
  * `id="all"` is a virtual sentinel: newest-first across the whole workspace
- * (covers standalone collectionId:null items). `?newest=<n>` returns the newest
- * n items of a collection (bulk "select all"). Tenant-scoped — a foreign or
+ * (covers standalone collectionId:null items). `?newest=<n>` returns the whole
+ * collection, newest-first (bulk "select all"), up to a high safety ceiling —
+ * not the product-facing 60-item picker cap. Tenant-scoped — a foreign or
  * missing collection resolves to an empty page.
  *
- * Response: { items: PickerItem[]; nextCursor: string | null }
+ * Response: { items: PickerItem[]; nextCursor: string | null; truncated?: boolean }
+ * `truncated` is only present on the `?newest=` bulk path and is true when the
+ * collection exceeds the safety ceiling and the response is not the full set.
  */
 export async function GET(req: Request, { params }: Params) {
   const auth = await requireApiOrg();
@@ -47,10 +50,14 @@ export async function GET(req: Request, { params }: Params) {
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
-  // Bulk "select all in collection": the newest N items, no pagination.
+  // Bulk "select all in collection": no pagination, up to the safety ceiling.
   if (newestRaw != null) {
-    const items = await listCollectionNewest({ workspaceId, collectionId: id, limit: Number(newestRaw) });
-    return NextResponse.json({ items, nextCursor: null });
+    const { items, truncated } = await listCollectionNewest({
+      workspaceId,
+      collectionId: id,
+      limit: Number(newestRaw),
+    });
+    return NextResponse.json({ items, nextCursor: null, truncated });
   }
 
   const page = await listCollectionItemsPage({ workspaceId, collectionId: id, cursor, limit });
@@ -142,8 +149,9 @@ const patchSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
     coverItemId: z.string().min(1).max(64).optional(),
+    description: z.string().trim().max(2000).optional(),
   })
-  .refine((d) => d.name !== undefined || d.coverItemId !== undefined, { message: "no_fields" });
+  .refine((d) => Object.keys(d).length > 0, { message: "no_fields" });
 
 export async function PATCH(req: Request, { params }: Params) {
   const auth = await requireApiOrg();
@@ -176,10 +184,16 @@ export async function PATCH(req: Request, { params }: Params) {
     collection.coverItemId = coverItem._id;
   }
   if (parsed.data.name !== undefined) collection.name = parsed.data.name;
+  if (parsed.data.description !== undefined) collection.description = parsed.data.description;
   await collection.save();
 
   return NextResponse.json(
-    { id: String(collection._id), name: collection.name, coverItemId: collection.coverItemId ? String(collection.coverItemId) : null },
+    {
+      id: String(collection._id),
+      name: collection.name,
+      description: collection.description,
+      coverItemId: collection.coverItemId ? String(collection.coverItemId) : null,
+    },
     { status: 200 }
   );
 }

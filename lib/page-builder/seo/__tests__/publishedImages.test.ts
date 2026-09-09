@@ -35,6 +35,20 @@ describe("collectPublishedGalleryImages", () => {
     expect(collectPublishedGalleryImages(data)).toEqual([{ url: "https://cdn.example.com/b", alt: "" }]);
   });
 
+  it("collects Image blocks nested in a new gallery slot", () => {
+    const data = {
+      content: [{
+        type: "GalleryGrid",
+        props: {
+          content: [{ type: "Image", props: { alt: "Hand-held film camera", _style: { bgImagePublicId: "slot-image" } } }],
+        },
+      }],
+    };
+    expect(collectPublishedGalleryImages(data)).toEqual([
+      { url: "https://cdn.example.com/slot-image", alt: "Hand-held film camera" },
+    ]);
+  });
+
   it("excludes decorative backgroundImages", () => {
     const data = {
       content: [{ type: "Container", props: { backgroundImages: [{ publicId: "bg1", alt: "bg" }] } }],

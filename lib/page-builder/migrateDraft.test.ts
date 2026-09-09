@@ -87,4 +87,27 @@ describe("ensureLegacyDraftMigrated", () => {
       keywords: ["wedding", "manila"],
     });
   });
+
+  it("never throws on a legacy publicPage.header value and carries it onto the migrated draft", async () => {
+    const ws = await Workspace.create({
+      slug: `s-${Math.round(Math.random() * 1e9)}`,
+      name: "Studio",
+      ownerUserId: "u",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: { content: [], root: {} }, gallery: null },
+        latestVersion: 0,
+        header: { brandText: "Studio Aurora", logoUrl: "https://cdn.example.com/logo.png" },
+      },
+    });
+
+    await expect(ensureLegacyDraftMigrated(ws._id)).resolves.not.toThrow();
+    const draft = await PortfolioDraft.findOne({ workspaceId: ws._id }).lean();
+    expect(draft?.header).toMatchObject({
+      brandText: "Studio Aurora",
+      logoUrl: "https://cdn.example.com/logo.png",
+    });
+  });
 });

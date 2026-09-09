@@ -1,9 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, Loader2, Sparkles, Home, Sprout, Headphones } from "lucide-react";
+import { ArrowRight, Loader2, Home, Sprout, Headphones } from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
@@ -11,33 +11,81 @@ import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { ConfettiScatter } from "../_components/confetti-scatter";
 import { Button } from "@/components/ui/button";
+import { DemoImportDetectedDialog } from "@/app/[locale]/(app)/portfolio/_components/DemoImportDetectedDialog";
+import {
+  clearDemoSignupIntent,
+  detectImportableDemoSession,
+  markDemoSignupIntent,
+  wipeDemoLocalStorage,
+} from "@/lib/page-builder/demoSession";
+
+function subscribeToDemoStorage(): () => void {
+  return () => {};
+}
+
+function getSavedDemoSessionId(): string | null {
+  return detectImportableDemoSession()?.sessionId ?? null;
+}
 
 export function DoneStepForm({
   workspaceName,
   plan,
   furthestStep,
+  finishDestination = "dashboard",
 }: {
   workspaceName: string;
   plan: PlanTier;
   furthestStep: OnboardingStep;
+  finishDestination?: "dashboard" | "portfolio";
 }) {
   const t = useTranslations("onboarding.done");
   const tFooter = useTranslations("onboarding.done.footer");
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
   const [pending, startTransition] = useTransition();
+  const savedDemoSessionId = useSyncExternalStore(
+    subscribeToDemoStorage,
+    getSavedDemoSessionId,
+    () => null,
+  );
+  const [demoDecisionResolved, setDemoDecisionResolved] = useState(false);
+  const demoDecisionOpen = Boolean(savedDemoSessionId) && !demoDecisionResolved;
 
   const planLabel = tPlans(`${plan}.name`);
 
-  function finish() {
+  function completeOnboarding() {
     startTransition(async () => {
       const result = await completeOnboardingAction();
       if (result?.error) toast.error(errMsg(result.error));
     });
   }
 
+  function finish() {
+    const savedDemo = detectImportableDemoSession();
+    if (savedDemo) {
+      setDemoDecisionResolved(false);
+      return;
+    }
+    completeOnboarding();
+  }
+
+  function applySavedDemo() {
+    markDemoSignupIntent();
+    setDemoDecisionResolved(true);
+    completeOnboarding();
+  }
+
+  function discardSavedDemo() {
+    const sessionId = savedDemoSessionId ?? detectImportableDemoSession()?.sessionId;
+    if (sessionId) wipeDemoLocalStorage(sessionId);
+    clearDemoSignupIntent();
+    setDemoDecisionResolved(true);
+    completeOnboarding();
+  }
+
   return (
-    <StepShell
+    <>
+      <StepShell
       step="done"
       furthestStep={furthestStep}
       title={t("title", { workspaceName })}
@@ -72,7 +120,11 @@ export function DoneStepForm({
               </>
             ) : (
               <>
-                {t("goToDashboard")}
+                {t(
+                  finishDestination === "portfolio"
+                    ? "goToPortfolio"
+                    : "goToDashboard",
+                )}
                 <ArrowRight className="ms-2 h-4 w-4 shrink-0" />
               </>
             )}
@@ -95,6 +147,13 @@ export function DoneStepForm({
         ))}
       </div>
     </div>
-    </StepShell>
+      </StepShell>
+      <DemoImportDetectedDialog
+        open={demoDecisionOpen}
+        busy={pending}
+        onConfirm={applySavedDemo}
+        onDiscard={discardSavedDemo}
+      />
+    </>
   );
 }

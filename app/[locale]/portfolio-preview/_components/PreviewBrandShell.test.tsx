@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
@@ -95,6 +96,30 @@ describe("PreviewBrandShell", () => {
     expect(wrapper.className).toContain("pf-theme-minimal");
   });
 
+  it("ignores local brand/config data from a different requested draft", () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        version: 2,
+        draftId: "draft-a",
+        brandKit: { ...DEFAULT_BRAND_KIT, backgroundColor: "#123456" },
+      }),
+    );
+
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        draftId="draft-b"
+        fallbackCssVars={{ "--pf-color-bg": "#aabbcc" }}
+        fallbackClassName="pf-theme-minimal pf-button-solid"
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    expect((container.firstChild as HTMLElement).getAttribute("style")).toContain("--pf-color-bg: #aabbcc");
+  });
+
   it("falls back to fallbackCssVars when draft is malformed", () => {
     window.localStorage.setItem(KEY, "not-valid-json{{{");
 
@@ -176,6 +201,17 @@ describe("PreviewBrandShell", () => {
     expect(screen.getByTestId("inner")).toBeInTheDocument();
   });
 
+  it("does not server-render fallback children before the local draft is read", () => {
+    const html = renderToStaticMarkup(
+      <PreviewBrandShell slug={SLUG} fallbackCssVars={{}} fallbackClassName="">
+        <span>Published fallback</span>
+      </PreviewBrandShell>,
+    );
+
+    expect(html).toContain("Loading preview");
+    expect(html).not.toContain("Published fallback");
+  });
+
   it("falls back when draft brandKit is structurally present but malformed (missing required fields)", () => {
     // A draft with version 2 and a brandKit object that lacks required color/radius/themePreset fields
     window.localStorage.setItem(
@@ -203,6 +239,21 @@ describe("PreviewBrandShell", () => {
     expect(wrapper.className).not.toContain("pf-theme-undefined");
     expect(wrapper.className).toContain("pf-theme-minimal");
     expect(style).toContain("--pf-color-bg: #fallback");
+  });
+
+  it("paints the brand background color, not just defining the custom property", () => {
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{ "--pf-color-bg": "#fcfcfb" }}
+        fallbackClassName="pf-theme-minimal pf-button-solid"
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.backgroundColor).toBe("var(--pf-color-bg)");
   });
 
   it("mounts MotionObserver so entrance-animated blocks reveal on scroll in preview", () => {

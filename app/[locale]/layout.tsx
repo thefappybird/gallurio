@@ -61,6 +61,10 @@ export default async function RootLayout({
       lang={locale}
       dir={isRtl(locale) ? "rtl" : "ltr"}
       className={`${portfolioFontVariables} h-full antialiased`}
+      // Scopes the app-shell scrollbar styling in globals.css. The public
+      // portfolio root layout deliberately omits this: a published page's
+      // scrollbar follows the OS, not Gallurio's chrome.
+      data-app-shell=""
       // Default corner-style preset (app-shell theming seam). A future
       // user-theming UI resolves a persisted AppThemeConfig here instead of the
       // default; components already read the CSS-var seam. See lib/theme/appTheme.ts.

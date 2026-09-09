@@ -1,9 +1,11 @@
 import type { PortfolioTemplate, PortfolioTemplateId, TemplateBusinessType } from "./types";
-import { boldTemplate } from "./bold";
 import { luxuryTemplate } from "./luxury";
 import { editorialTemplate } from "./editorial";
 import { minimalTemplate } from "./minimal";
+import { romanticTemplate } from "./romantic";
+import { modernTemplate } from "./modern";
 import { scratchTemplate } from "./scratch";
+import { normalizeTemplatePresetLayouts } from "./normalizePresetLayouts";
 
 export { PORTFOLIO_TEMPLATE_IDS } from "./types";
 export type {
@@ -14,13 +16,30 @@ export type {
 } from "./types";
 
 // Order matters — this is the display order on the wizard's template grid.
-export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
-  boldTemplate,
-  luxuryTemplate,
-  editorialTemplate,
+const RAW_PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
   minimalTemplate,
+  editorialTemplate,
+  luxuryTemplate,
+  romanticTemplate,
+  modernTemplate,
   scratchTemplate,
 ];
+
+// The verbose reference templates deliberately preserve their curated copy in
+// source. A few were authored before the current preset width hierarchy, so
+// normalize those known stale shapes at the shared seed boundary used by both
+// server application and the client-only demo.
+export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = RAW_PORTFOLIO_TEMPLATES.map((template) => {
+  // Scratch contains only the pinned Navigation blocks, so it has no legacy
+  // preset geometry to normalize. Preserve its exported identity for callers
+  // that use it as the canonical empty-template singleton.
+  if (template.id === "scratch") return template;
+
+  return {
+    ...template,
+    seedData: (ctx) => normalizeTemplatePresetLayouts(template.seedData(ctx)),
+  };
+});
 
 const BY_ID = new Map<PortfolioTemplateId, PortfolioTemplate>(
   PORTFOLIO_TEMPLATES.map((t) => [t.id, t])

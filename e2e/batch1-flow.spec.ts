@@ -5,11 +5,12 @@ import { openEditorWithDraft, publishCurrent } from "./helpers";
 //  #14 Publish button matches Save changes button height (in the live editor)
 //  #1  public mobile header toggle inherits Contact button fill (375px)
 //  #2  public mobile drawer nav links are centered (375px)
-// Loads "new draft 2" (item #23 — all blocks) and publishes it so the public
+// Loads a real design draft (NOT the structural E2E fixture — this publishes,
+// and the assertions need a designed page) and publishes it so the public
 // page renders, then inspects the mobile header.
 
-test("publish 'new draft 2' then verify button parity + public mobile header (375px)", async ({ page }) => {
-  await openEditorWithDraft(page, "new draft 2");
+test("publish a design draft then verify button parity + public mobile header (375px)", async ({ page }) => {
+  await openEditorWithDraft(page, "Editorial Summer Refresh");
 
   // #14 — Save changes and Publish share the same height now that the dialog is gone.
   const save = page.getByRole("button", { name: "Save changes" }).first();

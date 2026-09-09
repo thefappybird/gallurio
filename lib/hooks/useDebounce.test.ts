@@ -73,4 +73,17 @@ describe("useDebounce", () => {
 
     expect(callback).toHaveBeenCalledTimes(1);
   });
+
+  it("cancel drops a pending trailing invocation", () => {
+    const callback = vi.fn();
+    const { result } = renderHook(() => useDebounce(callback, 120));
+
+    act(() => {
+      result.current.debounced("stale");
+      result.current.cancel();
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
 });
