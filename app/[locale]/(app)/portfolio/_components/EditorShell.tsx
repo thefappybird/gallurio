@@ -42,6 +42,7 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 import { createEditorConfig, type PuckTranslate } from "@/lib/page-builder/editorConfig";
 import { ContactDetailsDefaultsContext, type WorkspaceContactDefaults } from "@/lib/page-builder/StyleToolkitField";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
+import { PuckUiPersistence, type PersistedPuckUi } from "@/lib/page-builder/PuckUiPersistence";
 import { reconcileMasonryClones } from "@/lib/page-builder/masonryCloneReconciler";
 import {
   PRESET_BLOCK_KEYS,
@@ -1339,6 +1340,12 @@ export function EditorShell({
   // the viewport (it moved relative to the rest of the page); nudge it into
   // view, minimally, only if the restored position doesn't already show it.
   const pendingNudgeBlockIdRef = useRef<string | null>(null);
+  // Continuously mirrored by <PuckUiPersistence> (left/right sidebar
+  // visibility, left-panel category expand state, current selection) and
+  // restored into whichever <Puck> tree mounts next — see that component's
+  // doc comment for why every forced remount otherwise closed every open
+  // drawer and dropped the selection.
+  const pendingUiRef = useRef<PersistedPuckUi | null>(null);
   useLayoutEffect(() => {
     if (pendingCanvasScrollRef.current === null) return;
     const owner = getCanvasScrollOwner();
@@ -3177,6 +3184,7 @@ export function EditorShell({
                     }}
                   />
                   <ContainerAnchorReconciler />
+                  <PuckUiPersistence pendingUiRef={pendingUiRef} />
                   {topBar(
                     <ResponsiveEditCanvasControls
                       formLocale={formLocale}
