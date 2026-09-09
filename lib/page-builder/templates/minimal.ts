@@ -190,6 +190,8 @@ export const minimalTemplate: PortfolioTemplate = {
               _style: {
                 bgColorToken: "background",
                 gap: 0,
+                paddingLeft: "0px",
+                paddingRight: "0px",
               },
               bgAnimation: "crossfade",
               bgSpeed: "medium",

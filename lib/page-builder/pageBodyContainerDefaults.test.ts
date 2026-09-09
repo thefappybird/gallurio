@@ -60,6 +60,28 @@ describe("applyPageBodyContainerDefaults", () => {
     expect(nested.props._style).toMatchObject({ radius: 12, gap: 20, paddingTop: "12px", marginRight: "8px" });
   });
 
+  it("materializes configured defaults onto a newly inserted preset or Columns block too, not just literal Container", () => {
+    const previous = data([]);
+    const insertedPreset = {
+      type: "AboutPreset",
+      props: { id: "inserted-preset", content: [] },
+    };
+    const insertedColumns = {
+      type: "Columns",
+      props: { id: "inserted-columns", columns: 2, content: [] },
+    };
+    const next = data([insertedPreset, insertedColumns], {
+      paddingLeft: "0px",
+      paddingRight: "0px",
+    });
+
+    const result = applyPageBodyContainerDefaults(previous, next);
+    const [preset, columns] = result.content[0].props.content as PuckData["content"];
+
+    expect(preset.props._style).toMatchObject({ paddingLeft: "0px", paddingRight: "0px" });
+    expect(columns.props._style).toMatchObject({ paddingLeft: "0px", paddingRight: "0px" });
+  });
+
   it("never applies PageBody defaults to chrome or existing containers", () => {
     const existing = { type: "Container", props: { id: "existing", content: [] } };
     const chromeContainer = { type: "Container", props: { id: "chrome-container", content: [] } };

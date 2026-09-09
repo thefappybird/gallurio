@@ -8,6 +8,16 @@ import { collectBlocks, mapBlocks } from "./blockTree";
 import type { PageBodyContainerDefaults } from "./blocks/PageBodyBlock";
 import type { PuckData, PuckBlockEntry } from "./types";
 import type { BlockStyle } from "./styleToolkit";
+import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+
+// Every section preset is a Container under the hood (shares _style/overallWidth),
+// so a PageBody default must reach it the same as a plain Container or Columns —
+// nav presets are excluded, they render through NavigationBlock, not a Container.
+const CONTAINER_CLASS_TYPES = new Set<string>([
+  "Container",
+  "Columns",
+  ...SECTION_PRESET_KEYS.filter((key) => !(NAV_PRESET_KEYS as readonly string[]).includes(key)),
+]);
 
 function blockId(block: PuckBlockEntry): string | undefined {
   const id = (block.props as { id?: unknown }).id;
@@ -43,7 +53,7 @@ function containerIdsInsidePageBody(data: PuckData): Set<string> {
   const bodyTree = { ...data, content: [pageBody], zones: {} } as PuckData;
   return new Set(
     collectBlocks(bodyTree)
-      .filter((block) => block.type === "Container")
+      .filter((block) => CONTAINER_CLASS_TYPES.has(block.type))
       .map(blockId)
       .filter((id): id is string => Boolean(id)),
   );
@@ -88,7 +98,7 @@ export function applyPageBodyContainerDefaults(previous: PuckData, next: PuckDat
 
   return mapBlocks(next, (block) => {
     const id = blockId(block);
-    if (block.type !== "Container" || !id || previousIds.has(id) || !eligibleIds.has(id)) return block;
+    if (!CONTAINER_CLASS_TYPES.has(block.type) || !id || previousIds.has(id) || !eligibleIds.has(id)) return block;
 
     const props = block.props as { _style?: BlockStyle; overallWidth?: "page-fit" | "full" };
     const nextStyle = applyStyleDefaults(props._style, defaults);

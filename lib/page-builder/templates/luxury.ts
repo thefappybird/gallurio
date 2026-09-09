@@ -140,6 +140,8 @@ export const luxuryTemplate: PortfolioTemplate = {
               _style: {
                 bgColorToken: "background",
                 gap: 0,
+                paddingLeft: "0px",
+                paddingRight: "0px",
               },
               bgAnimation: "crossfade",
               bgSpeed: "medium",
@@ -818,6 +820,8 @@ export const luxuryTemplate: PortfolioTemplate = {
                 bgColorToken: "background",
                 flexDirection: "row",
                 gap: 0,
+                paddingLeft: "0px",
+                paddingRight: "0px",
               },
               bgAnimation: "crossfade",
               bgSpeed: "medium",

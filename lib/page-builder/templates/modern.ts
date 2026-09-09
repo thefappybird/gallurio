@@ -180,6 +180,8 @@ export const modernTemplate: PortfolioTemplate = {
               _style: {
                 bgColorToken: "background",
                 gap: 0,
+                paddingLeft: "0px",
+                paddingRight: "0px",
               },
               bgAnimation: "crossfade",
               bgSpeed: "medium",
@@ -1071,6 +1073,8 @@ export const modernTemplate: PortfolioTemplate = {
                 flexDirection: "row",
                 gap: 0,
                 radius: 0,
+                paddingLeft: "0px",
+                paddingRight: "0px",
               },
               bgAnimation: "crossfade",
               bgSpeed: "medium",

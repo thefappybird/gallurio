@@ -35,6 +35,12 @@ export type PageBodyBlockProps = {
 };
 
 export const pageBodyDefaultProps: PageBodyBlockProps = {
+  // The page margin (marginX) is meant to be the ONLY horizontal inset — a
+  // direct child duplicating it with its own x-axis padding just doubles the
+  // gutter. Still just a starting default: editable per-block afterward like
+  // every other containerDefaults field, and never retrofitted onto existing
+  // content (see applyPageBodyContainerDefaults's doc comment).
+  containerDefaults: { paddingLeft: "0px", paddingRight: "0px" },
   content: [],
 };
 

@@ -126,4 +126,11 @@ describe("PageBodyBlock", () => {
     expect(permissions.edit).not.toBe(false);
     expect(pageBodyDefaultProps.marginX).toBeUndefined();
   });
+
+  it("defaults new direct children to 0px x-axis padding — the page margin is the only horizontal inset", () => {
+    expect(pageBodyDefaultProps.containerDefaults).toMatchObject({
+      paddingLeft: "0px",
+      paddingRight: "0px",
+    });
+  });
 });
