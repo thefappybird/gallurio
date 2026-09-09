@@ -1161,6 +1161,42 @@ export function createEditorConfig(
     },
     fields: {
       _style: styleField,
+      // Same banner fields as Container (editorContainerFields above) — Columns
+      // is a container-class object too.
+      bgAnimation: {
+        type: "select",
+        label: t("puckConfig.fields.bgAnimation"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" },
+          { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" },
+          { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" },
+        ],
+      } as unknown as Field<ColumnsBlockProps["bgAnimation"]>,
+      bgSpeed: {
+        type: "select",
+        label: t("puckConfig.fields.bgSpeed"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.bgSpeed.slow"), value: "slow" },
+          { label: t("puckConfig.options.bgSpeed.medium"), value: "medium" },
+          { label: t("puckConfig.options.bgSpeed.fast"), value: "fast" },
+        ],
+      } as unknown as Field<ColumnsBlockProps["bgSpeed"]>,
+      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), min: 0, max: 100, visible: false } as unknown as Field<number | undefined>,
+      overlayColorToken: {
+        type: "select",
+        label: t("puckConfig.fields.overlayColor"),
+        visible: false,
+        options: [
+          { label: t("puckConfig.options.overlayColor.none"), value: "" },
+          { label: t("puckConfig.options.overlayColor.primary"), value: "primary" },
+          { label: t("puckConfig.options.overlayColor.secondary"), value: "secondary" },
+          { label: t("puckConfig.options.overlayColor.accent"), value: "accent" },
+          { label: t("puckConfig.options.overlayColor.background"), value: "background" },
+          { label: t("puckConfig.options.overlayColor.foreground"), value: "foreground" },
+        ],
+      } as unknown as Field<StyleColorToken | undefined>,
       columns: {
         type: "number",
         label: t("puckConfig.fields.columnsCount"),

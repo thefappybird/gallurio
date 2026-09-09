@@ -778,6 +778,13 @@ export type ColumnsBlockProps = {
    *  Columns blocks never share @container rules (prevents cross-contamination). */
   id?: string;
   _style?: BlockStyle;
+  /** Same background-image/overlay banner as Container — Columns is a
+   *  container-class object too. See ContainerBlockProps for field docs. */
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
   columns: number;
   /** Explicit row count 1–6. When set to 2 or more, the grid defines that many
@@ -806,6 +813,10 @@ export const COLUMNS_EFFECTIVE_PAD = {
 export const CONTAINER_EFFECTIVE_MARGIN_BOTTOM = "0px";
 
 export const columnsDefaultProps: ColumnsBlockProps = {
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
+  overlayOpacity: 0,
   columns: 2,
   rows: undefined,
   // Match the Container "short" editor footprint so a freshly dropped Columns
@@ -821,6 +832,11 @@ export const columnsDefaultProps: ColumnsBlockProps = {
 export function ColumnsBlock({
   id,
   _style,
+  backgroundImages,
+  bgAnimation,
+  bgSpeed,
+  overlayOpacity,
+  overlayColorToken,
   columns,
   rows,
   minHeight,
@@ -830,6 +846,11 @@ export function ColumnsBlock({
 }: {
   id?: string;
   _style?: BlockStyle;
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   columns: number;
   rows?: number;
   minHeight?: string;
@@ -837,6 +858,19 @@ export function ColumnsBlock({
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
+  // Same baked-background resolution as ContainerBlock — Columns is a
+  // container-class object too (see containerAnchorPredicate.isContainerClass).
+  const layers = (Array.isArray(backgroundImages) ? backgroundImages : [])
+    .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
+    .filter((l): l is { id: string; src: string } => Boolean(l.src));
+  const hasBg = layers.length > 0;
+  const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
+  const overlayAlpha = overlayPercent / 100;
+  const scrimColor =
+    overlayColorToken && (STYLE_COLOR_TOKENS as readonly string[]).includes(overlayColorToken)
+      ? `color-mix(in srgb, ${colorTokenToVar(overlayColorToken)} ${overlayPercent}%, transparent)`
+      : `rgba(0,0,0,${overlayAlpha})`;
+  const bgImageAlpha = Math.min(100, Math.max(0, _style?.bgImageOpacity ?? 100)) / 100;
   // Clamp columns to 1–6; accept legacy 2|3 values as-is.
   const cols = Math.min(6, Math.max(1, Math.floor(columns ?? 2)));
   // Tablet breakpoint shows min(2, cols) columns; desktop shows the full count.
@@ -925,6 +959,9 @@ export function ColumnsBlock({
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
         marginBottom: _style?.marginBottom ?? CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
         minHeight: minHeight ?? undefined,
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...outerStyle,
         // Full means the maximum width available from the immediate parent.
         // A page-body child therefore reaches the page edge, while a nested
@@ -939,6 +976,32 @@ export function ColumnsBlock({
       data-pf-full-width={overallWidth === "full" ? "" : undefined}
       {...resolveBlockAttrs(_style)}
     >
+      {/* Same banner background layering as ContainerBlock — scrim renders
+          first but sits above the image layer via zIndex, both below the grid
+          content (zIndex:1 on the Content slot below). */}
+      {hasBg && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
+      )}
+      {hasBg && (
+        <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
+          {layers.length === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={layers[0].src}
+              alt=""
+              aria-hidden="true"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+          {layers.length >= 2 && (
+            <ContainerBackgroundSlideshow
+              images={layers}
+              animation={bgAnimation ?? "crossfade"}
+              speed={bgSpeed ?? "medium"}
+            />
+          )}
+        </div>
+      )}
       {/* Per-instance scoped @container rules: each Columns block gets its own
           unique containerName and CSS class so multiple blocks on the same page
           are fully isolated. Container queries (not viewport media queries) are
@@ -955,6 +1018,8 @@ export function ColumnsBlock({
         // CSS specificity so these always take priority. Public: empty objects —
         // @container rules drive the responsive layout.
         style: {
+          position: "relative",
+          zIndex: 1,
           flex: "1 1 auto",
           minHeight: 0,
           ...(editorGridCols ? { gridTemplateColumns: editorGridCols } : {}),
@@ -971,6 +1036,38 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   defaultProps: columnsDefaultProps,
   fields: {
     _style: productionStyleField,
+    // Same banner fields as Container — see containerFields below for docs.
+    bgAnimation: {
+      type: "select",
+      label: "Background animation",
+      options: [
+        { label: "Crossfade", value: "crossfade" },
+        { label: "Ken Burns", value: "kenburns" },
+        { label: "Slide", value: "slide" },
+      ],
+    } as Field<ColumnsBlockProps["bgAnimation"]>,
+    bgSpeed: {
+      type: "select",
+      label: "Animation speed",
+      options: [
+        { label: "Slow (7s)", value: "slow" },
+        { label: "Medium (5s)", value: "medium" },
+        { label: "Fast (3s)", value: "fast" },
+      ],
+    } as Field<ColumnsBlockProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
+    overlayColorToken: {
+      type: "select",
+      label: "Overlay color",
+      options: [
+        { label: "None (black)", value: "" },
+        { label: "Primary", value: "primary" },
+        { label: "Secondary", value: "secondary" },
+        { label: "Accent", value: "accent" },
+        { label: "Background", value: "background" },
+        { label: "Foreground", value: "foreground" },
+      ],
+    } as unknown as Field<StyleColorToken | undefined>,
     columns: {
       type: "number",
       label: "Columns",

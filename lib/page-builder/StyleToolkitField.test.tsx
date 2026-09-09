@@ -2657,3 +2657,22 @@ describe("StyleToolkitField — GalleryMasonry flow", () => {
     expect(screen.getByRole("button", { name: "On" })).toBeDisabled();
   });
 });
+
+describe("ContentTabBody — Columns banner (container-class background)", () => {
+  it("shows the banner/background section alongside its own Columns/Rows counts, same as a Container", () => {
+    render(
+      <ContentTabBody
+        s={{}}
+        set={vi.fn()}
+        type="Columns"
+        p={{ columns: 2, rows: 1 }}
+        setProp={vi.fn()}
+        showBanner={true}
+        isContainer={true}
+      />
+    );
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
+    expect(screen.getByText("Columns")).toBeInTheDocument();
+    expect(screen.getByText("Rows")).toBeInTheDocument();
+  });
+});

@@ -1964,6 +1964,40 @@ describe("ContainerBlock background images", () => {
   });
 });
 
+describe("ColumnsBlock background images (container-class parity with ContainerBlock)", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders no background layer when backgroundImages is empty", () => {
+    const { container } = render(<ColumnsBlock columns={2} content={stubSlot} backgroundImages={[]} />);
+    expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
+  });
+
+  it("renders a single static <img> for exactly one image", () => {
+    const { container } = render(
+      <ColumnsBlock columns={2} content={stubSlot} backgroundImages={[{ id: "a", publicId: "ws/a" }]} />
+    );
+    const img = container.querySelector("[data-bg-opacity-layer] img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain("ws/a");
+  });
+
+  it("renders the slideshow island for two or more images", () => {
+    const { container } = render(
+      <ColumnsBlock
+        columns={2}
+        content={stubSlot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+      />
+    );
+    expect(container.querySelector("[data-bg-slideshow]")).toBeInTheDocument();
+  });
+});
+
 describe("ColumnsBlock — dragRef forwarding", () => {
   it("forwards puck.dragRef to the root div element", () => {
     let capturedEl: Element | null = null;

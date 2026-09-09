@@ -1418,10 +1418,11 @@ export function ContentTabBody({
           onOverlayColorChange: (v) => setProp("overlayColorToken", v),
         }
       : null;
-  // Gallery container blocks need both the banner AND their gallery-specific content inputs
-  // (collections picker / photo picker) — unlike true containers (slots), they have
-  // direct gallery content controlled via ContentInputs.
-  const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
+  // Gallery container blocks and Columns need both the banner AND their own
+  // content inputs (collections/photo picker, or the Columns/Rows counts) —
+  // unlike a true Container (a bare slot), they have direct content controlled
+  // via ContentInputs alongside the shared background/banner section.
+  const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type) || type === "Columns";
   // GalleryGrid/GalleryMasonry dropped background images entirely — the images
   // are the block content, not a backdrop — so they never show the picker and
   // always resolve to the plain background swatch. FeaturedWork still supports
@@ -3324,8 +3325,8 @@ function BlockAwarePanel({
             p={p}
             setProp={setProp}
             setProps={setProps}
-            showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image"}
-            isContainer={isContainer || isGalleryContainer}
+            showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image" || type === "Columns"}
+            isContainer={isContainer || isGalleryContainer || type === "Columns"}
             navDetach={navDetach}
             t={t}
           />
