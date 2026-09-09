@@ -79,6 +79,7 @@ export function PageBodyBlock({
   content: Content,
   puck,
 }: Omit<PageBodyBlockProps, "content"> & { content: SlotComponent; puck?: BlockPuck }) {
+  const isEditing = Boolean(puck?.isEditing);
   const horizontalMargin = marginX ?? PAGE_BODY_MARGIN_X_DEFAULT;
 
   // Same baked-background resolution as Container/Columns — see those for the
@@ -154,6 +155,42 @@ export function PageBodyBlock({
           margin-right: calc(0px - var(--pf-page-body-margin-x)) !important;
         }
       `}</style>
+      {/* Editor-only cue: a full-bleed direct child intentionally bleeds past
+          this margin (see the CSS above), which otherwise leaves no visible
+          trace of the configured gutter to select/drop against. Decorative
+          only — never rendered in preview/publish, never affects layout. */}
+      {isEditing && (
+        <>
+          <div
+            aria-hidden="true"
+            data-pf-margin-overlay="left"
+            style={{
+              position: "absolute",
+              insetBlock: 0,
+              insetInlineStart: 0,
+              width: horizontalMargin,
+              zIndex: 2,
+              pointerEvents: "none",
+              backgroundColor: "color-mix(in srgb, var(--pf-color-accent) 10%, transparent)",
+              borderInlineEnd: "1px dashed color-mix(in srgb, var(--pf-color-accent) 40%, transparent)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            data-pf-margin-overlay="right"
+            style={{
+              position: "absolute",
+              insetBlock: 0,
+              insetInlineEnd: 0,
+              width: horizontalMargin,
+              zIndex: 2,
+              pointerEvents: "none",
+              backgroundColor: "color-mix(in srgb, var(--pf-color-accent) 10%, transparent)",
+              borderInlineStart: "1px dashed color-mix(in srgb, var(--pf-color-accent) 40%, transparent)",
+            }}
+          />
+        </>
+      )}
       {Content({
         className: PAGE_BODY_SLOT_CLASS,
         style: {
