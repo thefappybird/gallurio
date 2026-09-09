@@ -36,6 +36,21 @@ export const editorialTemplate: PortfolioTemplate = {
               id: "HeroPreset-b74faaf7-8d75-4ff8-90a3-6a77e346187d",
               content: [
                 {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "center",
+                    alignY: "center",
+                    _style: {
+                    contentHorizontalAlign: "center",
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
                   type: "Heading",
                   props: {
                     id: "Heading-78c228ab-9f36-4082-bfe0-77216ffd3cc8",
@@ -123,6 +138,9 @@ export const editorialTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               overlayOpacity: 50,
               overlayColorToken: "primary",
@@ -145,7 +163,23 @@ export const editorialTemplate: PortfolioTemplate = {
             type: "VideoSplitPreset",
             props: {
               id: "VideoSplitPreset-83301d07-8958-4ec9-ae4a-8e5f6f24a440",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Columns",
                   props: {
@@ -205,6 +239,9 @@ export const editorialTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -226,7 +263,22 @@ export const editorialTemplate: PortfolioTemplate = {
             type: "AboutPreset",
             props: {
               id: "AboutPreset-6a523a79-a8a5-4cd1-b2a9-cd6185aa421e",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Heading",
                   props: {
@@ -240,6 +292,9 @@ export const editorialTemplate: PortfolioTemplate = {
                   props: {
                     id: "Text-e7123255-cc30-44f1-b2bf-30466f62d001",
                     text: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -402,6 +457,21 @@ export const editorialTemplate: PortfolioTemplate = {
               id: "ContactSplitPreset-ef7f1de3-76f9-45c7-8736-6decc132099b",
               content: [
                 {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
                   type: "Columns",
                   props: {
                     id: "Columns-6fd9c96e-7787-42c5-b737-d038d7e5e290",
@@ -488,6 +558,9 @@ export const editorialTemplate: PortfolioTemplate = {
                     _style: {
                       gap: 40,
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],

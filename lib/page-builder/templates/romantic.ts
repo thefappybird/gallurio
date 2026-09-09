@@ -54,6 +54,21 @@ export const romanticTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "center",
+                    _style: {
+                    gap: 28,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-e3ac9b73-0143-435c-afc8-b75d5cb7b194",
                     content: [
                       {
@@ -112,6 +127,9 @@ export const romanticTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "medium",
               alignX: "left",
@@ -135,7 +153,23 @@ export const romanticTemplate: PortfolioTemplate = {
             type: "VideoSplitPreset",
             props: {
               id: "VideoSplitPreset-bff5c37a-4688-48e4-ac0c-ae7cac5d85e6",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Columns",
                   props: {
@@ -211,6 +245,9 @@ export const romanticTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -231,6 +268,21 @@ export const romanticTemplate: PortfolioTemplate = {
             props: {
               id: "ServicesMenuPreset-fb7fee02-7614-4c05-9ab6-c0e3955d0167",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -564,6 +616,9 @@ export const romanticTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -700,6 +755,23 @@ export const romanticTemplate: PortfolioTemplate = {
       props: {
         id: "FooterSignaturePreset-8c4afb10-6abe-44b0-9d04-5f460d3f6133",
         content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "center",
+                    alignY: "top",
+                    _style: {
+                    gap: 20,
+                    contentVerticalDistribution: "start",
+                    contentHorizontalAlign: "center",
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
           {
             type: "Divider",
             props: {
@@ -785,6 +857,9 @@ export const romanticTemplate: PortfolioTemplate = {
             },
           },
         ],
+                  },
+                },
+              ],
         _chrome: "footer",
         overallWidth: "full",
         backgroundImages: [],
@@ -834,6 +909,21 @@ export const romanticTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "center",
+                    alignY: "center",
+                    _style: {
+                    contentHorizontalAlign: "center",
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-d3f6d691-eb97-4de1-8ee5-1ac109f6380b",
                     content: [
                       {
@@ -871,6 +961,9 @@ export const romanticTemplate: PortfolioTemplate = {
                       contentHorizontalAlign: "center",
                       width: "fit-content",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -1122,6 +1215,21 @@ export const romanticTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 24,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-b5e693b4-7c5a-43be-844f-6613931f11c1",
                     content: [
                       {
@@ -1222,6 +1330,9 @@ export const romanticTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -1249,6 +1360,23 @@ export const romanticTemplate: PortfolioTemplate = {
       props: {
         id: "4be30a70-089d-4bb0-82b4-34a056034b57",
         content: [
+          {
+            type: "Container",
+            props: {
+              overallWidth: "page-fit",
+              alignX: "center",
+              alignY: "top",
+              _style: {
+                contentVerticalDistribution: "start",
+                contentHorizontalAlign: "center",
+                gap: 20,
+                paddingTop: "0px",
+                paddingRight: "0px",
+                paddingBottom: "0px",
+                paddingLeft: "0px",
+                marginBottom: "0px",
+              },
+              content: [
           {
             type: "Divider",
             props: {
@@ -1331,6 +1459,9 @@ export const romanticTemplate: PortfolioTemplate = {
                 contentVerticalDistribution: "center",
                 gap: 20,
               },
+            },
+          },
+              ],
             },
           },
         ],

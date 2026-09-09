@@ -42,6 +42,21 @@ export const luxuryTemplate: PortfolioTemplate = {
               id: "HeroSplitPreset-8eae50a7-ce9d-461b-9592-193f4568e7ea",
               content: [
                 {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "center",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
                   type: "Columns",
                   props: {
                     id: "Columns-582a67af-8329-4e53-acf1-b3e406469bc2",
@@ -134,6 +149,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "medium",
               alignY: "center",
@@ -154,7 +172,23 @@ export const luxuryTemplate: PortfolioTemplate = {
             type: "AboutPortraitPreset",
             props: {
               id: "AboutPortraitPreset-6b06e08d-f540-4111-97db-a947fb0f7896",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Columns",
                   props: {
@@ -213,6 +247,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -230,7 +267,23 @@ export const luxuryTemplate: PortfolioTemplate = {
             type: "ServicesFeaturePreset",
             props: {
               id: "ServicesFeaturePreset-3a72ae0c-e1fd-4b51-9388-976ec446a4fa",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 32,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Heading",
                   props: {
@@ -418,6 +471,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -435,7 +491,23 @@ export const luxuryTemplate: PortfolioTemplate = {
             type: "FeaturedWorkIndexPreset",
             props: {
               id: "FeaturedWorkIndexPreset-53ea6369-0d19-4f3d-b171-78ba60faf0e9",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 24,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -530,6 +602,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                       paddingTop: "0px",
                       paddingBottom: "0px",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -759,6 +834,22 @@ export const luxuryTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    flexDirection: "row",
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-50c5e2e7-08bd-4bfe-a0b8-a729756de3fe",
                     content: [
                       {
@@ -810,6 +901,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                     _style: {
                       width: "50%",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -938,7 +1032,23 @@ export const luxuryTemplate: PortfolioTemplate = {
             type: "VideoSplitPreset",
             props: {
               id: "VideoSplitPreset-2a7aadbb-4f77-42e8-a433-1fc9ecc30896",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Columns",
                   props: {
@@ -1010,6 +1120,9 @@ export const luxuryTemplate: PortfolioTemplate = {
                     _style: {
                       gap: 40,
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],

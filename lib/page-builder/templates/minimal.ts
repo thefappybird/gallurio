@@ -57,6 +57,21 @@ export const minimalTemplate: PortfolioTemplate = {
               id: "HeroSplitPreset-5354bd14-308f-4165-8beb-57247ee76973",
               content: [
                 {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "center",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
                   type: "Columns",
                   props: {
                     id: "Columns-f0ae75a4-f7ff-4076-9f28-3230a29f900a",
@@ -184,6 +199,9 @@ export const minimalTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "medium",
               alignY: "center",
@@ -205,6 +223,21 @@ export const minimalTemplate: PortfolioTemplate = {
             props: {
               id: "FeaturedWorkIndexPreset-a4781bbc-c070-49c6-b516-994cba63ba35",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 24,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -304,6 +337,9 @@ export const minimalTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -325,7 +361,23 @@ export const minimalTemplate: PortfolioTemplate = {
             type: "ServicesMenuPreset",
             props: {
               id: "ServicesMenuPreset-88ed46e5-e232-4c9a-9ebe-592c205315a3",
+              overallWidth: "full",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Heading",
                   props: {
@@ -570,6 +622,9 @@ export const minimalTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -589,6 +644,24 @@ export const minimalTemplate: PortfolioTemplate = {
             props: {
               id: "ContactBarPreset-86e610e6-71f1-451d-a9cd-85af3656ea60",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                    contentVerticalDistribution: "between",
+                    contentHorizontalAlign: "center",
+                    flexDirection: "row",
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -661,6 +734,9 @@ export const minimalTemplate: PortfolioTemplate = {
                       contentVerticalDistribution: "between",
                       contentHorizontalAlign: "center",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -921,6 +997,21 @@ export const minimalTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-8b2b4cf3-5b88-4bf1-a9bf-13e8a7437fe3",
                     content: [
                       {
@@ -994,6 +1085,9 @@ export const minimalTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -1017,6 +1111,21 @@ export const minimalTemplate: PortfolioTemplate = {
             props: {
               id: "GalleryMasonryWallPreset-f17d4fab-43b0-45be-bd60-a3d06f58522b",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 16,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -1273,6 +1382,9 @@ export const minimalTemplate: PortfolioTemplate = {
                       paddingLeft: "0px",
                       paddingRight: "0px",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],

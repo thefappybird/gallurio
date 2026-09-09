@@ -198,6 +198,21 @@ export const modernTemplate: PortfolioTemplate = {
                 {
                   type: "Container",
                   props: {
+                    overallWidth: "page-fit",
+                    alignX: "left",
+                    alignY: "top",
+                    _style: {
+                    gap: 0,
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
+                  type: "Container",
+                  props: {
                     id: "Container-e75f234b-47b5-413e-a267-10a1f0607ec1",
                     content: [
                       {
@@ -305,6 +320,9 @@ export const modernTemplate: PortfolioTemplate = {
                   },
                 },
               ],
+                  },
+                },
+              ],
               backgroundImages: [],
               minHeight: "auto",
               _style: {
@@ -329,6 +347,20 @@ export const modernTemplate: PortfolioTemplate = {
             props: {
               id: "ServicesPreset-3ecca4a6-da82-43db-b342-5cc6881b6b48",
               content: [
+                {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "center",
+                    alignY: "top",
+                    _style: {
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
                 {
                   type: "Container",
                   props: {
@@ -561,6 +593,9 @@ export const modernTemplate: PortfolioTemplate = {
                       paddingTop: "0px",
                       paddingBottom: "0px",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
@@ -1464,6 +1499,21 @@ export const modernTemplate: PortfolioTemplate = {
               id: "CtaPreset-1cb687ae-e24b-4150-9ec5-335990ffb445",
               content: [
                 {
+                  type: "Container",
+                  props: {
+                    overallWidth: "page-fit",
+                    alignX: "center",
+                    alignY: "center",
+                    _style: {
+                    contentHorizontalAlign: "center",
+                      paddingTop: "0px",
+                      paddingRight: "0px",
+                      paddingBottom: "0px",
+                      paddingLeft: "0px",
+                      marginBottom: "0px",
+                    },
+                    content: [
+                {
                   type: "Heading",
                   props: {
                     id: "Heading-0ac4c66a-eb86-410d-b300-121938a1fae6",
@@ -1496,6 +1546,9 @@ export const modernTemplate: PortfolioTemplate = {
                       buttonColorToken: "foreground",
                       textColorToken: "foreground",
                     },
+                  },
+                },
+              ],
                   },
                 },
               ],
