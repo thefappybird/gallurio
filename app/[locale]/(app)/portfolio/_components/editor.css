@@ -281,6 +281,22 @@
  * which contrasts the brighter teal. Contrast is maintained in both modes.
  */
 
+/* ─── Edge-to-edge canvas ─────────────────────────────────────────────────── */
+/*
+ * Puck pads its canvas frame horizontally by --puck-space-px (16px, 24px at
+ * >=1198px) on both sides, leaving a visible gutter (the frame's own
+ * grey-11 background showing through) between the white canvas and both
+ * side panels. On a laptop-width editor that gutter is real design width
+ * lost for no benefit. Vertical padding is left alone — only the sides are
+ * the complaint. [class*=] survives Puck's per-build hash rotation (see the
+ * DrawerItem note above); "PuckCanvas_" (trailing underscore, no hyphen)
+ * matches only the outer frame wrapper (`_PuckCanvas_<hash>`), not its
+ * `-inner`/`-root`/`-loader`/`--ready`/`--showLoader` sub-elements.
+ */
+.gallurio-editor [class*="PuckCanvas_"] {
+  padding-inline: 0 !important;
+}
+
 /* ─── Drawer row cursor affordance ────────────────────────────────────────── */
 /*
  * Left-panel section-preset / manual-block rows are Puck's own Drawer.Item
