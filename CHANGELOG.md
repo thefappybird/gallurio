@@ -3,7 +3,7 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.40.1]
 
 ### Added
 - Photo lightbox layouts now offer a "see more" panel showing date, location, client, custom details, and tags — previously only visible on the Sidebar and Sheet layouts, now also on Caption and Cinema.
