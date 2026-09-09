@@ -64,7 +64,7 @@ function normalizeDividerGroups(block: PuckBlockEntry): PuckBlockEntry {
   const storedContent = childrenOf(props);
   if (
     props.overallWidth === "full" && storedContent.some((child) => child.type === "Divider")
-    && storedContent.every((child) => child.type === "Divider" || isContainer(child, "page-fit"))
+    && storedContent.every((child) => child.type === "Divider" || child.type === "Container")
   ) return block;
 
   const content = unwrappedPageFitShell(storedContent).map(unwrapPageFitColumns);
@@ -73,7 +73,14 @@ function normalizeDividerGroups(block: PuckBlockEntry): PuckBlockEntry {
   const grouped: BlockList = [];
   let group: BlockList = [];
   const flush = () => {
-    if (group.length) grouped.push(pageFitGroup(group, props));
+    // A group that's already a single Container (any overallWidth — the user
+    // may deliberately want it full-bleed) needs no wrapping shell of our
+    // own; wrapping it here re-parented a user's full-width container under a
+    // brand-new page-fit Container on every reseed (togglePreview, chrome
+    // reorder), which looked like either a spawned extra container or a
+    // reverted width once the outer shell visually reconstrained it.
+    if (group.length === 1 && group[0].type === "Container") grouped.push(group[0]);
+    else if (group.length) grouped.push(pageFitGroup(group, props));
     group = [];
   };
   for (const child of content) {
@@ -138,9 +145,12 @@ function normalizeDirectoryFooter(block: PuckBlockEntry): PuckBlockEntry {
 function normalizeLeadCollections(block: PuckBlockEntry): PuckBlockEntry {
   const props = block.props as BlockProps;
   const storedContent = childrenOf(props);
+  const band = storedContent[0];
+  const bandInner = band ? childrenOf(band.props as BlockProps)[0] : undefined;
   if (
     props.overallWidth === "full" && storedContent.length === 2
-    && isContainer(storedContent[0], "page-fit") && isContainer(storedContent[1], "page-fit")
+    && isContainer(band, "full") && bandInner && isContainer(bandInner, "page-fit")
+    && isContainer(storedContent[1], "page-fit")
   ) return block;
   const content = unwrappedPageFitShell(storedContent);
   const columns = findNested(content, "Columns");
@@ -152,9 +162,18 @@ function normalizeLeadCollections(block: PuckBlockEntry): PuckBlockEntry {
     {
       type: "Container",
       props: {
-        overallWidth: "page-fit",
-        _style: { ...zeroPaddingLayout(12), bgColorToken: "accent", textColorToken: "foreground" },
-        content: [heading, text],
+        overallWidth: "full",
+        _style: { ...zeroPaddingLayout(undefined), bgColorToken: "accent", textColorToken: "foreground" },
+        content: [
+          {
+            type: "Container",
+            props: {
+              overallWidth: "page-fit",
+              _style: zeroPaddingLayout(12),
+              content: [heading, text],
+            },
+          },
+        ],
       },
     },
     {

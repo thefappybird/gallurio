@@ -228,8 +228,16 @@ describe("portfolio template registry", () => {
     const content = lead!.props.content as Array<{ type: string; props: Record<string, unknown> }>;
     expect(lead!.props.overallWidth).toBe("full");
     expect(content).toHaveLength(2);
-    expect(content.every((block) => block.type === "Container" && block.props.overallWidth === "page-fit")).toBe(true);
-    const cards = content[1]?.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    const [band, columnsShell] = content;
+    expect(band.type).toBe("Container");
+    expect(band.props.overallWidth).toBe("full");
+    expect((band.props._style as Record<string, unknown>).bgColorToken).toBe("accent");
+    const bandInner = (band.props.content as Array<{ type: string; props: Record<string, unknown> }>)[0];
+    expect(bandInner.type).toBe("Container");
+    expect(bandInner.props.overallWidth).toBe("page-fit");
+    expect(columnsShell.type).toBe("Container");
+    expect(columnsShell.props.overallWidth).toBe("page-fit");
+    const cards = columnsShell.props.content as Array<{ type: string; props: Record<string, unknown> }>;
     expect(cards[0]?.type).toBe("Columns");
     expect(cards[0]?.props.overallWidth).toBe("full");
   });
