@@ -3,6 +3,7 @@ import { act, useEffect, useState, type ReactNode, type ReactElement } from "rea
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { toast } from "sonner";
+import type { PortfolioPuckData } from "@/lib/page-builder/types";
 
 // Stub the heavy Puck editor: render its title + the injected custom header
 // (`overrides.header`), passing a "Publish" action so we can exercise onPublish.
@@ -184,7 +185,7 @@ const seedTemplateAction = vi.fn((templateId = "minimal") =>
     ok: true,
     seed: {
       templateId,
-      data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+      data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } } as PortfolioPuckData,
       brandKit: DEFAULT_BRAND_KIT,
       contact: { title: "" },
       header: {},
@@ -404,7 +405,7 @@ beforeEach(() => {
       ok: true,
       seed: {
         templateId,
-        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } } as PortfolioPuckData,
         brandKit: DEFAULT_BRAND_KIT,
         contact: { title: "" },
         header: {},
