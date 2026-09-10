@@ -60,7 +60,7 @@ export function EditorDrawerSection({
             return next;
           })
         }
-        className="flex min-h-11 w-full items-center justify-between px-3 text-left text-xs font-medium uppercase tracking-wide text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-medium uppercase tracking-wide text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <span>{title}</span>
         <ChevronDown

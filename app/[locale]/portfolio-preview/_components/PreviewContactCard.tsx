@@ -31,6 +31,7 @@ export function PreviewContactCard({
   labels,
   submitAppearance: fallbackSubmit,
   addSessionAppearance: fallbackAddSession,
+  dir = "ltr",
 }: {
   workspaceSlug: string;
   title: string;
@@ -38,6 +39,9 @@ export function PreviewContactCard({
   labels: InquiryFormLabels;
   submitAppearance: SubmitAppearance;
   addSessionAppearance: ButtonAppearance;
+  /** Effective direction for the portfolio's own language — the contact zone
+   *  is the one general-content zone that deliberately follows it. */
+  dir?: "ltr" | "rtl";
 }) {
   const { contact } = usePreviewDraft();
 
@@ -50,6 +54,7 @@ export function PreviewContactCard({
 
   return (
     <div
+      dir={dir}
       style={{
         maxWidth: "32rem",
         margin: "0 auto",

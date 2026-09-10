@@ -83,3 +83,20 @@ it("open-collections-popup path: calls warn (not open) when zones have no Featur
   expect(showWarning).toHaveBeenCalledTimes(1);
   expect(openCollections).not.toHaveBeenCalled();
 });
+
+describe("CollectionCard counts as a collections block", () => {
+  // A CollectionCard has the same collection dependency as FeaturedWork, so the
+  // Collections Popup config applies to it and the "no visible block" warning
+  // must not fire when only a CollectionCard is present.
+  it("detects a nested CollectionCard", () => {
+    expect(
+      hasFeaturedWorkInZones({
+        default: {
+          content: [
+            { type: "Container", props: { content: [{ type: "CollectionCard", props: {} }] } },
+          ],
+        },
+      } as never)
+    ).toBe(true);
+  });
+});

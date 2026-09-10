@@ -95,6 +95,40 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(items[0].workspaceId.toString()).toBe(workspaceId.toString());
   });
 
+  it("persists an optional description and starter-item metadata", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Weddings 2024",
+        description: "Full-day wedding coverage.",
+        items: [{
+          assetId: "img_rich", url: "https://imagedelivery.net/hash/img_rich/public", width: 1200, height: 800,
+          title: "Ceremony", date: "2026-06-15", location: "Manila", client: "Reyes Family",
+          tags: ["wedding"], meta: [{ label: "Photographer", value: "J. Cruz" }],
+        }],
+      })
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+    expect((res.body as { description: string }).description).toBe("Full-day wedding coverage.");
+
+    const body = res.body as { id: string };
+    const col = await GalleryCollection.findById(body.id).lean();
+    expect(col?.description).toBe("Full-day wedding coverage.");
+
+    const item = await GalleryItem.findOne({ collectionId: body.id }).lean();
+    expect(item?.title).toBe("Ceremony");
+    expect(item?.tags).toEqual(["wedding"]);
+  });
+
+  it("rejects a malformed date on a starter item with 400", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Bad Date",
+        items: [{ assetId: "img_bd", url: "https://imagedelivery.net/hash/img_bd/public", date: "15-06-2026" }],
+      })
+    )) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
   it("creates a collection with no starter items", async () => {
     const res = (await POST(makeReq({ name: "Empty Gallery" }))) as unknown as MockResp;
     expect(res.status).toBe(201);
@@ -173,6 +207,23 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
+  it("identifies which starter item failed via assetId, and attaches format detail", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Mixed Formats",
+        items: [
+          { assetId: "img_ok", url: "https://imagedelivery.net/hash/img_ok/public", format: "jpg", width: 1200, height: 800 },
+          { assetId: "img_bad", url: "https://imagedelivery.net/hash/img_bad/public", format: "gif", width: 1200, height: 800 },
+        ],
+      })
+    )) as unknown as MockResp;
+    expect((res.body as { assetId: string }).assetId).toBe("img_bad");
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "format_not_accepted",
+      format: "gif",
+    });
+  });
+
   it("rejects a starter item over the 15 MB portfolio cap — file_too_large", async () => {
     const res = (await POST(
       makeReq({
@@ -215,6 +266,21 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(res.status).toBe(400);
     expect((res.body as { error: string }).error).toBe("dimension_too_small");
     expect(await GalleryCollection.countDocuments({})).toBe(0);
+  });
+
+  it("attaches the actual dimensions and minimum as detail on dimension_too_small", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Small Image",
+        items: [{ assetId: "img_small", url: "https://imagedelivery.net/hash/img_small/public", format: "jpg", width: 400, height: 800 }],
+      })
+    )) as unknown as MockResp;
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "dimension_too_small",
+      actualWidth: 400,
+      actualHeight: 800,
+      minShortSide: 600,
+    });
   });
 
   it("accepts a starter item with dimensions exactly 600×600", async () => {

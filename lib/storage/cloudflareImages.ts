@@ -67,9 +67,23 @@ type CFImageRecord = {
   metadata?: Record<string, string>;
 };
 
+/**
+ * Subfolder tag written for anonymous Portfolio Maker demo uploads. Real
+ * gallery uploads default to "gallery", so this is what separates a demo asset
+ * from a tenant's asset when both are keyed by the same metadata field.
+ */
+export const DEMO_UPLOAD_SUBFOLDER = "portfolio-maker-demo";
+
+/**
+ * `expectedSubfolder` narrows the check to one KIND of asset. The demo-import
+ * path must pass DEMO_UPLOAD_SUBFOLDER: it compares a client-supplied id
+ * against `meta.workspaceId`, and without the kind check a caller who supplies
+ * a real workspace's id could adopt that workspace's assets.
+ */
 export async function verifyImageOwnership(
   imageId: string,
-  workspaceId: string
+  workspaceId: string,
+  expectedSubfolder?: string
 ): Promise<boolean> {
   // CF removes the `draft` field once upload completes (does not set it false).
   // The GET may still see draft immediately after upload — retry with backoff.
@@ -88,10 +102,30 @@ export async function verifyImageOwnership(
 
     // CF may return custom metadata under `meta` or `metadata` — check both.
     const meta = img.meta ?? img.metadata ?? {};
-    return meta.workspaceId === workspaceId;
+    if (meta.workspaceId !== workspaceId) return false;
+    return expectedSubfolder === undefined || meta.subfolder === expectedSubfolder;
   }
 
   return false;
+}
+
+/**
+ * Rewrites a Cloudflare Image's custom metadata in place (asset id and URL are
+ * unaffected). Used to re-parent a demo-uploaded asset onto the real workspace
+ * that claims it after signup.
+ */
+export async function updateImageMetadata(
+  imageId: string,
+  metadata: Record<string, string>
+): Promise<void> {
+  const form = new FormData();
+  form.append("metadata", JSON.stringify(metadata));
+
+  const res = await cfFetch(`/images/v1/${imageId}`, { method: "PATCH", body: form });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`CF metadata update failed ${res.status}: ${text}`);
+  }
 }
 
 export async function deleteImage(imageId: string): Promise<void> {

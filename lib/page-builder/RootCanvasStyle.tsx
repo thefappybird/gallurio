@@ -73,8 +73,17 @@ const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
 // horizontal overflow scrollable so constrained screens can still reach the full
 // canvas, while the growth rules below make the preview surface itself wrap tall
 // content instead of clipping its page background.
+//
+// `scrollbar-gutter: stable` reserves the vertical scrollbar's width whether or
+// not it's currently needed. Without it, selecting a block whose Layout-tab
+// panel is tall enough to toggle the RIGHT sidebar's own scrollbar (PageBody's
+// panel is the tallest — see PageBodyContainerDefaultsControl) reflows this
+// element's available width and visibly jitters the canvas's horizontal
+// scrollbar in the same frame — this element and `.gallurio-editor`'s
+// container-query width are mutually dependent (see editor.css's `cqw`-based
+// side-bar widths), so any width change here can toggle the horizontal one too.
 const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
-  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow-x: auto; overflow-y: auto; }`;
+  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow-x: auto; overflow-y: auto; scrollbar-gutter: stable; }`;
 
 // In edit mode Puck wraps the preview surface (`[data-puck-preview]`) in an
 // absolutely-positioned `._PuckCanvas-root_` (top: 0; bottom: 0), which pins the
@@ -105,16 +114,11 @@ const CANVAS_ROOT_SELECTOR =
 // exact-match attribute selector below is root-exclusive and does NOT touch nested
 // slots.
 //
-// Two rules on this droppable element:
-//   min-height: 100dvh — droppable region never shrinks below the viewport height.
-//   padding-bottom: 10rem — always adds a droppable tail below the last block so
-//     users can drop into the empty space without hunting for a thin target.
-//
-// Together the effective droppable height is max(100dvh, contentHeight) + 10rem.
-// Padding is part of the droppable element's box, so the 10rem tail is a real
-// drop target (dnd-kit / Puck pick up pointer events within the padding box).
-const CANVAS_ROOT_DROPZONE_CSS =
-  `[data-puck-dropzone="root:default-zone"] { min-height: 100dvh; padding-bottom: 10rem; }`;
+// The sticky-footer frame for this zone comes from PF_PAGE_FRAME_CSS (emitted
+// below with the rest of the shared sheet), which matches the drop zone by the
+// PageBody it contains — the same rule the public page and the draft preview
+// use, so the three surfaces cannot drift apart. The PageBody slot supplies the
+// large empty drop target instead of an artificial tail below the footer.
 
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
@@ -162,7 +166,7 @@ export function buildCanvasCss(
     : "";
   // Emitted last so it layers over the base width rules in the cascade.
   const viewportRule = viewport ? buildCanvasViewportCss(viewport.deviceWidth, viewport.zoom) : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}\n${viewportRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}\n${viewportRule}`;
 }
 
 /**

@@ -9,7 +9,8 @@ import { portfolioPuckDataSchema } from "@/lib/validators/publicPage";
 import { brandKitSchema, portfolioContactConfigSchema } from "@/lib/validators/publicPage";
 import { puckConfig } from "@/lib/page-builder/config";
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
-import { columns } from "./_blocks";
+import { columns, navigationBlock } from "./_blocks";
+import { collectBlocks } from "@/lib/page-builder/blockTree";
 
 const REGISTERED_BLOCKS = new Set(Object.keys(puckConfig.components));
 
@@ -41,10 +42,23 @@ describe("portfolio template registry", () => {
       });
 
       it("seeds non-empty home and gallery zones", () => {
-        // scratch is an intentionally empty canvas — exempt from this check.
-        if (template.id === "scratch") return;
+        // scratch's canvas is otherwise empty, but it still seeds the pinned
+        // Navigation block — no template opens header-less anymore.
         expect(data.home?.content.length ?? 0).toBeGreaterThan(0);
         expect(data.gallery?.content.length ?? 0).toBeGreaterThan(0);
+      });
+
+      it("seeds the pinned Navigation's brand Heading with the real workspace name in both zones", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const nav = zone?.content.find(
+            (b) => (b.props as { _chrome?: string })._chrome === "nav"
+          ) as { props: { content?: unknown[] } } | undefined;
+          expect(nav, `Template '${template.id}' has no pinned Navigation block`).toBeDefined();
+          const heading = nav?.props.content?.find(
+            (c) => (c as { type?: string }).type === "Heading"
+          ) as { props?: { text?: string } } | undefined;
+          expect(heading?.props?.text).toBe("Studio Aurora");
+        }
       });
 
       it("only references blocks that exist in the Puck registry", () => {
@@ -80,14 +94,24 @@ describe("portfolio template registry", () => {
       it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)
-        // carry images[]. The type check excludes the *Preset suffix.
-        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
-        for (const block of data.gallery?.content ?? []) {
-          if (GALLERY_DATA_TYPES.has(block.type)) {
-            expect(block.props.images).toEqual([]);
-            expect(block.props).not.toHaveProperty("collectionId");
+        // carry images[]. The type check excludes the *Preset suffix. Data blocks
+        // may live nested inside a PageBody/preset's content slot, not just at
+        // the zone's top level, so this walks recursively. An omitted `images`
+        // key is equivalent to `[]` here — fillBlockDefaults re-injects the
+        // block's own default ([]) on apply.
+        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
+        function walk(blocks: { type: string; props: Record<string, unknown> }[]) {
+          for (const block of blocks) {
+            if (GALLERY_DATA_TYPES.has(block.type)) {
+              expect(block.props.images ?? []).toEqual([]);
+              expect(block.props).not.toHaveProperty("collectionId");
+            }
+            if (Array.isArray(block.props.content)) {
+              walk(block.props.content as typeof blocks);
+            }
           }
         }
+        walk(data.gallery?.content ?? []);
       });
 
       it("has a valid default brand kit", () => {
@@ -98,9 +122,12 @@ describe("portfolio template registry", () => {
         expect(portfolioContactConfigSchema.safeParse(template.defaultContact).success).toBe(true);
       });
 
-      it("has a defaultHeader field", () => {
-        expect(template.defaultHeader).toBeDefined();
-        expect(typeof template.defaultHeader).toBe("object");
+      it("seeds a Navigation block first in both zones, carrying _chrome: 'nav'", () => {
+        for (const zoneData of [data.home, data.gallery]) {
+          const first = zoneData?.content[0];
+          expect(first?.type, `${template.id}: first block must be Navigation`).toBe("Navigation");
+          expect((first?.props as { _chrome?: string })._chrome).toBe("nav");
+        }
       });
 
       it("has a defaultCollectionsPopup field", () => {
@@ -118,28 +145,17 @@ describe("portfolio template registry", () => {
       });
 
       it("does not seed a container text token identical to its background", () => {
-        const containerTypes = new Set([
-          "Container",
-          "HeroPreset",
-          "AboutPreset",
-          "ServicesPreset",
-          "CtaPreset",
-          "ContactPreset",
-          "GalleryGridPreset",
-          "GalleryMasonryPreset",
-          "FeaturedWorkPreset",
-          "GalleryLandingPreset",
-          "VideoPreset",
-        ]);
+        // Type-agnostic on purpose: any block carrying both tokens (container or
+        // preset, current or future naming) must keep them distinct for legibility.
         function walk(blocks: { type: string; props?: Record<string, unknown> }[]) {
           for (const block of blocks) {
             const style = block.props?._style as
               | { bgColorToken?: string; textColorToken?: string }
               | undefined;
-            if (containerTypes.has(block.type) && style?.textColorToken) {
+            if (style?.bgColorToken && style?.textColorToken) {
               expect(
                 style.textColorToken,
-                `${template.id} ${block.props?.id}: container text must remain legible`,
+                `${template.id} ${block.type} ${block.props?.id}: container text must remain legible`,
               ).not.toBe(style.bgColorToken);
             }
             if (Array.isArray(block.props?.content)) {
@@ -150,14 +166,41 @@ describe("portfolio template registry", () => {
         walk([...(data.home?.content ?? []), ...(data.gallery?.content ?? [])]);
       });
 
-      it("starts the home zone with a HeroPreset or Columns block", () => {
-        // scratch is an intentionally empty canvas — exempt from this check.
+      it("follows the pinned Navigation with a PageBody, HeroPreset, or Columns block", () => {
+        // scratch is an intentionally empty canvas (Navigation only) — exempt.
         if (template.id === "scratch") return;
-        const firstBlock = data.home?.content[0];
-        // bold/luxury/editorial open with a Columns mosaic that embeds HeroPreset;
-        // minimal/romantic-style templates open directly with HeroPreset.
-        expect(["HeroPreset", "Columns"], `Expected first home block to be HeroPreset or Columns, got '${firstBlock?.type}'`)
-          .toContain(firstBlock?.type);
+        const secondBlock = data.home?.content[1];
+        // Current templates wrap their sections in a single PageBody container;
+        // legacy shapes (Columns mosaic embedding HeroPreset, or a bare HeroPreset)
+        // stay accepted so this doesn't churn on the next content-model change.
+        expect(["PageBody", "HeroPreset", "Columns"], `Expected second home block to be PageBody, HeroPreset, or Columns, got '${secondBlock?.type}'`)
+          .toContain(secondBlock?.type);
+      });
+
+      it("gives every direct PageBody child 0px x-axis padding — the page margin is the only horizontal inset", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const pageBody = zone?.content.find((b) => b.type === "PageBody") as
+            | { props: { content?: unknown[] } }
+            | undefined;
+          if (!pageBody) continue;
+          for (const child of pageBody.props.content ?? []) {
+            const style = (child as { type: string; props: { _style?: { paddingLeft?: string; paddingRight?: string } } });
+            expect(style.props._style?.paddingLeft, `${template.id}: ${style.type} paddingLeft`).toBe("0px");
+            expect(style.props._style?.paddingRight, `${template.id}: ${style.type} paddingRight`).toBe("0px");
+          }
+        }
+      });
+
+      it("never overrides PageBody's containerDefaults without keeping the 0px x-axis padding default", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const pageBody = zone?.content.find((b) => b.type === "PageBody") as
+            | { props: { containerDefaults?: { paddingLeft?: string; paddingRight?: string } } }
+            | undefined;
+          const defaults = pageBody?.props.containerDefaults;
+          if (!defaults) continue; // absent → code-level pageBodyDefaultProps applies, already 0px
+          expect(defaults.paddingLeft, `${template.id}: PageBody containerDefaults.paddingLeft`).toBe("0px");
+          expect(defaults.paddingRight, `${template.id}: PageBody containerDefaults.paddingRight`).toBe("0px");
+        }
       });
 
       it("every top-level home and gallery block has a stable id", () => {
@@ -179,6 +222,51 @@ describe("portfolio template registry", () => {
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
     }
   });
+
+  it("normalizes stale Directory footer copies to a full shell with page-fit direct children", () => {
+    for (const template of PORTFOLIO_TEMPLATES) {
+      const data = template.seedData(mockCtx);
+      const footer = [
+        ...(data.home ? collectBlocks(data.home) : []),
+        ...(data.gallery ? collectBlocks(data.gallery) : []),
+      ].find((block) => block.type === "FooterDirectoryPreset");
+      if (!footer) continue;
+
+      const content = footer.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+      expect(footer.props.overallWidth, `${template.id} footer outer width`).toBe("full");
+      expect(content.map((block) => block.type)).toEqual(["Divider", "Container", "Divider", "Container"]);
+      expect(content[1]?.props.overallWidth).toBe("page-fit");
+      const columns = content[1]?.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+      expect(columns[0]?.type).toBe("Columns");
+      expect(columns[0]?.props.overallWidth, template.id).toBe("full");
+      expect(content[3]?.props.overallWidth).toBe("page-fit");
+    }
+  });
+
+  it("normalizes Luxury's stale Lead collections copy to the current full/page-fit shell", () => {
+    const luxury = getTemplate("luxury")!;
+    const data = luxury.seedData(mockCtx);
+    const lead = [
+      ...(data.home ? collectBlocks(data.home) : []),
+      ...(data.gallery ? collectBlocks(data.gallery) : []),
+    ].find((block) => block.type === "FeaturedWorkLeadPreset");
+    expect(lead).toBeDefined();
+    const content = lead!.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(lead!.props.overallWidth).toBe("full");
+    expect(content).toHaveLength(2);
+    const [band, columnsShell] = content;
+    expect(band.type).toBe("Container");
+    expect(band.props.overallWidth).toBe("full");
+    expect((band.props._style as Record<string, unknown>).bgColorToken).toBe("accent");
+    const bandInner = (band.props.content as Array<{ type: string; props: Record<string, unknown> }>)[0];
+    expect(bandInner.type).toBe("Container");
+    expect(bandInner.props.overallWidth).toBe("page-fit");
+    expect(columnsShell.type).toBe("Container");
+    expect(columnsShell.props.overallWidth).toBe("page-fit");
+    const cards = columnsShell.props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(cards[0]?.type).toBe("Columns");
+    expect(cards[0]?.props.overallWidth).toBe("full");
+  });
 });
 
 describe("template theme presets", () => {
@@ -187,9 +275,14 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit.themePreset).toBe("minimal");
   });
 
-  it("bold carries the 'bold' theme preset", () => {
-    const t = getTemplate("bold")!;
-    expect(t.defaultBrandKit.themePreset).toBe("bold");
+  it("romantic carries the 'romantic' theme preset", () => {
+    const t = getTemplate("romantic")!;
+    expect(t.defaultBrandKit.themePreset).toBe("romantic");
+  });
+
+  it("modern carries the 'modern' theme preset", () => {
+    const t = getTemplate("modern")!;
+    expect(t.defaultBrandKit.themePreset).toBe("modern");
   });
 
   it("luxury carries the 'luxury' theme preset", () => {
@@ -207,9 +300,14 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.minimal.brandKit);
   });
 
-  it("bold brand kit exactly matches THEME_PRESET_DEFINITIONS.bold", () => {
-    const t = getTemplate("bold")!;
-    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.bold.brandKit);
+  it("romantic brand kit exactly matches THEME_PRESET_DEFINITIONS.romantic", () => {
+    const t = getTemplate("romantic")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.romantic.brandKit);
+  });
+
+  it("modern brand kit exactly matches THEME_PRESET_DEFINITIONS.modern", () => {
+    const t = getTemplate("modern")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.modern.brandKit);
   });
 
   it("luxury brand kit exactly matches THEME_PRESET_DEFINITIONS.luxury", () => {
@@ -222,25 +320,22 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.editorial.brandKit);
   });
 
-  it("luxury's plain (non-feature-band) preset sections pin their own background", () => {
-    // ServicesPreset/FeaturedWorkPreset have no explicit text color on their
-    // children, so they default to the theme foreground — the light pole of the
-    // Luxury palette. Without an explicit bgColorToken here they render on an
-    // unstyled (white) surface and their default-foreground text is illegible.
-    const data = getTemplate("luxury")!.seedData(mockCtx);
-    const services = data.home?.content?.find((b) => b.type === "ServicesPreset");
-    const featuredWork = data.gallery?.content?.find((b) => b.type === "FeaturedWorkPreset");
-    expect((services?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
-    expect((featuredWork?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
-  });
-
   it("gallery collectionId is absent from all non-scratch templates", () => {
+    function walk(blocks: { type: string; props?: Record<string, unknown> }[], templateId: string) {
+      for (const block of blocks) {
+        expect(
+          (block.props as Record<string, unknown> | undefined)?.collectionId,
+          `${templateId} gallery block '${block.type}' has collectionId`,
+        ).toBeFalsy();
+        if (Array.isArray(block.props?.content)) {
+          walk(block.props.content as typeof blocks, templateId);
+        }
+      }
+    }
     for (const template of PORTFOLIO_TEMPLATES) {
       if (template.id === "scratch") continue;
       const data = template.seedData({ workspace: { name: "Test" } });
-      for (const block of data.gallery?.content ?? []) {
-        expect((block.props as Record<string, unknown>).collectionId, `${template.id} gallery block '${block.type}' has collectionId`).toBeFalsy();
-      }
+      walk(data.gallery?.content ?? [], template.id);
     }
   });
 });
@@ -253,11 +348,35 @@ describe("_blocks factory helpers", () => {
     expect(block.props.columns).toBe(3);
     expect(block.props.content).toEqual([]);
   });
+
+  it("navigationBlock() produces a Navigation block entry with defaults + _chrome + the given id", () => {
+    const block = navigationBlock("nav-1");
+    expect(block.type).toBe("Navigation");
+    expect(block.props.id).toBe("nav-1");
+    expect(block.props._chrome).toBe("nav");
+    expect(block.props.highlightOpacity).toBe(100);
+    expect(block.props.content).toBeDefined();
+  });
+
+  it("navigationBlock() overrides config fields while keeping the id + _chrome", () => {
+    const block = navigationBlock("nav-2", { fontSize: "sm", contactButtonColor: "accent" });
+    expect(block.props.id).toBe("nav-2");
+    expect(block.props._chrome).toBe("nav");
+    expect(block.props.fontSize).toBe("sm");
+    expect(block.props.contactButtonColor).toBe("accent");
+  });
+
+  it("navigationBlock() seeds the content Heading from the given workspace name", () => {
+    const block = navigationBlock("nav-3", {}, "Studio Aurora");
+    expect(block.props.content).toEqual([
+      { type: "Heading", props: { level: "h3", text: "Studio Aurora" } },
+    ]);
+  });
 });
 
 describe("getTemplate", () => {
   it("returns a template by id", () => {
-    expect(getTemplate("bold")?.id).toBe("bold");
+    expect(getTemplate("minimal")?.id).toBe("minimal");
   });
   it("returns null for an unknown id", () => {
     expect(getTemplate("nope")).toBeNull();

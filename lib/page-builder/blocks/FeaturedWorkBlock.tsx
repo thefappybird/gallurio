@@ -21,15 +21,16 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
+  getEffectiveDirFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
-import { padVar } from "@/lib/page-builder/responsive";
+import { GALLERY_PAD_SHORTHAND, padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { resolveGalleryMinHeight, resolveBannerLayers, GalleryBannerLayers } from "./bannerLayers";
 import type { ContainerHeight } from "./manualBlocks";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -64,49 +65,6 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
 };
 
 // ---------------------------------------------------------------------------
-// Banner background sub-render (same pattern as ContainerBlock)
-// ---------------------------------------------------------------------------
-
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Component (sync — isomorphic)
 // ---------------------------------------------------------------------------
 
@@ -131,6 +89,7 @@ export function FeaturedWorkBlock({
 
   const labels = getGalleryChromeLabelsFrom(puck);
   const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
+  const dir = getEffectiveDirFrom(puck);
   const list = Array.isArray(collections) ? collections : [];
 
   const tiles = list.map((c) => ({
@@ -144,6 +103,7 @@ export function FeaturedWorkBlock({
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <section
@@ -155,7 +115,7 @@ export function FeaturedWorkBlock({
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
       }}
@@ -165,18 +125,45 @@ export function FeaturedWorkBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "72rem", margin: "0 auto" }}>
-        {list.length === 0 ? (
-          <p
+        {list.length === 0 && presetPreview ? (
+          <PresetMediaPlaceholder kind="collections" columns={columns} gap="normal" />
+        ) : list.length === 0 ? (
+          <div
+            data-empty-featured-grid=""
             style={{
-              color: "var(--pf-color-fg)",
-              opacity: 0.45,
-              textAlign: "center",
-              fontSize: "0.9375rem",
-              marginTop: "2rem",
+              display: "grid",
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              gap: "1rem",
             }}
           >
-            {labels.featuredEmpty}
-          </p>
+            {Array.from({ length: columns }, (_, index) => (
+              <div
+                key={index}
+                data-empty-featured-card=""
+                style={{
+                  overflow: "hidden",
+                  backgroundColor: "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
+                }}
+              >
+                <div
+                  style={{
+                    aspectRatio: "7 / 9",
+                    display: "grid",
+                    placeItems: "center",
+                    padding: "1rem",
+                    textAlign: "center",
+                    color: "var(--pf-color-fg)",
+                  }}
+                >
+                  {labels.featuredSelect}
+                </div>
+                <p style={{ margin: 0, padding: "0.75rem 1rem", color: "var(--pf-color-fg)" }}>
+                  {labels.featuredEmpty}
+                </p>
+              </div>
+            ))}
+          </div>
         ) : (
           <FeaturedCollectionsClient
             tiles={tiles}
@@ -186,6 +173,7 @@ export function FeaturedWorkBlock({
             popupConfig={popupConfig}
             popupLabels={popupLabels}
             brandVars={brandVars}
+            dir={dir}
           />
         )}
       </div>

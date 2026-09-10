@@ -25,11 +25,18 @@ function setup(props: Partial<React.ComponentProps<typeof DraftsDialog>> = {}) {
 }
 
 describe("DraftsDialog", () => {
-  it("lists drafts and marks the active one", () => {
+  it("lists drafts and marks the active one by outline only", () => {
     setup();
     expect(screen.getByText("Spring")).toBeTruthy();
     expect(screen.getByText("Bold")).toBeTruthy();
-    expect(screen.getByText(/active/i)).toBeTruthy();
+    expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Apply Spring" })).not.toBeInTheDocument();
+    expect(screen.getByTitle("Spring").closest("li")?.className).toContain("border-foreground");
+  });
+
+  it("can expose active-draft selection only for the entry load flow", () => {
+    setup({ allowActiveApply: true });
+    expect(screen.getByRole("button", { name: "Apply Spring" })).toBeInTheDocument();
   });
 
   it("shows empty-state copy and Add new draft when there are no drafts", () => {
@@ -77,8 +84,9 @@ describe("DraftsDialog", () => {
     const row = title.parentElement;
     expect(row?.className).toContain("justify-between");
 
-    const actionSlot = screen.getByRole("button", { name: "Apply A very long draft name that should truncate before it reaches the buttons" }).parentElement;
-    expect(actionSlot?.className).toContain("w-[7.5rem]");
+    expect(screen.queryByRole("button", { name: "Apply A very long draft name that should truncate before it reaches the buttons" })).not.toBeInTheDocument();
+    const actionSlot = screen.getByRole("button", { name: "Delete A very long draft name that should truncate before it reaches the buttons" }).parentElement;
+    expect(actionSlot?.className).not.toContain("w-[7.5rem]");
   });
 
   it("routes Delete through the confirm AlertDialog then calls onDelete", () => {

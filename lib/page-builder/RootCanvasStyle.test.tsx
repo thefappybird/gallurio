@@ -4,6 +4,7 @@ import { rootCanvasCssText, buildCanvasCss, RootCanvasStyle } from "./RootCanvas
 import { setCanvasDevice } from "./canvasViewportStore";
 import { usePuckStore } from "./puckHooks";
 import { BrandColorsContext } from "./brandColors";
+import { PF_PAGE_FRAME_CSS } from "./responsive";
 import type { BrandColorMap } from "./brandColors";
 
 const DEFAULT_COLORS: BrandColorMap = {
@@ -74,6 +75,16 @@ describe("buildCanvasCss", () => {
     // fixed space after `:` avoids the \s* backtracking hole that causes false negatives
     // for `height: auto` (where the engine can skip the space and succeed the lookahead).
     expect(css).not.toMatch(/(?<![-\w])height: (?!auto)[^;]+;/);
+  });
+
+  it("lays out navigation, page body, and footer through the shared page frame", () => {
+    const css = buildCanvasCss(undefined);
+    // The canvas gets the frame from the shared sheet, matched by the PageBody
+    // it contains — the same rule the public page and the preview use, so the
+    // canvas cannot drift from what publishing produces.
+    expect(css).toContain(PF_PAGE_FRAME_CSS);
+    expect(css).not.toContain('[data-puck-dropzone="root:default-zone"]');
+    expect(css).not.toContain("padding-bottom: 10rem");
   });
 
   it("overrides PuckPreview wrapper height so tall content is not clipped by the grid row", () => {

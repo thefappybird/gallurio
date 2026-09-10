@@ -9,7 +9,7 @@ description: How Gallurio's portfolio draft / versioning system works — the Dr
 1. **Local browser draft (autosave to localStorage).** `EditorShell.tsx` serializes a
    `PortfolioBrowserDraft` (`LOCAL_DRAFT_VERSION = 2`) under key
    `gallurio:portfolio-draft:{slug}` via `persistLocalDraft()` (zone data, `brandKit`,
-   `contact`, `formLocale`, `formDir`, `headerConfig`, `collectionsPopup`, `draftId`,
+   `contact`, `formLocale`, `formDir`, `headerConfig` (legacy, serialized for back-compat but never read back — the header is a Navigation block in `data` now), `collectionsPopup`, `draftId`,
    `draftName`). On mount it hydrates from there, validating the version first.
    **The local write is DEBOUNCED** (~350ms trailing) on Puck `onChange` — `handleChange`
    calls `debouncedPersistLocalDraft()`, not a synchronous write per keystroke (that caused

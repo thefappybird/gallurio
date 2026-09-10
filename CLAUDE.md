@@ -68,6 +68,13 @@ Use the graph index ONLY for large navigation/understanding tasks (multi-hop dep
 ## Tooling
 Reach for a tool when it raises confidence or a Done-criterion needs it; skip it when it adds no signal. Don't claim a UI/flow works until you've observed it running, not just compiled it.
 - **Playwright CLI** (`pnpm exec playwright test`, NOT the MCP plugin): drive the app in a browser for UI/behavioral changes. Repo is wired — `playwright.config.ts` loads `.env.local`, `auth.setup.ts` logs in once and reuses `storageState`, specs in `e2e/`. Required for the 3-breakpoint Done-criterion. Recipes + seeded login accounts: see the `portfolio-testing` / `run-gallurio` skills. Minimize side effects on the shared seeded dev DB — prefer inspecting states over submitting; never repeat a verified submit; no needless reload/re-navigate/re-poll.
+- **Playwright is rationed — batch it, don't sprinkle it** (standing rule, set 2026-09-03 after a session burned nearly a full day on browser runs):
+  - **One consolidated run covers many items, never one run per item.** Before writing a spec, ask which *other* pending items it can absorb. A multi-item task plans its browser runs up front as a small numbered set (typically 2–3 for a whole wave) and every run must justify itself against that plan.
+  - **Purpose first.** A run exists to answer a specific question that unit tests and eslint cannot. If a change is provable by a unit test, it does not get a browser.
+  - **One session, one login, no re-navigation.** Open the surface once, then walk every assertion in that session. No reload / re-navigate / re-poll between assertions.
+  - **Editor-internal surfaces: 1280px only.** The 375/768/1280 × 5 locales × light+dark sweep applies to **public-facing** surfaces, which is what the rule exists for — not to in-app editor chrome.
+  - **Subagents never run Playwright.** Only the orchestrator does, serialized like builds. Subagents verify with scoped `pnpm test --run <fragment>` + eslint on the files they touched.
+  - Defer all browser work to a final wave: static implementation + unit tests across every task first, then one batched runtime pass.
 - **context7**: current library docs (Next 16, React 19, Mongoose, Tailwind v4, Lemon Squeezy, next-intl, WorkOS) before relying on memory.
 - **Security passes**: the trailofbits static-analysis / differential-review / fp-check plugins are disabled by default to save context — re-enable them (and use the `security-auditor` agent) when a change touches auth, tenancy, webhooks, uploads, payments, public routes, or input validation, and for pre-merge audits.
 
@@ -75,8 +82,8 @@ Reach for a tool when it raises confidence or a Done-criterion needs it; skip it
 Operate as a senior full-stack engineer with strong mobile-first UI and backend/API judgment.
 
 ### UI
-- Mobile-first at 375px. Playwright at 3 breakpoints: 375/768/1280px (desktop-only surfaces: 768+1280; public-facing: all three).
-- **Every Playwright run also covers all 5 locales and both themes** — `en`/`fil`/`id`/`ar`/`th` × light + dark, never `en`-light only. Assert on rendered strings (catches mojibake), check `ar` RTL geometry stays inside its container, and measure dark-theme colours against their background rather than assuming the token resolved. A breakpoint-only pass is an incomplete pass.
+- Mobile-first at 375px. Playwright at 3 breakpoints: 375/768/1280px (desktop-only surfaces: 768+1280; public-facing: all three). **Editor-internal / in-app chrome: 1280px only** — see the batching rule under Tooling.
+- **The full sweep — 5 locales × light + dark** (`en`/`fil`/`id`/`ar`/`th`) — is mandatory on **public-facing** surfaces, and is done inside the batched run, not as its own run. Assert on rendered strings (catches mojibake), check `ar` RTL geometry stays inside its container, and measure dark-theme colours against their background rather than assuming the token resolved. On public surfaces a breakpoint-only pass is an incomplete pass.
 - Every async surface: loading/empty/error/populated. Every control: idle/hover-focus-visible/active/disabled.
 - No hover-only UX. Drag needs visible affordances. Large mobile flows: steps/tabs, not tall modals.
 - Accessibility: semantic HTML, labels, keyboard support, focus management, color never the sole signal.

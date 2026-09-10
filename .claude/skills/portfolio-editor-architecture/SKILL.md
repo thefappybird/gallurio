@@ -18,13 +18,22 @@ load the focused sub-skill for your actual task.
 - **The editor heart is `EditorShell`**
   (`app/[locale]/(app)/portfolio/_components/EditorShell.tsx`): hosts Puck, the left
   blocks panel, the right properties panel (`StyleToolkitField`), the top tab strip
-  (`navCluster`: Home / Gallery / Collections Popup / Navigation / Contact Form / Preview),
+  (`navCluster`: Home / Gallery / Collections Popup / Contact Form / Preview),
   drafts, theme, photos, publish/save. The edit header also hosts the canvas viewport/zoom
   controls and a **page-wide language/RTL control** (`PortfolioLanguageControl`, globe icon)
   that sets `publicPage.formLocale` + `formDir` for the whole public site at once.
-- **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","header","contact"]`.
-  Home/Gallery are Puck zones; header/contact/collectionsPopup are side panels opened via
-  `openHeader()` / `openContact()` / `openCollectionsPopup()`.
+- **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","contact"]`.
+  Home/Gallery are Puck zones; contact/collectionsPopup are side panels opened via
+  `openContact()` / `openCollectionsPopup()`. There is no header panel: the site header is a
+  `Navigation` block inside the zone data, mirrored across zones by `lib/page-builder/chromeSync.ts`
+  (nav pinned first, footer pinned last, both undeletable). Ordinary content between them is
+  always wrapped in a locked, undeletable `PageBody` block (`lib/page-builder/blocks/PageBodyBlock.tsx`)
+  — `[Navigation..., PageBody, Footer...]` is the canonical shape `normalizePageBody()`
+  (`lib/page-builder/pageBody.ts`) enforces. `PageBody` owns the page's shared horizontal
+  margin (`marginX`, effective-default: unset in data, falls back to `PAGE_BODY_MARGIN_X_DEFAULT`
+  at render) and `containerDefaults`, a future-only style preference (radius/padding/margin/gap/
+  overallWidth) materialized onto newly-inserted Containers inside it — never onto existing ones.
+  See `docs/modules/portfolio-and-media.md`.
 - **Chrome localization.** Block labels, category titles, field labels, option labels, and
   the draft-saved toast are translated via `createEditorConfig(t)` in EditorShell and
   `useTranslations` in dialog components. All 5 locales: `en`, `fil`, `id`, `ar`, `th`.
@@ -62,8 +71,12 @@ load the focused sub-skill for your actual task.
 - Multi-tenant: every read/write scopes by `workspaceId`; never trust client `workspaceId`.
 - Public portfolios may override brand styling ONLY inside the public page wrapper.
 - Public-page language/direction is owner-controlled (`formLocale`/`formDir`), isolated from
-  the CRM UI locale; RTL (Arabic) flips the public wrapper div, not `<html>`. The collections
-  popup localizes via Puck `metadata.collectionPopupLabels`.
+  the CRM UI locale. RTL (Arabic) is scoped ONLY to the contact form and the featured-work
+  popup + its nested Lightbox (each threads an explicit `dir` prop, since all three portal to
+  `document.body`) — general manual-block content and `<html>` always stay LTR, a deliberate
+  canvas/preview/publish WYSIWYG guarantee. The editor canvas root also pins `dir="ltr"` so it
+  can't inherit RTL from the owner's own CRM UI locale. See `docs/modules/i18n-design.md`. The
+  collections popup localizes via Puck `metadata.collectionPopupLabels`.
 - The contact form is fixed; inquiry submit creates `Inquiry` + `Client` + inquiry `Booking`
   in one transaction.
 - Reuse before rebuild — check `REUSABLE_CODE.md`.

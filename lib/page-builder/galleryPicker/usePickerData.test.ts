@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
-import { usePickerData, __clearPickerDataCache } from "./usePickerData";
+import { usePickerData, invalidatePickerData, __clearPickerDataCache } from "./usePickerData";
 
 const MOCK_DATA = {
   collections: [{ id: "c1", name: "Wedding 2024", coverUrl: null, itemCount: 6 }],
@@ -59,6 +59,51 @@ describe("usePickerData", () => {
 
     act(() => {
       result.current.retry();
+    });
+    expect(result.current.state.status).toBe("loading");
+    await waitFor(() => expect(result.current.state.status).toBe("ok"));
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("retry() on one mounted instance refreshes every other mounted instance", async () => {
+    // Two pickers mounted at once (e.g. one open dialog + one thumbnail lookup
+    // elsewhere). Only r1 calls retry() — r2 must still pick up the refetch.
+    const { result: r1 } = renderHook(() => usePickerData());
+    const { result: r2 } = renderHook(() => usePickerData());
+    await waitFor(() => expect(r1.current.state.status).toBe("ok"));
+    await waitFor(() => expect(r2.current.state.status).toBe("ok"));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    const UPDATED_DATA = {
+      collections: [
+        { id: "c1", name: "Wedding 2024", coverUrl: null, itemCount: 6 },
+        { id: "c2", name: "New Collection", coverUrl: null, itemCount: 0 },
+      ],
+      items: MOCK_DATA.items,
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => UPDATED_DATA } as unknown as Response);
+
+    act(() => {
+      r1.current.retry();
+    });
+    expect(r1.current.state.status).toBe("loading");
+    expect(r2.current.state.status).toBe("loading");
+
+    await waitFor(() => expect(r1.current.state.status).toBe("ok"));
+    await waitFor(() => expect(r2.current.state.status).toBe("ok"));
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    if (r2.current.state.status === "ok") {
+      expect(r2.current.state.data.collections).toHaveLength(2);
+    }
+  });
+
+  it("invalidatePickerData() called from outside any hook still refreshes mounted instances", async () => {
+    const { result } = renderHook(() => usePickerData());
+    await waitFor(() => expect(result.current.state.status).toBe("ok"));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      invalidatePickerData();
     });
     expect(result.current.state.status).toBe("loading");
     await waitFor(() => expect(result.current.state.status).toBe("ok"));

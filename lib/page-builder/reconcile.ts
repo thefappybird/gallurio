@@ -53,7 +53,8 @@ function validId(id: unknown): id is string {
  *   (no N+1). `workspaceId` comes from the CALLER's session — never Puck props —
  *   so foreign ids resolve to nothing and are pruned (tenant-safe).
  * - For each stored id still present: emit `{ id, publicId: assetId,
- *   alt: altText || caption || "" }`. Refreshes a changed publicId/alt.
+ *   alt: caption || altText || "" }`. Description is the active alt source;
+ *   the retired `altText` field remains only as compatibility for old items.
  * - Drops ids whose item no longer exists. Preserves the stored order. NEVER adds.
  * - No-op (and no DB call) when NO block anywhere in the tree (including
  *   nested) is a gallery or background-image block.
@@ -91,7 +92,7 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
     for (const d of docs) {
       map.set(String(d._id), {
         publicId: d.assetId ?? "",
-        alt: d.altText || d.caption || "",
+        alt: d.caption || d.altText || "",
       });
     }
   }
@@ -140,20 +141,25 @@ type StoredCollection = { id?: unknown; name?: unknown; coverPublicId?: unknown;
 export async function reconcileFeaturedCollections(workspaceId: string, data: PuckData): Promise<PuckData> {
   if (!workspaceId || !data) return data;
 
-  // 1. Collect all distinct collection ids from every FeaturedWork block at
-  //    every depth (root content, zones, AND nested inside preset slots).
+  // Collect references from both legacy FeaturedWork and the current
+  // CollectionCard primitive. Both persist a small collection cache.
   const allIds = new Set<string>();
-  let hasFeaturedWork = false;
+  let hasCollectionCard = false;
   for (const block of collectBlocks(data)) {
-    if (block.type !== "FeaturedWork") continue;
-    hasFeaturedWork = true;
-    const cols = block.props?.collections;
-    if (!Array.isArray(cols)) continue;
-    for (const col of cols as StoredCollection[]) {
-      if (validId(col.id)) allIds.add(col.id as string);
+    if (block.type === "FeaturedWork") {
+      hasCollectionCard = true;
+      const cols = block.props?.collections;
+      if (!Array.isArray(cols)) continue;
+      for (const col of cols as StoredCollection[]) {
+        if (validId(col.id)) allIds.add(col.id as string);
+      }
+    } else if (block.type === "CollectionCard") {
+      hasCollectionCard = true;
+      const col = block.props?.collection as StoredCollection | undefined;
+      if (col && validId(col.id)) allIds.add(col.id as string);
     }
   }
-  if (!hasFeaturedWork) return data;
+  if (!hasCollectionCard) return data;
   if (allIds.size === 0) return data;
 
   await connectDB();
@@ -221,26 +227,35 @@ export async function reconcileFeaturedCollections(workspaceId: string, data: Pu
     }
   }
 
-  // 5. Rebuild each FeaturedWork block's collections[], preserving order, pruning misses.
-  const rebuildFWBlock = (block: PuckBlockEntry): PuckBlockEntry => {
-    if (block.type !== "FeaturedWork") return block;
-    const stored = Array.isArray(block.props?.collections) ? (block.props.collections as StoredCollection[]) : [];
-    const next: Array<{ id: string; name: string; coverPublicId: string; itemCount: number }> = [];
-    for (const entry of stored) {
-      if (!validId(entry.id)) continue;
-      const id = entry.id as string;
-      const col = colMap.get(id);
-      if (!col) continue; // pruned (missing or foreign workspace)
-      const explicitCover = col.coverItemId ? explicitCoverMap.get(col.coverItemId) : undefined;
-      const coverPublicId = explicitCover ?? newestCoverMap.get(id) ?? "";
-      const totalCount = countMap.get(id) ?? 0;
-      next.push({ id, name: col.name, coverPublicId, itemCount: col.isPublic ? totalCount : 0 });
-    }
-    return { ...block, props: { ...block.props, collections: next } };
+  const rebuildReference = (entry: StoredCollection) => {
+    if (!validId(entry.id)) return null;
+    const id = entry.id as string;
+    const col = colMap.get(id);
+    if (!col) return null;
+    const explicitCover = col.coverItemId ? explicitCoverMap.get(col.coverItemId) : undefined;
+    const coverPublicId = explicitCover ?? newestCoverMap.get(id) ?? "";
+    const totalCount = countMap.get(id) ?? 0;
+    return { id, name: col.name, coverPublicId, itemCount: col.isPublic ? totalCount : 0 };
   };
 
-  // mapBlocks reaches every FeaturedWork block at every depth (including ones
-  // nested inside preset slot props); non-FeaturedWork blocks pass through
-  // the SAME reference.
-  return mapBlocks(data, rebuildFWBlock);
+  const rebuildCollectionCardBlock = (block: PuckBlockEntry): PuckBlockEntry => {
+    if (block.type === "FeaturedWork") {
+      const stored = Array.isArray(block.props?.collections) ? (block.props.collections as StoredCollection[]) : [];
+      const collections = stored.flatMap((entry) => {
+        const refreshed = rebuildReference(entry);
+        return refreshed ? [refreshed] : [];
+      });
+      return { ...block, props: { ...block.props, collections } };
+    }
+    if (block.type === "CollectionCard") {
+      const stored = block.props?.collection as StoredCollection | undefined;
+      if (!stored) return block;
+      // A deleted or foreign collection is deliberately cleared rather than
+      // leaving stale tenant data in a card.
+      return { ...block, props: { ...block.props, collection: rebuildReference(stored) ?? undefined } };
+    }
+    return block;
+  };
+
+  return mapBlocks(data, rebuildCollectionCardBlock);
 }

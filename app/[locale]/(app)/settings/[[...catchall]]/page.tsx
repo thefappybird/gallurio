@@ -107,25 +107,6 @@ export default async function SettingsCatchallPage({
   const initialHasPendingChanges =
     hasPendingSettingsSeoChanges(settingsDraftFields, publishedFields);
 
-  // Logo isn't part of the shared normalizeSettingsSeoFields shape (that
-  // helper is also used for pending-change diffing elsewhere) — read it
-  // directly here, same draft-buffer-falls-back-to-live pattern as siteIcon.
-  // settingsDraft.logo uses {url,assetId} (matching siteIcon); the live
-  // header uses {logoUrl,logoAssetId} — field names differ, so map explicitly
-  // rather than falling back to the whole object. settingsDraft.logo
-  // defaults to {url:"",assetId:""} once the settingsDraft subdocument
-  // exists at all (e.g. after any unrelated SEO save) — a field-level `??`
-  // on url/assetId individually can't detect that "empty" case since "" is
-  // neither null nor undefined, so assetId truthiness gates the whole pair.
-  const draftLogoSource = workspace.publicPage?.settingsDraft?.logo;
-  const hasDraftLogo = !!draftLogoSource?.assetId;
-  const draftLogoUrl = hasDraftLogo
-    ? draftLogoSource!.url ?? ""
-    : workspace.publicPage?.header?.logoUrl ?? "";
-  const draftLogoAssetId = hasDraftLogo
-    ? draftLogoSource!.assetId ?? ""
-    : workspace.publicPage?.header?.logoAssetId ?? "";
-
   const publicPageDefaults: PublicPageSettingsInput = {
     seoTitle: settingsDraftFields.seoTitle,
     seoDescription: settingsDraftFields.seoDescription,
@@ -133,8 +114,6 @@ export default async function SettingsCatchallPage({
     // This field alone stays live-immediate (see updatePublicPageSettingsAction).
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
-    logoUrl: draftLogoUrl,
-    logoAssetId: draftLogoAssetId,
     siteIconUrl: portfolioSiteIconUrl(
       workspace.publicPage?.settingsDraft?.siteIcon ?? workspace.publicPage?.siteIcon
     ),
@@ -155,8 +134,6 @@ export default async function SettingsCatchallPage({
     seoDescription: publishedFields.seoDescription,
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
-    logoUrl: workspace.publicPage?.header?.logoUrl ?? "",
-    logoAssetId: workspace.publicPage?.header?.logoAssetId ?? "",
     siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
     siteIconAssetId: publishedFields.siteIconAssetId,
     seo: {

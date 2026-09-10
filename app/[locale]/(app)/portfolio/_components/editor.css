@@ -280,3 +280,62 @@
  * interior text is var(--puck-color-white) = var(--card) ≈ near-black in dark,
  * which contrasts the brighter teal. Contrast is maintained in both modes.
  */
+
+/* ─── Edge-to-edge canvas ─────────────────────────────────────────────────── */
+/*
+ * Puck pads its canvas frame on all sides by --puck-space-px (16px, 24px at
+ * >=1198px), leaving a visible gutter (the frame's own grey-11 background
+ * showing through) between the white canvas and the side panels, plus dead
+ * space above the canvas. That's real design width/height lost for no
+ * benefit. [class*=] survives Puck's per-build hash rotation (see the
+ * DrawerItem note above); "PuckCanvas_" (trailing underscore, no hyphen)
+ * matches only the outer frame wrapper (`_PuckCanvas_<hash>`), not its
+ * `-inner`/`-root`/`-loader`/`--ready`/`--showLoader` sub-elements.
+ */
+.gallurio-editor [class*="PuckCanvas_"] {
+  padding: 0 !important;
+}
+
+/*
+ * Puck's loading-spinner element (`_PuckCanvas-loader_`) is a normal flex
+ * sibling of the canvas surface inside `_PuckCanvas-inner_` (a row flex
+ * container), not an overlay — so it always occupies real horizontal space
+ * in that row, shrinking the canvas surface next to it by its own intrinsic
+ * width (~26px), even though it is permanently invisible here: with
+ * `iframe={{enabled:false}}` (EditorShell.tsx) Puck's `ready` state is true
+ * from first render, so its "ready" CSS variant (opacity: 0) always beats
+ * the "showLoader only" variant (opacity: 1) — verified in-browser, the
+ * element never has non-zero opacity in this app. That silent ~26px steal
+ * is exactly the dead strip that showed up beside the right sidebar once the
+ * frame's own padding above was removed. Since it can never be seen, drop it
+ * from layout entirely instead of only fading it out.
+ */
+.gallurio-editor [class*="PuckCanvas-loader"] {
+  display: none !important;
+}
+
+/* ─── Drawer row cursor affordance ────────────────────────────────────────── */
+/*
+ * Left-panel section-preset / manual-block rows are Puck's own Drawer.Item
+ * chrome. Our wrappers PresetDrawerItem / ManualDrawerItem
+ * (PresetPreviewCard.tsx) attach hover/click/focus handlers around that
+ * chrome but render no element of their own, so there is no React className
+ * hook — the affordance has to be a CSS override here.
+ *
+ * The visible card is `._DrawerItem-draggable_<hash>` (Drawer css-module,
+ * node_modules/@measured/puck/dist/index.css). [class*=] substring match
+ * survives Puck's per-build hash rotation. isDragDisabled is never passed by
+ * PresetBlocksDrawer, so Puck's own disabled/not-allowed cursor rule is dead
+ * code in this app and cannot collide with the rule below.
+ *
+ * These rows are drag sources into the canvas, not click targets (the
+ * click/hover only opens the preset preview panel) — `grab` is the honest
+ * affordance. If product instead wants a plain click affordance, flip this
+ * one declaration to `pointer`; nothing else needs to change.
+ */
+.gallurio-editor [class*="DrawerItem-draggable"] {
+  cursor: grab;
+}
+.gallurio-editor [class*="DrawerItem-draggable"]:active {
+  cursor: grabbing;
+}

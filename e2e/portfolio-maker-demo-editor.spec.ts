@@ -6,6 +6,24 @@ import { test, expect, type Page } from "@playwright/test";
 // left off").
 test.use({ storageState: { cookies: [], origins: [] } });
 
+async function hoverPreset(page: Page, groupName: string, presetName: RegExp) {
+  // Puck's CSS-module class names are implementation details. The drawer
+  // exposes proper buttons for both category toggles and insertable presets,
+  // which are stable through Puck styling updates and reflect real user input.
+  const group = page.getByRole("button", { name: groupName, exact: true }).first();
+  await group.scrollIntoViewIfNeeded();
+  await group.waitFor({ state: "visible", timeout: 15_000 });
+  if ((await group.getAttribute("aria-expanded")) !== "true") {
+    await group.click();
+  }
+  const name = page.getByRole("button", { name: presetName }).last();
+  await name.waitFor({ state: "visible", timeout: 10_000 });
+  await name.scrollIntoViewIfNeeded();
+  const box = await name.boundingBox();
+  if (!box) throw new Error(`${groupName} preset row has no bounding box`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 // The sticky disclaimer banner has role="status", but so do dnd-kit's hidden
 // screen-reader announcement divs elsewhere on the page — scope to the text.
 function disclaimerBanner(page: Page) {
@@ -80,8 +98,78 @@ test("starting from scratch lands on the canvas with Publish visible", async ({ 
   await expect(disclaimerBanner(page)).toBeVisible();
 });
 
+test("preset hover cards paint theme-aware image, background, and cinema previews", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await skipGuideAndReachEntry(page);
+  await page.getByRole("button", { name: "Start from scratch" }).click();
+  await expect(page.getByRole("button", { name: "Publish" })).toBeVisible({ timeout: 15_000 });
+
+  const panel = page.locator('[data-preset-preview-panel="true"]');
+
+  await hoverPreset(page, "Hero", /^Immersive cover$/i);
+  await expect(panel.locator("[data-preset-media-placeholder='background']")).toHaveCount(1);
+  const panelHeight = await panel.evaluate((node) => node.getBoundingClientRect().height);
+  expect(panelHeight, "hover card hugs its rendered content").toBeLessThan(400);
+
+  await hoverPreset(page, "About", /^Portrait and story$/i);
+  const image = panel.locator("[data-preset-media-placeholder='image']");
+  await expect(image).toHaveCount(1);
+  const imagePaint = await image.locator("[data-preset-photo-tile='true']").evaluate((tile) => {
+    const style = getComputedStyle(tile);
+    const { width, height } = tile.getBoundingClientRect();
+    return { background: style.backgroundColor, border: style.borderColor, width, height };
+  });
+  expect(imagePaint.width).toBeGreaterThan(80);
+  expect(imagePaint.height).toBeGreaterThan(50);
+  expect(imagePaint.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(imagePaint.border).not.toBe("rgba(0, 0, 0, 0)");
+
+  await hoverPreset(page, "Services", /^Service cards$/i);
+  const serviceGrid = panel.locator('[data-block="columns"]').first();
+  const serviceGridSize = await serviceGrid.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(serviceGridSize.width, "Service cards keeps its three-column grid at page-fit width").toBeGreaterThan(180);
+  expect(serviceGridSize.height, "Service cards keeps visible card height").toBeGreaterThan(50);
+
+  await hoverPreset(page, "Video", /^Centered film$/i);
+  const centeredFilm = panel.locator('[data-block="video"]').first();
+  const centeredFilmSize = await centeredFilm.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(centeredFilmSize.width, "Centered film keeps its video frame at page-fit width").toBeGreaterThan(160);
+  expect(centeredFilmSize.height, "Centered film keeps a visible film frame").toBeGreaterThan(80);
+
+  await hoverPreset(page, "Video", /^Cinema band$/i);
+  const cinema = panel.locator("[data-preset-media-placeholder='video']");
+  await expect(cinema).toHaveCount(1);
+  const cinemaSize = await cinema.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(cinemaSize.width).toBeGreaterThan(160);
+  expect(cinemaSize.height).toBeGreaterThan(80);
+  await expect(panel.locator('[data-block="columns"]')).toHaveCount(0);
+
+  await hoverPreset(page, "Footer", /^Directory footer$/i);
+  const directoryDividers = panel.locator('[data-block="divider"]');
+  await expect(directoryDividers).toHaveCount(2);
+  const directoryColumns = panel.locator('[data-block="columns"]');
+  await expect(directoryColumns).toHaveCount(1);
+  const directoryWidths = await Promise.all([
+    directoryDividers.first().evaluate((node) => node.getBoundingClientRect().width),
+    directoryColumns.evaluate((node) => node.getBoundingClientRect().width),
+  ]);
+  expect(directoryWidths[0], "Directory divider never shrinks below the content group").toBeGreaterThanOrEqual(directoryWidths[1]);
+  expect(directoryWidths[1], "Directory columns retain a readable page-fit measure").toBeGreaterThan(180);
+});
+
 test("clicking Publish opens the demo gate modal with the locked upsell copy, not a real publish", async ({
   page,
+  context,
 }) => {
   await skipGuideAndReachEntry(page);
   await page.getByRole("button", { name: "Start from scratch" }).click();
@@ -95,10 +183,15 @@ test("clicking Publish opens the demo gate modal with the locked upsell copy, no
     "href",
     /\/sign-up/,
   );
+  const signIn = page.getByRole("link", { name: "Sign in instead" });
+  await expect(signIn).toHaveAttribute("href", /\/sign-in/);
 
-  // Dismiss and confirm we're still on the demo editor, not redirected.
-  await page.getByRole("button", { name: "Keep exploring" }).click();
-  await expect(page).toHaveURL(/\/portfolio-maker-demo/);
+  // Either auth path must carry the handoff marker through authentication and
+  // onboarding. Exercise sign-in here; the component test covers both links.
+  await signIn.click();
+  await expect(page).toHaveURL(/\/sign-in/);
+  const cookies = await context.cookies();
+  expect(cookies.find((cookie) => cookie.name === "gw_demo_import")?.value).toBe("1");
 });
 
 test("the bonus promo code persists in the disclaimer banner after the first gate hit", async ({ page }) => {

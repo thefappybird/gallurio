@@ -324,10 +324,10 @@ describe("CollectionPopup", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Owner-mode normalization: caption -> alt
+  // normalizeItem no longer backfills alt from caption
   // ---------------------------------------------------------------------------
 
-  it("normalizes owner-mode items with caption (no alt) into PopupImage.alt", async () => {
+  it("does not fall back a missing alt to caption text — caption is a separate field", async () => {
     const captionItems = [
       { id: "img1", publicId: "workspace/photo1", caption: "My Caption", alt: undefined },
     ];
@@ -342,8 +342,11 @@ describe("CollectionPopup", () => {
     );
     render(<CollectionPopup {...defaultProps({ mode: "owner" })} />);
 
-    const img = await screen.findByRole("img", { name: /my caption/i });
-    expect(img).toBeInTheDocument();
+    // alt stays "" (decorative image, no accessible name from caption) —
+    // the thumbnail is still reachable via its button's fallback label.
+    const button = await screen.findByRole("button", { name: "Open photo" });
+    expect(button).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /my caption/i })).not.toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -367,6 +370,32 @@ describe("CollectionPopup", () => {
       const lightboxImg = allImgs.find((img) => img.src.includes("w=2000"));
       expect(lightboxImg).toBeTruthy();
     });
+  });
+
+  it("threads CollectionPopupLabels into the nested lightbox instead of its English-only defaults", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        {...defaultProps({
+          labels: {
+            previousPhoto: "Foto anterior",
+            nextPhoto: "Foto siguiente",
+            close: "Cerrar",
+            dateLabel: "Fecha",
+            locationLabel: "Ubicación",
+            clientLabel: "Cliente",
+            tagsLabel: "Etiquetas",
+          },
+        })}
+      />
+    );
+
+    const thumbs = await screen.findAllByRole("img");
+    const thumb = thumbs.find((img) => (img as HTMLImageElement).src.includes("w=400"))!;
+    fireEvent.click(thumb.closest("button") ?? thumb);
+
+    expect(await screen.findByRole("button", { name: "Foto anterior" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Foto siguiente" })).toBeInTheDocument();
   });
 
   it("closing the lightbox keeps the popup open", async () => {
@@ -414,16 +443,52 @@ describe("CollectionPopup", () => {
       expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w=2000"))).toBe(true);
     });
 
-    // The lightbox has its own close button (the popup's close is inerted by base-ui
-    // when a nested dialog is open — this is correct a11y behavior).
-    // Verify the lightbox close button is present in the document (may be in inerted region
-    // or active region depending on nesting strategy).
+    const lightboxClose = document.querySelector("[data-lightbox-close]");
+    expect(lightboxClose).not.toBeNull();
+    expect(lightboxClose).toHaveAttribute("aria-label", "Close");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Task 13: only one close button reachable while the nested lightbox is open
+  // — the outer CollectionPopupChrome shell stays mounted (not unmounted) once
+  // its Lightbox sibling opens, and the two are independent Dialog.Root/Portal
+  // instances (Lightbox is NOT a React-tree child of the outer Dialog.Root).
+  // base-ui has no dialog-inerting mechanism at all — for siblings or true
+  // nesting — that hides/unmounts a parent dialog's controls; the outer close
+  // button was already outside tab order and hidden from the a11y tree via
+  // FloatingFocusManager's focus trap + floating-ui-react's markOthers(). The
+  // actual bug is purely visual: the outer shell is z-index 100 and the
+  // lightbox's Sidebar-layout backdrop is z-index 200 at only 85% opacity
+  // (rgba(0,0,0,0.85)), so the outer close button bled through visibly
+  // underneath it. Without the explicit hideCloseButton suppression, that
+  // bleed-through is visible while the lightbox is open.
+  // ---------------------------------------------------------------------------
+
+  it("hides the outer popup close button while the nested lightbox is open, and restores it on close", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    expect(document.querySelector("[data-popup-close]")).not.toBeNull();
+
+    const thumbs = await screen.findAllByRole("img");
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w=400"))!;
+    fireEvent.click(thumb.closest("button") ?? thumb);
+
+    // Lightbox opens
     await waitFor(() => {
-      // Query all close buttons in the entire document (including aria-hidden regions)
-      const allCloseBtns = Array.from(
-        document.querySelectorAll("button[aria-label='Close']")
-      );
-      expect(allCloseBtns.length).toBeGreaterThanOrEqual(2);
+      expect(document.querySelector("[data-lightbox-close]")).not.toBeNull();
+    });
+
+    // Outer popup's own close button is gone from the document while nested —
+    // exactly one close button reachable at a time.
+    expect(document.querySelector("[data-popup-close]")).toBeNull();
+    expect(document.querySelectorAll("button[aria-label='Close']").length).toBe(1);
+
+    // Close the lightbox — outer close button comes back
+    fireEvent.click(document.querySelector("[data-lightbox-close]")!);
+    await waitFor(() => {
+      expect(document.querySelector("[data-popup-close]")).not.toBeNull();
     });
   });
 
@@ -492,6 +557,29 @@ describe("CollectionPopup", () => {
 
     const heading = await screen.findByRole("heading", { name: /wedding 2024/i });
     expect(heading).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // dir: applied on the portaled shell — the popup escapes any ancestor's
+  // `dir` via the Portal (same reasoning as brandVars above).
+  // ---------------------------------------------------------------------------
+
+  it("applies dir='rtl' on the portaled shell when passed", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps({ dir: "rtl" })} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).toHaveAttribute("dir", "rtl");
+  });
+
+  it("defaults to dir='ltr' on the portaled shell when omitted", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).toHaveAttribute("dir", "ltr");
   });
 
   // ---------------------------------------------------------------------------
@@ -638,5 +726,145 @@ describe("CollectionPopup title override", () => {
     );
     const heading = await screen.findByRole("heading", { level: 2 });
     expect(heading).toHaveTextContent("Portraits");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// popupLayout routing
+// ---------------------------------------------------------------------------
+
+describe("CollectionPopup popupColumns wiring", () => {
+  it("passes popupConfig.popupColumns through to the rendered list's data-popup-columns", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        {...defaultProps({ popupConfig: { popupLayout: "contact-sheet", popupColumns: 4 } })}
+      />
+    );
+    await screen.findAllByRole("img");
+    const list = screen.getByRole("list");
+    expect(list).toHaveAttribute("data-popup-columns", "4");
+  });
+});
+
+describe("CollectionPopup popupLayout routing", () => {
+  it("uses the contact-sheet list markup when popupLayout is unset", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps({ popupConfig: {} })} />);
+
+    await screen.findByRole("list");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("renders the split-index narrative column when popupLayout is split-index", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "split-index" } })} />
+    );
+    await screen.findAllByRole("img");
+    // Heading appears twice: the chrome title + SplitIndex's own nav heading.
+    expect(screen.getAllByRole("heading", { name: /wedding 2024/i }).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders the immersive full-viewport surface without CollectionPopupChrome", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "immersive" } })} />
+    );
+    const dialog = await screen.findByRole("dialog", { name: /wedding 2024/i });
+    expect(dialog).toBeInTheDocument();
+    // The collection name now belongs to the over-image metadata card, not
+    // CollectionPopupChrome's padded header.
+    expect(document.querySelector("[data-immersive-collection-card]")).toHaveTextContent(
+      "Wedding 2024",
+    );
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    expect(document.querySelector("[data-immersive-viewer]")).toBeInTheDocument();
+  });
+
+  it("immersive: shows every photo detail in the shared one-column metadata card", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              items: [
+                {
+                  id: "img1",
+                  publicId: "workspace/photo1",
+                  alt: "Photo One",
+                  title: "Golden hour",
+                  caption: "A couple walking at sunset",
+                  date: "2026-09-06",
+                  location: "Manila",
+                  client: "Cruz Wedding",
+                  meta: [{ label: "Camera", value: "GFX100" }],
+                  tags: ["wedding", "outdoor"],
+                },
+              ],
+              nextCursor: null,
+              description: "A joyful city wedding.",
+              total: 1,
+            }),
+        }),
+      ),
+    );
+    render(
+      <CollectionPopup
+        {...defaultProps({
+          popupConfig: { popupLayout: "immersive" },
+          labels: {
+            dateLabel: "Petsa",
+            locationLabel: "Lokasyon",
+            clientLabel: "Kliyente",
+            tagsLabel: "Mga tag",
+          },
+        })}
+      />,
+    );
+
+    await screen.findByText("Golden hour");
+    const card = document.querySelector("[data-immersive-meta-card]") as HTMLElement;
+    const cardQueries = within(card);
+    expect(card.style.flexDirection).toBe("column");
+    expect(cardQueries.getByText("Petsa")).toBeInTheDocument();
+    expect(cardQueries.getByText("Lokasyon")).toBeInTheDocument();
+    expect(cardQueries.getByText("Kliyente")).toBeInTheDocument();
+    expect(cardQueries.getByText("Mga tag")).toBeInTheDocument();
+    expect(cardQueries.getByText("A couple walking at sunset")).toBeInTheDocument();
+    expect(cardQueries.getByText("2026-09-06")).toBeInTheDocument();
+    expect(cardQueries.getByText("Manila")).toBeInTheDocument();
+    expect(cardQueries.getByText("Cruz Wedding")).toBeInTheDocument();
+    expect(cardQueries.getByText("GFX100")).toBeInTheDocument();
+    expect(cardQueries.getByText("wedding, outdoor")).toBeInTheDocument();
+
+    const collectionCard = document.querySelector(
+      "[data-immersive-collection-card]",
+    ) as HTMLElement;
+    const collectionCardQueries = within(collectionCard);
+    expect(collectionCard.style.top).toBe("16px");
+    expect(collectionCard.style.insetInlineStart).toBe("16px");
+    expect(collectionCardQueries.getByText("Wedding 2024")).toBeInTheDocument();
+    expect(collectionCardQueries.getByText("A joyful city wedding.")).toBeInTheDocument();
+    expect(collectionCardQueries.getByText("1 photo")).toBeInTheDocument();
+  });
+
+  it("immersive: clicking a filmstrip frame swaps the main image in place — no second modal", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "immersive" } })} />
+    );
+    await screen.findByRole("listbox");
+    const options = screen.getAllByRole("option");
+    fireEvent.click(options[1]);
+    // Exactly one full-size (w=2000) main-viewer image before and after the
+    // click — a second modal would add a second one.
+    const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
+    expect(allImgs.filter((img) => img.src.includes("w=2000"))).toHaveLength(1);
+    // Still a single dialog landmark — Immersive itself carries no separate
+    // role="dialog" (it would duplicate the outer one's accessible name).
+    expect(screen.getAllByRole("dialog", { name: /wedding 2024/i })).toHaveLength(1);
   });
 });

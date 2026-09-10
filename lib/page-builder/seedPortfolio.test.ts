@@ -62,8 +62,8 @@ describe("seedDefaultPortfolio", () => {
 
   it("seeded gallery blocks have empty images[] even when collections exist", async () => {
     // Gallery blocks bake images[] directly (no collectionId pointer).
-    // FeaturedWork blocks are seeded with empty collections[]; the owner populates them
-    // via the editor's collections picker.
+    // CollectionCard blocks are seeded with collection: undefined; the owner
+    // populates them via the editor's collections picker.
     // First-visit default is the empty "scratch" template, so exercise a
     // gallery-populated starter template via reseed instead.
     await makeWorkspace();
@@ -78,7 +78,7 @@ describe("seedDefaultPortfolio", () => {
       { workspaceId, assetId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
     ]);
 
-    const seed = await reseedPortfolioFromTemplate(workspaceId, "editorial");
+    const seed = await reseedPortfolioFromTemplate(workspaceId, "minimal");
 
     // Gallery blocks are nested inside layout/preset wrappers (Columns,
     // *Preset), so walk the full tree rather than only the top level.
@@ -98,12 +98,13 @@ describe("seedDefaultPortfolio", () => {
       expect(b.props.images).toEqual([]);
       expect(b.props).not.toHaveProperty("collectionId");
     }
-    // FeaturedWork blocks are seeded with empty collections[]
+    // CollectionCard blocks must not carry the draft author's own real
+    // collection reference — the owner picks their own via the editor.
     const allContent = [...homeContent, ...galleryContent];
-    const featuredBlocks = allContent.filter((b) => b.type === "FeaturedWork");
-    for (const b of featuredBlocks) {
-      expect(b.props.collections).toEqual([]);
-      expect(b.props).not.toHaveProperty("itemIds");
+    const collectionCardBlocks = allContent.filter((b) => b.type === "CollectionCard");
+    expect(collectionCardBlocks.length).toBeGreaterThan(0);
+    for (const b of collectionCardBlocks) {
+      expect(b.props.collection).toBeUndefined();
     }
   });
 });

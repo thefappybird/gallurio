@@ -9,9 +9,11 @@ vi.mock("@/app/(public)/w/[orgSlug]/_components/ContactModal", () => ({
   ContactModal: ({
     contact,
     labels,
+    dir,
   }: {
     contact?: { title?: string } | null;
     labels: ContactModalLabels;
+    dir?: "ltr" | "rtl";
   }) => {
     const [open, setOpen] = useState(false);
     const openModal = useCallback(() => setOpen(true), []);
@@ -24,7 +26,7 @@ vi.mock("@/app/(public)/w/[orgSlug]/_components/ContactModal", () => ({
       };
     }, [openModal]);
     return open ? (
-      <div data-testid="contact-modal">{contact?.title ?? labels.title}</div>
+      <div data-testid="contact-modal" data-dir={dir}>{contact?.title ?? labels.title}</div>
     ) : null;
   },
 }));
@@ -143,5 +145,22 @@ describe("PreviewContactModal", () => {
     act(() => { window.__gallurioOpenContact?.(); });
     await waitFor(() => expect(screen.getByTestId("contact-modal")).toBeInTheDocument());
     expect(screen.getByTestId("contact-modal")).toHaveTextContent("DB Title");
+  });
+
+  it("forwards the dir prop through to ContactModal", async () => {
+    render(
+      <PreviewBrandShell slug={SLUG} fallbackCssVars={{}} fallbackClassName="">
+        <PreviewContactModal
+          workspaceSlug={SLUG}
+          dbContact={DB_CONTACT}
+          labels={LABELS}
+          dir="rtl"
+        />
+      </PreviewBrandShell>,
+    );
+
+    act(() => { window.__gallurioOpenContact?.(); });
+    await waitFor(() => expect(screen.getByTestId("contact-modal")).toBeInTheDocument());
+    expect(screen.getByTestId("contact-modal")).toHaveAttribute("data-dir", "rtl");
   });
 });

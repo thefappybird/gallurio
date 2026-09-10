@@ -47,6 +47,12 @@ export type BrandKitRadius = (typeof BRAND_KIT_RADII)[number];
 export const BRAND_KIT_BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 
+/** Per-block button style union. Adds "naked" (transparent fill/frame) and
+ *  "link" (hairline underline) on top of the brand-kit-wide styles. Neither
+ *  is a sensible kit-wide default, so both stay out of BRAND_KIT_BUTTON_STYLES. */
+export const BLOCK_BUTTON_STYLES = [...BRAND_KIT_BUTTON_STYLES, "naked", "link"] as const;
+export type BlockButtonStyle = (typeof BLOCK_BUTTON_STYLES)[number];
+
 // ---------------------------------------------------------------------------
 // PortfolioCollectionsPopupConfig
 // ---------------------------------------------------------------------------
@@ -54,11 +60,53 @@ export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 /** Horizontal text alignment for popup title. */
 export type PopupTitleAlign = "left" | "center" | "right";
 
+export const POPUP_LAYOUTS = ["contact-sheet", "justified", "split-index", "immersive"] as const;
+export type PopupLayout = (typeof POPUP_LAYOUTS)[number];
+
+export const POPUP_COLUMN_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
+export type PopupColumns = (typeof POPUP_COLUMN_OPTIONS)[number];
+
+export const IMAGE_MODAL_LAYOUTS = ["caption", "sidebar", "cinema", "sheet"] as const;
+export type ImageModalLayout = (typeof IMAGE_MODAL_LAYOUTS)[number];
+
+/** Resolves the unset "" popup layout to its default. */
+export function resolvePopupLayout(v: PopupLayout | "" | undefined): PopupLayout {
+  return v || "contact-sheet";
+}
+
+/** Resolves unset or invalid legacy popup column counts to the WYSIWYG default. */
+export const POPUP_LAYOUT_DEFAULT_COLUMNS: Record<PopupLayout, PopupColumns> = {
+  "contact-sheet": 3,
+  justified: 3,
+  "split-index": 2,
+  immersive: 3,
+};
+
+/** Resolves per-layout defaults so an unset Split index opens as its 2×2 card grid. */
+export function resolvePopupColumns(value: number | undefined, layout: PopupLayout = "contact-sheet"): PopupColumns {
+  return POPUP_COLUMN_OPTIONS.includes(value as PopupColumns)
+    ? (value as PopupColumns)
+    : POPUP_LAYOUT_DEFAULT_COLUMNS[layout];
+}
+
+/** Resolves the unset "" image modal layout to its default. */
+export function resolveImageModalLayout(v: ImageModalLayout | "" | undefined): ImageModalLayout {
+  return v || "caption";
+}
+
 export type PortfolioCollectionsPopupConfig = {
   backgroundColor?: string; // token name or hex
   borderColor?: string;     // token name or hex
   borderWidth?: number;     // px, 0 = none
   radius?: BrandKitRadius | "";
+  /** Overall popup layout. "" resolves to "contact-sheet" at render time. */
+  popupLayout?: PopupLayout | "";
+  /** Photos per row/column group for every non-immersive popup layout. */
+  popupColumns?: PopupColumns;
+  /** Layout of the enlarged single-image modal. "" resolves to "caption" at
+   *  render time. Inert when popupLayout is "immersive" — that layout
+   *  subsumes the image modal entirely. */
+  imageModalLayout?: ImageModalLayout | "";
   // Title styles (global override + typography). Empty titleText -> collection name.
   titleText?: string;
   titleFontFamily?: PortfolioFontKey | "";
@@ -152,7 +200,31 @@ export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
 export const HEADER_NAVBAR_SIZES = ["sleek", "balanced", "flashy"] as const;
 export type HeaderNavbarSize = (typeof HEADER_NAVBAR_SIZES)[number];
 
+/** The 4 items in the nav row — reorderable so an owner can build an
+ *  RTL-friendly layout by hand (see docs/portfolio's RTL-scope plan: the
+ *  nav block never auto-mirrors, this is the manual alternative). */
+export const NAV_ITEM_KEYS = ["logo", "home", "gallery", "contact"] as const;
+export type NavItemKey = (typeof NAV_ITEM_KEYS)[number];
+
+/**
+ * Resolves a possibly-missing/corrupt saved order into a complete
+ * permutation of all 4 nav items. Unknown/duplicate entries are dropped;
+ * any missing key is appended in its default position — so a render always
+ * gets exactly the 4 keys, once each, never fewer. Absent/invalid input
+ * resolves to the original visual order (logo, home, gallery, contact).
+ */
+export function resolveNavOrder(order: unknown): NavItemKey[] {
+  const valid = Array.isArray(order)
+    ? order.filter((k): k is NavItemKey => (NAV_ITEM_KEYS as readonly string[]).includes(k as string))
+    : [];
+  const deduped = [...new Set(valid)];
+  const missing = NAV_ITEM_KEYS.filter((k) => !deduped.includes(k));
+  return [...deduped, ...missing];
+}
+
 export type PortfolioHeaderConfig = {
+  /** Visual direction for the complete navigation row. */
+  navDirection?: "ltr" | "rtl";
   /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
   brandText?: string;
   /** URL for the logo image. */
@@ -165,10 +237,28 @@ export type PortfolioHeaderConfig = {
   backgroundOpacity?: number;
   /** Nav link text color. Token or hex. */
   linkColor?: string;
+  /** Inactive link fill color. Unset keeps the transparent link treatment. */
+  inactiveLinkBackgroundColor?: string;
+  /** 0-100 opacity applied to the inactive link fill. */
+  inactiveLinkOpacity?: number;
+  /** Inactive link frame width in px. */
+  inactiveLinkBorderWidth?: number;
+  /** Inactive link frame color. */
+  inactiveLinkBorderColor?: string;
+  /** Inactive link corner radius. */
+  inactiveLinkRadius?: BrandKitRadius | "";
   /** Brand heading color. Token or hex. */
   brandTextColor?: string;
   /** Active nav link text color. Token or hex. */
   activeLinkColor?: string;
+  /** Active link fill color. Supersedes the legacy highlight toggle when set. */
+  activeLinkBackgroundColor?: string;
+  /** 0-100 opacity applied to the active link fill. */
+  activeLinkOpacity?: number;
+  /** Active link frame width in px. */
+  activeLinkBorderWidth?: number;
+  /** Active link frame color. */
+  activeLinkBorderColor?: string;
   /** Bottom border width in px (0 = none). */
   borderBottomWidth?: number;
   /** Bottom border color. Token or hex. */
@@ -201,6 +291,9 @@ export type PortfolioHeaderConfig = {
   contactButtonOpacity?: number;
   /** Radius for the contact CTA. */
   contactButtonRadius?: BrandKitRadius | "";
+  /** Order of the 4 nav items. Missing/invalid = default visual order — see
+   *  `resolveNavOrder`. */
+  navOrder?: NavItemKey[];
 };
 
 export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {
@@ -243,11 +336,16 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   fontPair: "merriweather-only",
   headingFont: "merriweather",
   bodyFont: "merriweather",
-  primaryColor: "#111111",
-  secondaryColor: "#f5f5f5",
-  accentColor: "#2f5d56", // Gallurio brand teal
-  backgroundColor: "#ffffff",
-  foregroundColor: "#111111",
+  // MUST stay byte-identical to THEME_PRESET_DEFINITIONS.minimal.brandKit, or
+  // the Theme panel marks no tile active for a workspace that has never picked
+  // one — and the default portfolio renders a palette that exists nowhere in
+  // the picker. It cannot import that module (it imports this one), so the
+  // pairing is enforced by a test in themePresetDefinitions.test.ts instead.
+  primaryColor: "#ece5d8",
+  secondaryColor: "#f5f1e8",
+  accentColor: "#ddd0ba",
+  backgroundColor: "#fcfaf6",
+  foregroundColor: "#1f1c16",
   radius: "sharp",
   buttonStyle: "solid",
 };

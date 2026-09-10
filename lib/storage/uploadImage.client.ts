@@ -1,7 +1,8 @@
 "use client";
 
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile } from "@/lib/page-builder/photoSpec";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { UploadError } from "@/lib/uploads/uploadError";
 
 export type UploadedImage = {
   assetId: string;
@@ -27,7 +28,7 @@ function getFileDimensions(file: File): Promise<{ width: number; height: number 
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Failed to load image dimensions"));
+      reject(new UploadError({ code: "invalid_image" }));
     };
     img.src = url;
   });
@@ -37,8 +38,15 @@ export async function uploadImage(
   file: File,
   opts: { subfolder?: string; maxBytes?: number; validateDimensions?: boolean } = {}
 ): Promise<UploadedImage> {
-  const fileCheck = validatePhotoFile(file, opts.maxBytes);
-  if (!fileCheck.ok) throw new Error(fileCheck.reason);
+  const maxBytes = opts.maxBytes ?? PHOTO_SPEC.maxBytes;
+  const fileCheck = validatePhotoFile(file, maxBytes);
+  if (!fileCheck.ok) {
+    throw new UploadError(
+      fileCheck.reason === "type_not_accepted"
+        ? { code: "type_not_accepted", mimeType: file.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+        : { code: "file_too_large", actualBytes: file.size, maxBytes },
+    );
+  }
 
   // Capture dimensions from the file before upload — CF does not return them.
   // Any dimensions are accepted; CF Images' delivery-time fit resizes on read.
