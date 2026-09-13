@@ -1,7 +1,9 @@
 {
   "detector": {
     "ignoreRules": [],
-    "ignoreFiles": [],
+    "ignoreFiles": [
+      "docs/mockups/**"
+    ],
     "ignoreValues": [
       {
         "rule": "broken-image",
@@ -90,6 +92,12 @@
         ],
         "createdAt": "2026-09-13T09:43:51.042Z",
         "reason": "step-rail number bubble is a circular counter badge (avatar/dot pattern), not a corner-radius stylistic choice governed by the --radius/--radius-surface two-axis system"
+      },
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-09-13T09:49:11.609Z",
+        "reason": "Lowercase spelling of the same mandated app font, as it appears in the Google Fonts href"
       }
     ]
   }
