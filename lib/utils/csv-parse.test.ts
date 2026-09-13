@@ -79,9 +79,26 @@ describe("parseCsv", () => {
     expect(rows[0].title).toBe(`It's the "Big Day"`);
   });
 
-  it("normalizes header aliases", () => {
-    const { headers } = parseCsv("Title,Client Name,Start Date\nv1,v2,v3");
-    expect(headers).toEqual(["title", "clientName", "startAt"]);
+  it("preserves the user's original header text", () => {
+    // The mapping step shows these back to the user, so the parser must not
+    // rewrite them. Normalization moved to auto-mapping.
+    const { headers } = parseCsv("Customer,Package Price,Deal Status\nJane,500,Confirmed");
+    expect(headers).toEqual(["Customer", "Package Price", "Deal Status"]);
+  });
+
+  it("suffixes duplicate headers so neither column is lost", () => {
+    // Rows are keyed by header text, so two "Amount" columns would collapse
+    // into one and the second would vanish without a trace.
+    const { headers, rows } = parseCsv("Amount,Notes,Amount\n100,hi,200");
+    expect(headers).toEqual(["Amount", "Notes", "Amount (2)"]);
+    expect(rows[0]).toEqual({ Amount: "100", Notes: "hi", "Amount (2)": "200" });
+  });
+
+  it("leaves unnamed columns unnamed rather than suffixing them", () => {
+    // Trailing empty header cells are common in exported sheets. Suffixing them
+    // would invent " (2)" columns that consumers then treat as real fields.
+    const { headers } = parseCsv("Amount,,\n100,x,y");
+    expect(headers).toEqual(["Amount", "", ""]);
   });
 
   it("returns empty result for empty string", () => {
