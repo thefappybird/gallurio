@@ -923,9 +923,20 @@ describe("GET /api/bookings/import — template", () => {
     expect(res.status).toBe(200);
     const text = await res.text();
 
+    // Walk the same path the dialog does: parse, auto-map, normalize. The
+    // template is the one file that must need no input at all, so a mapping
+    // this leaves incomplete is a bug in the auto-mapper, not in the sheet.
     const { parseCsv } = await import("@/lib/utils/csv-parse");
-    const rows = parseCsv(text).rows;
-    const result = await callImport(rows);
+    const { autoMapColumns, applyMapping } = await import(
+      "@/lib/bookings/import-mapping"
+    );
+    const parsed = parseCsv(text);
+    const mapped = applyMapping(parsed.rows, autoMapColumns(parsed.headers), {
+      timeZone: "Asia/Manila",
+      dateOrder: "MDY",
+    });
+    expect(mapped.flatMap((r) => r.issues)).toEqual([]);
+    const result = await callImport(mapped.map((r) => r.values));
     expect(result.status).toBe(200);
     // Two rows sharing one booking_id: one booking, two sessions.
     const body = await result.json();

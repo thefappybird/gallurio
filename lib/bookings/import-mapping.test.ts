@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { MAPPABLE_FIELDS, autoMapColumns, requiredFieldsSatisfied } from "./import-mapping";
+import {
+  MAPPABLE_FIELDS,
+  applyMapping,
+  autoMapColumns,
+  collectUnmappedEnumValues,
+  requiredFieldsSatisfied,
+} from "./import-mapping";
 import { IMPORT_COLUMNS, IMPORT_TEMPLATE_HEADERS } from "./import-template";
 
 describe("MAPPABLE_FIELDS", () => {
@@ -112,5 +118,103 @@ describe("requiredFieldsSatisfied", () => {
     const m = autoMapColumns(["Date", "Event"]);
     m.clientName = { constant: "Jane Smith" };
     expect(requiredFieldsSatisfied(m)).toBe(true);
+  });
+});
+
+describe("applyMapping", () => {
+  const TZ = "Asia/Manila";
+  const OPTS = { timeZone: TZ, dateOrder: "MDY" as const, now: new Date("2026-06-20T00:00:00Z") };
+
+  const HEADERS = ["Customer", "Event", "Date", "Package Price", "Deal Status"];
+  const ROWS = [
+    {
+      Customer: "Jane Smith",
+      Event: "Smith Wedding",
+      Date: "06/15/2026",
+      "Package Price": "₱50,000.00",
+      "Deal Status": "Confirmed",
+    },
+  ];
+
+  it("rekeys columns to schema field names and coerces their values", () => {
+    const m = autoMapColumns(HEADERS);
+    const [row] = applyMapping(ROWS, m, { ...OPTS, valueMap: { status: { Confirmed: "booked" } } });
+    expect(row.issues).toEqual([]);
+    expect(row.values.clientName).toBe("Jane Smith");
+    expect(row.values.title).toBe("Smith Wedding");
+    expect(row.values.startAt).toBe("2026-06-14T16:00:00.000Z");
+    expect(row.values.amountTotal).toBe("50000");
+    expect(row.values.status).toBe("booked");
+  });
+
+  it("writes a fixed value into every row", () => {
+    const m = autoMapColumns(HEADERS);
+    m.currency = { constant: "PHP" };
+    const [row] = applyMapping(ROWS, m, { ...OPTS, valueMap: { status: { Confirmed: "booked" } } });
+    expect(row.values.currency).toBe("PHP");
+  });
+
+  it("reports a value it cannot read instead of dropping it silently", () => {
+    const m = autoMapColumns(HEADERS);
+    const [row] = applyMapping(
+      [{ ...ROWS[0], "Package Price": "to be confirmed", "Deal Status": "Confirmed" }],
+      m,
+      { ...OPTS, valueMap: { status: { Confirmed: "booked" } } }
+    );
+    expect(row.issues).toContainEqual({ field: "amountTotal", reason: "not_a_number" });
+  });
+
+  it("reports an enum value nobody mapped, which is what the value step prevents", () => {
+    const m = autoMapColumns(HEADERS);
+    const [row] = applyMapping(ROWS, m, OPTS);
+    expect(row.issues).toContainEqual({ field: "status", reason: "unrecognized_value" });
+  });
+
+  it("infers status from the session date when asked to", () => {
+    const m = autoMapColumns(HEADERS);
+    m.status = { infer: true };
+    const pastPaid = applyMapping(
+      [{ ...ROWS[0], Date: "01/15/2026" }],
+      { ...m, amountTotal: null },
+      OPTS
+    );
+    expect(pastPaid[0].values.status).toBe("completed");
+    const future = applyMapping(
+      [{ ...ROWS[0], Date: "12/15/2026" }],
+      { ...m, amountTotal: null },
+      OPTS
+    );
+    expect(future[0].values.status).toBe("booked");
+  });
+
+  it("leaves an unpaid past booking as booked so the route will accept it", () => {
+    const m = autoMapColumns(HEADERS);
+    m.status = { infer: true };
+    m.amountDeposit = { constant: "10000" };
+    const [row] = applyMapping([{ ...ROWS[0], Date: "01/15/2026" }], m, OPTS);
+    expect(row.values.amountTotal).toBe("50000");
+    expect(row.values.status).toBe("booked");
+  });
+});
+
+describe("collectUnmappedEnumValues", () => {
+  it("lists each unrecognized value once, with how many rows carry it", () => {
+    const m = autoMapColumns(["Customer", "Event", "Date", "Deal Status"]);
+    const rows = [
+      { Customer: "A", Event: "E", Date: "06/15/2026", "Deal Status": "Confirmed" },
+      { Customer: "B", Event: "E", Date: "06/16/2026", "Deal Status": "Confirmed" },
+      { Customer: "C", Event: "E", Date: "06/17/2026", "Deal Status": "booked" },
+      { Customer: "D", Event: "E", Date: "06/18/2026", "Deal Status": "Pencilled in" },
+    ];
+    expect(collectUnmappedEnumValues(rows, m)).toEqual([
+      { field: "status", value: "Confirmed", count: 2, suggestion: "booked" },
+      { field: "status", value: "Pencilled in", count: 1, suggestion: null },
+    ]);
+  });
+
+  it("says nothing when every value already matches", () => {
+    const m = autoMapColumns(["Customer", "Event", "Date", "Deal Status"]);
+    const rows = [{ Customer: "A", Event: "E", Date: "06/15/2026", "Deal Status": "cancelled" }];
+    expect(collectUnmappedEnumValues(rows, m)).toEqual([]);
   });
 });
