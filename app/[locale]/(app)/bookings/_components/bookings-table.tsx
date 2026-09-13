@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { stableWeekdayStyle } from "@/lib/utils/format-date";
 import { cn } from "@/lib/utils";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { isoDateInTz } from "./_helpers/calendar-helpers";
@@ -123,7 +124,7 @@ export function BookingsTable({
     (sessions: { startAt: string; endAt: string }[]) => {
       const firstDate = sessions[0]?.startAt
         ? new Date(sessions[0].startAt).toLocaleDateString(locale, {
-            weekday: "short",
+            weekday: stableWeekdayStyle(locale),
             month: "short",
             day: "numeric",
             year: "numeric",
