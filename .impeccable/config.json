@@ -81,6 +81,15 @@
         "value": "4px)",
         "createdAt": "2026-09-05T13:50:43.662Z",
         "reason": "var(--pf-radius, 4px) tag-pill fallback copied verbatim from SidebarLayout.tsx/SheetLayout.tsx per task brief instruction to reuse that exact markup"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "999px",
+        "files": [
+          "docs/mockups/import-shell-page.html"
+        ],
+        "createdAt": "2026-09-13T09:43:51.042Z",
+        "reason": "step-rail number bubble is a circular counter badge (avatar/dot pattern), not a corner-radius stylistic choice governed by the --radius/--radius-surface two-axis system"
       }
     ]
   }
