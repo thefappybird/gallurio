@@ -1038,9 +1038,6 @@
           "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file."
         },
         "dialog": {
-          "structureTitle": "Istruktura ng talahanayan",
-          "columnHeader": "Kolumna",
-          "notesHeader": "Mga tala",
           "required": "kailangan",
           "optional": "opsyonal",
           "failedWithDetails": "Nabigo ang import — tingnan ang mga detalye",
@@ -1114,6 +1111,69 @@
               "note": "JSON list mula sa export. Binabasa lang kapag gumagawa; ang bayad ay pumupunta sa ledger"
             }
           }
+        },
+        "steps": {
+          "upload": "Mag-upload",
+          "map": "Itugma ang mga column",
+          "values": "Itugma ang mga halaga",
+          "preview": "Suriin",
+          "position": "Hakbang {current} ng {total}"
+        },
+        "mapping": {
+          "title": "Itugma ang inyong mga column sa amin",
+          "subtitle": "Sabihin sa amin ang ibig sabihin ng bawat column sa inyong file. Kami na ang bahala sa iba.",
+          "columnsFound": "{count, plural, one {# column} other {# column}}",
+          "rowsFound": "{count, plural, one {# row} other {# row}}",
+          "sectionRequired": "Kailangan",
+          "sectionCommon": "Detalye ng booking",
+          "sectionAdvanced": "Advanced at pambalik na mga column",
+          "advancedHint": "Kailangan lang kapag muling ini-import ang file na na-export ninyo mula sa Gallurio.",
+          "selectColumn": "Pumili ng column mula sa inyong file",
+          "notImported": "Hindi ii-import",
+          "useFixedValue": "Gumamit ng nakatakdang halaga",
+          "fixedValueLabel": "Halaga para sa bawat row",
+          "inferFromDate": "Hulaan mula sa petsa",
+          "inferHint": "Ang mga nakaraang booking na bayad na ay magiging tapos; ang iba ay mananatiling naka-book.",
+          "alreadyUsed": "{column} (nagamit na)",
+          "sample": "Unang row: {value}",
+          "sampleEmpty": "Walang laman ang unang row",
+          "unassignedRequired": "Kailangan ng column",
+          "dateOrderLabel": "Pagkakasunod ng araw at buwan",
+          "dateOrderMDY": "BB/AA/TTTT",
+          "dateOrderDMY": "AA/BB/TTTT",
+          "dateOrderHint": "Ang {example} ay may dalawang posibleng basa. Piliin ang pagkakasunod na ginagamit ng inyong file.",
+          "continueBlocked": "Itugma ang {count, plural, one {# kailangang field} other {# kailangang field}} para makapagpatuloy.",
+          "loading": "Binabasa ang inyong file",
+          "kindText": "Teksto",
+          "kindDate": "Petsa",
+          "kindMoney": "Halaga",
+          "kindNumber": "Numero",
+          "kindEnum": "Pagpipilian",
+          "kindJson": "Datos"
+        },
+        "values": {
+          "title": "Itugma ang inyong mga halaga sa amin",
+          "subtitle": "May mga salita sa inyong file na hindi namin nakikilala. Sabihin ninyo minsan ang ibig sabihin at ii-import ang bawat row na gumagamit nito.",
+          "fromColumn": "Mula sa {column}",
+          "rowCount": "{count, plural, one {# row} other {# row}}",
+          "choose": "Pumili ng katugma",
+          "leaveBlank": "Iwanang blangko",
+          "unmatchedWarning": "{count, plural, one {# halaga ang walang katugma. Lalaktawan ang mga row na gumagamit nito.} other {# halaga ang walang katugma. Lalaktawan ang mga row na gumagamit ng mga ito.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: hindi namin mabasa ang \"{value}\" bilang halaga.",
+          "negative_amount": "{field}: negatibo ang \"{value}\", at ang halaga ay dapat zero o higit pa.",
+          "not_a_date": "{field}: hindi namin mabasa ang \"{value}\" bilang petsa.",
+          "unsupported_currency": "{field}: hindi magagamit ng workspace na ito ang \"{value}\".",
+          "unrecognized_value": "{field}: naiwang walang katugma ang \"{value}\"."
+        },
+        "nav": {
+          "back": "Bumalik",
+          "continue": "Magpatuloy",
+          "reviewMapping": "Awtomatikong naitugma ang mga column",
+          "reviewMappingAction": "Suriin",
+          "committing": "Ini-import ang inyong mga booking",
+          "refreshing": "Nire-refresh ang inyong mga booking"
         }
       },
       "export": {
@@ -2765,16 +2825,40 @@
           "immersiveModalScopeNote": "Ipinapakita ng Immersive ang mga larawan nang direkta sa loob ng pahina, kaya nalalapat ito sa mga image block, photo grid, at masonry.",
           "notUsedByLayout": "Hindi ginagamit ng layout na ito",
           "popupLayouts": {
-            "contactSheet": { "label": "Contact sheet", "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon." },
-            "justified": { "label": "Justified", "description": "Mga larawang naka-pack sa hanay na iba't ibang lapad ngunit iisang taas." },
-            "splitIndex": { "label": "Split index", "description": "Mga detalye ng koleksyon sa tabi ng nako-configure na index ng larawan." },
-            "immersive": { "label": "Immersive", "description": "Isang malaking larawan paisa-isa, buong-viewport, may filmstrip sa ibaba." }
+            "contactSheet": {
+              "label": "Contact sheet",
+              "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon."
+            },
+            "justified": {
+              "label": "Justified",
+              "description": "Mga larawang naka-pack sa hanay na iba't ibang lapad ngunit iisang taas."
+            },
+            "splitIndex": {
+              "label": "Split index",
+              "description": "Mga detalye ng koleksyon sa tabi ng nako-configure na index ng larawan."
+            },
+            "immersive": {
+              "label": "Immersive",
+              "description": "Isang malaking larawan paisa-isa, buong-viewport, may filmstrip sa ibaba."
+            }
           },
           "imageModalLayouts": {
-            "caption": { "label": "Caption", "description": "Ang larawan na may caption bar sa ibaba." },
-            "sidebar": { "label": "Sidebar", "description": "Ang larawan sa tabi ng sidebar ng metadata." },
-            "cinema": { "label": "Cinema", "description": "Full-bleed na larawan na may minimal na chrome." },
-            "sheet": { "label": "Sheet", "description": "Ang larawan na may metadata sheet na dumudulas paitaas." }
+            "caption": {
+              "label": "Caption",
+              "description": "Ang larawan na may caption bar sa ibaba."
+            },
+            "sidebar": {
+              "label": "Sidebar",
+              "description": "Ang larawan sa tabi ng sidebar ng metadata."
+            },
+            "cinema": {
+              "label": "Cinema",
+              "description": "Full-bleed na larawan na may minimal na chrome."
+            },
+            "sheet": {
+              "label": "Sheet",
+              "description": "Ang larawan na may metadata sheet na dumudulas paitaas."
+            }
           }
         },
         "puckConfig": {

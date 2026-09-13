@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
-import { CsvImportDialog } from "./csv-import-dialog";
+import { ImportSheet } from "./import-sheet";
 import { BookingsExportDialog } from "./bookings-export-dialog";
 import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
@@ -286,7 +286,7 @@ export function BookingsToolbar({
           baseParams={exportParams}
           teams={teams}
         />
-        <CsvImportDialog
+        <ImportSheet
           open={importOpen}
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}

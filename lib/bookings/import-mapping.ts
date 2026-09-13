@@ -245,6 +245,8 @@ const VALUE_SUGGESTIONS: Record<string, Record<string, string>> = {
 
 export type MappedRowIssue = {
   field: string;
+  /** The cell text that could not be read, so the error can quote it back. */
+  value: string;
   reason: CoerceFailure | "unrecognized_value";
 };
 
@@ -309,13 +311,13 @@ export function applyMapping(
       if (field.kind === "enum") {
         const resolved = resolveEnum(field.key, cell, opts.valueMap);
         if ("issue" in resolved) {
-          issues.push({ field: field.key, reason: resolved.issue });
+          issues.push({ field: field.key, value: cell, reason: resolved.issue });
           continue;
         }
         // currency has no member list here; normalize it the same as any cell.
         if (field.key === "currency") {
           const c = coerceCurrency(resolved.value);
-          if (!c.ok) issues.push({ field: field.key, reason: c.reason });
+          if (!c.ok) issues.push({ field: field.key, value: cell, reason: c.reason });
           else if (c.value) values[field.key] = c.value;
           continue;
         }
@@ -330,7 +332,7 @@ export function applyMapping(
             ? coerceMoney(cell)
             : { ok: true as const, value: cell };
 
-      if (!coerced.ok) issues.push({ field: field.key, reason: coerced.reason });
+      if (!coerced.ok) issues.push({ field: field.key, value: cell, reason: coerced.reason });
       else if (coerced.value) values[field.key] = coerced.value;
     }
 

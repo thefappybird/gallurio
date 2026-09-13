@@ -161,13 +161,21 @@ describe("applyMapping", () => {
       m,
       { ...OPTS, valueMap: { status: { Confirmed: "booked" } } }
     );
-    expect(row.issues).toContainEqual({ field: "amountTotal", reason: "not_a_number" });
+    expect(row.issues).toContainEqual({
+      field: "amountTotal",
+      value: "to be confirmed",
+      reason: "not_a_number",
+    });
   });
 
   it("reports an enum value nobody mapped, which is what the value step prevents", () => {
     const m = autoMapColumns(HEADERS);
     const [row] = applyMapping(ROWS, m, OPTS);
-    expect(row.issues).toContainEqual({ field: "status", reason: "unrecognized_value" });
+    expect(row.issues).toContainEqual({
+      field: "status",
+      value: "Confirmed",
+      reason: "unrecognized_value",
+    });
   });
 
   it("infers status from the session date when asked to", () => {

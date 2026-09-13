@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import { CsvImportDialog } from "./csv-import-dialog";
+import { ImportSheet } from "./import-sheet";
 
 // next-intl navigation is aliased to the stub via vitest.config.ts resolve
 // so useRouter() works without extra mocking.
@@ -24,14 +24,14 @@ if (!URL.createObjectURL) {
   URL.revokeObjectURL = vi.fn();
 }
 
-function renderDialog(overrides: Partial<Parameters<typeof CsvImportDialog>[0]> = {}) {
+function renderDialog(overrides: Partial<Parameters<typeof ImportSheet>[0]> = {}) {
   const defaultProps = {
     open: true,
     onClose: vi.fn(),
     defaultCurrency: "PHP",
     ...overrides,
   };
-  return renderWithProviders(<CsvImportDialog {...defaultProps} />);
+  return renderWithProviders(<ImportSheet {...defaultProps} />);
 }
 
 // Build a minimal FileReader that calls onload synchronously with the given text.
@@ -52,6 +52,17 @@ function mockFileReader(text: string) {
   };
 }
 
+/** Drops a CSV on the sheet and waits for it to settle on the review step. */
+async function uploadCsv(text: string) {
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+  await act(async () => {
+    fireEvent.change(input, {
+      target: { files: [new File([text], "rows.csv", { type: "text/csv" })] },
+    });
+  });
+  await waitFor(() => expect(screen.getByText(/row\(s\) found/i)).toBeInTheDocument());
+}
+
 // Explicit UTC instants, not "2026-06-15T09:00": a naive datetime is read as
 // local time by whoever parses it, so the same row could be same-day here and
 // midnight-crossing on a UTC CI box. These are 09:00–18:00 in Asia/Manila.
@@ -65,7 +76,7 @@ const INVALID_CSV = [
   ",,bad-date,,,,,,,,," , // missing required clientName + bad startAt
 ].join("\n");
 
-describe("CsvImportDialog", () => {
+describe("ImportSheet", () => {
   beforeEach(() => {
     mockFetch.mockReset();
   });
@@ -79,62 +90,6 @@ describe("CsvImportDialog", () => {
   it("renders cancel button", () => {
     renderDialog();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
-  });
-
-  it("keeps the dropzone visible while the table structure scrolls independently", () => {
-    renderDialog();
-
-    const structure = screen.getByRole("button", { name: "Table structure" });
-    fireEvent.click(structure);
-
-    expect(structure).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByTestId("import-structure-scroll")).toHaveClass("overflow-y-auto");
-    expect(screen.getByRole("button", { name: /drop.*csv.*xlsx/i })).toBeInTheDocument();
-    expect(screen.getByText("Column").parentElement).toHaveClass("z-10", "backdrop-blur-sm");
-    expect(screen.getByText("Import bookings").closest('[role="dialog"]')).toHaveClass(
-      "motion-safe:transition-[height]"
-    );
-  });
-
-  it("uses measured numeric heights to animate the structure in both directions", () => {
-    const rect = {
-      bottom: 320,
-      height: 320,
-      left: 0,
-      right: 0,
-      top: 0,
-      width: 0,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect;
-    const boundsSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(rect);
-    let frame: FrameRequestCallback | undefined;
-    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
-      frame = callback;
-      return 1;
-    }));
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
-
-    try {
-      renderDialog();
-      const dialog = screen.getByText("Import bookings").closest<HTMLElement>('[role="dialog"]');
-      const structure = screen.getByRole("button", { name: "Table structure" });
-      expect(dialog).toBeTruthy();
-      if (!dialog) throw new Error("Expected the import dialog");
-
-      fireEvent.click(structure);
-      expect(dialog).toHaveStyle({ height: "320px" });
-      act(() => frame?.(0));
-      expect(Number.parseFloat(dialog.style.height)).toBeGreaterThan(320);
-
-      fireEvent.click(structure);
-      act(() => frame?.(0));
-      expect(dialog).toHaveStyle({ height: "320px" });
-    } finally {
-      boundsSpy.mockRestore();
-      vi.unstubAllGlobals();
-    }
   });
 
   it("closes when cancel is clicked", () => {
@@ -258,16 +213,24 @@ describe("CsvImportDialog", () => {
 
   it("offers a team picker only when there is more than one team to pick", async () => {
     // A single-team workspace has no choice to make, so the control would be
-    // noise; the route defaults to the only team either way.
+    // noise; the route defaults to the only team either way. The picker lives
+    // on the review step, next to the button that commits the import.
     const one = [{ id: "t1", name: "Main", color: "#000", isActive: true, isLead: true }];
-    const { unmount } = renderDialog({ teams: one });
-    expect(screen.queryByLabelText(/team/i)).toBeNull();
-    unmount();
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      const { unmount } = renderDialog({ teams: one });
+      await uploadCsv(VALID_CSV);
+      expect(screen.queryByLabelText(/team/i)).toBeNull();
+      unmount();
 
-    renderDialog({
-      teams: [...one, { id: "t2", name: "Second Shooters", color: "#111", isActive: true, isLead: true }],
-    });
-    expect(screen.getByLabelText(/team/i)).toBeInTheDocument();
+      renderDialog({
+        teams: [...one, { id: "t2", name: "Second Shooters", color: "#111", isActive: true, isLead: true }],
+      });
+      await uploadCsv(VALID_CSV);
+      expect(screen.getByLabelText(/team/i)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
   });
 
   it("asks before re-importing rows that already exist, naming the team", async () => {
@@ -486,5 +449,118 @@ describe("CsvImportDialog", () => {
     await waitFor(() => {
       expect(screen.getByText(/could not read this file/i)).toBeInTheDocument();
     });
+  });
+});
+
+describe("ImportSheet steps", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  // Headers no Gallurio file would ever have, so the mapping step is required.
+  const FOREIGN_CSV = [
+    "Customer,Event,Date,Package Price,Deal Status",
+    "Jane Smith,Smith Wedding,06/15/2026,₱50,000.00,Confirmed",
+  ].join("\n");
+
+  it("shows only one step at a time", async () => {
+    const restore = mockFileReader(FOREIGN_CSV);
+    try {
+      renderDialog();
+      // Upload step: no mapping grid yet.
+      expect(screen.queryByText("Match your columns to ours")).not.toBeInTheDocument();
+
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File([FOREIGN_CSV], "f.csv", { type: "text/csv" })] },
+        });
+      });
+
+      // Map step: the dropzone and the preview table are both gone.
+      expect(await screen.findByText("Match your columns to ours")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /drop.*csv.*xlsx/i })).toBeNull();
+      expect(screen.queryByText(/row\(s\) found/i)).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("goes straight to review when our own headers need no matching", async () => {
+    // The round-trip case: our template and our exports must stay one click.
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      expect(screen.queryByText("Match your columns to ours")).not.toBeInTheDocument();
+      expect(screen.getByText("Columns matched automatically")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("can reopen the matching it skipped", async () => {
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: "Review" }));
+      expect(await screen.findByText("Match your columns to ours")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("will not continue past matching until the required fields are answered", async () => {
+    const restore = mockFileReader("Ref,Notes\nA-1,hello");
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File(["Ref,Notes\nA-1,hello"], "f.csv", { type: "text/csv" })] },
+        });
+      });
+      await screen.findByText("Match your columns to ours");
+      expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+      expect(screen.getByText(/Match the 3 required fields to continue/)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("holds a busy state over the import and the refresh that follows it", async () => {
+    // Reporting success while the table behind the sheet is still stale is what
+    // makes an import feel broken, so the overlay covers both.
+    let release: (value: unknown) => void = () => {};
+    mockFetch.mockReturnValue(
+      new Promise((resolve) => {
+        release = () =>
+          resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ created: 1, updated: 0, skipped: 0, errors: [] }),
+          });
+      })
+    );
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      });
+      expect(screen.getByText("Importing your bookings")).toBeInTheDocument();
+
+      await act(async () => {
+        release(null);
+      });
+      await waitFor(() =>
+        expect(screen.queryByText("Importing your bookings")).not.toBeInTheDocument()
+      );
+    } finally {
+      restore();
+    }
   });
 });

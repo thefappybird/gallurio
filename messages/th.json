@@ -1038,9 +1038,6 @@
           "previewHint": "ยังไม่มีการนำเข้าใด ๆ แก้ไขแถวเหล่านี้แล้วอัปโหลดไฟล์อีกครั้ง"
         },
         "dialog": {
-          "structureTitle": "โครงสร้างตาราง",
-          "columnHeader": "คอลัมน์",
-          "notesHeader": "หมายเหตุ",
           "required": "จำเป็น",
           "optional": "ไม่บังคับ",
           "failedWithDetails": "นำเข้าไม่สำเร็จ — ดูรายละเอียด",
@@ -1114,6 +1111,69 @@
               "note": "รายการ JSON จากไฟล์ส่งออก อ่านเฉพาะตอนสร้าง รายการที่ชำระแล้วจะเข้าบัญชี"
             }
           }
+        },
+        "steps": {
+          "upload": "อัปโหลด",
+          "map": "จับคู่คอลัมน์",
+          "values": "จับคู่ค่า",
+          "preview": "ตรวจทาน",
+          "position": "ขั้นที่ {current} จาก {total}"
+        },
+        "mapping": {
+          "title": "จับคู่คอลัมน์ของคุณกับของเรา",
+          "subtitle": "บอกเราว่าแต่ละคอลัมน์ในไฟล์ของคุณหมายถึงอะไร ที่เหลือเราจัดการเอง",
+          "columnsFound": "{count, plural, other {# คอลัมน์}}",
+          "rowsFound": "{count, plural, other {# แถว}}",
+          "sectionRequired": "จำเป็น",
+          "sectionCommon": "รายละเอียดการจอง",
+          "sectionAdvanced": "คอลัมน์ขั้นสูงและคอลัมน์สำหรับนำกลับเข้า",
+          "advancedHint": "ต้องใช้เฉพาะเมื่อนำเข้าไฟล์ที่คุณส่งออกจาก Gallurio อีกครั้ง",
+          "selectColumn": "เลือกคอลัมน์จากไฟล์ของคุณ",
+          "notImported": "ไม่นำเข้า",
+          "useFixedValue": "ใช้ค่าคงที่",
+          "fixedValueLabel": "ค่าสำหรับทุกแถว",
+          "inferFromDate": "อนุมานจากวันที่",
+          "inferHint": "การจองที่ผ่านมาแล้วและชำระครบจะเป็นเสร็จสิ้น ส่วนที่เหลือยังคงเป็นจองแล้ว",
+          "alreadyUsed": "{column} (ใช้ไปแล้ว)",
+          "sample": "แถวแรก: {value}",
+          "sampleEmpty": "แถวแรกว่างเปล่า",
+          "unassignedRequired": "ต้องมีคอลัมน์",
+          "dateOrderLabel": "ลำดับวันและเดือน",
+          "dateOrderMDY": "ดด/วว/ปปปป",
+          "dateOrderDMY": "วว/ดด/ปปปป",
+          "dateOrderHint": "{example} อ่านได้สองแบบ เลือกลำดับที่ไฟล์ของคุณใช้",
+          "continueBlocked": "จับคู่{count, plural, other {ฟิลด์ที่จำเป็น # ฟิลด์}}เพื่อไปต่อ",
+          "loading": "กำลังอ่านไฟล์ของคุณ",
+          "kindText": "ข้อความ",
+          "kindDate": "วันที่",
+          "kindMoney": "จำนวนเงิน",
+          "kindNumber": "ตัวเลข",
+          "kindEnum": "ตัวเลือก",
+          "kindJson": "ข้อมูล"
+        },
+        "values": {
+          "title": "จับคู่ค่าของคุณกับของเรา",
+          "subtitle": "ไฟล์ของคุณใช้คำที่เราไม่รู้จัก บอกเราครั้งเดียวว่าหมายถึงอะไร แล้วทุกแถวที่ใช้คำนั้นจะถูกนำเข้า",
+          "fromColumn": "จาก {column}",
+          "rowCount": "{count, plural, other {# แถว}}",
+          "choose": "เลือกค่าที่ตรงกัน",
+          "leaveBlank": "เว้นว่างไว้",
+          "unmatchedWarning": "{count, plural, other {ยังไม่ได้จับคู่ # ค่า แถวที่ใช้ค่าเหล่านี้จะถูกข้าม}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: เราอ่าน \"{value}\" เป็นจำนวนเงินไม่ได้",
+          "negative_amount": "{field}: \"{value}\" ติดลบ จำนวนเงินต้องเป็นศูนย์หรือมากกว่า",
+          "not_a_date": "{field}: เราอ่าน \"{value}\" เป็นวันที่ไม่ได้",
+          "unsupported_currency": "{field}: \"{value}\" ไม่ใช่สกุลเงินที่พื้นที่ทำงานนี้ใช้ได้",
+          "unrecognized_value": "{field}: \"{value}\" ยังไม่ได้จับคู่"
+        },
+        "nav": {
+          "back": "ย้อนกลับ",
+          "continue": "ไปต่อ",
+          "reviewMapping": "จับคู่คอลัมน์ให้อัตโนมัติแล้ว",
+          "reviewMappingAction": "ตรวจทาน",
+          "committing": "กำลังนำเข้าการจองของคุณ",
+          "refreshing": "กำลังรีเฟรชการจองของคุณ"
         }
       },
       "export": {
@@ -2765,16 +2825,40 @@
           "immersiveModalScopeNote": "Immersive แสดงภาพแบบฝังในหน้า ดังนั้นการตั้งค่านี้จึงมีผลกับบล็อกภาพ ตารางภาพ และเลย์เอาต์ Masonry",
           "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
           "popupLayouts": {
-            "contactSheet": { "label": "Contact sheet", "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้" },
-            "justified": { "label": "Justified", "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน" },
-            "splitIndex": { "label": "Split index", "description": "รายละเอียดคอลเลกชันอยู่ข้างดัชนีภาพที่กำหนดจำนวนคอลัมน์ได้" },
-            "immersive": { "label": "Immersive", "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง" }
+            "contactSheet": {
+              "label": "Contact sheet",
+              "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้"
+            },
+            "justified": {
+              "label": "Justified",
+              "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน"
+            },
+            "splitIndex": {
+              "label": "Split index",
+              "description": "รายละเอียดคอลเลกชันอยู่ข้างดัชนีภาพที่กำหนดจำนวนคอลัมน์ได้"
+            },
+            "immersive": {
+              "label": "Immersive",
+              "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง"
+            }
           },
           "imageModalLayouts": {
-            "caption": { "label": "Caption", "description": "ภาพพร้อมแถบคำบรรยายด้านล่าง" },
-            "sidebar": { "label": "Sidebar", "description": "ภาพพร้อมแถบข้อมูลด้านข้าง" },
-            "cinema": { "label": "Cinema", "description": "ภาพเต็มขอบพร้อมองค์ประกอบน้อยที่สุด" },
-            "sheet": { "label": "Sheet", "description": "ภาพพร้อมแผ่นข้อมูลที่เลื่อนขึ้นมา" }
+            "caption": {
+              "label": "Caption",
+              "description": "ภาพพร้อมแถบคำบรรยายด้านล่าง"
+            },
+            "sidebar": {
+              "label": "Sidebar",
+              "description": "ภาพพร้อมแถบข้อมูลด้านข้าง"
+            },
+            "cinema": {
+              "label": "Cinema",
+              "description": "ภาพเต็มขอบพร้อมองค์ประกอบน้อยที่สุด"
+            },
+            "sheet": {
+              "label": "Sheet",
+              "description": "ภาพพร้อมแผ่นข้อมูลที่เลื่อนขึ้นมา"
+            }
           }
         },
         "puckConfig": {
