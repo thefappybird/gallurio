@@ -25,6 +25,8 @@ describe("Resources page", () => {
 
   it("uses one English canonical", async () => {
     const metadata = await generateMetadata();
+    expect(metadata.title).toEqual({ absolute: "Event Business Software Guides and Alternatives (2026)" });
+    expect(metadata.description).toContain("website-builder alternatives");
     expect(metadata.alternates?.canonical).toBe("http://localhost:3000/resources");
     expect(metadata.alternates?.languages).not.toHaveProperty("fil");
   });

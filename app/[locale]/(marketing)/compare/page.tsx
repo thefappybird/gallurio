@@ -7,8 +7,8 @@ import { EditorialIndex } from "../_components/editorial-index";
 export function generateMetadata(): Metadata {
   return editorialMetadata({
     path: "/compare",
-    title: "Gallurio software comparisons",
-    description: "Honest English-language comparisons between Gallurio and the CRM, website, gallery, spreadsheet, and intake tools event businesses use today.",
+    title: "CRM and Website Builder Alternatives for Creatives (2026)",
+    description: "Compare 17hats, Dubsado, HoneyBook, Studio Ninja, Pixieset, Wix, Squarespace, Notion, Google Sheets, and Google Forms alternatives for event businesses.",
   });
 }
 

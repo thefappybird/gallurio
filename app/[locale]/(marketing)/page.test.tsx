@@ -62,6 +62,13 @@ describe("Marketing Home page", () => {
   it("identifies Gallurio in the hero across every launch locale", () => {
     for (const messages of [enMessages, filMessages, idMessages, arMessages, thMessages]) {
       expect(messages.marketing.hero.headlineShow).toMatch(/^Gallurio:\s+\S/);
+      expect(messages.marketing.metadata.title).toContain("Gallurio");
+      expect(messages.marketing.metadata.description).toBeTruthy();
     }
+  });
+
+  it("uses a category-led English title and useful search description", () => {
+    expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Event Creatives | Gallurio");
+    expect(enMessages.marketing.metadata.description).toContain("no-code portfolio website");
   });
 });
