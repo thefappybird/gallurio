@@ -121,6 +121,22 @@ export function ImportSheet({
     [sourceRows, mapping]
   );
 
+  // A suggestion the dropdown shows as pre-selected has to actually be what
+  // applyMapping resolves against, or a value the UI showed as already
+  // matched still fails to import as unrecognized. Derived, not stored: an
+  // entry the user has actually answered (present in valueMap, even as "")
+  // always wins over the guess.
+  const effectiveValueMap = useMemo(() => {
+    const merged: Record<string, Record<string, string>> = {};
+    for (const [field, answers] of Object.entries(valueMap)) merged[field] = { ...answers };
+    for (const entry of unmapped) {
+      if (entry.suggestion === null) continue;
+      if (merged[entry.field]?.[entry.value] !== undefined) continue;
+      merged[entry.field] = { ...merged[entry.field], [entry.value]: entry.suggestion };
+    }
+    return merged;
+  }, [valueMap, unmapped]);
+
   /** Which column each choice field reads, so the value step can name it. */
   const enumSourceColumns = useMemo(() => {
     const out: Record<string, string> = {};
@@ -149,9 +165,9 @@ export function ImportSheet({
   const mappedRows = useMemo(
     () =>
       sourceRows.length
-        ? applyMapping(sourceRows, mapping, { timeZone, dateOrder, valueMap })
+        ? applyMapping(sourceRows, mapping, { timeZone, dateOrder, valueMap: effectiveValueMap })
         : [],
-    [sourceRows, mapping, timeZone, dateOrder, valueMap]
+    [sourceRows, mapping, timeZone, dateOrder, effectiveValueMap]
   );
 
   /**
@@ -540,7 +556,7 @@ export function ImportSheet({
               {step === "values" ? (
                 <ImportValueMapping
                   unmapped={unmapped}
-                  valueMap={valueMap}
+                  valueMap={effectiveValueMap}
                   onChange={setValueMap}
                   sourceColumns={enumSourceColumns}
                 />

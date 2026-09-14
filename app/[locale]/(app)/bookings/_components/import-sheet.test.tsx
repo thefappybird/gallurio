@@ -511,6 +511,41 @@ describe("ImportSheet steps", () => {
     }
   });
 
+  it("applies a value-mapping suggestion even when the user never touches its dropdown", async () => {
+    // "Confirmed" -> "booked" is a known suggestion. The banner and dropdown
+    // show it as already resolved, so it must actually import that way without
+    // any simulated interaction with the value step's dropdown.
+    const csv = [
+      "Customer,Event,Date,Deal Status",
+      "Jane Smith,Smith Wedding,06/15/2026,Confirmed",
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File([csv], "f.csv", { type: "text/csv" })] },
+        });
+      });
+      await screen.findByText("Match your columns to ours");
+
+      // Required fields already auto-matched; advance past mapping.
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      // On the value step, without touching the "Confirmed" dropdown at all.
+      await screen.findByText("Confirmed");
+      expect(screen.queryByText(/unmatched/i)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+      // The row imports as "booked", not as an unrecognized-value failure.
+      expect(
+        await screen.findByRole("button", { name: /import 1 booking/i })
+      ).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
   it("will not continue past matching until the required fields are answered", async () => {
     const restore = mockFileReader("Ref,Notes\nA-1,hello");
     try {
