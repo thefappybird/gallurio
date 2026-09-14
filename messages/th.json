@@ -2825,40 +2825,16 @@
           "immersiveModalScopeNote": "Immersive แสดงภาพแบบฝังในหน้า ดังนั้นการตั้งค่านี้จึงมีผลกับบล็อกภาพ ตารางภาพ และเลย์เอาต์ Masonry",
           "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
           "popupLayouts": {
-            "contactSheet": {
-              "label": "Contact sheet",
-              "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้"
-            },
-            "justified": {
-              "label": "Justified",
-              "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน"
-            },
-            "splitIndex": {
-              "label": "Split index",
-              "description": "รายละเอียดคอลเลกชันอยู่ข้างดัชนีภาพที่กำหนดจำนวนคอลัมน์ได้"
-            },
-            "immersive": {
-              "label": "Immersive",
-              "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง"
-            }
+            "contactSheet": { "label": "Contact sheet", "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้" },
+            "justified": { "label": "Justified", "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน" },
+            "splitIndex": { "label": "Split index", "description": "รายละเอียดคอลเลกชันอยู่ข้างดัชนีภาพที่กำหนดจำนวนคอลัมน์ได้" },
+            "immersive": { "label": "Immersive", "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง" }
           },
           "imageModalLayouts": {
-            "caption": {
-              "label": "Caption",
-              "description": "ภาพพร้อมแถบคำบรรยายด้านล่าง"
-            },
-            "sidebar": {
-              "label": "Sidebar",
-              "description": "ภาพพร้อมแถบข้อมูลด้านข้าง"
-            },
-            "cinema": {
-              "label": "Cinema",
-              "description": "ภาพเต็มขอบพร้อมองค์ประกอบน้อยที่สุด"
-            },
-            "sheet": {
-              "label": "Sheet",
-              "description": "ภาพพร้อมแผ่นข้อมูลที่เลื่อนขึ้นมา"
-            }
+            "caption": { "label": "Caption", "description": "ภาพพร้อมแถบคำบรรยายด้านล่าง" },
+            "sidebar": { "label": "Sidebar", "description": "ภาพพร้อมแถบข้อมูลด้านข้าง" },
+            "cinema": { "label": "Cinema", "description": "ภาพเต็มขอบพร้อมองค์ประกอบน้อยที่สุด" },
+            "sheet": { "label": "Sheet", "description": "ภาพพร้อมแผ่นข้อมูลที่เลื่อนขึ้นมา" }
           }
         },
         "puckConfig": {

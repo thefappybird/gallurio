@@ -2825,40 +2825,16 @@
           "immersiveModalScopeNote": "Immersive menampilkan gambar secara inline, jadi pengaturan ini berlaku untuk blok gambar, galeri foto, dan masonry.",
           "notUsedByLayout": "Tidak digunakan oleh layout ini",
           "popupLayouts": {
-            "contactSheet": {
-              "label": "Contact sheet",
-              "description": "Grid thumbnail yang rata, dengan header opsional untuk koleksi."
-            },
-            "justified": {
-              "label": "Justified",
-              "description": "Foto disusun dalam baris dengan lebar berbeda tapi tinggi baris sama."
-            },
-            "splitIndex": {
-              "label": "Split index",
-              "description": "Detail koleksi di samping indeks gambar dengan jumlah kolom yang dapat diatur."
-            },
-            "immersive": {
-              "label": "Immersive",
-              "description": "Satu foto besar dalam satu waktu, layar penuh, dengan filmstrip di bawah."
-            }
+            "contactSheet": { "label": "Contact sheet", "description": "Grid thumbnail yang rata, dengan header opsional untuk koleksi." },
+            "justified": { "label": "Justified", "description": "Foto disusun dalam baris dengan lebar berbeda tapi tinggi baris sama." },
+            "splitIndex": { "label": "Split index", "description": "Detail koleksi di samping indeks gambar dengan jumlah kolom yang dapat diatur." },
+            "immersive": { "label": "Immersive", "description": "Satu foto besar dalam satu waktu, layar penuh, dengan filmstrip di bawah." }
           },
           "imageModalLayouts": {
-            "caption": {
-              "label": "Caption",
-              "description": "Foto dengan bilah caption di bawahnya."
-            },
-            "sidebar": {
-              "label": "Sidebar",
-              "description": "Foto di samping sidebar metadata."
-            },
-            "cinema": {
-              "label": "Cinema",
-              "description": "Foto full-bleed dengan chrome minimal."
-            },
-            "sheet": {
-              "label": "Sheet",
-              "description": "Foto dengan sheet metadata yang meluncur naik."
-            }
+            "caption": { "label": "Caption", "description": "Foto dengan bilah caption di bawahnya." },
+            "sidebar": { "label": "Sidebar", "description": "Foto di samping sidebar metadata." },
+            "cinema": { "label": "Cinema", "description": "Foto full-bleed dengan chrome minimal." },
+            "sheet": { "label": "Sheet", "description": "Foto dengan sheet metadata yang meluncur naik." }
           }
         },
         "puckConfig": {
