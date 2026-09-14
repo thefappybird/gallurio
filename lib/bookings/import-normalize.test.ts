@@ -62,6 +62,15 @@ describe("coerceDate", () => {
     });
   });
 
+  it("applies the century correction to a named-month date with a 2-digit year", () => {
+    // Same fix as the numeric-date branch: a bare "15" must read as 2015, not
+    // year 15 AD.
+    expect(coerceDate("June 10, 15", TZ, "MDY")).toEqual({
+      ok: true,
+      value: "2015-06-09T16:00:00.000Z",
+    });
+  });
+
   it("honours the declared day/month order for a slash date", () => {
     expect(coerceDate("06/07/2026", TZ, "MDY")).toEqual({
       ok: true,

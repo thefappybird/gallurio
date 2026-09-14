@@ -153,6 +153,7 @@ export function coerceDate(raw: string, timeZone: string, order: DateOrder): Coe
     if (nums.length < 2) return { ok: false, reason: "not_a_date" };
     mo = monthIndex + 1;
     y = nums.find((n) => n > 31) ?? nums[1];
+    y = y < 100 ? 2000 + y : y;
     d = nums.find((n) => n <= 31);
   } else {
     const parts = datePart.split(/[/\-.]/).map((p) => p.trim());
