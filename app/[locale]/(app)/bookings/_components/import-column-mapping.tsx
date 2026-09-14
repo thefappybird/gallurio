@@ -317,8 +317,10 @@ function FieldCard({
         <p className="text-xs text-muted-foreground">{t("inferHint")}</p>
       ) : null}
 
-      {/* The order toggle lives on the date card itself: it is a question about
-          that column, and asking it anywhere else loses the connection. */}
+      {/* One file-wide date-order toggle, rendered on whichever mapped date
+          card is ambiguous first (startAt checked before endAt) — not a
+          per-column setting. It shows here rather than elsewhere in the UI
+          because it's still a question about a mapped date column. */}
       {field.kind === "date" && assignment && "source" in assignment && ambiguousDateExample ? (
         <div className="flex flex-col gap-1.5 border-t border-border pt-2">
           <span className="text-xs font-medium text-foreground">{t("dateOrderLabel")}</span>

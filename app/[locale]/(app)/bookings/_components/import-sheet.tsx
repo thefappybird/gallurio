@@ -148,9 +148,12 @@ export function ImportSheet({
   }, [mapping]);
 
   /**
-   * A value from a mapped date column that reads both ways, or null. Shown on
-   * the card so the order question is about their data rather than an abstract
-   * preference.
+   * A sample value from the FIRST ambiguous mapped date column (startAt
+   * checked before endAt), or null if none is ambiguous. One global value,
+   * not per-field: if both startAt and endAt are mapped and only one is
+   * genuinely ambiguous, the single dateOrder toggle still renders on both
+   * date cards. Shown so the order question is about their data rather than
+   * an abstract preference.
    */
   const ambiguousDateExample = useMemo(() => {
     for (const key of ["startAt", "endAt"]) {
@@ -903,9 +906,11 @@ function PreviewStep({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {/* A file we mapped without asking still says so, and offers the step it
-          skipped — silently guessing and never mentioning it is how a wrong
-          column reaches the database unnoticed. */}
+      {/* A file whose COLUMNS we matched without asking still says so, and
+          offers to reopen that column-mapping step — silently guessing and
+          never mentioning it is how a wrong column reaches the database
+          unnoticed. autoMapped only covers the column step; a file can still
+          land on the value step afterward if it has unrecognized enum values. */}
       {autoMapped ? (
         <div className="flex flex-wrap items-center gap-2 bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
           <CheckCircleIcon className="size-3.5 shrink-0 text-brand" />

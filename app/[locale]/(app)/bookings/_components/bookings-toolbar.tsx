@@ -52,8 +52,9 @@ export function BookingsToolbar({
    *  performing a URL push. Allows the parent to own the open state so the
    *  button always fires even when ?add=1 is already in the URL. */
   onAddClick?: () => void;
-  /** Active view. In calendar view the status dropdown is hidden — the
-   *  calendar's clickable color legend owns status filtering there. */
+  /** Active view. Status filters the same way in both views; this only hides
+   *  the team-filter dropdown in calendar view, where the calendar's own
+   *  clickable team legend owns team filtering instead. */
   view?: BookingsView;
   /** When false, the "New Booking" and "Import" buttons are hidden. Members
    *  are view-only — only owners can create or bulk-import bookings. Export
