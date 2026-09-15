@@ -17,6 +17,7 @@ const ENGLISH_NAV = {
   pricing: "Pricing",
   bookDemo: "Book a Demo",
   resources: "Resources",
+  compare: "Compare",
   signIn: "Sign in",
   getStarted: "Get started",
 } as const;
@@ -81,6 +82,12 @@ export function MarketingHeader() {
             >
               {label("resources")}
             </Link>
+            <Link
+              href="/compare"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {label("compare")}
+            </Link>
           </nav>
 
           <div className="flex items-center gap-1 gap-x-4">
@@ -135,6 +142,9 @@ export function MarketingHeader() {
                   </Link>
                   <Link href="/resources" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("resources")}
+                  </Link>
+                  <Link href="/compare" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {label("compare")}
                   </Link>
                   <Link href="/sign-in" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("signIn")}

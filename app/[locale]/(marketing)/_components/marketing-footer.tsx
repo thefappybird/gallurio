@@ -10,6 +10,7 @@ const ENGLISH_FOOTER = {
   about: "About",
   pricing: "Pricing",
   resources: "Resources",
+  compare: "Compare",
   bookDemo: "Book a Demo",
   terms: "Terms of Service",
   privacy: "Privacy Policy",
@@ -53,6 +54,9 @@ export function MarketingFooter() {
           </Link>
           <Link href="/resources" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.resources : tFooter("resources")}
+          </Link>
+          <Link href="/compare" className="hover:text-foreground">
+            {englishOnly ? ENGLISH_FOOTER.compare : tFooter("compare")}
           </Link>
           <Link href="/book-demo" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.bookDemo : tFooter("bookDemo")}

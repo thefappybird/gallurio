@@ -20,14 +20,14 @@ describe("xlsx round-trip", () => {
     ]);
   });
 
-  it("normalizes header aliases so XLSX and CSV hit the same validator", async () => {
+  it("preserves raw header text so XLSX and CSV feed the same mapping step", async () => {
     const buffer = await rowsToXlsxBuffer(
       ["Booking ID", "Client Name", "Start Date"],
       [["abc123", "Ana Cruz", "2026-09-01T09:00:00Z"]]
     );
     const parsed = await parseXlsxToRows(buffer);
-    expect(parsed.headers).toEqual(["bookingId", "clientName", "startAt"]);
-    expect(parsed.rows[0].bookingId).toBe("abc123");
+    expect(parsed.headers).toEqual(["Booking ID", "Client Name", "Start Date"]);
+    expect(parsed.rows[0]["Booking ID"]).toBe("abc123");
   });
 
   it("rejects a non-zip buffer instead of returning empty rows", async () => {

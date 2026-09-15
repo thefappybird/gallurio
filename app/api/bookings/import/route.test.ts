@@ -228,6 +228,7 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
     const body = await res.json();
     expect(body.created).toBe(0);
     expect(body.updated).toBe(1);
+    expect(body.shifts).toBe(2);
 
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
     const after = await Booking.findById(existing._id).lean();
@@ -923,14 +924,26 @@ describe("GET /api/bookings/import — template", () => {
     expect(res.status).toBe(200);
     const text = await res.text();
 
+    // Walk the same path the dialog does: parse, auto-map, normalize. The
+    // template is the one file that must need no input at all, so a mapping
+    // this leaves incomplete is a bug in the auto-mapper, not in the sheet.
     const { parseCsv } = await import("@/lib/utils/csv-parse");
-    const rows = parseCsv(text).rows;
-    const result = await callImport(rows);
+    const { autoMapColumns, applyMapping } = await import(
+      "@/lib/bookings/import-mapping"
+    );
+    const parsed = parseCsv(text);
+    const mapped = applyMapping(parsed.rows, autoMapColumns(parsed.headers), {
+      timeZone: "Asia/Manila",
+      dateOrder: "MDY",
+    });
+    expect(mapped.flatMap((r) => r.issues)).toEqual([]);
+    const result = await callImport(mapped.map((r) => r.values));
     expect(result.status).toBe(200);
     // Two rows sharing one booking_id: one booking, two sessions.
     const body = await result.json();
     expect(body.errors).toEqual([]);
     expect(body.created).toBe(1);
+    expect(body.shifts).toBe(2);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
     expect(booking?.sessions).toHaveLength(2);
   });

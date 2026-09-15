@@ -21,7 +21,7 @@ const COPY = {
   },
   compare: {
     eyebrow: "Comparisons",
-    headline: "Gallurio compared with the tools you use now",
+    headline: "CRM and website builder alternatives for event creatives",
     intro: "Direct comparisons of price, workflow, strengths, and material gaps—so you can choose the tool that fits the way your business actually runs.",
   },
 } as const;

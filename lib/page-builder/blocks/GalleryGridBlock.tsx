@@ -27,6 +27,7 @@ import {
 import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
+import { galleryAltFallback } from "./galleryAlt";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
@@ -94,12 +95,16 @@ export function GalleryGridBlock({
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
+  const workspaceName = puck?.metadata?.workspace?.name;
+  const chromeLabels = getGalleryChromeLabelsFrom(puck);
+  const altFallback = (img: GalleryImage, index: number) =>
+    galleryAltFallback(chromeLabels.lightboxPhotoFallback, workspaceName, img.alt, index);
   // Full-array LightboxImage view for the legacy (pre-slot) render path, so
   // opening any thumbnail can page through every image in the grid.
-  const legacyLightboxImages = list.map((img) => ({
+  const legacyLightboxImages = list.map((img, i) => ({
     id: img.id,
     publicId: img.publicId,
-    alt: img.alt ?? "",
+    alt: altFallback(img, i),
     width: img.width,
     height: img.height,
   }));
@@ -115,7 +120,6 @@ export function GalleryGridBlock({
   // the Puck slot of regular Image blocks instead.
   const useLegacyImages = list.length > 0;
   const SlotContent = typeof Content === "function" ? Content : undefined;
-  const chromeLabels = getGalleryChromeLabelsFrom(puck);
   const lightboxLabels: LightboxLabels = {
     close: chromeLabels.lightboxClose,
     previous: chromeLabels.carouselPrev,
@@ -211,7 +215,7 @@ export function GalleryGridBlock({
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
                 <GalleryLightboxTrigger
-                  image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
+                  image={{ id: img.id, publicId: img.publicId, alt: altFallback(img, i) }}
                   images={legacyLightboxImages}
                   index={i}
                   labels={lightboxLabels}
@@ -221,7 +225,7 @@ export function GalleryGridBlock({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt={img.alt ?? ""}
+                    alt={altFallback(img, i)}
                     loading="lazy"
                     width={img.width}
                     height={img.height}

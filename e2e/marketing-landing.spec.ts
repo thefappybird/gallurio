@@ -15,6 +15,14 @@ async function expectCoreSectionsVisible(page: import("@playwright/test").Page) 
   await expect(page.getByText("Business workspace", { exact: true })).toBeVisible();
   await expect(page.getByText("Booking inquiries", { exact: true })).toBeVisible();
   await expect(
+    page.getByRole("heading", {
+      name: "Migrating from a different CRM provider? We got you in just three quick steps.",
+    })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Normalize" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Preview" })).toBeVisible();
+  await expect(
     page.getByText("Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.", {
       exact: false,
     })

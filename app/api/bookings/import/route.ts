@@ -56,6 +56,8 @@ export type ImportResult = {
   created: number;
   /** Bookings matched by booking_id and updated in place rather than duplicated. */
   updated: number;
+  /** Successful session rows, including sessions on updated bookings. */
+  shifts: number;
   /**
    * Source ROWS that were not written. Once rows are grouped into bookings a
    * single failure can skip several rows, so this is no longer equal to
@@ -211,6 +213,7 @@ export async function POST(req: Request) {
 
   const created: number[] = [];
   const updated: number[] = [];
+  let importedShifts = 0;
   /**
    * Undo the exporter's anti-formula apostrophe. Applied here rather than at
    * parse time so a row POSTed directly — not just one that came back from the
@@ -517,6 +520,7 @@ export async function POST(req: Request) {
           );
         });
         updated.push(i);
+        importedShifts += sessions.length;
       } catch (err) {
         console.error("[bookings.import] group update failed", { index: i, err });
         errors.push({
@@ -720,6 +724,7 @@ export async function POST(req: Request) {
       }
 
       created.push(i);
+      importedShifts += sessions.length;
     } catch (err) {
       console.error("[bookings.import] row transaction failed", { index: i, err });
       errors.push({
@@ -744,6 +749,7 @@ export async function POST(req: Request) {
     {
       created: created.length,
       updated: updated.length,
+      shifts: importedShifts,
       skipped,
       validationErrors,
       serverErrors,

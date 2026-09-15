@@ -7,8 +7,8 @@ import { EditorialIndex } from "../_components/editorial-index";
 export function generateMetadata(): Metadata {
   return editorialMetadata({
     path: "/resources",
-    title: "Resources for event businesses | Gallurio",
-    description: "Practical guides and honest software comparisons for photographers, planners, caterers, venues, and other event businesses.",
+    title: "Event Business Software Guides and Alternatives (2026)",
+    description: "Compare CRM and website-builder alternatives, then use practical guides for pricing, client onboarding, deposits, portfolios, and event bookings.",
   });
 }
 

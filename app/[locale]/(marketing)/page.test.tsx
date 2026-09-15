@@ -59,9 +59,42 @@ describe("Marketing Home page", () => {
     expect(screen.getByText("marketing:features.teams.title")).toBeInTheDocument();
   });
 
+  it("places the three-step booking migration section after booking inquiries", async () => {
+    const page = await Home({ params: Promise.resolve({ locale: "en" }) });
+    render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
+
+    expect(screen.getByText("marketing:features.bookingMigration.headline")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.upload.title")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.normalize.title")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.preview.title")).toBeInTheDocument();
+    for (const step of ["upload", "normalize", "preview"]) {
+      expect(screen.getByTestId(`booking-migration-${step}-card`)).toHaveClass("group", "md:hover:scale-[1.015]");
+      expect(screen.getByTestId(`booking-migration-${step}-header`)).toHaveClass("border-b", "md:min-h-40");
+      expect(screen.getByTestId(`booking-migration-${step}-image`)).toHaveClass("aspect-[543/868]");
+      expect(screen.getByTestId(`booking-migration-${step}-image`).querySelector("img")).toHaveClass("object-cover");
+      expect(screen.getByTestId(`booking-migration-${step}-image`).querySelector("img")).not.toHaveClass("group-hover:scale-[1.025]");
+    }
+
+    expect(screen.getByTestId("marketing-show-image-frame")).toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getByTestId("marketing-manage-image-frame")).toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getAllByTestId("marketing-feature-image-frame")).toHaveLength(4);
+    for (const frame of screen.getAllByTestId("marketing-feature-image-frame")) {
+      expect(frame).toHaveClass("group-hover:scale-[1.025]");
+    }
+    expect(screen.getByAltText("marketing:split.showImageAlt")).not.toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getByAltText("marketing:features.portfolioBuilder.title")).not.toHaveClass("group-hover:scale-[1.025]");
+  });
+
   it("identifies Gallurio in the hero across every launch locale", () => {
     for (const messages of [enMessages, filMessages, idMessages, arMessages, thMessages]) {
       expect(messages.marketing.hero.headlineShow).toMatch(/^Gallurio:\s+\S/);
+      expect(messages.marketing.metadata.title).toContain("Gallurio");
+      expect(messages.marketing.metadata.description).toBeTruthy();
     }
+  });
+
+  it("uses a category-led English title and useful search description", () => {
+    expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Event Creatives | Gallurio");
+    expect(enMessages.marketing.metadata.description).toContain("no-code portfolio website");
   });
 });
