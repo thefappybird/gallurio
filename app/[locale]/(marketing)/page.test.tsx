@@ -67,6 +67,22 @@ describe("Marketing Home page", () => {
     expect(screen.getByText("marketing:features.bookingMigration.upload.title")).toBeInTheDocument();
     expect(screen.getByText("marketing:features.bookingMigration.normalize.title")).toBeInTheDocument();
     expect(screen.getByText("marketing:features.bookingMigration.preview.title")).toBeInTheDocument();
+    for (const step of ["upload", "normalize", "preview"]) {
+      expect(screen.getByTestId(`booking-migration-${step}-card`)).toHaveClass("group", "md:hover:scale-[1.015]");
+      expect(screen.getByTestId(`booking-migration-${step}-header`)).toHaveClass("border-b", "md:min-h-40");
+      expect(screen.getByTestId(`booking-migration-${step}-image`)).toHaveClass("aspect-[543/868]");
+      expect(screen.getByTestId(`booking-migration-${step}-image`).querySelector("img")).toHaveClass("object-cover");
+      expect(screen.getByTestId(`booking-migration-${step}-image`).querySelector("img")).not.toHaveClass("group-hover:scale-[1.025]");
+    }
+
+    expect(screen.getByTestId("marketing-show-image-frame")).toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getByTestId("marketing-manage-image-frame")).toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getAllByTestId("marketing-feature-image-frame")).toHaveLength(4);
+    for (const frame of screen.getAllByTestId("marketing-feature-image-frame")) {
+      expect(frame).toHaveClass("group-hover:scale-[1.025]");
+    }
+    expect(screen.getByAltText("marketing:split.showImageAlt")).not.toHaveClass("group-hover:scale-[1.025]");
+    expect(screen.getByAltText("marketing:features.portfolioBuilder.title")).not.toHaveClass("group-hover:scale-[1.025]");
   });
 
   it("identifies Gallurio in the hero across every launch locale", () => {

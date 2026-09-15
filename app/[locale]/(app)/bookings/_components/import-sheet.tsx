@@ -531,10 +531,12 @@ export function ImportSheet({
               key={step}
               data-direction={direction}
               className={cn(
+                "min-h-full",
                 "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
                 direction === "forward"
                   ? "motion-safe:slide-in-from-bottom-3"
-                  : "motion-safe:slide-in-from-top-3"
+                  : "motion-safe:slide-in-from-top-3",
+                step === "upload" && "flex flex-col"
               )}
             >
               {step === "upload" ? (
@@ -822,13 +824,13 @@ function UploadStep({
   };
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div data-testid="import-upload-step" className="flex min-h-full flex-1 flex-col gap-3">
       <div
         role="button"
         tabIndex={0}
         aria-label={labels.dropzone}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-12 text-center motion-safe:transition-colors",
+          "flex min-h-48 flex-1 cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-12 text-center motion-safe:transition-colors",
           dragging
             ? "border-brand bg-brand/5 text-brand"
             : "border-border text-muted-foreground hover:border-brand hover:text-brand"

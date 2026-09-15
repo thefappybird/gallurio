@@ -216,7 +216,10 @@ export default async function Home({ params }: Props) {
                 {t("split.showTag")}
               </span>
             </div>
-            <div className="relative aspect-[16/11] -rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:rotate-[1.2deg] rtl:group-hover:rotate-0">
+            <div
+              data-testid="marketing-show-image-frame"
+              className="relative aspect-[16/11] -rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-4px] group-hover:scale-[1.025] group-hover:rotate-0 rtl:rotate-[1.2deg] rtl:group-hover:rotate-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            >
               <ThemedShot
                 base="/marketing/screenshots/portfolio-builder-canvas"
                 alt={t("split.showImageAlt")}
@@ -232,7 +235,10 @@ export default async function Home({ params }: Props) {
                 {t("split.manageTag")}
               </span>
             </div>
-            <div className="relative aspect-[16/11] rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:-rotate-[1.2deg] rtl:group-hover:rotate-0">
+            <div
+              data-testid="marketing-manage-image-frame"
+              className="relative aspect-[16/11] rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-4px] group-hover:scale-[1.025] group-hover:rotate-0 rtl:-rotate-[1.2deg] rtl:group-hover:rotate-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            >
               <ThemedShot
                 base="/marketing/screenshots/dashboard-overview"
                 alt={t("split.manageImageAlt")}
@@ -455,25 +461,37 @@ function BookingMigrationSection({
 
         <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-5">
           {steps.map((step, index) => (
-            <li key={step.key} className="min-w-0">
-              <div className="relative aspect-[4/3] overflow-hidden bg-muted ring-1 ring-foreground/10">
-                <ThemedShot
-                  base={step.image}
-                  alt={t(`features.bookingMigration.${step.key}.imageAlt`)}
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <div className="mt-3 flex items-start gap-3 text-start">
-                <span className="pt-0.5 text-sm font-bold text-brand tabular-nums">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h3 className="font-heading text-base font-bold tracking-tight">
-                    {t(`features.bookingMigration.${step.key}.title`)}
-                  </h3>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {t(`features.bookingMigration.${step.key}.description`)}
-                  </p>
+            <li
+              key={step.key}
+              data-testid={`booking-migration-${step.key}-card`}
+              className="group min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:hover:scale-[1.015] motion-reduce:transition-none motion-reduce:hover:scale-100"
+            >
+              <div className="overflow-hidden rounded-[var(--radius-surface)] bg-card ring-1 ring-foreground/10">
+                <div
+                  data-testid={`booking-migration-${step.key}-header`}
+                  className="flex min-h-32 items-start gap-3 border-b border-border px-4 py-5 text-start md:min-h-40"
+                >
+                  <span className="pt-0.5 text-sm font-bold text-brand tabular-nums">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 className="font-heading text-base font-bold tracking-tight">
+                      {t(`features.bookingMigration.${step.key}.title`)}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {t(`features.bookingMigration.${step.key}.description`)}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  data-testid={`booking-migration-${step.key}-image`}
+                  className="relative aspect-[543/868] w-full overflow-hidden bg-muted"
+                >
+                  <ThemedShot
+                    base={step.image}
+                    alt={t(`features.bookingMigration.${step.key}.imageAlt`)}
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                  />
                 </div>
               </div>
             </li>
@@ -521,12 +539,16 @@ function TextBlock({
 
 function ImageBlock({ panel }: { panel: { kicker: string; image: string } }) {
   return (
-    <div className="w-full flex-1">
+    <div className="group w-full flex-1">
       <div
-        data-hover="brighten"
-        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10"
+        data-testid="marketing-feature-image-frame"
+        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       >
-        <ThemedShot base={panel.image} alt={panel.kicker} sizes="(min-width: 768px) 50vw, 100vw" />
+        <ThemedShot
+          base={panel.image}
+          alt={panel.kicker}
+          sizes="(min-width: 768px) 50vw, 100vw"
+        />
       </div>
     </div>
   );

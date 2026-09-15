@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDownIcon, DownloadIcon } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -180,8 +180,11 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
             <p className="text-xs text-muted-foreground">{t("listFiltersApply")}</p>
           ) : null}
 
+        </div>
+
+        <SheetFooter className="border-t border-border bg-muted/30">
           {rangeInvalid ? (
-            <Button type="button" size="sm" disabled className="min-h-11 sm:min-h-0">
+            <Button type="button" size="sm" disabled className="min-h-11 w-full sm:min-h-0">
               <DownloadIcon className="size-4" />
               {t("download")}
             </Button>
@@ -190,14 +193,14 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
               type="button"
               size="sm"
               nativeButton={false}
-              className="min-h-11 sm:min-h-0"
+              className="min-h-11 w-full sm:min-h-0"
               render={<a href={href} download onClick={onClose} />}
             >
               <DownloadIcon className="size-4" />
               {t("download")}
             </Button>
           )}
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

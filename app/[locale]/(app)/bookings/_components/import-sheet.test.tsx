@@ -94,6 +94,12 @@ describe("ImportSheet", () => {
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
   });
 
+  it("lets the upload drop zone use the available sheet height", () => {
+    renderDialog();
+    expect(screen.getByTestId("import-upload-step")).toHaveClass("min-h-full");
+    expect(screen.getByRole("button", { name: /drop.*csv.*xlsx/i })).toHaveClass("flex-1");
+  });
+
   it("closes when cancel is clicked", () => {
     const onClose = vi.fn();
     renderDialog({ onClose });

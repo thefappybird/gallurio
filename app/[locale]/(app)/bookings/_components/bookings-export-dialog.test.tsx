@@ -33,6 +33,11 @@ describe("BookingsExportDialog", () => {
     expect(screen.getByRole("dialog")).toHaveAttribute("data-side", "right");
   });
 
+  it("anchors the download action in the sheet footer", () => {
+    renderDialog();
+    expect(screen.getByRole("button", { name: /download/i }).closest("[data-slot='sheet-footer']")).not.toBeNull();
+  });
+
   it("downloads every team, all time, as CSV by default", () => {
     renderDialog();
     // Button renders an anchor with role="button", so query by that role.
