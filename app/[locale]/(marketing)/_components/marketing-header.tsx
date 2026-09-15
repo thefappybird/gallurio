@@ -53,12 +53,6 @@ export function MarketingHeader() {
         <div className="hidden flex-1 items-center justify-end gap-x-4 gap-y-2 sm:flex">
           <nav aria-label="Marketing" className="flex items-center gap-4 text-sm font-medium">
             <Link
-              href="/portfolio-maker-demo"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {label("portfolioMaker")}
-            </Link>
-            <Link
               href="/about"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -75,12 +69,6 @@ export function MarketingHeader() {
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {label("bookDemo")}
-            </Link>
-            <Link
-              href="/resources"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {label("resources")}
             </Link>
             <Link
               href="/compare"
@@ -128,9 +116,6 @@ export function MarketingHeader() {
               </SheetHeader>
               <div className="flex flex-col gap-2 p-4">
                 <nav aria-label="Marketing" className="flex flex-col gap-1">
-                  <Link href="/portfolio-maker-demo" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("portfolioMaker")}
-                  </Link>
                   <Link href="/about" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("about")}
                   </Link>
@@ -139,9 +124,6 @@ export function MarketingHeader() {
                   </Link>
                   <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("bookDemo")}
-                  </Link>
-                  <Link href="/resources" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("resources")}
                   </Link>
                   <Link href="/compare" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("compare")}
