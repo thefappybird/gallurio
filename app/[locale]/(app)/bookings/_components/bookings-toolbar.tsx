@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
-import { CsvImportDialog } from "./csv-import-dialog";
+import { ImportSheet } from "./import-sheet";
 import { BookingsExportDialog } from "./bookings-export-dialog";
 import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
@@ -52,8 +52,9 @@ export function BookingsToolbar({
    *  performing a URL push. Allows the parent to own the open state so the
    *  button always fires even when ?add=1 is already in the URL. */
   onAddClick?: () => void;
-  /** Active view. In calendar view the status dropdown is hidden — the
-   *  calendar's clickable color legend owns status filtering there. */
+  /** Active view. Status filters the same way in both views; this only hides
+   *  the team-filter dropdown in calendar view, where the calendar's own
+   *  clickable team legend owns team filtering instead. */
   view?: BookingsView;
   /** When false, the "New Booking" and "Import" buttons are hidden. Members
    *  are view-only — only owners can create or bulk-import bookings. Export
@@ -286,7 +287,7 @@ export function BookingsToolbar({
           baseParams={exportParams}
           teams={teams}
         />
-        <CsvImportDialog
+        <ImportSheet
           open={importOpen}
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}

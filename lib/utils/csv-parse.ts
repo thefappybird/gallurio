@@ -26,8 +26,11 @@ export function parseCsv(text: string): ParsedCsv {
     if (!headerSeen) {
       if (!line.trim()) continue; // blank before header — skip
       if (line.trimStart().startsWith("#")) continue; // comment before header — skip
-      // First non-comment, non-blank line is the header.
-      headers = parseFields(line).map(normalizeCsvHeader);
+      // First non-comment, non-blank line is the header. Kept verbatim: the
+      // mapping step shows these names back to the user, so the parser must not
+      // rewrite them. `trim` also drops Excel's UTF-8 BOM, which normalization
+      // used to absorb.
+      headers = dedupeHeaders(parseFields(line).map((h) => h.trim()));
       headerSeen = true;
       continue;
     }
@@ -43,6 +46,22 @@ export function parseCsv(text: string): ParsedCsv {
   }
 
   return { headers, rows };
+}
+
+/**
+ * Row objects are keyed by header text, so two columns sharing a name would
+ * collapse into one and silently lose a column. Suffixes repeats instead.
+ */
+export function dedupeHeaders(headers: readonly string[]): string[] {
+  const seen = new Map<string, number>();
+  return headers.map((h) => {
+    // An unnamed column stays unnamed: suffixing blanks would invent " (2)"
+    // columns that consumers mistake for real fields.
+    if (!h) return h;
+    const n = (seen.get(h) ?? 0) + 1;
+    seen.set(h, n);
+    return n === 1 ? h : `${h} (${n})`;
+  });
 }
 
 /**
