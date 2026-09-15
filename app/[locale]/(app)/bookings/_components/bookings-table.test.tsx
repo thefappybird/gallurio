@@ -339,4 +339,19 @@ describe("BookingsTable", () => {
     fireEvent.keyDown(trigger, { key: "Enter" });
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  it("formats the Thai weekday with the abbreviation both Node and the browser agree on", () => {
+    const sunday = "2026-06-14T02:00:00Z";
+    renderWithProviders(
+      <BookingsTable
+        rows={[{ ...futureRow, sessions: [{ startAt: sunday, endAt: sunday }] }]}
+        locale="th"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    // "short" renders "อา." under Node but "อาทิตย์" in Chromium, so an SSR'd
+    // cell hydrates with a text mismatch. "narrow" is identical in both.
+    expect(screen.getAllByText("อา 14 มิ.ย. 2569").length).toBeGreaterThan(0);
+  });
 });

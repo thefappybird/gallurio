@@ -5,6 +5,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "contact": "Contact",
       "signIn": "Sign in",
       "getStarted": "Get started"
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "terms": "Terms",
       "privacy": "Privacy",
       "refunds": "Refunds",
@@ -23,8 +25,8 @@
       "writing": "Writing"
     },
     "metadata": {
-      "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
-      "description": "Build a professional portfolio with a drag-and-drop, no-code website builder, collect booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace with Gallurio."
+      "title": "Portfolio Builder and Booking CRM for Event Creatives | Gallurio",
+      "description": "Build a no-code portfolio website, get booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace for your event business."
     },
     "hero": {
       "eyebrow": "One workspace, two jobs",
@@ -85,6 +87,25 @@
         "feature3": "Contact and project details in one view",
         "feature4": "Notified the moment one arrives"
       },
+      "bookingMigration": {
+        "headline": "Migrating from a different CRM provider? We got you in just three quick steps.",
+        "description": "Bring your CSV or Excel file into the bookings calendar, match it to Gallurio, then check every booking before it is imported.",
+        "upload": {
+          "title": "Upload",
+          "description": "Choose a CSV or Excel export from the service you are leaving.",
+          "imageAlt": "Gallurio booking import sheet ready for a CSV or Excel upload"
+        },
+        "normalize": {
+          "title": "Normalize",
+          "description": "Match the columns and values in your file to Gallurio.",
+          "imageAlt": "Gallurio booking import sheet matching columns from an uploaded file"
+        },
+        "preview": {
+          "title": "Preview",
+          "description": "Review valid rows and errors before you import.",
+          "imageAlt": "Gallurio booking import sheet previewing normalized bookings"
+        }
+      },
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "Everything that happens after the inquiry.",
@@ -133,6 +154,10 @@
     "manifesto": {
       "quote": "Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.",
       "attribution": "— the idea behind Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "Curious how Gallurio stacks up against what you're using now?",
+      "linkLabel": "See the comparisons"
     },
     "pricingTeaser": {
       "title": "Simple pricing",
@@ -591,7 +616,7 @@
       },
       "index": {
         "eyebrow": "Comparisons",
-        "headline": "Gallurio vs. the tools you're using now",
+        "headline": "How Gallurio compares to the tools you're using now",
         "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
         "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
       },
@@ -1013,7 +1038,7 @@
         "importButton": "Import {count} booking(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
-        "success": "Imported {count} booking(s) successfully.",
+        "success": "{bookings, plural, one {# booking} other {# bookings}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
@@ -1038,9 +1063,6 @@
           "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
         },
         "dialog": {
-          "structureTitle": "Table structure",
-          "columnHeader": "Column",
-          "notesHeader": "Notes",
           "required": "required",
           "optional": "optional",
           "failedWithDetails": "Import failed — see details",
@@ -1114,6 +1136,69 @@
               "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
             }
           }
+        },
+        "steps": {
+          "upload": "Upload",
+          "map": "Match columns",
+          "values": "Match values",
+          "preview": "Review",
+          "position": "Step {current} of {total}"
+        },
+        "mapping": {
+          "title": "Match your columns to ours",
+          "subtitle": "Tell us what each column in your file means. We handle the rest.",
+          "columnsFound": "{count, plural, one {# column} other {# columns}}",
+          "rowsFound": "{count, plural, one {# row} other {# rows}}",
+          "sectionRequired": "Required",
+          "sectionCommon": "Booking details",
+          "sectionAdvanced": "Advanced and round-trip columns",
+          "advancedHint": "Only needed when re-importing a file you exported from Gallurio.",
+          "selectColumn": "Select a column from your file",
+          "notImported": "Not imported",
+          "useFixedValue": "Use a fixed value",
+          "fixedValueLabel": "Value for every row",
+          "inferFromDate": "Work it out from the date",
+          "inferHint": "Past bookings that are fully paid become completed; everything else stays booked.",
+          "alreadyUsed": "{column} (already used)",
+          "sample": "First row: {value}",
+          "sampleEmpty": "First row is empty",
+          "unassignedRequired": "Needs a column",
+          "dateOrderLabel": "Day and month order",
+          "dateOrderMDY": "MM/DD/YYYY",
+          "dateOrderDMY": "DD/MM/YYYY",
+          "dateOrderHint": "{example} could be read two ways. Pick the order your file uses.",
+          "continueBlocked": "Match the {count, plural, one {# required field} other {# required fields}} to continue.",
+          "loading": "Reading your file",
+          "kindText": "Text",
+          "kindDate": "Date",
+          "kindMoney": "Money",
+          "kindNumber": "Number",
+          "kindEnum": "Choice",
+          "kindJson": "Data"
+        },
+        "values": {
+          "title": "Match your values to ours",
+          "subtitle": "Your file uses words we don't recognise. Tell us what they mean once and every row using them will import.",
+          "fromColumn": "From {column}",
+          "rowCount": "{count, plural, one {# row} other {# rows}}",
+          "choose": "Choose a match",
+          "leaveBlank": "Leave blank",
+          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will be skipped.} other {# values are unmatched. Rows using them will be skipped.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: we could not read \"{value}\" as an amount.",
+          "negative_amount": "{field}: \"{value}\" is negative, and amounts have to be zero or more.",
+          "not_a_date": "{field}: we could not read \"{value}\" as a date.",
+          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use.",
+          "unrecognized_value": "{field}: \"{value}\" was left unmatched."
+        },
+        "nav": {
+          "back": "Back",
+          "continue": "Continue",
+          "reviewMapping": "Columns matched automatically",
+          "reviewMappingAction": "Review",
+          "committing": "Importing your bookings",
+          "refreshing": "Refreshing your bookings"
         }
       },
       "export": {

@@ -58,12 +58,15 @@ describe("Compare index page", () => {
     const page = CompareIndexPage();
     render(page);
 
-    expect(screen.getByRole("heading", { name: "Gallurio compared with the tools you use now" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CRM and website builder alternatives for event creatives" })).toBeInTheDocument();
     expect(screen.getByText(/Direct comparisons of price/)).toBeInTheDocument();
   });
 
   it("publishes the compare index title and description", async () => {
     const metadata = generateMetadata();
+    expect(metadata.title).toEqual({ absolute: "CRM and Website Builder Alternatives for Creatives (2026)" });
+    expect(metadata.description).toContain("17hats");
+    expect(metadata.description).toContain("Google Forms alternatives");
     expect(metadata.alternates?.canonical).toBe("http://localhost:3000/compare");
     expect(metadata.alternates?.languages).not.toHaveProperty("ar");
   });

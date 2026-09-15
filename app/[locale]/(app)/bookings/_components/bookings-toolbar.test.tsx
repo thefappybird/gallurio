@@ -36,9 +36,9 @@ vi.mock("@/lib/i18n/navigation", () => ({
   ),
 }));
 
-// ── CsvImportDialog stub (avoids pulling in heavy file-upload deps) ───────────
-vi.mock("./csv-import-dialog", () => ({
-  CsvImportDialog: () => null,
+// ── ImportSheet stub (avoids pulling in heavy file-upload deps) ───────────
+vi.mock("./import-sheet", () => ({
+  ImportSheet: () => null,
 }));
 
 // ── InvoiceThemeDialog stub (avoids pulling in the real dialog + action) ──────

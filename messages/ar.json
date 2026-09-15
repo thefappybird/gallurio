@@ -4,6 +4,7 @@
       "pricing": "الأسعار",
       "portfolioMaker": "Portfolio Builder",
       "resources": "الموارد",
+      "compare": "المقارنات",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "contact": "تواصل معنا",
       "signIn": "تسجيل الدخول",
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "resources": "الموارد",
+      "compare": "المقارنات",
       "terms": "الشروط",
       "privacy": "الخصوصية",
       "refunds": "الاسترداد",
@@ -23,8 +25,8 @@
       "writing": "المدونة"
     },
     "metadata": {
-      "title": "Gallurio — أدوات المعرض والحجز والعملاء للأعمال الإبداعية",
-      "description": "أنشئ معرض أعمال احترافيًا بأداة بناء مواقع بالسحب والإفلات دون كتابة كود، واجمع طلبات الحجز، وأدر العملاء والحجوزات والمعارض والفواتير في مساحة عمل واحدة مع Gallurio."
+      "title": "منشئ بورتفوليو وCRM للحجوزات للفعاليات | Gallurio",
+      "description": "أنشئ موقع بورتفوليو بلا برمجة، واستقبل طلبات الحجز، وأدر العملاء والحجوزات والمعارض والفواتير في مساحة عمل واحدة لنشاطك في الفعاليات."
     },
     "hero": {
       "eyebrow": "مساحة عمل واحدة، مهمتان",
@@ -85,6 +87,25 @@
         "feature3": "بيانات التواصل وتفاصيل المشروع في عرض واحد",
         "feature4": "إشعار فور وصول أي طلب"
       },
+      "bookingMigration": {
+        "headline": "هل تنتقل من مزود CRM آخر؟ نحن معك في ثلاث خطوات سريعة.",
+        "description": "أضف ملف CSV أو Excel إلى تقويم الحجوزات، وطابقه مع Gallurio، ثم راجع كل حجز قبل استيراده.",
+        "upload": {
+          "title": "رفع",
+          "description": "اختر ملف CSV أو Excel مُصدَّراً من الخدمة التي تغادرها.",
+          "imageAlt": "ورقة استيراد حجوزات Gallurio جاهزة لرفع CSV أو Excel"
+        },
+        "normalize": {
+          "title": "مطابقة",
+          "description": "طابق الأعمدة والقيم في ملفك مع Gallurio.",
+          "imageAlt": "ورقة استيراد Gallurio تطابق الأعمدة من ملف مرفوع"
+        },
+        "preview": {
+          "title": "معاينة",
+          "description": "راجع الصفوف الصالحة والأخطاء قبل الاستيراد.",
+          "imageAlt": "ورقة استيراد Gallurio تعرض معاينة الحجوزات بعد تنظيمها"
+        }
+      },
       "businessWorkspace": {
         "title": "مساحة عمل الأعمال",
         "panelHeadline": "كل ما يحدث بعد وصول الاستفسار.",
@@ -133,6 +154,10 @@
     "manifesto": {
       "quote": "كل معرض أعمال جدير بالثقة. كل حجز محسوب. لا شيء غامض.",
       "attribution": "— الفكرة وراء Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "هل تريد معرفة كيف تقارن Gallurio بالأدوات التي تستخدمها الآن؟",
+      "linkLabel": "اطّلع على المقارنات"
     },
     "pricingTeaser": {
       "title": "أسعار بسيطة",
@@ -1013,7 +1038,7 @@
         "importButton": "استيراد {count} حجز",
         "importing": "جارٍ الاستيراد…",
         "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
-        "success": "تم استيراد {count} حجز بنجاح.",
+        "success": "تم استيراد {bookings} حجز و{shifts} وردية بنجاح.",
         "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
         "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
         "crossesMidnight": "يجب أن تقع البداية والنهاية في اليوم نفسه بتوقيت مساحة العمل ({tz}).",
@@ -1038,9 +1063,6 @@
           "previewHint": "لم يُستورد شيء بعد. صحِّح هذه الصفوف وأعد رفع الملف."
         },
         "dialog": {
-          "structureTitle": "بنية الجدول",
-          "columnHeader": "العمود",
-          "notesHeader": "ملاحظات",
           "required": "مطلوب",
           "optional": "اختياري",
           "failedWithDetails": "فشل الاستيراد — راجِع التفاصيل",
@@ -1114,6 +1136,69 @@
               "note": "قائمة JSON من ملف مُصدَّر. تُقرأ عند الإنشاء فقط؛ والمدفوع منها يصل إلى الدفتر"
             }
           }
+        },
+        "steps": {
+          "upload": "الرفع",
+          "map": "مطابقة الأعمدة",
+          "values": "مطابقة القيم",
+          "preview": "المراجعة",
+          "position": "الخطوة {current} من {total}"
+        },
+        "mapping": {
+          "title": "طابق أعمدتك مع أعمدتنا",
+          "subtitle": "أخبرنا بمعنى كل عمود في ملفك، ونحن نتولى الباقي.",
+          "columnsFound": "{count, plural, zero {# عمود} one {عمود واحد} two {عمودان} few {# أعمدة} many {# عمودًا} other {# عمود}}",
+          "rowsFound": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
+          "sectionRequired": "مطلوب",
+          "sectionCommon": "تفاصيل الحجز",
+          "sectionAdvanced": "أعمدة متقدمة وأعمدة الاستيراد المتبادل",
+          "advancedHint": "تلزم فقط عند إعادة استيراد ملف صدّرته من Gallurio.",
+          "selectColumn": "اختر عمودًا من ملفك",
+          "notImported": "لن يُستورد",
+          "useFixedValue": "استخدم قيمة ثابتة",
+          "fixedValueLabel": "القيمة لكل صف",
+          "inferFromDate": "استنتجها من التاريخ",
+          "inferHint": "الحجوزات السابقة المسددة بالكامل تصبح مكتملة، وما عداها يبقى محجوزًا.",
+          "alreadyUsed": "{column} (مستخدم بالفعل)",
+          "sample": "الصف الأول: {value}",
+          "sampleEmpty": "الصف الأول فارغ",
+          "unassignedRequired": "يحتاج إلى عمود",
+          "dateOrderLabel": "ترتيب اليوم والشهر",
+          "dateOrderMDY": "شش/يي/سسسس",
+          "dateOrderDMY": "يي/شش/سسسس",
+          "dateOrderHint": "يمكن قراءة {example} بطريقتين. اختر الترتيب الذي يستخدمه ملفك.",
+          "continueBlocked": "طابق {count, plural, zero {# حقل مطلوب} one {الحقل المطلوب} two {الحقلين المطلوبين} few {# حقول مطلوبة} many {# حقلًا مطلوبًا} other {# حقل مطلوب}} للمتابعة.",
+          "loading": "جارٍ قراءة ملفك",
+          "kindText": "نص",
+          "kindDate": "تاريخ",
+          "kindMoney": "مبلغ",
+          "kindNumber": "رقم",
+          "kindEnum": "اختيار",
+          "kindJson": "بيانات"
+        },
+        "values": {
+          "title": "طابق قيمك مع قيمنا",
+          "subtitle": "يستخدم ملفك كلمات لا نعرفها. أخبرنا بمعناها مرة واحدة وسيُستورد كل صف يستخدمها.",
+          "fromColumn": "من {column}",
+          "rowCount": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
+          "choose": "اختر مطابقة",
+          "leaveBlank": "اتركها فارغة",
+          "unmatchedWarning": "{count, plural, zero {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} one {قيمة واحدة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} two {قيمتان بلا مطابقة. ستُتخطى الصفوف التي تستخدمهما.} few {# قيم بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} many {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} other {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: تعذّرت قراءة \"{value}\" كمبلغ.",
+          "negative_amount": "{field}: القيمة \"{value}\" سالبة، والمبالغ يجب أن تكون صفرًا أو أكثر.",
+          "not_a_date": "{field}: تعذّرت قراءة \"{value}\" كتاريخ.",
+          "unsupported_currency": "{field}: العملة \"{value}\" غير متاحة لمساحة العمل هذه.",
+          "unrecognized_value": "{field}: تُركت \"{value}\" بلا مطابقة."
+        },
+        "nav": {
+          "back": "رجوع",
+          "continue": "متابعة",
+          "reviewMapping": "طوبقت الأعمدة تلقائيًا",
+          "reviewMappingAction": "مراجعة",
+          "committing": "جارٍ استيراد حجوزاتك",
+          "refreshing": "جارٍ تحديث حجوزاتك"
         }
       },
       "export": {

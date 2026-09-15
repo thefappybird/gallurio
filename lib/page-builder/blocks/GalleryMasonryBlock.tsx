@@ -25,6 +25,7 @@ import {
 import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
+import { galleryAltFallback } from "./galleryAlt";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
@@ -127,12 +128,15 @@ export function GalleryMasonryBlock({
   );
   const labels = getGalleryChromeLabelsFrom(puck);
   const list = Array.isArray(images) ? images : [];
+  const workspaceName = puck?.metadata?.workspace?.name;
+  const altFallback = (img: GalleryImage, index: number) =>
+    galleryAltFallback(labels.lightboxPhotoFallback, workspaceName, img.alt, index);
   // Full-array LightboxImage view for the legacy (pre-slot) render path, so
   // opening any thumbnail can page through every image in the masonry.
-  const legacyLightboxImages = list.map((img) => ({
+  const legacyLightboxImages = list.map((img, i) => ({
     id: img.id,
     publicId: img.publicId,
-    alt: img.alt ?? "",
+    alt: altFallback(img, i),
     width: img.width,
     height: img.height,
   }));
@@ -248,7 +252,7 @@ export function GalleryMasonryBlock({
                 }}
               >
                 <GalleryLightboxTrigger
-                  image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
+                  image={{ id: img.id, publicId: img.publicId, alt: altFallback(img, i) }}
                   images={legacyLightboxImages}
                   index={i}
                   labels={lightboxLabels}
@@ -258,7 +262,7 @@ export function GalleryMasonryBlock({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt={img.alt ?? ""}
+                    alt={altFallback(img, i)}
                     loading="lazy"
                     decoding="async"
                     width={img.width}

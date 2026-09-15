@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { routing } from "@/lib/i18n/routing";
 
-function baseUrl(): string {
+export function baseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 }
 
@@ -40,10 +40,20 @@ export function marketingMetadata({
   title,
   description,
 }: MarketingMetadataInput): Metadata {
+  const canonical = localeUrl(locale, path);
+  // Explicit, not left to Next's opengraph-image.tsx file-convention
+  // auto-resolution: live-verified that leaving `openGraph.images` unset here
+  // emits no og:image/twitter:image tag at all once a page sets its own
+  // `openGraph` object. `localeUrl` already encodes the same "as-needed"
+  // locale-prefix rule proxy.ts enforces, so this always resolves to a real,
+  // directly-fetchable image route for every locale.
+  const image = localeUrl(locale, "/opengraph-image");
   return {
     title: { absolute: title },
     description,
-    alternates: { canonical: localeUrl(locale, path), languages: hreflang(path) },
+    alternates: { canonical, languages: hreflang(path) },
+    openGraph: { type: "website", url: canonical, title, description, images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 

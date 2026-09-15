@@ -39,6 +39,31 @@ describe("marketingMetadata()", () => {
     expect(meta.title).toEqual({ absolute: "Pricing" });
     expect(meta.description).toBe("What Gallurio costs.");
   });
+
+  it("emits openGraph/twitter with a locale-aware, directly-resolvable image URL", () => {
+    const meta = marketingMetadata({ locale: "en", path: "/pricing", title: "T", description: "D" });
+
+    expect(meta.openGraph).toMatchObject({
+      type: "website",
+      url: "http://localhost:3000/pricing",
+      title: "T",
+      description: "D",
+      images: ["http://localhost:3000/opengraph-image"],
+    });
+    expect(meta.twitter).toMatchObject({
+      card: "summary_large_image",
+      title: "T",
+      description: "D",
+      images: ["http://localhost:3000/opengraph-image"],
+    });
+  });
+
+  it("locale-prefixes the image URL for a non-default locale", () => {
+    const meta = marketingMetadata({ locale: "fil", path: "/pricing", title: "T", description: "D" });
+
+    expect(meta.openGraph).toMatchObject({ images: ["http://localhost:3000/fil/opengraph-image"] });
+    expect(meta.twitter).toMatchObject({ images: ["http://localhost:3000/fil/opengraph-image"] });
+  });
 });
 
 describe("editorialMetadata()", () => {

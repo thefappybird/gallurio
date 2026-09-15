@@ -118,6 +118,8 @@ export type GalleryChromeLabels = {
   lightboxTags?: string;
   /** aria-label for a caption-layout pagination dot. Template with literal "{current}"/"{total}" tokens. */
   lightboxPhotoOf?: string;
+  /** Fallback alt text when an image has no owner-set alt. Template with literal "{n}" token. */
+  lightboxPhotoFallback?: string;
 };
 
 /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
@@ -262,6 +264,7 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     lightboxClient: g.lightboxClient ?? "Client",
     lightboxTags: g.lightboxTags ?? "Tags",
     lightboxPhotoOf: g.lightboxPhotoOf ?? "Photo {current} of {total}",
+    lightboxPhotoFallback: g.lightboxPhotoFallback ?? "Photo {n}",
   };
 }
 
