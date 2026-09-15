@@ -59,6 +59,16 @@ describe("Marketing Home page", () => {
     expect(screen.getByText("marketing:features.teams.title")).toBeInTheDocument();
   });
 
+  it("places the three-step booking migration section after booking inquiries", async () => {
+    const page = await Home({ params: Promise.resolve({ locale: "en" }) });
+    render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
+
+    expect(screen.getByText("marketing:features.bookingMigration.headline")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.upload.title")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.normalize.title")).toBeInTheDocument();
+    expect(screen.getByText("marketing:features.bookingMigration.preview.title")).toBeInTheDocument();
+  });
+
   it("identifies Gallurio in the hero across every launch locale", () => {
     for (const messages of [enMessages, filMessages, idMessages, arMessages, thMessages]) {
       expect(messages.marketing.hero.headlineShow).toMatch(/^Gallurio:\s+\S/);

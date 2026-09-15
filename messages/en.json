@@ -87,6 +87,25 @@
         "feature3": "Contact and project details in one view",
         "feature4": "Notified the moment one arrives"
       },
+      "bookingMigration": {
+        "headline": "Migrating from a different CRM provider? We got you in just three quick steps.",
+        "description": "Bring your CSV or Excel file into the bookings calendar, match it to Gallurio, then check every booking before it is imported.",
+        "upload": {
+          "title": "Upload",
+          "description": "Choose a CSV or Excel export from the service you are leaving.",
+          "imageAlt": "Gallurio booking import sheet ready for a CSV or Excel upload"
+        },
+        "normalize": {
+          "title": "Normalize",
+          "description": "Match the columns and values in your file to Gallurio.",
+          "imageAlt": "Gallurio booking import sheet matching columns from an uploaded file"
+        },
+        "preview": {
+          "title": "Preview",
+          "description": "Review valid rows and errors before you import.",
+          "imageAlt": "Gallurio booking import sheet previewing normalized bookings"
+        }
+      },
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "Everything that happens after the inquiry.",
@@ -1019,7 +1038,7 @@
         "importButton": "Import {count} booking(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
-        "success": "Imported {count} booking(s) successfully.",
+        "success": "{bookings, plural, one {# booking} other {# bookings}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",

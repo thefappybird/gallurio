@@ -228,6 +228,7 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
     const body = await res.json();
     expect(body.created).toBe(0);
     expect(body.updated).toBe(1);
+    expect(body.shifts).toBe(2);
 
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
     const after = await Booking.findById(existing._id).lean();
@@ -942,6 +943,7 @@ describe("GET /api/bookings/import — template", () => {
     const body = await result.json();
     expect(body.errors).toEqual([]);
     expect(body.created).toBe(1);
+    expect(body.shifts).toBe(2);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
     expect(booking?.sessions).toHaveLength(2);
   });

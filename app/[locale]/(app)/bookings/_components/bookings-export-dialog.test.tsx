@@ -28,6 +28,11 @@ function renderDialog(overrides: Partial<Parameters<typeof BookingsExportDialog>
 }
 
 describe("BookingsExportDialog", () => {
+  it("opens as a right-side sheet", () => {
+    renderDialog();
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-side", "right");
+  });
+
   it("downloads every team, all time, as CSV by default", () => {
     renderDialog();
     // Button renders an anchor with role="button", so query by that role.

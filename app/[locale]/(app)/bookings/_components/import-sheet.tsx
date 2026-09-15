@@ -114,6 +114,25 @@ export function ImportSheet({
   const [teamId, setTeamId] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
 
+  const resetImportState = useCallback(() => {
+    setStep("upload");
+    setDirection("forward");
+    setHeaders([]);
+    setSourceRows([]);
+    setMapping(autoMapColumns([]));
+    setValueMap({});
+    setDateOrder("MDY");
+    setAutoMapped(false);
+    setParsing(false);
+    setFileName(null);
+    setParseError(null);
+    setImportResult(null);
+    setShowResultsDialog(false);
+    setShowPreviewErrors(false);
+    setTeamId("");
+    setDuplicateWarning(null);
+  }, []);
+
   // ── mapping-derived data ───────────────────────────────────────────────────
 
   const unmapped = useMemo(
@@ -353,8 +372,15 @@ export function ImportSheet({
 
       const written = data.created + data.updated;
       if (written > 0) {
-        toast.success(t("success", { count: written }));
+        toast.success(t("success", { bookings: written, shifts: data.shifts }));
         startTransition(() => router.refresh());
+        // A clean import is complete. Leave a partial import open so its
+        // actionable errors stay available; otherwise return the owner to the
+        // refreshed booking view rather than making them dismiss this sheet.
+        if (data.errors.length === 0) {
+          resetImportState();
+          onClose();
+        }
       }
       if (data.errors.length > 0) {
         setShowResultsDialog(true);
@@ -362,7 +388,7 @@ export function ImportSheet({
           toast.error(tDialog("failedWithDetails"));
         }
       }
-    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, router, startTransition]),
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, router, startTransition, resetImportState, onClose]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -472,20 +498,7 @@ export function ImportSheet({
 
   function handleClose() {
     if (busy) return;
-    setStep("upload");
-    setDirection("forward");
-    setHeaders([]);
-    setSourceRows([]);
-    setMapping(autoMapColumns([]));
-    setValueMap({});
-    setDateOrder("MDY");
-    setAutoMapped(false);
-    setParsing(false);
-    setFileName(null);
-    setParseError(null);
-    setImportResult(null);
-    setShowResultsDialog(false);
-    setShowPreviewErrors(false);
+    resetImportState();
     onClose();
   }
 
@@ -663,7 +676,10 @@ export function ImportSheet({
                   </Button>
                 ) : null}
                 <span className="text-xs text-muted-foreground">
-                  {t("success", { count: importResult.created })}
+                  {t("success", {
+                    bookings: importResult.created + importResult.updated,
+                    shifts: importResult.shifts,
+                  })}
                 </span>
               </div>
             ) : null}

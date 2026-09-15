@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ImportSheet } from "./import-sheet";
+import { toast } from "sonner";
 
 // next-intl navigation is aliased to the stub via vitest.config.ts resolve
 // so useRouter() works without extra mocking.
@@ -79,6 +80,7 @@ const INVALID_CSV = [
 describe("ImportSheet", () => {
   beforeEach(() => {
     mockFetch.mockReset();
+    vi.mocked(toast.success).mockClear();
   });
 
   // ── 1. Smoke test ─────────────────────────────────────────────────────────
@@ -574,7 +576,7 @@ describe("ImportSheet steps", () => {
           resolve({
             ok: true,
             status: 200,
-            json: async () => ({ created: 1, updated: 0, skipped: 0, errors: [] }),
+            json: async () => ({ created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] }),
           });
       })
     );
@@ -594,6 +596,28 @@ describe("ImportSheet steps", () => {
       await waitFor(() =>
         expect(screen.queryByText("Importing your bookings")).not.toBeInTheDocument()
       );
+    } finally {
+      restore();
+    }
+  });
+
+  it("reports distinct booking and shift totals, then closes after a clean import", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ created: 1, updated: 0, shifts: 2, skipped: 0, errors: [] }),
+    });
+    const onClose = vi.fn();
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog({ onClose });
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("1 booking and 2 shifts imported successfully.");
+        expect(onClose).toHaveBeenCalledOnce();
+      });
     } finally {
       restore();
     }

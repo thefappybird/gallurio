@@ -266,7 +266,10 @@ export default async function Home({ params }: Props) {
           natural narrative: publish -> capture the inquiry -> manage
           everything after -> bring on the team. */}
       {panels.map((panel, index) => (
-        <PanelSection key={panel.image} panel={panel} index={index} />
+        <div key={panel.image}>
+          <PanelSection panel={panel} index={index} />
+          {index === 1 ? <BookingMigrationSection t={t} /> : null}
+        </div>
       ))}
 
       {/* Transparency — trust/compliance points surfaced as their own block
@@ -413,6 +416,69 @@ function PanelSection({
             <TextBlock panel={panel} />
           </>
         )}
+      </div>
+    </section>
+  );
+}
+
+function BookingMigrationSection({
+  t,
+}: {
+  t: Awaited<ReturnType<typeof getTranslations>>;
+}) {
+  const steps = [
+    {
+      key: "upload",
+      image: "/marketing/editorial/import-bookings-step-1",
+    },
+    {
+      key: "normalize",
+      image: "/marketing/editorial/import-bookings-step-2",
+    },
+    {
+      key: "preview",
+      image: "/marketing/editorial/import-bookings-step-3",
+    },
+  ] as const;
+
+  return (
+    <section className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-2xl text-start">
+          <h2 className="text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+            {t("features.bookingMigration.headline")}
+          </h2>
+          <p className="mt-3.5 max-w-xl text-base leading-7 text-muted-foreground">
+            {t("features.bookingMigration.description")}
+          </p>
+        </div>
+
+        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-5">
+          {steps.map((step, index) => (
+            <li key={step.key} className="min-w-0">
+              <div className="relative aspect-[4/3] overflow-hidden bg-muted ring-1 ring-foreground/10">
+                <ThemedShot
+                  base={step.image}
+                  alt={t(`features.bookingMigration.${step.key}.imageAlt`)}
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                />
+              </div>
+              <div className="mt-3 flex items-start gap-3 text-start">
+                <span className="pt-0.5 text-sm font-bold text-brand tabular-nums">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="font-heading text-base font-bold tracking-tight">
+                    {t(`features.bookingMigration.${step.key}.title`)}
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    {t(`features.bookingMigration.${step.key}.description`)}
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

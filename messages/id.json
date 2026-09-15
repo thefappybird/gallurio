@@ -87,6 +87,25 @@
         "feature3": "Kontak dan detail proyek dalam satu tampilan",
         "feature4": "Diberi tahu saat permintaan masuk"
       },
+      "bookingMigration": {
+        "headline": "Beralih dari penyedia CRM lain? Kami siap membantu dalam tiga langkah cepat.",
+        "description": "Masukkan file CSV atau Excel Anda ke kalender pemesanan, cocokkan dengan Gallurio, lalu periksa setiap pemesanan sebelum diimpor.",
+        "upload": {
+          "title": "Unggah",
+          "description": "Pilih ekspor CSV atau Excel dari layanan yang Anda tinggalkan.",
+          "imageAlt": "Lembar impor pemesanan Gallurio siap untuk unggahan CSV atau Excel"
+        },
+        "normalize": {
+          "title": "Cocokkan",
+          "description": "Cocokkan kolom dan nilai dalam file Anda dengan Gallurio.",
+          "imageAlt": "Lembar impor Gallurio yang mencocokkan kolom dari file yang diunggah"
+        },
+        "preview": {
+          "title": "Pratinjau",
+          "description": "Tinjau baris yang valid dan kesalahan sebelum mengimpor.",
+          "imageAlt": "Lembar impor Gallurio yang mempratinjau pemesanan yang telah dinormalisasi"
+        }
+      },
       "businessWorkspace": {
         "title": "Workspace bisnis",
         "panelHeadline": "Semua yang terjadi setelah permintaan masuk.",
@@ -1019,7 +1038,7 @@
         "importButton": "Impor {count} pemesanan",
         "importing": "Mengimpor…",
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
-        "success": "Berhasil mengimpor {count} pemesanan.",
+        "success": "Berhasil mengimpor {bookings} pemesanan dan {shifts} shift.",
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",

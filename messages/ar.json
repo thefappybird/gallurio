@@ -87,6 +87,25 @@
         "feature3": "بيانات التواصل وتفاصيل المشروع في عرض واحد",
         "feature4": "إشعار فور وصول أي طلب"
       },
+      "bookingMigration": {
+        "headline": "هل تنتقل من مزود CRM آخر؟ نحن معك في ثلاث خطوات سريعة.",
+        "description": "أضف ملف CSV أو Excel إلى تقويم الحجوزات، وطابقه مع Gallurio، ثم راجع كل حجز قبل استيراده.",
+        "upload": {
+          "title": "رفع",
+          "description": "اختر ملف CSV أو Excel مُصدَّراً من الخدمة التي تغادرها.",
+          "imageAlt": "ورقة استيراد حجوزات Gallurio جاهزة لرفع CSV أو Excel"
+        },
+        "normalize": {
+          "title": "مطابقة",
+          "description": "طابق الأعمدة والقيم في ملفك مع Gallurio.",
+          "imageAlt": "ورقة استيراد Gallurio تطابق الأعمدة من ملف مرفوع"
+        },
+        "preview": {
+          "title": "معاينة",
+          "description": "راجع الصفوف الصالحة والأخطاء قبل الاستيراد.",
+          "imageAlt": "ورقة استيراد Gallurio تعرض معاينة الحجوزات بعد تنظيمها"
+        }
+      },
       "businessWorkspace": {
         "title": "مساحة عمل الأعمال",
         "panelHeadline": "كل ما يحدث بعد وصول الاستفسار.",
@@ -1019,7 +1038,7 @@
         "importButton": "استيراد {count} حجز",
         "importing": "جارٍ الاستيراد…",
         "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
-        "success": "تم استيراد {count} حجز بنجاح.",
+        "success": "تم استيراد {bookings} حجز و{shifts} وردية بنجاح.",
         "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
         "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
         "crossesMidnight": "يجب أن تقع البداية والنهاية في اليوم نفسه بتوقيت مساحة العمل ({tz}).",

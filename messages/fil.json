@@ -87,6 +87,25 @@
         "feature3": "Contact at detalye ng proyekto sa iisang view",
         "feature4": "May notification sa sandaling may dumating"
       },
+      "bookingMigration": {
+        "headline": "Lumilipat mula sa ibang CRM provider? Nasa amin ka sa tatlong mabilis na hakbang.",
+        "description": "Ipasok ang CSV o Excel file mo sa bookings calendar, itugma ito sa Gallurio, at suriin ang bawat booking bago i-import.",
+        "upload": {
+          "title": "I-upload",
+          "description": "Pumili ng CSV o Excel export mula sa serbisyong iniiwan mo.",
+          "imageAlt": "Import sheet ng Gallurio para sa CSV o Excel upload"
+        },
+        "normalize": {
+          "title": "Itugma",
+          "description": "Itugma ang mga column at value sa file mo sa Gallurio.",
+          "imageAlt": "Import sheet ng Gallurio na nagtutugma ng mga column mula sa in-upload na file"
+        },
+        "preview": {
+          "title": "Suriin",
+          "description": "Suriin ang valid na row at mga error bago mag-import.",
+          "imageAlt": "Import sheet ng Gallurio na nagpapakita ng nakaayos na bookings"
+        }
+      },
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "Lahat ng nangyayari pagkatapos ng inquiry.",
@@ -1019,7 +1038,7 @@
         "importButton": "I-import ang {count} booking(s)",
         "importing": "Nag-iimport…",
         "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
-        "success": "Matagumpay na na-import ang {count} booking(s).",
+        "success": "Matagumpay na na-import ang {bookings} booking at {shifts} shift.",
         "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
         "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
         "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
