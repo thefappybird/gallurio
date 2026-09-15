@@ -104,7 +104,7 @@ export function ContactSheet({
                 {thumbSrc ? (
                   <img
                     src={thumbSrc}
-                    alt={img.alt}
+                    alt={img.alt || labels.photo}
                     style={{
                       width: "100%",
                       height: "100%",

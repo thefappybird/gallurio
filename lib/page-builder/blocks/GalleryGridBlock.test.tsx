@@ -35,6 +35,26 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(els[0].getAttribute("alt")).toBe("Alt 0");
   });
 
+  it("falls back to a non-empty alt when the owner never set one", () => {
+    const untitled: GalleryImage[] = [{ id: "id0", publicId: "pid0" }];
+    const { container } = render(GalleryGridBlock({ ...base, images: untitled }));
+    const el = container.querySelector("img");
+    expect(el?.getAttribute("alt")).toBe("Photo 1");
+  });
+
+  it("prefixes the alt fallback with the workspace name when available", () => {
+    const untitled: GalleryImage[] = [{ id: "id0", publicId: "pid0" }];
+    const { container } = render(
+      GalleryGridBlock({
+        ...base,
+        images: untitled,
+        puck: { metadata: { workspace: { _id: "w1", name: "Studio Lumen" } } },
+      }),
+    );
+    const el = container.querySelector("img");
+    expect(el?.getAttribute("alt")).toBe("Studio Lumen — Photo 1");
+  });
+
   it("renders the empty state when images is empty", () => {
     render(GalleryGridBlock({ ...base, images: [] }));
     expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();

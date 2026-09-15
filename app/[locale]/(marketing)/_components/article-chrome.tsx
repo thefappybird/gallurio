@@ -96,12 +96,23 @@ export function ArticleChrome({ entry, children }: { entry: ContentEntry; childr
       <div className={`${ARTICLE_PROSE_CLASS} mt-10`}>{children}</div>
 
       {isComparison ? (
-        <aside className="mt-12 bg-muted/40 p-5 ring-1 ring-foreground/10">
-          <h2 className="font-heading text-base font-semibold">How this comparison was prepared</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Competitor features and prices were checked against the sources linked in the article. Gallurio capabilities were verified in the product. We name material gaps instead of treating missing features as roadmap promises.
-          </p>
-        </aside>
+        <>
+          <section className="mt-12 border-y border-border py-8" aria-labelledby="booking-migration-heading">
+            <h2 id="booking-migration-heading" className="font-heading text-xl font-semibold tracking-tight">
+              Moving from another service?
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Gallurio also supports migrating from different services by allowing you to import CSV or Excel files into the bookings calendar to migrate your data seamlessly, with a clear preview before anything is imported.
+            </p>
+          </section>
+
+          <aside className="mt-12 bg-muted/40 p-5 ring-1 ring-foreground/10">
+            <h2 className="font-heading text-base font-semibold">How this comparison was prepared</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Competitor features and prices were checked against the sources linked in the article. Gallurio capabilities were verified in the product. We name material gaps instead of treating missing features as roadmap promises.
+            </p>
+          </aside>
+        </>
       ) : null}
 
       <FaqSection entry={entry} />

@@ -30,6 +30,7 @@ describe("MarketingFooter", () => {
       "/about",
       "/pricing",
       "/resources",
+      "/compare",
       "/book-demo",
       "/terms",
       "/privacy",

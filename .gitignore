@@ -61,6 +61,7 @@ skills-lock.json
 /test-results/
 /playwright-report/
 /e2e/.auth/
+e2e/__screenshots__
 # run-gallurio driver screenshots (may capture seeded data)
 /.driver-shots/
 /e2e/.artifacts/

@@ -110,9 +110,17 @@ describe("useLemonSqueezyCheckout", () => {
 
   it("removes the injected script tag on unmount", async () => {
     const { unmount } = renderHook(() => useLemonSqueezyCheckout(vi.fn()));
-    expect(document.querySelector('script[src*="lemon.js"]')).not.toBeNull();
+    const script = document.querySelector<HTMLScriptElement>('script[src*="lemon.js"]');
+    expect(script).not.toBeNull();
+    const onLoad = script?.onload;
 
     unmount();
     expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
+
+    // A detached script can still complete loading. Its stale handler must not
+    // initialize the checkout overlay after the hook has unmounted.
+    createLemonSqueezyMock.mockClear();
+    if (script && onLoad) onLoad.call(script, new Event("load"));
+    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
   });
 });

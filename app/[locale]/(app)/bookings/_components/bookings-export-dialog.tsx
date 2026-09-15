@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDownIcon, DownloadIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -14,7 +14,7 @@ type Props = {
   onClose: () => void;
   /**
    * Query string carrying the list's own filters (status, search, the two
-   * toggles). The dialog appends its own choices to it so a download matches
+   * toggles). The sheet appends its own choices to it so a download matches
    * what the table is showing.
    */
   baseParams: string;
@@ -61,11 +61,14 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
   const href = `/api/bookings/export${qs ? `?${qs}` : ""}`;
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-md">
-        <DialogTitle>{t("title")}</DialogTitle>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border pe-12">
+          <SheetTitle>{t("title")}</SheetTitle>
+        </SheetHeader>
 
-        <fieldset className="flex flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+          <fieldset className="flex flex-col gap-2">
           <legend className="text-xs font-medium text-foreground">
             {t("teamLabel")}
           </legend>
@@ -92,9 +95,9 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
               />
             </PopoverContent>
           </Popover>
-        </fieldset>
+          </fieldset>
 
-        <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-xs font-medium text-foreground">
             {t("rangeLabel")}
           </legend>
@@ -151,9 +154,9 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
               </div>
             </div>
           ) : null}
-        </fieldset>
+          </fieldset>
 
-        <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-xs font-medium text-foreground">
             {t("formatLabel")}
           </legend>
@@ -171,30 +174,34 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
               </label>
             ))}
           </div>
-        </fieldset>
+          </fieldset>
 
-        {["status", "q", "includeCancelled", "showPast"].some((k) => p.has(k)) ? (
-          <p className="text-xs text-muted-foreground">{t("listFiltersApply")}</p>
-        ) : null}
+          {["status", "q", "includeCancelled", "showPast"].some((k) => p.has(k)) ? (
+            <p className="text-xs text-muted-foreground">{t("listFiltersApply")}</p>
+          ) : null}
 
-        {rangeInvalid ? (
-          <Button type="button" size="sm" disabled className="min-h-11 sm:min-h-0">
-            <DownloadIcon className="size-4" />
-            {t("download")}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            nativeButton={false}
-            className="min-h-11 sm:min-h-0"
-            render={<a href={href} download onClick={onClose} />}
-          >
-            <DownloadIcon className="size-4" />
-            {t("download")}
-          </Button>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+
+        <SheetFooter className="border-t border-border bg-muted/30">
+          {rangeInvalid ? (
+            <Button type="button" size="sm" disabled className="min-h-11 w-full sm:min-h-0">
+              <DownloadIcon className="size-4" />
+              {t("download")}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              nativeButton={false}
+              className="min-h-11 w-full sm:min-h-0"
+              render={<a href={href} download onClick={onClose} />}
+            >
+              <DownloadIcon className="size-4" />
+              {t("download")}
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

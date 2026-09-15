@@ -71,6 +71,13 @@ Body.
 });
 
 describe("listEntries()", () => {
+  it("keeps editorial titles and search descriptions concise", () => {
+    for (const entry of [...listEntries("blog"), ...listEntries("compare")]) {
+      expect(entry.title.length, `${entry.slug} title`).toBeLessThanOrEqual(70);
+      expect(entry.description.length, `${entry.slug} description`).toBeLessThanOrEqual(160);
+    }
+  });
+
   it("reads the .mdx files on disk", () => {
     expect(listEntries("compare").length).toBeGreaterThan(0);
   });
@@ -109,6 +116,25 @@ describe("listEntries()", () => {
       expect(entry.description, entry.slug).toMatch(/^Gallurio\b/);
       expect(entry.description, entry.slug).toMatch(/\balternative\b/i);
       expect(entry.body, entry.slug).toMatch(/## The short version\s+\*\*Start with Gallurio\*\*/);
+    }
+  });
+
+  it("leads every direct-comparison title with its alternative query", () => {
+    const titleStarts = {
+      "gallurio-vs-17hats": "17hats alternatives",
+      "gallurio-vs-dubsado": "Dubsado alternatives",
+      "gallurio-vs-google-forms-and-email": "Google Forms alternatives",
+      "gallurio-vs-google-sheets": "Google Sheets alternatives",
+      "gallurio-vs-honeybook": "HoneyBook alternatives",
+      "gallurio-vs-notion": "Notion CRM alternatives",
+      "gallurio-vs-pixieset": "Pixieset alternatives",
+      "gallurio-vs-squarespace": "Squarespace alternatives",
+      "gallurio-vs-studio-ninja": "Studio Ninja alternatives",
+      "gallurio-vs-wix": "Wix alternatives",
+    } as const;
+
+    for (const [slug, titleStart] of Object.entries(titleStarts)) {
+      expect(getEntry("compare", slug)?.title).toMatch(new RegExp(`^${titleStart}`, "i"));
     }
   });
 

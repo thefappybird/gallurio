@@ -1,10 +1,6 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { GoogleFontLoader } from "./GoogleFontLoader";
-
-// happy-dom actually attempts to fetch <link rel="stylesheet"> hrefs — stub
-// fetch so these tests never hit the real network.
-vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("")));
 
 afterEach(() => {
   cleanup();

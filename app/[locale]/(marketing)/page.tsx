@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { CheckIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { marketingMetadata } from "@/lib/seo/metadata";
+import { marketingMetadata, baseUrl } from "@/lib/seo/metadata";
+import { buildOrganizationLd, buildWebSiteLd } from "@/lib/seo/marketingJsonLd";
+import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { redirect } from "next/navigation";
 import { Link } from "@/lib/i18n/navigation";
 import { getAuthUser } from "@/lib/auth/session";
@@ -120,8 +122,20 @@ export default async function Home({ params }: Props) {
     { title: t("transparency.item4.title"), body: t("transparency.item4.body") },
   ];
 
+  // Organization/WebSite are site-wide singletons: use the bare origin, not a
+  // locale-prefixed URL, so every locale's Home page emits the same entity
+  // (see buildOrganizationLd/buildWebSiteLd). `logo` must be a raster image
+  // per Google's structured-data guidance — SVG isn't accepted.
+  const organizationLd = buildOrganizationLd({
+    url: baseUrl(),
+    logoUrl: `${baseUrl()}/brand/gallurio%20sq%20png.png`,
+  });
+  const webSiteLd = buildWebSiteLd({ url: baseUrl() });
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(webSiteLd) }} />
       {/* Hero — split down the middle: the public portfolio (Show) vs. the
           business workspace (Manage). Ambient art is confined to the
           headline+trust area so it doesn't compete with the split imagery
@@ -202,7 +216,10 @@ export default async function Home({ params }: Props) {
                 {t("split.showTag")}
               </span>
             </div>
-            <div className="relative aspect-[16/11] -rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:rotate-[1.2deg] rtl:group-hover:rotate-0">
+            <div
+              data-testid="marketing-show-image-frame"
+              className="relative aspect-[16/11] -rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-4px] group-hover:scale-[1.025] group-hover:rotate-0 rtl:rotate-[1.2deg] rtl:group-hover:rotate-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            >
               <ThemedShot
                 base="/marketing/screenshots/portfolio-builder-canvas"
                 alt={t("split.showImageAlt")}
@@ -218,7 +235,10 @@ export default async function Home({ params }: Props) {
                 {t("split.manageTag")}
               </span>
             </div>
-            <div className="relative aspect-[16/11] rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:-rotate-[1.2deg] rtl:group-hover:rotate-0">
+            <div
+              data-testid="marketing-manage-image-frame"
+              className="relative aspect-[16/11] rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-4px] group-hover:scale-[1.025] group-hover:rotate-0 rtl:-rotate-[1.2deg] rtl:group-hover:rotate-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            >
               <ThemedShot
                 base="/marketing/screenshots/dashboard-overview"
                 alt={t("split.manageImageAlt")}
@@ -252,7 +272,10 @@ export default async function Home({ params }: Props) {
           natural narrative: publish -> capture the inquiry -> manage
           everything after -> bring on the team. */}
       {panels.map((panel, index) => (
-        <PanelSection key={panel.image} panel={panel} index={index} />
+        <div key={panel.image}>
+          <PanelSection panel={panel} index={index} />
+          {index === 1 ? <BookingMigrationSection t={t} /> : null}
+        </div>
       ))}
 
       {/* Transparency — trust/compliance points surfaced as their own block
@@ -304,6 +327,13 @@ export default async function Home({ params }: Props) {
       </section>
 
       <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
+
+      <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+        {t("compareTeaser.intro")}{" "}
+        <Link href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
+          {t("compareTeaser.linkLabel")}
+        </Link>
+      </p>
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
@@ -397,6 +427,81 @@ function PanelSection({
   );
 }
 
+function BookingMigrationSection({
+  t,
+}: {
+  t: Awaited<ReturnType<typeof getTranslations>>;
+}) {
+  const steps = [
+    {
+      key: "upload",
+      image: "/marketing/editorial/import-bookings-step-1",
+    },
+    {
+      key: "normalize",
+      image: "/marketing/editorial/import-bookings-step-2",
+    },
+    {
+      key: "preview",
+      image: "/marketing/editorial/import-bookings-step-3",
+    },
+  ] as const;
+
+  return (
+    <section className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-2xl text-start">
+          <h2 className="text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+            {t("features.bookingMigration.headline")}
+          </h2>
+          <p className="mt-3.5 max-w-xl text-base leading-7 text-muted-foreground">
+            {t("features.bookingMigration.description")}
+          </p>
+        </div>
+
+        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-5">
+          {steps.map((step, index) => (
+            <li
+              key={step.key}
+              data-testid={`booking-migration-${step.key}-card`}
+              className="group min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:hover:scale-[1.015] motion-reduce:transition-none motion-reduce:hover:scale-100"
+            >
+              <div className="overflow-hidden rounded-[var(--radius-surface)] bg-card ring-1 ring-foreground/10">
+                <div
+                  data-testid={`booking-migration-${step.key}-header`}
+                  className="flex min-h-32 items-start gap-3 border-b border-border px-4 py-5 text-start md:min-h-40"
+                >
+                  <span className="pt-0.5 text-sm font-bold text-brand tabular-nums">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 className="font-heading text-base font-bold tracking-tight">
+                      {t(`features.bookingMigration.${step.key}.title`)}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {t(`features.bookingMigration.${step.key}.description`)}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  data-testid={`booking-migration-${step.key}-image`}
+                  className="relative aspect-[543/868] w-full overflow-hidden bg-muted"
+                >
+                  <ThemedShot
+                    base={step.image}
+                    alt={t(`features.bookingMigration.${step.key}.imageAlt`)}
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                  />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 function TextBlock({
   panel,
 }: {
@@ -434,12 +539,16 @@ function TextBlock({
 
 function ImageBlock({ panel }: { panel: { kicker: string; image: string } }) {
   return (
-    <div className="w-full flex-1">
+    <div className="group w-full flex-1">
       <div
-        data-hover="brighten"
-        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10"
+        data-testid="marketing-feature-image-frame"
+        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       >
-        <ThemedShot base={panel.image} alt={panel.kicker} sizes="(min-width: 768px) 50vw, 100vw" />
+        <ThemedShot
+          base={panel.image}
+          alt={panel.kicker}
+          sizes="(min-width: 768px) 50vw, 100vw"
+        />
       </div>
     </div>
   );

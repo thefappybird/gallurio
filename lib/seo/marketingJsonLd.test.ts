@@ -4,6 +4,9 @@ import {
   buildFaqLd,
   buildArticleLd,
   buildBreadcrumbLd,
+  buildOrganizationLd,
+  buildWebSiteLd,
+  buildCollectionPageLd,
 } from "./marketingJsonLd";
 
 describe("buildSoftwareApplicationLd", () => {
@@ -98,6 +101,91 @@ describe("buildBreadcrumbLd", () => {
           item: "http://localhost:3000/pricing",
         },
       ],
+    });
+  });
+});
+
+describe("buildOrganizationLd", () => {
+  it("builds an Organization node keyed by a stable @id off the given url", () => {
+    const result = buildOrganizationLd({
+      url: "http://localhost:3000",
+      logoUrl: "http://localhost:3000/brand/gallurio%20sq%20png.png",
+    });
+
+    expect(result).toEqual({
+      "@context": "https://schema.org",
+      "@id": "http://localhost:3000#organization",
+      "@type": "Organization",
+      name: "Gallurio",
+      url: "http://localhost:3000",
+      logo: "http://localhost:3000/brand/gallurio%20sq%20png.png",
+    });
+  });
+
+  it("omits sameAs when no profiles are given", () => {
+    const result = buildOrganizationLd({ url: "http://localhost:3000", logoUrl: "http://localhost:3000/logo.png" });
+    expect(result).not.toHaveProperty("sameAs");
+  });
+
+  it("includes sameAs when profiles are given", () => {
+    const result = buildOrganizationLd({
+      url: "http://localhost:3000",
+      logoUrl: "http://localhost:3000/logo.png",
+      sameAs: ["https://www.instagram.com/gallurio"],
+    });
+    expect(result.sameAs).toEqual(["https://www.instagram.com/gallurio"]);
+  });
+});
+
+describe("buildWebSiteLd", () => {
+  it("builds a WebSite node keyed by a stable @id off the given url", () => {
+    const result = buildWebSiteLd({ url: "http://localhost:3000" });
+
+    expect(result).toEqual({
+      "@context": "https://schema.org",
+      "@id": "http://localhost:3000#website",
+      "@type": "WebSite",
+      name: "Gallurio",
+      url: "http://localhost:3000",
+    });
+  });
+});
+
+describe("buildCollectionPageLd", () => {
+  it("builds a CollectionPage with a 1-indexed ItemList using `item`, not `url`", () => {
+    const result = buildCollectionPageLd({
+      url: "http://localhost:3000/compare",
+      name: "Comparisons",
+      description: "Gallurio vs the tools event businesses actually use.",
+      items: [
+        { name: "HoneyBook Alternatives 2026", url: "http://localhost:3000/compare/gallurio-vs-honeybook" },
+        { name: "Dubsado Alternatives 2026", url: "http://localhost:3000/compare/gallurio-vs-dubsado" },
+      ],
+    });
+
+    expect(result).toEqual({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "Comparisons",
+      description: "Gallurio vs the tools event businesses actually use.",
+      url: "http://localhost:3000/compare",
+      mainEntity: {
+        "@type": "ItemList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "HoneyBook Alternatives 2026",
+            item: "http://localhost:3000/compare/gallurio-vs-honeybook",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Dubsado Alternatives 2026",
+            item: "http://localhost:3000/compare/gallurio-vs-dubsado",
+          },
+        ],
+      },
     });
   });
 });

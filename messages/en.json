@@ -5,6 +5,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "contact": "Contact",
       "signIn": "Sign in",
       "getStarted": "Get started"
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "terms": "Terms",
       "privacy": "Privacy",
       "refunds": "Refunds",
@@ -23,8 +25,8 @@
       "writing": "Writing"
     },
     "metadata": {
-      "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
-      "description": "Build a professional portfolio with a drag-and-drop, no-code website builder, collect booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace with Gallurio."
+      "title": "Portfolio Builder and Booking CRM for Event Creatives | Gallurio",
+      "description": "Build a no-code portfolio website, get booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace for your event business."
     },
     "hero": {
       "eyebrow": "One workspace, two jobs",
@@ -85,6 +87,25 @@
         "feature3": "Contact and project details in one view",
         "feature4": "Notified the moment one arrives"
       },
+      "bookingMigration": {
+        "headline": "Migrating from a different CRM provider? We got you in just three quick steps.",
+        "description": "Bring your CSV or Excel file into the bookings calendar, match it to Gallurio, then check every booking before it is imported.",
+        "upload": {
+          "title": "Upload",
+          "description": "Choose a CSV or Excel export from the service you are leaving.",
+          "imageAlt": "Gallurio booking import sheet ready for a CSV or Excel upload"
+        },
+        "normalize": {
+          "title": "Normalize",
+          "description": "Match the columns and values in your file to Gallurio.",
+          "imageAlt": "Gallurio booking import sheet matching columns from an uploaded file"
+        },
+        "preview": {
+          "title": "Preview",
+          "description": "Review valid rows and errors before you import.",
+          "imageAlt": "Gallurio booking import sheet previewing normalized bookings"
+        }
+      },
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "Everything that happens after the inquiry.",
@@ -133,6 +154,10 @@
     "manifesto": {
       "quote": "Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.",
       "attribution": "— the idea behind Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "Curious how Gallurio stacks up against what you're using now?",
+      "linkLabel": "See the comparisons"
     },
     "pricingTeaser": {
       "title": "Simple pricing",
@@ -591,7 +616,7 @@
       },
       "index": {
         "eyebrow": "Comparisons",
-        "headline": "Gallurio vs. the tools you're using now",
+        "headline": "How Gallurio compares to the tools you're using now",
         "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
         "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
       },
@@ -1013,7 +1038,7 @@
         "importButton": "Import {count} booking(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
-        "success": "Imported {count} booking(s) successfully.",
+        "success": "{bookings, plural, one {# booking} other {# bookings}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",

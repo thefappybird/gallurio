@@ -11,6 +11,23 @@ export default defineConfig({
     // red/green state. projectRoot is pinned to this worktree root.
     reporters: ["default", new VitestReporter({ projectRoot: __dirname })],
     environment: "happy-dom",
+    // Real network stylesheet fetches escape `vi.stubGlobal("fetch", ...)`
+    // (happy-dom's <link rel=stylesheet> loader uses its own internal fetch,
+    // not globalThis.fetch) and can outlive a test's teardown, surfacing as
+    // an unhandled-rejection "AbortError" on CI. Disable CSS file loading
+    // entirely — no test here asserts on loaded stylesheet contents.
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          disableCSSFileLoading: true,
+          // Without this, a disabled load throws synchronously instead of
+          // dispatching a `load`/`error` event, which React's stylesheet
+          // resource tracking (via `precedence`) surfaces as an unhandled
+          // rejection rather than a caught error.
+          handleDisabledFileLoadingAsSuccess: true,
+        },
+      },
+    },
     setupFiles: ["./vitest.setup.ts"],
     globals: false,
     include: ["**/*.test.{ts,tsx}"],

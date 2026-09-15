@@ -38,6 +38,7 @@ describe("MarketingHeader", () => {
       ["marketing.nav:pricing", "/pricing"],
       ["marketing.nav:bookDemo", "/book-demo"],
       ["marketing.nav:resources", "/resources"],
+      ["marketing.nav:compare", "/compare"],
       ["marketing.nav:signIn", "/sign-in"],
       ["marketing.nav:getStarted", "/sign-up"],
     ] as const;
@@ -52,6 +53,7 @@ describe("MarketingHeader", () => {
       "/pricing",
       "/book-demo",
       "/resources",
+      "/compare",
     ]);
 
     expect(screen.queryByRole("link", { name: "marketing.nav:contact" })).not.toBeInTheDocument();

@@ -67,6 +67,8 @@ describe("Compare slug page", () => {
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
     expect(screen.getByText("Yes.")).toBeInTheDocument();
     expect(screen.getByText("Gallurio Editorial")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Moving from another service?" })).toBeInTheDocument();
+    expect(screen.getByText(/import CSV or Excel files into the bookings calendar/i)).toBeInTheDocument();
   });
 
   it("emits Article, Breadcrumb, and FAQ JSON-LD script tags", async () => {

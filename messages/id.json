@@ -5,6 +5,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "resources": "Sumber daya",
+      "compare": "Bandingkan",
       "contact": "Kontak",
       "signIn": "Masuk",
       "getStarted": "Mulai sekarang"
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "resources": "Sumber daya",
+      "compare": "Bandingkan",
       "terms": "Ketentuan",
       "privacy": "Privasi",
       "refunds": "Pengembalian Dana",
@@ -23,8 +25,8 @@
       "writing": "Tulisan"
     },
     "metadata": {
-      "title": "Gallurio — Alat Portfolio, Pemesanan, dan Klien untuk Bisnis Kreatif",
-      "description": "Buat portfolio profesional dengan website builder drag-and-drop tanpa kode, kumpulkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace bersama Gallurio."
+      "title": "Pembuat Portofolio & CRM Pemesanan untuk Acara | Gallurio",
+      "description": "Buat situs portofolio tanpa kode, dapatkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace untuk bisnis acara Anda."
     },
     "hero": {
       "eyebrow": "Satu workspace, dua tugas",
@@ -85,6 +87,25 @@
         "feature3": "Kontak dan detail proyek dalam satu tampilan",
         "feature4": "Diberi tahu saat permintaan masuk"
       },
+      "bookingMigration": {
+        "headline": "Beralih dari penyedia CRM lain? Kami siap membantu dalam tiga langkah cepat.",
+        "description": "Masukkan file CSV atau Excel Anda ke kalender pemesanan, cocokkan dengan Gallurio, lalu periksa setiap pemesanan sebelum diimpor.",
+        "upload": {
+          "title": "Unggah",
+          "description": "Pilih ekspor CSV atau Excel dari layanan yang Anda tinggalkan.",
+          "imageAlt": "Lembar impor pemesanan Gallurio siap untuk unggahan CSV atau Excel"
+        },
+        "normalize": {
+          "title": "Cocokkan",
+          "description": "Cocokkan kolom dan nilai dalam file Anda dengan Gallurio.",
+          "imageAlt": "Lembar impor Gallurio yang mencocokkan kolom dari file yang diunggah"
+        },
+        "preview": {
+          "title": "Pratinjau",
+          "description": "Tinjau baris yang valid dan kesalahan sebelum mengimpor.",
+          "imageAlt": "Lembar impor Gallurio yang mempratinjau pemesanan yang telah dinormalisasi"
+        }
+      },
       "businessWorkspace": {
         "title": "Workspace bisnis",
         "panelHeadline": "Semua yang terjadi setelah permintaan masuk.",
@@ -133,6 +154,10 @@
     "manifesto": {
       "quote": "Setiap portofolio yang layak dipercaya. Setiap booking tercatat. Tidak ada yang samar.",
       "attribution": "— gagasan di balik Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "Ingin tahu bagaimana Gallurio dibandingkan dengan yang Anda gunakan sekarang?",
+      "linkLabel": "Lihat perbandingannya"
     },
     "pricingTeaser": {
       "title": "Harga sederhana",
@@ -1013,7 +1038,7 @@
         "importButton": "Impor {count} pemesanan",
         "importing": "Mengimpor…",
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
-        "success": "Berhasil mengimpor {count} pemesanan.",
+        "success": "Berhasil mengimpor {bookings} pemesanan dan {shifts} shift.",
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",

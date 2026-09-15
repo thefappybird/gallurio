@@ -3,7 +3,25 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
-## [1.40.1]
+## [1.4.2] - 2026-09-15
+
+Release commits through `6439ed3d`.
+
+### Added
+- Booking imports can now map unfamiliar CSV and XLSX column headings and values to Gallurio booking fields before review, so exports from other systems do not need to match the template exactly.
+- The marketing header now links directly to Portfolio Maker and Resources on desktop and mobile.
+- Marketing and public portfolio pages now include stronger search and sharing metadata, including generated Open Graph images and structured data for marketing content.
+
+### Changed
+- The booking import flow is now a guided sheet with clearer upload, mapping, review, and results steps; successful clean imports close automatically, while partial imports keep actionable errors available.
+- Booking exports now use the same responsive sheet pattern and keep the active booking-list filters in the downloaded file.
+- Marketing, blog, and comparison-page titles, descriptions, and editorial copy have been refined for clearer search presentation.
+
+### Fixed
+- Public portfolio pages now load selected Google fonts and publish gallery-image metadata consistently, improving the accuracy of published pages and their search previews.
+- The test environment no longer attempts to load CSS files from happy-dom during unit tests.
+
+## [1.4.1]
 
 ### Added
 - Photo lightbox layouts now offer a "see more" panel showing date, location, client, custom details, and tags — previously only visible on the Sidebar and Sheet layouts, now also on Caption and Cinema.
