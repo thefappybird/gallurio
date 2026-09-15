@@ -28,10 +28,14 @@ export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void) {
   });
 
   useEffect(() => {
+    let disposed = false;
+    let initialized = false;
     const script = document.createElement("script");
     script.src = "https://app.lemonsqueezy.com/js/lemon.js";
     script.defer = true;
     script.onload = () => {
+      if (disposed || initialized) return;
+      initialized = true;
       window.createLemonSqueezy?.();
       window.LemonSqueezy?.Setup({
         eventHandler(e) {
@@ -43,6 +47,8 @@ export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void) {
     document.body.appendChild(script);
 
     return () => {
+      disposed = true;
+      script.onload = null;
       document.body.removeChild(script);
     };
   }, []);
