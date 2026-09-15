@@ -81,6 +81,12 @@
         "value": "4px)",
         "createdAt": "2026-09-05T13:50:43.662Z",
         "reason": "var(--pf-radius, 4px) tag-pill fallback copied verbatim from SidebarLayout.tsx/SheetLayout.tsx per task brief instruction to reuse that exact markup"
+      },
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-09-13T09:49:11.609Z",
+        "reason": "Lowercase spelling of the same mandated app font, as it appears in the Google Fonts href"
       }
     ]
   }

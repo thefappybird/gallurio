@@ -1038,9 +1038,6 @@
           "previewHint": "لم يُستورد شيء بعد. صحِّح هذه الصفوف وأعد رفع الملف."
         },
         "dialog": {
-          "structureTitle": "بنية الجدول",
-          "columnHeader": "العمود",
-          "notesHeader": "ملاحظات",
           "required": "مطلوب",
           "optional": "اختياري",
           "failedWithDetails": "فشل الاستيراد — راجِع التفاصيل",
@@ -1114,6 +1111,69 @@
               "note": "قائمة JSON من ملف مُصدَّر. تُقرأ عند الإنشاء فقط؛ والمدفوع منها يصل إلى الدفتر"
             }
           }
+        },
+        "steps": {
+          "upload": "الرفع",
+          "map": "مطابقة الأعمدة",
+          "values": "مطابقة القيم",
+          "preview": "المراجعة",
+          "position": "الخطوة {current} من {total}"
+        },
+        "mapping": {
+          "title": "طابق أعمدتك مع أعمدتنا",
+          "subtitle": "أخبرنا بمعنى كل عمود في ملفك، ونحن نتولى الباقي.",
+          "columnsFound": "{count, plural, zero {# عمود} one {عمود واحد} two {عمودان} few {# أعمدة} many {# عمودًا} other {# عمود}}",
+          "rowsFound": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
+          "sectionRequired": "مطلوب",
+          "sectionCommon": "تفاصيل الحجز",
+          "sectionAdvanced": "أعمدة متقدمة وأعمدة الاستيراد المتبادل",
+          "advancedHint": "تلزم فقط عند إعادة استيراد ملف صدّرته من Gallurio.",
+          "selectColumn": "اختر عمودًا من ملفك",
+          "notImported": "لن يُستورد",
+          "useFixedValue": "استخدم قيمة ثابتة",
+          "fixedValueLabel": "القيمة لكل صف",
+          "inferFromDate": "استنتجها من التاريخ",
+          "inferHint": "الحجوزات السابقة المسددة بالكامل تصبح مكتملة، وما عداها يبقى محجوزًا.",
+          "alreadyUsed": "{column} (مستخدم بالفعل)",
+          "sample": "الصف الأول: {value}",
+          "sampleEmpty": "الصف الأول فارغ",
+          "unassignedRequired": "يحتاج إلى عمود",
+          "dateOrderLabel": "ترتيب اليوم والشهر",
+          "dateOrderMDY": "شش/يي/سسسس",
+          "dateOrderDMY": "يي/شش/سسسس",
+          "dateOrderHint": "يمكن قراءة {example} بطريقتين. اختر الترتيب الذي يستخدمه ملفك.",
+          "continueBlocked": "طابق {count, plural, zero {# حقل مطلوب} one {الحقل المطلوب} two {الحقلين المطلوبين} few {# حقول مطلوبة} many {# حقلًا مطلوبًا} other {# حقل مطلوب}} للمتابعة.",
+          "loading": "جارٍ قراءة ملفك",
+          "kindText": "نص",
+          "kindDate": "تاريخ",
+          "kindMoney": "مبلغ",
+          "kindNumber": "رقم",
+          "kindEnum": "اختيار",
+          "kindJson": "بيانات"
+        },
+        "values": {
+          "title": "طابق قيمك مع قيمنا",
+          "subtitle": "يستخدم ملفك كلمات لا نعرفها. أخبرنا بمعناها مرة واحدة وسيُستورد كل صف يستخدمها.",
+          "fromColumn": "من {column}",
+          "rowCount": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
+          "choose": "اختر مطابقة",
+          "leaveBlank": "اتركها فارغة",
+          "unmatchedWarning": "{count, plural, zero {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} one {قيمة واحدة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} two {قيمتان بلا مطابقة. ستُتخطى الصفوف التي تستخدمهما.} few {# قيم بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} many {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} other {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: تعذّرت قراءة \"{value}\" كمبلغ.",
+          "negative_amount": "{field}: القيمة \"{value}\" سالبة، والمبالغ يجب أن تكون صفرًا أو أكثر.",
+          "not_a_date": "{field}: تعذّرت قراءة \"{value}\" كتاريخ.",
+          "unsupported_currency": "{field}: العملة \"{value}\" غير متاحة لمساحة العمل هذه.",
+          "unrecognized_value": "{field}: تُركت \"{value}\" بلا مطابقة."
+        },
+        "nav": {
+          "back": "رجوع",
+          "continue": "متابعة",
+          "reviewMapping": "طوبقت الأعمدة تلقائيًا",
+          "reviewMappingAction": "مراجعة",
+          "committing": "جارٍ استيراد حجوزاتك",
+          "refreshing": "جارٍ تحديث حجوزاتك"
         }
       },
       "export": {
