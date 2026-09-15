@@ -5,6 +5,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "resources": "Sumber daya",
+      "compare": "Bandingkan",
       "contact": "Kontak",
       "signIn": "Masuk",
       "getStarted": "Mulai sekarang"
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "resources": "Sumber daya",
+      "compare": "Bandingkan",
       "terms": "Ketentuan",
       "privacy": "Privasi",
       "refunds": "Pengembalian Dana",
@@ -23,7 +25,7 @@
       "writing": "Tulisan"
     },
     "metadata": {
-      "title": "Pembuat Situs Portofolio Tanpa Kode dan CRM Pemesanan untuk Kreator Acara | Gallurio",
+      "title": "Pembuat Portofolio & CRM Pemesanan untuk Acara | Gallurio",
       "description": "Buat situs portofolio tanpa kode, dapatkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace untuk bisnis acara Anda."
     },
     "hero": {
@@ -133,6 +135,10 @@
     "manifesto": {
       "quote": "Setiap portofolio yang layak dipercaya. Setiap booking tercatat. Tidak ada yang samar.",
       "attribution": "— gagasan di balik Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "Ingin tahu bagaimana Gallurio dibandingkan dengan yang Anda gunakan sekarang?",
+      "linkLabel": "Lihat perbandingannya"
     },
     "pricingTeaser": {
       "title": "Harga sederhana",

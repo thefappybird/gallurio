@@ -9,7 +9,7 @@ import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
-import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
+import { GoogleFontLinks } from "@/lib/page-builder/GoogleFontLinks";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 import { PoweredByGallurio } from "./_components/PoweredByGallurio";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
@@ -240,7 +240,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(webpageLd) }} />
       {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
           kit's own heading/body Google Font is loaded by the layout. */}
-      <GoogleFontLoader families={collectGoogleFontFamilies(homeData)} />
+      <GoogleFontLinks families={collectGoogleFontFamilies(homeData)} />
       {/* metadata threads workspace context to every block via props.puck.metadata —
           the RSC-safe path (AsyncLocalStorage doesn't survive into async block render). */}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

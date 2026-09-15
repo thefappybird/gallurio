@@ -32,7 +32,7 @@ describe("collectPublishedGalleryImages", () => {
       content: [],
       zones: { "Container-1:zone": [galleryBlock("GalleryMasonry", [{ publicId: "b", alt: "" }])] },
     };
-    expect(collectPublishedGalleryImages(data)).toEqual([{ url: "https://cdn.example.com/b", alt: "" }]);
+    expect(collectPublishedGalleryImages(data)).toEqual([{ url: "https://cdn.example.com/b", alt: "Photo 1" }]);
   });
 
   it("collects Image blocks nested in a new gallery slot", () => {

@@ -136,7 +136,7 @@ export function Justified({
                     {thumbSrc ? (
                       <img
                         src={thumbSrc}
-                        alt={item.alt}
+                        alt={item.alt || labels.photo}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
                     ) : (

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { CheckIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { marketingMetadata } from "@/lib/seo/metadata";
+import { marketingMetadata, baseUrl } from "@/lib/seo/metadata";
+import { buildOrganizationLd, buildWebSiteLd } from "@/lib/seo/marketingJsonLd";
+import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { redirect } from "next/navigation";
 import { Link } from "@/lib/i18n/navigation";
 import { getAuthUser } from "@/lib/auth/session";
@@ -120,8 +122,20 @@ export default async function Home({ params }: Props) {
     { title: t("transparency.item4.title"), body: t("transparency.item4.body") },
   ];
 
+  // Organization/WebSite are site-wide singletons: use the bare origin, not a
+  // locale-prefixed URL, so every locale's Home page emits the same entity
+  // (see buildOrganizationLd/buildWebSiteLd). `logo` must be a raster image
+  // per Google's structured-data guidance — SVG isn't accepted.
+  const organizationLd = buildOrganizationLd({
+    url: baseUrl(),
+    logoUrl: `${baseUrl()}/brand/gallurio%20sq%20png.png`,
+  });
+  const webSiteLd = buildWebSiteLd({ url: baseUrl() });
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(webSiteLd) }} />
       {/* Hero — split down the middle: the public portfolio (Show) vs. the
           business workspace (Manage). Ambient art is confined to the
           headline+trust area so it doesn't compete with the split imagery
@@ -304,6 +318,13 @@ export default async function Home({ params }: Props) {
       </section>
 
       <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
+
+      <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+        {t("compareTeaser.intro")}{" "}
+        <Link href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
+          {t("compareTeaser.linkLabel")}
+        </Link>
+      </p>
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">

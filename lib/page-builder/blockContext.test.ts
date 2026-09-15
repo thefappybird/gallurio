@@ -34,6 +34,7 @@ const DEFAULTS = {
   lightboxLocation: "Location",
   lightboxClient: "Client",
   lightboxTags: "Tags",
+  lightboxPhotoFallback: "Photo {n}",
 };
 
 // ---------------------------------------------------------------------------
@@ -142,6 +143,7 @@ describe("getGalleryChromeLabelsFrom", () => {
       lightboxLocation: "LL",
       lightboxClient: "LCL",
       lightboxTags: "LT",
+      lightboxPhotoFallback: "LPF",
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);

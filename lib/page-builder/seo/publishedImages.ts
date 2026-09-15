@@ -32,11 +32,15 @@ function isPuckData(data: unknown): data is PuckData {
   );
 }
 
-function toPublishedImage(publicId: unknown, alt: unknown): PublishedImage | null {
+function toPublishedImage(publicId: unknown, alt: unknown, fallbackIndex: number): PublishedImage | null {
   if (typeof publicId !== "string" || !publicId.trim()) return null;
   const url = imageDeliveryUrl(publicId);
   if (!url) return null;
-  return { url, alt: typeof alt === "string" ? alt : "" };
+  const trimmed = typeof alt === "string" ? alt.trim() : "";
+  // An owner who never set alt text shouldn't drop the image from ImageGallery
+  // JSON-LD entirely (buildGalleryJsonLd filters on a non-empty alt) — a
+  // generic positional label is better than silent exclusion.
+  return { url, alt: trimmed || `Photo ${fallbackIndex}` };
 }
 
 /**
@@ -90,7 +94,7 @@ export function collectPublishedGalleryImages(
       const images = block.props?.images;
       if (!Array.isArray(images)) continue;
       for (const img of images as StoredImage[]) {
-        const pub = toPublishedImage(img.publicId, img.alt);
+        const pub = toPublishedImage(img.publicId, img.alt, raw.length + 1);
         if (pub) raw.push(pub);
       }
       continue;
@@ -98,7 +102,7 @@ export function collectPublishedGalleryImages(
     if (block.type === "Image") {
       const image = block.props as StoredImageBlock | undefined;
       const publicId = image?._style?.bgImagePublicId ?? image?.imagePublicId;
-      const pub = toPublishedImage(publicId, image?.alt);
+      const pub = toPublishedImage(publicId, image?.alt, raw.length + 1);
       if (pub) raw.push(pub);
     }
   }

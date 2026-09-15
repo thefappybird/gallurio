@@ -5,6 +5,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "contact": "Contact",
       "signIn": "Sign in",
       "getStarted": "Get started"
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "resources": "Resources",
+      "compare": "Compare",
       "terms": "Terms",
       "privacy": "Privacy",
       "refunds": "Refunds",
@@ -133,6 +135,10 @@
     "manifesto": {
       "quote": "Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.",
       "attribution": "— the idea behind Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "Curious how Gallurio stacks up against what you're using now?",
+      "linkLabel": "See the comparisons"
     },
     "pricingTeaser": {
       "title": "Simple pricing",
@@ -591,7 +597,7 @@
       },
       "index": {
         "eyebrow": "Comparisons",
-        "headline": "Gallurio vs. the tools you're using now",
+        "headline": "How Gallurio compares to the tools you're using now",
         "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
         "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
       },

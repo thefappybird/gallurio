@@ -4,6 +4,7 @@
       "pricing": "الأسعار",
       "portfolioMaker": "Portfolio Builder",
       "resources": "الموارد",
+      "compare": "المقارنات",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "contact": "تواصل معنا",
       "signIn": "تسجيل الدخول",
@@ -15,6 +16,7 @@
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "resources": "الموارد",
+      "compare": "المقارنات",
       "terms": "الشروط",
       "privacy": "الخصوصية",
       "refunds": "الاسترداد",
@@ -23,7 +25,7 @@
       "writing": "المدونة"
     },
     "metadata": {
-      "title": "منشئ مواقع بورتفوليو بلا برمجة ونظام CRM للحجوزات للمبدعين في الفعاليات | Gallurio",
+      "title": "منشئ بورتفوليو وCRM للحجوزات للفعاليات | Gallurio",
       "description": "أنشئ موقع بورتفوليو بلا برمجة، واستقبل طلبات الحجز، وأدر العملاء والحجوزات والمعارض والفواتير في مساحة عمل واحدة لنشاطك في الفعاليات."
     },
     "hero": {
@@ -133,6 +135,10 @@
     "manifesto": {
       "quote": "كل معرض أعمال جدير بالثقة. كل حجز محسوب. لا شيء غامض.",
       "attribution": "— الفكرة وراء Gallurio"
+    },
+    "compareTeaser": {
+      "intro": "هل تريد معرفة كيف تقارن Gallurio بالأدوات التي تستخدمها الآن؟",
+      "linkLabel": "اطّلع على المقارنات"
     },
     "pricingTeaser": {
       "title": "أسعار بسيطة",
