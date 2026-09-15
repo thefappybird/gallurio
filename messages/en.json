@@ -1044,9 +1044,6 @@
           "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
         },
         "dialog": {
-          "structureTitle": "Table structure",
-          "columnHeader": "Column",
-          "notesHeader": "Notes",
           "required": "required",
           "optional": "optional",
           "failedWithDetails": "Import failed — see details",
@@ -1120,6 +1117,69 @@
               "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
             }
           }
+        },
+        "steps": {
+          "upload": "Upload",
+          "map": "Match columns",
+          "values": "Match values",
+          "preview": "Review",
+          "position": "Step {current} of {total}"
+        },
+        "mapping": {
+          "title": "Match your columns to ours",
+          "subtitle": "Tell us what each column in your file means. We handle the rest.",
+          "columnsFound": "{count, plural, one {# column} other {# columns}}",
+          "rowsFound": "{count, plural, one {# row} other {# rows}}",
+          "sectionRequired": "Required",
+          "sectionCommon": "Booking details",
+          "sectionAdvanced": "Advanced and round-trip columns",
+          "advancedHint": "Only needed when re-importing a file you exported from Gallurio.",
+          "selectColumn": "Select a column from your file",
+          "notImported": "Not imported",
+          "useFixedValue": "Use a fixed value",
+          "fixedValueLabel": "Value for every row",
+          "inferFromDate": "Work it out from the date",
+          "inferHint": "Past bookings that are fully paid become completed; everything else stays booked.",
+          "alreadyUsed": "{column} (already used)",
+          "sample": "First row: {value}",
+          "sampleEmpty": "First row is empty",
+          "unassignedRequired": "Needs a column",
+          "dateOrderLabel": "Day and month order",
+          "dateOrderMDY": "MM/DD/YYYY",
+          "dateOrderDMY": "DD/MM/YYYY",
+          "dateOrderHint": "{example} could be read two ways. Pick the order your file uses.",
+          "continueBlocked": "Match the {count, plural, one {# required field} other {# required fields}} to continue.",
+          "loading": "Reading your file",
+          "kindText": "Text",
+          "kindDate": "Date",
+          "kindMoney": "Money",
+          "kindNumber": "Number",
+          "kindEnum": "Choice",
+          "kindJson": "Data"
+        },
+        "values": {
+          "title": "Match your values to ours",
+          "subtitle": "Your file uses words we don't recognise. Tell us what they mean once and every row using them will import.",
+          "fromColumn": "From {column}",
+          "rowCount": "{count, plural, one {# row} other {# rows}}",
+          "choose": "Choose a match",
+          "leaveBlank": "Leave blank",
+          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will be skipped.} other {# values are unmatched. Rows using them will be skipped.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: we could not read \"{value}\" as an amount.",
+          "negative_amount": "{field}: \"{value}\" is negative, and amounts have to be zero or more.",
+          "not_a_date": "{field}: we could not read \"{value}\" as a date.",
+          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use.",
+          "unrecognized_value": "{field}: \"{value}\" was left unmatched."
+        },
+        "nav": {
+          "back": "Back",
+          "continue": "Continue",
+          "reviewMapping": "Columns matched automatically",
+          "reviewMappingAction": "Review",
+          "committing": "Importing your bookings",
+          "refreshing": "Refreshing your bookings"
         }
       },
       "export": {

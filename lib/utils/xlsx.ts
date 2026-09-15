@@ -1,7 +1,7 @@
 import "server-only";
 
 import ExcelJS from "exceljs";
-import { normalizeCsvHeader, type CsvRow, type ParsedCsv } from "./csv-parse";
+import { dedupeHeaders, type CsvRow, type ParsedCsv } from "./csv-parse";
 
 /**
  * XLSX read/write for the bookings import/export.
@@ -36,12 +36,14 @@ export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<Par
   if (!sheet) return { headers: [], rows: [] };
 
   const headerRow = sheet.getRow(1);
-  const headers: string[] = [];
+  const raw: string[] = [];
   headerRow.eachCell({ includeEmpty: true }, (cell, col) => {
-    headers[col - 1] = normalizeCsvHeader(cellToString(cell.value));
+    raw[col - 1] = cellToString(cell.value).trim();
   });
   // eachCell skips trailing empties; normalize holes so indexes stay aligned.
-  for (let i = 0; i < headers.length; i++) headers[i] ??= "";
+  for (let i = 0; i < raw.length; i++) raw[i] ??= "";
+  // Header text is kept verbatim — the mapping step shows it back to the user.
+  const headers = dedupeHeaders(raw);
 
   const rows: CsvRow[] = [];
   sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {

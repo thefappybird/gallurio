@@ -96,6 +96,10 @@
         "rule": "design-system-font",
         "value": "arial",
         "createdAt": "2026-09-15T06:14:34.014Z"
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-09-13T09:49:11.609Z",
+        "reason": "Lowercase spelling of the same mandated app font, as it appears in the Google Fonts href"
       }
     ]
   }

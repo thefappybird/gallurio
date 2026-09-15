@@ -1044,9 +1044,6 @@
           "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya."
         },
         "dialog": {
-          "structureTitle": "Struktur tabel",
-          "columnHeader": "Kolom",
-          "notesHeader": "Catatan",
           "required": "wajib",
           "optional": "opsional",
           "failedWithDetails": "Impor gagal — lihat detailnya",
@@ -1120,6 +1117,69 @@
               "note": "Daftar JSON dari ekspor. Dibaca hanya saat membuat; entri lunas masuk ke buku besar"
             }
           }
+        },
+        "steps": {
+          "upload": "Unggah",
+          "map": "Cocokkan kolom",
+          "values": "Cocokkan nilai",
+          "preview": "Tinjau",
+          "position": "Langkah {current} dari {total}"
+        },
+        "mapping": {
+          "title": "Cocokkan kolom Anda dengan kolom kami",
+          "subtitle": "Beri tahu kami arti setiap kolom di berkas Anda. Sisanya kami yang urus.",
+          "columnsFound": "{count, plural, other {# kolom}}",
+          "rowsFound": "{count, plural, other {# baris}}",
+          "sectionRequired": "Wajib",
+          "sectionCommon": "Rincian pemesanan",
+          "sectionAdvanced": "Kolom lanjutan dan pulang-pergi",
+          "advancedHint": "Hanya diperlukan saat mengimpor ulang berkas yang Anda ekspor dari Gallurio.",
+          "selectColumn": "Pilih kolom dari berkas Anda",
+          "notImported": "Tidak diimpor",
+          "useFixedValue": "Gunakan nilai tetap",
+          "fixedValueLabel": "Nilai untuk setiap baris",
+          "inferFromDate": "Simpulkan dari tanggal",
+          "inferHint": "Pemesanan lampau yang lunas menjadi selesai; sisanya tetap dipesan.",
+          "alreadyUsed": "{column} (sudah dipakai)",
+          "sample": "Baris pertama: {value}",
+          "sampleEmpty": "Baris pertama kosong",
+          "unassignedRequired": "Perlu kolom",
+          "dateOrderLabel": "Urutan hari dan bulan",
+          "dateOrderMDY": "BB/HH/TTTT",
+          "dateOrderDMY": "HH/BB/TTTT",
+          "dateOrderHint": "{example} bisa dibaca dua cara. Pilih urutan yang dipakai berkas Anda.",
+          "continueBlocked": "Cocokkan {count, plural, other {# bidang wajib}} untuk melanjutkan.",
+          "loading": "Membaca berkas Anda",
+          "kindText": "Teks",
+          "kindDate": "Tanggal",
+          "kindMoney": "Uang",
+          "kindNumber": "Angka",
+          "kindEnum": "Pilihan",
+          "kindJson": "Data"
+        },
+        "values": {
+          "title": "Cocokkan nilai Anda dengan nilai kami",
+          "subtitle": "Berkas Anda memakai kata yang tidak kami kenali. Beri tahu artinya sekali dan setiap baris yang memakainya akan diimpor.",
+          "fromColumn": "Dari {column}",
+          "rowCount": "{count, plural, other {# baris}}",
+          "choose": "Pilih padanan",
+          "leaveBlank": "Biarkan kosong",
+          "unmatchedWarning": "{count, plural, other {# nilai belum dicocokkan. Baris yang memakainya akan dilewati.}}"
+        },
+        "coerce": {
+          "not_a_number": "{field}: kami tidak dapat membaca \"{value}\" sebagai jumlah.",
+          "negative_amount": "{field}: \"{value}\" bernilai negatif, dan jumlah harus nol atau lebih.",
+          "not_a_date": "{field}: kami tidak dapat membaca \"{value}\" sebagai tanggal.",
+          "unsupported_currency": "{field}: \"{value}\" bukan mata uang yang bisa dipakai ruang kerja ini.",
+          "unrecognized_value": "{field}: \"{value}\" dibiarkan tanpa padanan."
+        },
+        "nav": {
+          "back": "Kembali",
+          "continue": "Lanjutkan",
+          "reviewMapping": "Kolom dicocokkan otomatis",
+          "reviewMappingAction": "Tinjau",
+          "committing": "Mengimpor pemesanan Anda",
+          "refreshing": "Menyegarkan pemesanan Anda"
         }
       },
       "export": {
