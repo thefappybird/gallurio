@@ -126,6 +126,76 @@
   --puck-color-azure-12: var(--muted);
 }
 
+/* ─── Semantic token re-scoping (Puck >= 0.22) ────────────────────────────── */
+/*
+ * Puck 0.22 stopped consuming the raw palette directly and introduced a
+ * semantic layer on top of it — `--puck-color-surface`, `--puck-color-text`,
+ * `--puck-color-border`, and so on — each defined as an alias of a palette
+ * rung, e.g. `--puck-color-surface: var(--puck-color-grey-11)`.
+ *
+ * Puck declares that layer at `:root`. A custom property is resolved where it
+ * is DECLARED, not where it is used, so those aliases resolve against Puck's
+ * own palette and never see the overrides above — which live on
+ * `.gallurio-editor`, far below `:root`. The visible symptom on 0.23 was an
+ * editor stuck in light mode: the right properties panel painted pure white
+ * and the drawer #fafafa while `--card` was near-black.
+ *
+ * Re-declaring each alias HERE re-resolves it in our scope, against our
+ * palette. The definitions are copied verbatim from Puck's stylesheet on
+ * purpose: we are changing where they resolve, not what they mean, so a
+ * future Puck restyle of the semantic layer still lands correctly. Both
+ * themes are covered by this single block, because the dark rule below
+ * overrides the palette on this same element.
+ *
+ * `editorThemeBridge.test.ts` fails if a Puck upgrade adds an alias this block
+ * does not carry. Keep that green rather than debugging a mis-painted panel.
+ *
+ * Deliberately NOT re-scoped: `--puck-color-highlight` (rose-07). Like the
+ * other status hues it is left on Puck's own palette — see the note above.
+ */
+.gallurio-editor {
+  --puck-color-surface: var(--puck-color-white);
+  --puck-color-surface-subtle: var(--puck-color-grey-12);
+  --puck-color-surface-muted: var(--puck-color-grey-11);
+  --puck-color-surface-inverse: var(--puck-color-grey-01);
+
+  --puck-color-text: var(--puck-color-black);
+  --puck-color-text-secondary: var(--puck-color-grey-04);
+  --puck-color-text-muted: var(--puck-color-grey-05);
+  --puck-color-text-subtle: var(--puck-color-grey-07);
+  --puck-color-text-disabled: var(--puck-color-grey-03);
+  --puck-color-text-inverse: var(--puck-color-white);
+
+  --puck-color-border: var(--puck-color-grey-09);
+  --puck-color-border-muted: var(--puck-color-grey-10);
+  --puck-color-border-hover: var(--puck-color-grey-05);
+  --puck-color-border-inverse: var(--puck-color-grey-05);
+
+  --puck-color-bg-disabled: var(--puck-color-grey-07);
+
+  --puck-color-interactive: var(--puck-color-azure-04);
+  --puck-color-interactive-hover: var(--puck-color-azure-03);
+  --puck-color-interactive-active: var(--puck-color-azure-02);
+  --puck-color-interactive-subtle: var(--puck-color-azure-10);
+  --puck-color-interactive-soft: var(--puck-color-azure-11);
+  --puck-color-interactive-soft-hover: var(--puck-color-azure-12);
+  --puck-color-interactive-neutral-hover: var(--puck-color-grey-10);
+  --puck-color-interactive-inverse-hover: var(--puck-color-azure-06);
+  --puck-color-interactive-inverse-active: var(--puck-color-azure-07);
+
+  --puck-color-focus-ring: var(--puck-color-azure-05);
+  --puck-color-selection-border: var(--puck-color-azure-08);
+  --puck-color-selection-bg: color-mix(in srgb, var(--puck-color-azure-09) 30%, transparent);
+
+  /* 0.23's drag insertion line. Left on Puck's default azure it reads as a
+   * foreign blue against the brand; azure-06 is our brand-2 tint. */
+  --puck-color-line-placeholder: var(--puck-color-azure-06);
+
+  --puck-color-overlay-backdrop: color-mix(in srgb, var(--puck-color-black) 75%, transparent);
+
+  --puck-color-highlight: var(--puck-color-rose-07);
+}
+
 /* Puck root should stretch to the wrapper. */
 .gallurio-editor > div {
   height: 100%;
