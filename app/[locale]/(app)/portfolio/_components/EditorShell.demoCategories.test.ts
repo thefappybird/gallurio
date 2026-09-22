@@ -8,6 +8,9 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("@puckeditor/core", () => ({
   createUsePuck: () => () => undefined,
   Puck: () => null,
+  // EditorShell builds its `plugins` array at module scope, so this has to
+  // exist for the module to import at all.
+  legacySideBarPlugin: () => ({ name: "legacy-side-bar" }),
 }));
 vi.mock("../_actions", () => ({
   dismissPortfolioGuideAction: vi.fn(),

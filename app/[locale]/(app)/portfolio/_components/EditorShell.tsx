@@ -3,7 +3,7 @@
 import "@puckeditor/core/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
-import { Puck, Drawer, type Config, type Data } from "@puckeditor/core";
+import { Puck, Drawer, legacySideBarPlugin, type Config, type Data } from "@puckeditor/core";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -297,6 +297,11 @@ const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectio
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
 const LOCAL_DRAFT_VERSION = 2;
+
+// Module-level so the array identity never changes between renders — Puck
+// treats a new `plugins` reference the same way it treats a new `overrides`
+// one, and would remount the sidebar subtree on every keystroke.
+const puckPlugins = [legacySideBarPlugin({ componentsLabel: "", outlineLabel: "Outline" })];
 
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
@@ -3135,6 +3140,13 @@ export function EditorShell({
             onChange={handleChange}
             onPublish={() => void handlePublish()}
             iframe={{ enabled: false }}
+            // Puck 0.21 replaced the single left sidebar with an icon "plugin
+            // rail" (Blocks / Outline as separate tabs). This restores the
+            // pre-0.21 arrangement: one sidebar with our block tree stacked
+            // above the outline, which is what the `drawer` override below
+            // already assumes. `componentsLabel` is blank because that section
+            // is our own PresetBlocksDrawer, which carries its own headings.
+            plugins={puckPlugins}
             headerTitle={headerTitle}
             metadata={{
               workspace: {

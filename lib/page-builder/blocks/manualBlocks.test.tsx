@@ -29,6 +29,14 @@ import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
 import { Render } from "@puckeditor/core";
 import { puckConfig } from "../config";
+// Puck 0.23 narrows `resolvePermissions`'s `changed` param to `never` on the
+// DEFAULT config type, so our precisely-typed config no longer satisfies the
+// base `Config` a bare <Render> expects. Production call sites already cast the
+// same way (EditorShell, the public page renderers); this mirrors them once per
+// file rather than at every usage.
+const renderConfig = puckConfig as unknown as Config;
+
+import type { Config } from "@puckeditor/core";
 import type { SlotComponent, Permissions } from "@puckeditor/core";
 
 // ---------------------------------------------------------------------------
@@ -400,7 +408,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
   it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{
           root: {},
           content: [
