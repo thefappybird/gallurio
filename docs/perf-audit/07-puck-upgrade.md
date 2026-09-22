@@ -53,6 +53,8 @@ Expect to rewrite the whole block against the documented token API (`--puck-colo
 - `[class*="PuckCanvas-loader"]` — remove the permanently-invisible loader that still steals ~26px of row width.
 - `[class*="DrawerItem-draggable"]` — grab/grabbing cursor on drawer rows.
 
+These six are the *only* Puck-coupled CSS in the repo. The other `!important` rules in the portfolio code — `responsive.ts:115`, `manualBlocks.tsx:1394-1403`, `GalleryMasonryBlock.tsx:297,323`, `RootCanvasStyle.tsx:140,142` — all target our own class names (`PF_COLUMN_STACK_CLASS`, `contentAlignmentClass`, `PF_FULL_WIDTH_CONTAINER_SLOT_CLASS`) and our own `[data-block]` / `[data-pf-*]` attributes, so they are upgrade-inert. Don't re-audit them.
+
 0.22 restyled the overlays and 0.23 rewrote drag-and-drop and the outline. These selectors fail **silently** — nothing errors, the editor just looks wrong. The supported replacements now exist: the new `componentOverlay` override for the first group, theming tokens for drag indicators and outline styling for the rest. Treat every one of these six selectors as needing re-verification in a browser, not a grep.
 
 ### 3. Plugin Rail vs our chrome — unknown until observed
