@@ -6,7 +6,7 @@
  *
  * Puck 0.20.2 registers its own undo/redo hotkeys via a global singleton
  * `held`-key map shared across the whole page (`useHotkeyStore` inside
- * @measured/puck) that requires an EXACT modifier-key match on every
+ * @puckeditor/core) that requires an EXACT modifier-key match on every
  * keydown/keyup. It listens on `document` in the bubble phase. Any keydown
  * swallowed elsewhere before it gets there (e.g. our own editable-target
  * suppressor in EditorShell, which only intercepts keydown and never keyup)
@@ -17,7 +17,7 @@
  * Puck's own handler never also fires (no double-undo from one keypress).
  *
  * Puck has no built-in Delete/Backspace hotkey in this version (checked
- * against the installed @measured/puck 0.20.2 bundle) — the remove-selected-
+ * against the installed @puckeditor/core 0.20.2 bundle) — the remove-selected-
  * block behaviour below is net-new, not a duplicate of existing Puck wiring.
  *
  * Must be called from a component rendered INSIDE the <Puck> tree (passed

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import type { Permissions } from "@measured/puck";
+import type { Permissions } from "@puckeditor/core";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";

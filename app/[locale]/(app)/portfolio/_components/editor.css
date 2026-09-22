@@ -323,7 +323,7 @@
  * hook — the affordance has to be a CSS override here.
  *
  * The visible card is `._DrawerItem-draggable_<hash>` (Drawer css-module,
- * node_modules/@measured/puck/dist/index.css). [class*=] substring match
+ * node_modules/@puckeditor/core/dist/index.css). [class*=] substring match
  * survives Puck's per-build hash rotation. isDragDisabled is never passed by
  * PresetBlocksDrawer, so Puck's own disabled/not-allowed cursor rule is dead
  * code in this app and cannot collide with the rule below.

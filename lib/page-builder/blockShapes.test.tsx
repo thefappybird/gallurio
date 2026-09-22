@@ -22,7 +22,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Render } from "@measured/puck";
+import { Render } from "@puckeditor/core";
 import React from "react";
 import { puckConfig } from "./config";
 import { homeDataFixture, FIXTURE_HEADING_TEXT, FIXTURE_HERO_HEADLINE } from "./__fixtures__/homeData";

@@ -8,7 +8,7 @@
  * block's empty state. All branding via `--pf-*` CSS variables.
  */
 
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig } from "@puckeditor/core";
 import type { BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,

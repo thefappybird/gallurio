@@ -1,4 +1,4 @@
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig } from "@puckeditor/core";
 import type { BlockPuck } from "../blockContext";
 import { MasonryCloneClient } from "./MasonryCloneClient";
 

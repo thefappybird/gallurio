@@ -1,6 +1,6 @@
 /**
  * Normalizes persisted Puck page data before it is handed to the public
- * `@measured/puck` RSC `<Render>`.
+ * `@puckeditor/core` RSC `<Render>`.
  *
  * Why this exists: Puck's RSC `Render` does `"props" in data.root` with NO
  * defaulting of `data` or `data.root` (the CSR build defaults both). So any
@@ -15,7 +15,7 @@
  * upstream producer of bad data is observable in logs.
  */
 
-import type { Data } from "@measured/puck";
+import type { Data } from "@puckeditor/core";
 import type { PuckData } from "./types";
 import { normalizePageBody } from "./pageBody";
 import { normalizePresetLayouts } from "./templates/normalizePresetLayouts";

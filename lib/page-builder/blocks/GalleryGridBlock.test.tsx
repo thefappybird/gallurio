@@ -4,7 +4,7 @@ import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
 import { ImageBlock } from "./manualBlocks";
 import { puckConfig } from "@/lib/page-builder/config";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
@@ -103,7 +103,7 @@ describe("GalleryGridBlock — isomorphic render", () => {
   });
 
   it("shows the configured column count for the slot-based preset path", () => {
-    const slot: import("@measured/puck").SlotComponent = (props = {}) => (
+    const slot: import("@puckeditor/core").SlotComponent = (props = {}) => (
       <div data-testid="grid-slot" style={props.style} />
     );
     render(

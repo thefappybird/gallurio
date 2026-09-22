@@ -1,5 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
-import { Puck, type Config, type Data } from "@measured/puck";
+import { Puck, type Config, type Data } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MasonryCloneBlock, masonryCloneBlockConfig } from "./MasonryCloneBlock";

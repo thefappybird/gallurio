@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { Render, type Permissions, type SlotComponent } from "@measured/puck";
+import { Render, type Permissions, type SlotComponent } from "@puckeditor/core";
 import { puckConfig } from "../config";
 import {
   PAGE_BODY_MARGIN_X_DEFAULT,

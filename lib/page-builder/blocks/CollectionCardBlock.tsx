@@ -17,7 +17,7 @@
  * canvas and on the public page.
  */
 
-import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import type { ComponentConfig, Field, Fields } from "@puckeditor/core";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   buildCollectionCardCaptionStyle,

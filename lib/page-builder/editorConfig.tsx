@@ -30,7 +30,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
+import type { Config, ComponentConfig, Field, Fields } from "@puckeditor/core";
 import { MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { ContactDetailsDefaultsContext, RadiusButtons, StyleToolkitField, type NavDetachContext } from "./StyleToolkitField";

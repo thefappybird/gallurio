@@ -64,7 +64,7 @@ import {
   PanelLeft,
   Upload,
 } from "lucide-react";
-import type { ComponentData } from "@measured/puck";
+import type { ComponentData } from "@puckeditor/core";
 import { usePuckStore } from "./puckHooks";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl, SingleCollectionControl } from "./galleryPicker/MediaField";
 import { ImageBlockMetaSection } from "./ImageBlockMetaSection";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ComponentData, Data } from "@measured/puck";
+import type { ComponentData, Data } from "@puckeditor/core";
 import {
   findChrome,
   syncChrome,

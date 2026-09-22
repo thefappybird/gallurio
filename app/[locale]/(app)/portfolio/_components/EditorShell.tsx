@@ -1,9 +1,9 @@
 "use client";
 
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
-import { Puck, Drawer, type Config, type Data } from "@measured/puck";
+import { Puck, Drawer, type Config, type Data } from "@puckeditor/core";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -892,7 +892,7 @@ export function resolveDrawerItemPreset(name: string): SectionPresetEntry | unde
 
 /**
  * Renders `overrides.drawerItem` (or `overrides.componentItem`) for a raw
- * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@measured/puck` are
+ * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@puckeditor/core` are
  * unwired primitives — only Puck's own default `ComponentList.Item` (internal,
  * not exported) applies the `drawerItem` override automatically. Since
  * PresetBlocksDrawer builds every `Drawer.Item` itself, it passes this render

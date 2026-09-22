@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import type { Config } from "@measured/puck";
+import type { Config } from "@puckeditor/core";
 import { __resetPresetPreview, getActivePresetPreview } from "@/lib/page-builder/presetPreviewStore";
 import { collectBlocks } from "@/lib/page-builder/blockTree";
 
 // Puck's <Render> mounts the whole block tree — irrelevant to what this file
 // asserts (the row's interaction contract) and slow. Stand it in with a marker
 // that still proves the preset key reaches the renderer.
-vi.mock("@measured/puck", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@measured/puck")>()),
+vi.mock("@puckeditor/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@puckeditor/core")>()),
   Render: ({ data }: { data: { content: { type: string }[] } }) => (
     <div data-testid="mini-render">{data.content[0]?.type}</div>
   ),

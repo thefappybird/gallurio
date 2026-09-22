@@ -1,12 +1,12 @@
 /**
  * SuppressedActionBar suppresses Puck's built-in floating action bar so it
  * no longer competes with BlockActionsToolbar (our always-visible toolbar).
- * The component depends on ActionBar from @measured/puck — mocked here.
+ * The component depends on ActionBar from @puckeditor/core — mocked here.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-vi.mock("@measured/puck", () => ({
+vi.mock("@puckeditor/core", () => ({
   ActionBar: Object.assign(
     ({ children }: { children: React.ReactNode }) => <div data-testid="action-bar">{children}</div>,
     {

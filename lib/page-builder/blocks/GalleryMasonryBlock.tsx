@@ -7,7 +7,7 @@
  * render still gets translated copy, falling back to English.
  */
 
-import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@measured/puck";
+import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@puckeditor/core";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   getGalleryChromeLabelsFrom,

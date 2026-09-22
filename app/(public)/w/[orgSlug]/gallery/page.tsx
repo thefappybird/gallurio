@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Render } from "@measured/puck/rsc";
+import { Render } from "@puckeditor/core/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";

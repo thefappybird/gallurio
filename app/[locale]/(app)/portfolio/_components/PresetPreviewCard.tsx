@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Render, type Config, type Data } from "@measured/puck";
+import { Render, type Config, type Data } from "@puckeditor/core";
 import { SECTION_PRESETS, type SectionPresetKey } from "@/lib/page-builder/blocks/sectionPresets";
 import type { ManualBlockKey } from "@/lib/page-builder/blockCategories";
 import { mapBlocks } from "@/lib/page-builder/blockTree";

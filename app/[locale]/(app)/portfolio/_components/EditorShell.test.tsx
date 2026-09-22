@@ -59,7 +59,7 @@ const mockPuckApi = {
   },
 };
 
-vi.mock("@measured/puck", () => ({
+vi.mock("@puckeditor/core", () => ({
   createUsePuck: () => (selector?: (api: typeof mockPuckApi) => unknown) =>
     selector ? selector(mockPuckApi) : mockPuckApi,
   // Minimal stand-ins for the exported `Drawer`/`Drawer.Item` primitives (the

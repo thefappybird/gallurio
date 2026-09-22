@@ -27,7 +27,7 @@
  * swaps in visual pickers) — field KEYS match, so editor/prod parity holds.
  */
 
-import type { Slot } from "@measured/puck";
+import type { Slot } from "@puckeditor/core";
 import type { ContainerBlockProps } from "./manualBlocks";
 import type { NavigationBlockProps } from "./NavigationBlock";
 import {
