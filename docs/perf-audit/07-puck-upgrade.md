@@ -1,4 +1,7 @@
-# Perf audit: Puck upgrade blast radius — score 7/10 (upgrade is viable, cost is concentrated in editor chrome)
+# Perf audit: Puck upgrade blast radius — score 8/10 (upgrade is viable; measured cost is small and concentrated in editor theming)
+
+> A throwaway spike ran the real upgrade on 2026-09-22 against `@puckeditor/core@0.23.0`. **Read `## Spike findings` at the bottom before acting on the predictions above it** — three of the desk audit's estimates were wrong, two in our favour.
+
 
 We ship `@measured/puck@0.20.2`. Latest stable is `@puckeditor/core@0.23.0` — three minors ahead, and the package changed npm scope along the way. This audit answers: do we upgrade, and what work keeps every block, every personalization control, and every already-published page intact.
 
@@ -96,10 +99,63 @@ Editor-only, but real, and worth stating on a perf branch:
 Sequence, once the spike confirms:
 
 1. Scope rename across 56 files + `package.json`, as one isolated commit. Typecheck is the gate.
-2. Rewrite the `editor.css` theming bridge against the documented token API. Verify light + dark against the tokens, not by eye.
-3. Replace the overlay/canvas/drawer substring selectors with `componentOverlay` and theming tokens where a supported hook now exists; keep a substring rule only where none does, and comment why.
-4. Resolve the Plugin Rail — `legacySideBarPlugin()` if it restores our sidebar assumptions, otherwise rework the header toggles and `drawer` override.
+2. Fix the theming bridge — see `## Spike findings`, which replaces this step's original "full rewrite" estimate with a targeted re-scoping of the semantic tokens.
+3. ~~Replace the overlay/canvas/drawer substring selectors~~ — not needed; the spike confirmed all six still match. Optional cleanup only.
+4. ~~Resolve the Plugin Rail~~ — not needed; the spike confirmed it never renders behind our overrides.
 5. Only then, on a separate commit, attempt the `ContainerAnchor` deletion. It is the reward, not the migration.
 6. Regression pass: the 157 portfolio unit tests, then one batched Playwright run over the editor at 1280px (editor chrome is not a public surface).
 
 Do **not** bundle the richtext migration or any AI work into this. The upgrade should be provably behaviour-preserving before anything new is adopted on top of it.
+
+## Spike findings
+
+Run 2026-09-22 in a throwaway worktree on `@puckeditor/core@0.23.0`: scope rename across 53 source files, `pnpm remove @measured/puck && pnpm add @puckeditor/core@0.23.0` (+87 packages), then typecheck, the page-builder unit suite, and four browser probes of the live editor at 1280px.
+
+**The editor boots on 0.23 with zero console errors and zero page errors.** Every observation below is measured, not inferred.
+
+### Typecheck: 12 errors, all in test files, all one root cause
+
+`tsc --noEmit` after the rename: **12 errors across 3 files, zero in production source.** Every one is the same thing — `lib/page-builder/blockShapes.test.tsx` (9), `blocks/PageBodyBlock.test.tsx` (2), `blocks/manualBlocks.test.tsx` (1) cast our typed config to the base `Config`, and 0.23 widened `resolvePermissions`'s params with a new `parent` property while narrowing `changed` to `never` on the default config type. A test-only typing fix, not an API migration.
+
+### Unit tests: 2639 / 2639 pass
+
+The whole `lib/page-builder` suite — 116 files — passes unchanged on 0.23. No block, no slot, no custom field, no reconciler regressed. (An intermediate run showed 4 failures; those were caused by the spike's own anchor-disabling patch, and all 4 pass once it is reverted.)
+
+### Risk centre 2 was wrong — the internal class hooks all still match
+
+Measured in the live DOM. Puck 0.23 still emits `_DraggableComponent-overlay_<hash>`, `_DraggableComponent-actionsOverlay_<hash>` and `_DraggableComponent-overlayWrapper_<hash>`, mounted on hover and on selection exactly as in 0.20 (they are absent at rest in both versions — that is the normal lifecycle, not breakage). `PuckCanvas_`, `PuckCanvas-loader` and `DrawerItem-draggable` are all present at rest. **All six `[class*=]` selectors in `editor.css:251-341` survive as-is.** Migrating them to the new `componentOverlay` override is now an optional cleanup, not upgrade work.
+
+### Risk centre 3 was wrong — the Plugin Rail never renders here
+
+No rail classes exist anywhere in the DOM, and all six of our override tour anchors are present (`canvas`, `canvas-viewport`, `blocks-panel`, `properties-panel-body`, `section-tabs`, `publish`). Because we override `header`, `drawer` and `fields` wholesale, the rail surfaces are replaced before they can render. `legacySideBarPlugin()` is not needed. The plugin system is live alongside our overrides — `_OutlinePlugin_`, `_OutlineWrapper_` and `_OutlineHeader_` classes appear in the DOM — and coexists without conflict.
+
+### Risk centre 1 was real, but the cause and the fix are both different
+
+Our palette bridge **is** still applied: read from `.gallurio-editor`, `--puck-color-grey-12` and `--puck-color-white` correctly flip between near-white in light mode and near-black in dark. The bridge itself is fine.
+
+What breaks is 0.22's semantic alias layer. Puck declares ~28 aliases such as `--puck-color-surface: var(--puck-color-grey-11)` and `--puck-color-text: var(--puck-color-black)`, and it declares them **at `:root`**. A custom property resolves where it is *declared*, so those aliases resolve against Puck's own palette before our `.gallurio-editor` overrides are ever in scope. Measured, identical in light and dark:
+
+| token | value | should be (dark) |
+|---|---|---|
+| `--puck-color-surface` | `255,255,255` | `--card` = `31,33,35` |
+| `--puck-color-surface-subtle` | `250,250,250` | tonal dark |
+| `--puck-color-text` | `0,0,0` | `--foreground` = `226,229,231` |
+| `--puck-color-interactive` | `1,88,173` | brand teal |
+| `--puck-color-border` | `220,220,220` | `--border` |
+| `--puck-color-line-placeholder` | `#6499cf` | brand teal |
+
+And the real paint follows the aliases, not our palette: in dark mode the right properties panel paints pure white and the blocks drawer paints `#fafafa`. **The editor is effectively light-only on 0.23 until this is fixed.**
+
+The fix is mechanical, not a re-derivation: either hoist the existing palette overrides from `.gallurio-editor` up to `:root`/`html` (where the aliases resolve), or redeclare the ~28 semantic aliases on `.gallurio-editor` so they re-resolve in our scope. The second is the safer one — it keeps Puck's variables scoped to the editor subtree instead of leaking them app-wide. Either way it is one focused edit to `editor.css`, not the ~190-line rewrite the desk audit budgeted. `--puck-color-line-placeholder` should be mapped at the same time so insertion lines land in brand teal rather than Puck's default blue.
+
+### Unresolved: the ContainerAnchor question
+
+**Not answered.** With anchor emission patched off the canvas rendered correctly and `[data-puck-component$="--anchor"]` count was 0, but every synthetic canvas-to-canvas drag no-opped: across two attempts the dragged block's parent and position were unchanged. Playwright's pointer events do not drive 0.23's rewritten `@dnd-kit` 0.4 sensors the way they drove 0.1.18, so the technique in the `portfolio-testing` skill needs re-validating against the new engine before automation can answer this.
+
+The supporting machinery is confirmed present — `dnd.behavior` accepts `"auto" | "fluid" | "static"`, `dnd.disableOutlineDrag` exists, and `--puck-color-line-placeholder` is defined, so insertion lines are wired. Whether they actually let a block land beside a nested `Container`/`Columns` without the anchor bridge is a 60-second manual check: run the editor with `shouldKeepAnchor` returning `false` (`lib/page-builder/containerAnchorPredicate.ts:28`), load a draft with a nested container, and drag a block to the container's bottom edge.
+
+### Revised verdict
+
+**Upgrade.** The measured cost is far below the estimate: a mechanical 53-file scope rename, a test-only typing fix in 3 files, and one focused `editor.css` change to re-scope the semantic tokens. Nothing in the data layer, the blocks, the custom fields, the overrides or the CSS hooks needs touching, and the full page-builder suite passes untouched.
+
+The anchor deletion — the actual prize — stays a separate, later commit gated on the manual drag check above. Upgrade first for the supported theming API, the outline, and the load-time work; delete the anchor mechanism only once a human has watched a block land where it should.
