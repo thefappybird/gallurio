@@ -240,12 +240,26 @@ red one — it reports coverage that does not exist.
 The cut orphaned `CATEGORY_TITLE`, `CATEGORY_ROOT`, `ITEM_NAME`, `SHELL`, and the
 `hoverRow` and `openEditor` helpers, all removed with it.
 
-> **What the drawer still needs, and what it lost.** Deleting these gave up the
-> only browser coverage of the grouped preset drawer — 11 groups, three variants
-> each, collapsed-except-Hero, no horizontal overflow, Arabic chrome. That
-> behaviour is still shipping and is now only unit-tested. If it gets re-covered,
-> it must be written against **our** `PresetBlocksDrawer` markup, not Puck's
-> `ComponentList`, which our override means we will never render.
+> **What the drawer lost, and what still covers it.** The preset drawer is *not*
+> uncovered. `portfolio-maker-demo-editor.spec.ts` exercises it and passes (15/15
+> verified): its `hoverPreset()` helper expands a category via `aria-expanded`,
+> finds the preset row, hovers it and asserts the preview panel's image,
+> background and cinema placeholders. It is already written the right way — its
+> own comment notes that "Puck's CSS-module class names are implementation
+> details" and targets **our** `PresetBlocksDrawer` buttons instead.
+>
+> What the deletion did give up is the drawer's **structural inventory**, which
+> only `preset-library.spec.ts` asserted:
+>
+> - 11 groups, three variants each
+> - only Hero expanded on arrival
+> - no horizontal overflow at 768 and 1280
+> - Arabic chrome mirrors the drawer without breaking it
+>
+> That behaviour still ships and is now unit-tested only. If it gets re-covered,
+> extend the demo-editor spec's approach — role and `aria-expanded` against our
+> own markup — and never reach for `_ComponentList_`, which our `drawer` override
+> means we will never render.
 
 > **The lesson worth keeping.** A test failing against an unreachable selector is
 > loud; a test *passing* against one is silent. `[class*="_ComponentList_"]`

@@ -19,9 +19,15 @@
  *
  * The drawer-preview tests that used to live here were deleted with the rest of
  * the `_ComponentList_` group: our `drawer` override drops `children`, so Puck's
- * `ComponentList` never renders and nothing could match. Re-covering the preset
- * drawer means asserting against our own `PresetBlocksDrawer` markup instead —
- * see `docs/portfolio/puck-023-followups.md`.
+ * `ComponentList` never renders and nothing could match.
+ *
+ * The drawer itself is still covered — `portfolio-maker-demo-editor.spec.ts`
+ * expands a category by `aria-expanded`, hovers a preset row and asserts the
+ * preview panel, all against our own `PresetBlocksDrawer` buttons. Anything
+ * added back here should follow that, never `_ComponentList_`. What no spec
+ * asserts any more is the drawer's structural inventory (group and variant
+ * counts, collapsed-except-Hero, overflow, Arabic) — see
+ * `docs/portfolio/puck-023-followups.md`.
  *
  * Read-only: nothing is saved or published, so the shared seeded workspace is
  * left exactly as found.
