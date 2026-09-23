@@ -41,6 +41,36 @@ describe("portfolio template registry", () => {
         expect(parsed.success).toBe(true);
       });
 
+      // Puck keys selection, drag registration and every dispatch by component
+      // id, so two blocks sharing one id inside a zone leave one copy
+      // unregistered — no drag handle, no `role`, and edits land on the other
+      // copy. This guards the whole seed boundary, normalizers included, not
+      // just the authored literals.
+      //
+      // Deliberately NOT `collectBlocks`: it dedupes by object reference, and
+      // re-emitting one block OBJECT in two slots is exactly the shape that
+      // produced this bug — it would be counted once and slip through.
+      it("never emits the same component id twice within a zone", () => {
+        const idsIn = (node: unknown, out: string[] = []): string[] => {
+          if (Array.isArray(node)) {
+            node.forEach((entry) => idsIn(entry, out));
+            return out;
+          }
+          if (!node || typeof node !== "object") return out;
+          const id = (node as { props?: { id?: unknown } }).props?.id;
+          if (typeof id === "string") out.push(id);
+          Object.values(node as Record<string, unknown>).forEach((value) => idsIn(value, out));
+          return out;
+        };
+        // Per zone, not across them: `page-body` is pinned once in each zone
+        // and only one zone is ever mounted at a time.
+        for (const [zoneName, zoneData] of [["home", data.home], ["gallery", data.gallery]] as const) {
+          const ids = idsIn(zoneData);
+          const duplicated = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+          expect(duplicated, `Template '${template.id}' repeats ids in ${zoneName}`).toEqual([]);
+        }
+      });
+
       it("seeds non-empty home and gallery zones", () => {
         // scratch's canvas is otherwise empty, but it still seeds the pinned
         // Navigation block — no template opens header-less anymore.

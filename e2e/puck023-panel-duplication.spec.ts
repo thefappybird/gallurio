@@ -41,35 +41,95 @@ test("how many copies of each editor panel exist on 0.23", async ({ page }) => {
       // role=button, every `getByRole("button")` in the suite gained matches.
       canvasComponents: tally("[data-puck-component]"),
       canvasComponentsAsButtons: tally('[data-puck-component][role="button"]'),
-      // `@dnd-kit/dom`'s accessibility plugin only walks REGISTERED
-      // draggables, so a component whose `drag` permission is false never
-      // gets `role="button"`. Identify the exceptions rather than guess at
-      // them — the count alone says nothing about which block it is.
+      // Puck ids are `<ComponentType>-<uuid>` and land verbatim in
+      // `data-puck-component` (chunk-55V3NZVF.mjs: `el.setAttribute(
+      // "data-puck-component", id)`), so the id NAMES the block type. Three
+      // earlier guesses at the roleless component were wrong because they
+      // reasoned from the DOM shape instead of reading this attribute.
+      //
+      // `drag: false` is NOT the explanation and must not be guessed at again:
+      // Navigation, Footer and PageBody all set it and all still carry
+      // `role="button"`. Puck disables the draggable AFTER registration
+      // (`sortable.draggable.disabled = !permissions.drag`) and marks it with
+      // `data-puck-disabled` — dnd-kit leaves the a11y attributes in place.
+      // So capture that attribute too, and let it falsify itself.
       componentsWithoutRole: [...document.querySelectorAll("[data-puck-component]")]
         .filter((el) => !el.hasAttribute("role"))
         .map((el) => {
-          // dnd-kit sets the role on `draggable.handle ?? draggable.element`.
-          // We forward `puck.dragRef` to an inner element in ~25 blocks, so
-          // for those the handle IS that inner element and the wrapper stays
-          // roleless. Record where the role landed instead of assuming.
-          const inner = el.querySelector('[aria-roledescription="draggable"]');
+          const chain: { id: string | null; role: string | null }[] = [];
+          for (let p = el.parentElement; p; p = p.parentElement) {
+            if (p.hasAttribute("data-puck-component")) {
+              chain.push({
+                id: p.getAttribute("data-puck-component"),
+                role: p.getAttribute("role"),
+              });
+            }
+          }
           return {
+            id: el.getAttribute("data-puck-component"),
             tag: el.tagName.toLowerCase(),
-            ownBlock: el.getAttribute("data-block"),
-            tabIndex: el.getAttribute("tabindex"),
+            // The full attribute list shows whether dnd-kit applied SOME of
+            // its attributes and not others (a torn update) versus none at
+            // all (never registered). Those are different bugs.
+            attrs: el.getAttributeNames(),
+            puckDisabled: el.hasAttribute("data-puck-disabled"),
+            dragging: el.hasAttribute("data-dnd-dragging"),
+            placeholder: el.hasAttribute("data-dnd-placeholder"),
+            connected: el.isConnected,
             text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40),
-            handleInside: inner
-              ? {
-                  tag: inner.tagName.toLowerCase(),
-                  role: inner.getAttribute("role"),
-                  block: inner.getAttribute("data-block"),
-                  isSameNode: inner === el,
-                }
-              : null,
-            parentIsDraggable:
-              el.parentElement?.getAttribute("aria-roledescription") === "draggable",
+            ancestorComponents: chain,
           };
         }),
+      // Any id stamped on two nodes at once. Puck's effect writes
+      // `data-puck-component` on `ref.current` and removes it on cleanup, so
+      // one id should mean one element; two means a node was stamped and
+      // never un-stamped. Dump BOTH nodes and how they are related — nesting
+      // vs siblings are different bugs with different fixes.
+      duplicateComponentIds: (() => {
+        const byId = new Map<string, Element[]>();
+        for (const el of document.querySelectorAll("[data-puck-component]")) {
+          const id = el.getAttribute("data-puck-component") ?? "";
+          byId.set(id, [...(byId.get(id) ?? []), el]);
+        }
+        const describe = (el: Element) => {
+          const r = el.getBoundingClientRect();
+          return {
+            tag: el.tagName.toLowerCase(),
+            role: el.getAttribute("role"),
+            attrs: el.getAttributeNames(),
+            childTags: [...el.children].map((c) => c.tagName.toLowerCase()),
+            rect: { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) },
+            parentTag: el.parentElement?.tagName.toLowerCase() ?? null,
+            parentComponent: el.parentElement?.closest("[data-puck-component]")?.getAttribute("data-puck-component") ?? null,
+            text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40),
+          };
+        };
+        return [...byId.entries()]
+          .filter(([, els]) => els.length > 1)
+          .map(([id, els]) => ({
+            id,
+            count: els.length,
+            // Nested means one wraps the other (a wrapper/inner dragRef
+            // split); disjoint means the component genuinely rendered twice.
+            nested: els[0].contains(els[1]) ? "first-contains-second"
+              : els[1].contains(els[0]) ? "second-contains-first"
+              : "disjoint",
+            nodes: els.map(describe),
+          }));
+      })(),
+      // Census by component type. If a whole type is roleless the fix belongs
+      // in that block's config; if it is one instance of a type whose siblings
+      // are fine, it is a render-time anomaly instead.
+      roleCensus: (() => {
+        const byType: Record<string, { total: number; withRole: number }> = {};
+        for (const el of document.querySelectorAll("[data-puck-component]")) {
+          const type = (el.getAttribute("data-puck-component") ?? "").replace(/-[0-9a-f-]{8,}$/i, "");
+          byType[type] ??= { total: 0, withRole: 0 };
+          byType[type].total += 1;
+          if (el.hasAttribute("role")) byType[type].withRole += 1;
+        }
+        return byType;
+      })(),
       rootZones: tally('[data-puck-dropzone="root:default-zone"]'),
     };
   });

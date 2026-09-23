@@ -100,4 +100,47 @@ describe("normalizePresetLayouts", () => {
 
     expect(normalizePresetLayouts(result)).toBe(result);
   });
+
+  // `findNested` walks depth-first pre-order, so searching the whole footer
+  // subtree for a "Text" reached the tagline INSIDE the directory Columns
+  // before the footer's own credits line that follows the second Divider.
+  // That re-emitted one block in two slots at once — two DOM nodes sharing a
+  // single Puck component id, only one of which dnd-kit registers — and
+  // dropped the real credits line entirely.
+  it("uses the footer's own credits line, not a tagline nested inside the directory Columns", () => {
+    const input = {
+      root: {},
+      content: [{
+        type: "FooterDirectoryPreset",
+        props: {
+          content: [
+            { type: "Divider", props: { id: "divider-top" } },
+            {
+              type: "Columns",
+              props: {
+                id: "directory-columns",
+                content: [{
+                  type: "Container",
+                  props: {
+                    id: "studio-column",
+                    content: [
+                      { type: "Heading", props: { id: "studio-name", text: "Lumen Studio" } },
+                      { type: "Text", props: { id: "studio-tagline", text: "Fine art photography." } },
+                    ],
+                  },
+                }],
+              },
+            },
+            { type: "Divider", props: { id: "divider-bottom" } },
+            { type: "Text", props: { id: "credits", text: "(c) 2026 Lumen Studio" } },
+          ],
+        },
+      }],
+    };
+    const result = normalizePresetLayouts(input);
+    const preset = result.content[0] as { props: Record<string, unknown> };
+    const creditsShell = (preset.props.content as Array<{ props: Record<string, unknown> }>)[3];
+    const credits = (creditsShell.props.content as Array<{ props: { id?: string } }>)[0];
+    expect(credits.props.id).toBe("credits");
+  });
 });

@@ -116,7 +116,14 @@ function normalizeDirectoryFooter(block: PuckBlockEntry): PuckBlockEntry {
   const shellChildren = isContainer(content[0], "full") ? childrenOf(content[0].props as BlockProps) : content;
   const dividers = shellChildren.filter((child) => child.type === "Divider");
   const columns = findNested(shellChildren, "Columns");
-  const credits = findNested(shellChildren, "Text");
+  // The credits line is whatever follows the LAST Divider. Searching the whole
+  // footer for a Text instead reached the tagline nested inside the directory
+  // Columns first (depth-first, pre-order), which re-emitted that one block in
+  // two slots at once: two DOM nodes carrying a single Puck component id, only
+  // one of which dnd-kit ever registers as a draggable — and the footer's real
+  // credits line was dropped on the floor.
+  const lastDividerIndex = shellChildren.map((child) => child.type).lastIndexOf("Divider");
+  const credits = findNested(shellChildren.slice(lastDividerIndex + 1), "Text");
   if (!columns || !credits || dividers.length < 2) return block;
 
   const normalized: BlockList = [
