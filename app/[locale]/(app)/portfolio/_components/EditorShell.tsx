@@ -303,12 +303,15 @@ const LOCAL_DRAFT_VERSION = 2;
 // treats a new `plugins` reference the same way it treats a new `overrides`
 // one, and would remount the sidebar subtree on every keystroke.
 //
-// Declaring no `label`/`icon` is what keeps the plugin OUT of Puck 0.21's icon
-// rail: a labelled plugin becomes a rail tab, an unlabelled one renders as the
-// whole sidebar (the same mechanism `legacySideBarPlugin` uses).
+// The name is load-bearing and must stay exactly `legacy-side-bar`. It is the
+// ONLY way to opt out of Puck 0.21's icon rail: the rail hard-codes that
+// literal, flipping every other plugin to `mobileOnly` and this one to
+// `desktopOnly` so a single render owns the whole desktop sidebar. Any other
+// name (including no `label`/`icon`, which only changes the tab's caption)
+// leaves the rail up and adds a third tab beside Blocks and Outline.
 const puckPlugins: Plugin[] = [
   {
-    name: "gallurio-side-bar",
+    name: "legacy-side-bar",
     render: () => <EditorSideBar />,
   },
 ];
