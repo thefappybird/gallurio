@@ -150,8 +150,9 @@
  * `editorThemeBridge.test.ts` fails if a Puck upgrade adds an alias this block
  * does not carry. Keep that green rather than debugging a mis-painted panel.
  *
- * Deliberately NOT re-scoped: `--puck-color-highlight` (rose-07). Like the
- * other status hues it is left on Puck's own palette — see the note above.
+ * `--puck-color-highlight` (rose-07) is re-declared like the rest, but the
+ * rose rungs are not bridged above, so it still resolves to Puck's own rose —
+ * like the other status hues. The line stays for the test's alias coverage.
  */
 .gallurio-editor {
   --puck-color-surface: var(--puck-color-white);

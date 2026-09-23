@@ -4,7 +4,7 @@
  * Owns Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y (redo), and
  * Delete/Backspace (remove the selected block) for the portfolio editor canvas.
  *
- * Puck 0.20.2 registers its own undo/redo hotkeys via a global singleton
+ * Puck registers its own undo/redo hotkeys via a global singleton
  * `held`-key map shared across the whole page (`useHotkeyStore` inside
  * @puckeditor/core) that requires an EXACT modifier-key match on every
  * keydown/keyup. It listens on `document` in the bubble phase. Any keydown
@@ -16,9 +16,11 @@
  * listener ever sees the event — and calls `stopImmediatePropagation()` so
  * Puck's own handler never also fires (no double-undo from one keypress).
  *
- * Puck has no built-in Delete/Backspace hotkey in this version (checked
- * against the installed @puckeditor/core 0.20.2 bundle) — the remove-selected-
- * block behaviour below is net-new, not a duplicate of existing Puck wiring.
+ * Since 0.23 Puck also ships Delete/Backspace hotkeys (`useDeleteHotkeys`,
+ * same bubble-phase `document` listener). Ours supersedes them the same way:
+ * `stopImmediatePropagation()` keeps Puck's handler from firing, and the
+ * `preventDefault()` alone would too — Puck skips any delete keydown that is
+ * already `defaultPrevented`. Keep both, so one block is never removed twice.
  *
  * Must be called from a component rendered INSIDE the <Puck> tree (passed
  * via one of Puck's override slots), so `usePuckStore`'s context is
