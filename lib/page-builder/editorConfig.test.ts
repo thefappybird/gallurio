@@ -4,6 +4,8 @@ import { render, screen } from "@testing-library/react";
 import type { Permissions } from "@puckeditor/core";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
+import { CONTAINER_ANCHORS_ENABLED } from "./containerAnchorPredicate";
+import { reconcileContainerSlot } from "./containerAnchorReconciler";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
 import {
   SECTION_PRESETS,
@@ -203,7 +205,7 @@ describe("Container resolveData — anchor id idempotency", () => {
   // carries the wrong id (missing --anchor suffix) must have the anchor
   // replaced — not passed through — so the selection-bounce useEffect never
   // sees parentId === id and loops.
-  it("replaces a draft anchor with the canonical parent anchor id", () => {
+  it.skipIf(!CONTAINER_ANCHORS_ENABLED)("replaces a draft anchor with the canonical parent anchor id", () => {
     type ResolveDataFn = (data: unknown) => unknown;
     const container = (editorPuckConfig.components as Record<string, { resolveData?: ResolveDataFn }>).Container;
     expect(container?.resolveData, "Container.resolveData must exist").toBeDefined();
@@ -505,19 +507,22 @@ describe("Container resolveData vs the live anchor reconciler", () => {
     props: { id: string; content: Array<{ type: string; props: Record<string, unknown> }> };
   }) => { props: { content: Array<{ type: string; props: Record<string, unknown> }> } };
 
-  it("agrees with the reconciler by keeping an anchor beside container children", () => {
+  it("agrees with the reconciler on a container-only slot", () => {
     // Puck's resolver and ContainerAnchorReconciler must produce identical
     // slots. They used to disagree and undid each other on every store tick,
     // spamming Puck's "setData is expensive" warning and thrashing canvas
-    // layout on every selection.
+    // layout on every selection. Asserted against the reconciler itself rather
+    // than a literal, so it stays the real invariant whichever way
+    // CONTAINER_ANCHORS_ENABLED is set.
     const resolveData = (
       editorPuckConfig.components.Container as unknown as { resolveData: ResolveDataFn }
     ).resolveData;
     const columns = { type: "Columns", props: { id: "cols" } };
     const anchor = { type: "ContainerAnchor", props: { id: "c1--anchor", height: 0 } };
+    const slot = [columns, anchor];
 
-    const resolved = resolveData({ props: { id: "c1", content: [columns, anchor] } });
+    const resolved = resolveData({ props: { id: "c1", content: slot } });
 
-    expect(resolved.props.content).toEqual([columns, anchor]);
+    expect(resolved.props.content).toEqual(reconcileContainerSlot("c1", slot));
   });
 });

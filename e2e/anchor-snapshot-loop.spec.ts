@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { openEditorWithDraft } from "./helpers";
+import { CONTAINER_ANCHORS_ENABLED } from "../lib/page-builder/containerAnchorPredicate";
 
 // Regression: EditorContainerAnchor's usePuckStore selector built a fresh
 // object per call, so useSyncExternalStore saw a new snapshot every read and
@@ -13,8 +14,12 @@ test("portfolio editor loads a container draft without a getSnapshot render loop
 
   await openEditorWithDraft(page, "Luxury Template");
 
-  // The template's Containers hold ordinary children -> the anchor's "fill" branch.
-  await expect(page.locator(".pf-container-anchor").first()).toBeAttached();
+  // The loop this pins can only happen while an anchor actually mounts, so the
+  // presence check follows the kill switch. The error assertion below stays
+  // unconditional -- it is a useful editor-load smoke test either way.
+  if (CONTAINER_ANCHORS_ENABLED) {
+    await expect(page.locator(".pf-container-anchor").first()).toBeAttached();
+  }
 
   const loops = errors.filter((e) =>
     /Maximum update depth exceeded|getSnapshot should be cached/i.test(e),
