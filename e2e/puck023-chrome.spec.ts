@@ -4,12 +4,12 @@ import { openEditorWithDraft } from "./helpers";
 /**
  * Upgrade verification for the editor chrome on Puck 0.23, batched into one
  * session: the dark-theme token re-scoping, the removal of the 0.21 plugin
- * rail, and the outline's position relative to the block tree.
+ * rail, and the Components/Outline tabs that replace it.
  *
  * Editor chrome is desktop-only in-app UI, so 1280px only (see the
  * portfolio-testing skill's budget rules).
  */
-test("editor chrome on 0.23: theme, rail, outline placement", async ({ page }) => {
+test("editor chrome on 0.23: theme, no rail, sidebar tabs", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1280, height: 900 });
 
@@ -68,67 +68,107 @@ test("editor chrome on 0.23: theme, rail, outline placement", async ({ page }) =
   await page.waitForTimeout(300);
   await page.screenshot({ path: "e2e/.artifacts/puck023-editor-light.png" });
 
-  // The 0.21 rail is `_Nav_` / `_NavItem_` / `_PuckPluginTab_`, not "Rail".
-  // Count only VISIBLE nodes: with legacySideBarPlugin the other plugins are
-  // still mounted but flagged mobileOnly, so they sit in the DOM hidden.
-  const chrome = await page.evaluate(() => {
+  // ---- The plugin rail is gone, replaced by our own two-tab sidebar ----
+  //
+  // Puck 0.21 splits the sidebar into an icon rail (Blocks / Outline / Fields
+  // as separate tabs). `EditorSideBar` takes that column over via a plugin
+  // named `legacy-side-bar` — the literal the rail hard-codes to stand down.
+  // Any other name leaves the rail up, which is exactly the regression this
+  // pins, so assert on the LAYOUT, not on tab-node counts: with the rail
+  // suppressed the other plugins stay mounted as `mobileOnly` and merely sit
+  // off to the side.
+  const tabs = page.locator('button[aria-pressed]');
+  const componentsTab = tabs.filter({ hasText: /^Components$/ }).first();
+  const outlineTab = tabs.filter({ hasText: /^Outline$/ }).first();
+  await expect(componentsTab).toBeVisible();
+  await expect(outlineTab).toBeVisible();
+  // Components is the tab an owner lands on.
+  await expect(componentsTab).toHaveAttribute("aria-pressed", "true");
+
+  const railGone = await page.evaluate(() => {
     const visible = (el: Element) => {
       const r = el.getBoundingClientRect();
       return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
     };
-    const countVisible = (s: string) => [...document.querySelectorAll(s)].filter(visible).length;
-
+    const host = document.querySelector(".gallurio-editor");
     const blocks = document.querySelector('[data-tour-id="blocks-panel"]');
-    const sections = [...document.querySelectorAll('[class*="SidebarSection"]')].filter(visible);
-    const outlineTree = document.querySelector('[class*="LayerTreeRoot"], [class*="LayerTree"]');
-
-    // The outline must render after the whole block tree, inside the same
-    // scrolling sidebar column - i.e. underneath "Manual blocks".
-    let order: string = "missing";
-    if (blocks && outlineTree) {
-      const rel = blocks.compareDocumentPosition(outlineTree);
-      order = rel & Node.DOCUMENT_POSITION_FOLLOWING ? "outline-after-blocks" : "outline-before-blocks";
-    }
-
     return {
-      visibleRailTabs: countVisible('[class*="PuckPluginTab"]'),
-      visibleRailNavItems: countVisible('[class*="_NavItem"]'),
-      // The decisive check: a rail would occupy its own column and push the
-      // block tree right by roughly its width. Counting tab nodes is not
-      // enough - with legacySideBarPlugin they stay mounted for the mobile
-      // panel, merely laid out off to the side.
-      blocksInsetFromEditorLeft: (() => {
-        const host = document.querySelector(".gallurio-editor");
-        if (!host || !blocks) return null;
-        return Math.round(blocks.getBoundingClientRect().left - host.getBoundingClientRect().left);
+      // The rail is `<nav class="_Nav_">` with `<li class="_NavItem_">` rows.
+      // NOT `_PuckPluginTab_` — those are the panel BODIES, and the sidebar's
+      // own panel is one of them, so counting them can never reach zero.
+      railWidth: (() => {
+        const nav = document.querySelector('nav[class*="_Nav_"]');
+        return nav ? Math.round(nav.getBoundingClientRect().width) : 0;
       })(),
-      sidebarSectionTitles: sections
-        .map((s) => (s.textContent || "").trim().split(/\n/)[0].slice(0, 40))
-        .slice(0, 6),
-      outlinePresent: !!outlineTree,
-      blocksPresent: !!blocks,
-      order,
-      sharesScrollParent:
-        blocks && outlineTree
-          ? blocks.closest('[class*="Sidebar"]') === outlineTree.closest('[class*="Sidebar"]')
+      visibleRailItems: [...document.querySelectorAll('li[class*="_NavItem_"]')].filter(visible)
+        .length,
+      // A rail occupies its own column and pushes the block tree right by
+      // roughly its width. This is the decisive check.
+      blocksInsetFromEditorLeft:
+        host && blocks
+          ? Math.round(blocks.getBoundingClientRect().left - host.getBoundingClientRect().left)
           : null,
+      blocksVisible: !!blocks && visible(blocks),
+      // Presence is the WRONG question on 0.23. `_PuckPluginTab_` is
+      // `display: none`, not unmounted, so Puck's own mobile Outline panel is
+      // always in the DOM — measured: one LayerTree present, zero visible,
+      // while the Components tab is active. Only visibility distinguishes the
+      // tab an owner is looking at.
+      outlineVisible: [...document.querySelectorAll('[class*="_LayerTree_"]')].some(visible),
     };
   });
+  expect(railGone.blocksVisible).toBe(true);
+  expect(railGone.blocksInsetFromEditorLeft).not.toBeNull();
+  expect(railGone.blocksInsetFromEditorLeft!).toBeLessThan(40);
+  expect(railGone.railWidth, "the rail takes no horizontal space").toBe(0);
+  expect(railGone.visibleRailItems, "no rail rows on desktop").toBe(0);
+  // The two panels are tabs, not a stack: only one is SHOWN at a time.
+  expect(railGone.outlineVisible).toBe(false);
 
+  // ---- Outline tab: swaps the panel and opens PageBody on first visit ----
+  await outlineTab.click();
+  await page.waitForTimeout(500);
+  const outline = await page.evaluate(() => {
+    const visible = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    };
+    // Scoped to VISIBLE rows on purpose: Puck's hidden mobile Outline panel
+    // renders its own full copy of the tree, so an unscoped query finds
+    // PageBody in a panel nobody is looking at and proves nothing.
+    const rows = [...document.querySelectorAll('[class*="_Layer_"]')].filter(visible);
+    const named = (el: Element) =>
+      (el.querySelector('[class*="_Layer-name_"]')?.textContent ?? "").trim();
+    const pageBody = rows.find((r) => /page body/i.test(named(r)));
+    return {
+      blocksVisible: [...document.querySelectorAll('[data-tour-id="blocks-panel"]')].some(visible),
+      rowCount: rows.length,
+      names: rows.map(named).filter(Boolean).slice(0, 12),
+      pageBodyFound: !!pageBody,
+      // The whole point of the auto-expand: the owner's blocks are nested
+      // inside the locked PageBody, so a collapsed outline opens on nothing
+      // but the pinned nav and footer.
+      pageBodyExpanded: !!pageBody?.className.includes("Layer--isExpanded"),
+    };
+  });
+  // Written BEFORE the assertions so a failure still leaves diagnostics — but
+  // that means the file records OBSERVATIONS, never a verdict. An earlier
+  // version of this spec wrote the same file and then failed, and the
+  // leftover artifact was misread as proof the rail was gone. It was not.
   const fs = await import("node:fs");
   fs.mkdirSync("e2e/.artifacts", { recursive: true });
   fs.writeFileSync(
     "e2e/.artifacts/puck023-chrome-report.json",
-    JSON.stringify({ light, dark, chrome, consoleErrors }, null, 2)
+    JSON.stringify({ light, dark, railGone, outline, consoleErrors }, null, 2)
   );
+
+  expect(outline.blocksVisible, "the block tree is swapped out, not stacked").toBe(false);
+  expect(outline.rowCount).toBeGreaterThan(2);
+  expect(outline.pageBodyFound, `outline rows: ${outline.names.join(", ")}`).toBe(true);
+  expect(outline.pageBodyExpanded, "PageBody opens on the first outline visit").toBe(true);
 
   // Dark mode must actually follow the app's tokens now.
   expect(dark?.surface).toBe(dark?.appCard);
   expect(dark?.text).toBe(dark?.appForeground);
   expect(light?.surface).toBe(light?.appCard);
-  // The rail must be gone and the outline must sit below the block tree.
-  expect(chrome.blocksInsetFromEditorLeft).not.toBeNull();
-  expect(chrome.blocksInsetFromEditorLeft!).toBeLessThan(40);
-  expect(chrome.outlinePresent).toBe(true);
-  expect(chrome.order).toBe("outline-after-blocks");
 });
