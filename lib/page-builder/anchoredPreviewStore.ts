@@ -17,10 +17,19 @@ import { useSyncExternalStore } from "react";
  * render) — `presetPreviewStore` doesn't need it (the consumer resolves the
  * key itself via its own `describe` callback), `layoutPreviewStore` does.
  */
+/**
+ * Grace period between the pointer leaving the row (or the card) and the card
+ * closing. The card is anchored beside its row rather than nested inside it,
+ * so the pointer must cross a small gap to reach it; closing immediately on
+ * `pointerleave` would make the card unreachable.
+ */
+export const PREVIEW_CLOSE_DELAY_MS = 120;
+
 export function createAnchoredPreviewStore<Payload = undefined>() {
   let activeKey: string | null = null;
   let activePayload: Payload | undefined;
   let anchor: HTMLElement | null = null;
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
   const listeners = new Set<() => void>();
 
   function emit(): void {
@@ -29,6 +38,7 @@ export function createAnchoredPreviewStore<Payload = undefined>() {
 
   /** Opens `key`'s preview, anchored beside `anchorEl`. No-op if already active. */
   function open(key: string, anchorEl: HTMLElement, payload?: Payload): void {
+    cancelClose();
     if (activeKey === key) return;
     activeKey = key;
     activePayload = payload;
@@ -36,8 +46,28 @@ export function createAnchoredPreviewStore<Payload = undefined>() {
     emit();
   }
 
+  /**
+   * Arm a close. Entering the row or the card again (either calls `open` or
+   * `cancelClose`) keeps it open; anything else lets it fall shut.
+   */
+  function scheduleClose(delayMs: number = PREVIEW_CLOSE_DELAY_MS): void {
+    if (activeKey === null || closeTimer !== null) return;
+    closeTimer = setTimeout(() => {
+      closeTimer = null;
+      close();
+    }, delayMs);
+  }
+
+  /** Call off a pending `scheduleClose`. No-op when none is armed. */
+  function cancelClose(): void {
+    if (closeTimer === null) return;
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+
   /** Closes whatever is open. No-op when nothing is. */
   function close(): void {
+    cancelClose();
     if (activeKey === null) return;
     activeKey = null;
     activePayload = undefined;
@@ -71,11 +101,23 @@ export function createAnchoredPreviewStore<Payload = undefined>() {
 
   /** Test-only: reset module state between runs. */
   function reset(): void {
+    cancelClose();
     activeKey = null;
     activePayload = undefined;
     anchor = null;
     listeners.clear();
   }
 
-  return { open, close, subscribe, getActiveKey, getActivePayload, getAnchor, useActiveKey, reset };
+  return {
+    open,
+    close,
+    scheduleClose,
+    cancelClose,
+    subscribe,
+    getActiveKey,
+    getActivePayload,
+    getAnchor,
+    useActiveKey,
+    reset,
+  };
 }
