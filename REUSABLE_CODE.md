@@ -34,6 +34,7 @@ frames use `--radius-surface` (default sharp/0rem) — see Design rules in `CLAU
 | `components/ui/switch.tsx` | `Switch` | Toggle | checked/unchecked data states |
 | `components/ui/card.tsx` | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter` | Container w/ slots | `size`: default/sm |
 | `components/ui/badge.tsx` | `Badge` | Status/tag chip | `variant`: default/secondary/destructive/outline/ghost/link |
+| `components/ui/panel-tabs.tsx` | `PanelTabs` | Underlined tab strip for editor panels | generic over tab id; `tabs`/`value`/`onChange`, optional per-tab `tourId`; toggle buttons with `aria-pressed`, not a `role=tablist` |
 | `components/ui/separator.tsx` | `Separator` | Divider | `orientation`: horizontal/vertical |
 | `components/ui/avatar.tsx` | `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarGroupCount` | Avatar w/ fallback, badge, group | `size`: default/sm/lg |
 | `components/ui/dropdown-menu.tsx` | `DropdownMenu*` (Trigger/Content/Group/Label/Item/CheckboxItem/RadioGroup/RadioItem/Sub*/Separator/Shortcut) | Context menu | item `variant`: default/destructive; `inset` |
