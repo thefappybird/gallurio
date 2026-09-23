@@ -59,7 +59,7 @@ import {
   PROMO_CODE_SEEDS,
   type SeedIdentity,
 } from "./seed-fixtures";
-import { getTemplate } from "@/lib/page-builder/templates";
+import { getTemplate, PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { E2E_FIXTURE_DRAFT_NAME, buildE2eFixtureData } from "./seedE2eDraft";
 
 type SessionRange = { startAt: Date; endAt: Date };
@@ -650,6 +650,26 @@ async function createPublishedPortfolio(workspace: {
       createdAt: dayOffset(-12),
       updatedAt: dayOffset(-12),
     },
+    // One draft per template, named "<Label> Template". Owned by the e2e
+    // suite: several specs load a template by that name to assert against a
+    // known block tree, and until now those drafts only ever existed as
+    // hand-made leftovers in the shared dev database — so a clean `pnpm seed`
+    // left them failing at the drafts dialog. Generated from the registry so a
+    // new template is covered the day it is added.
+    ...PORTFOLIO_TEMPLATES.filter((template) => template.id !== "scratch").map(
+      (template, index) => ({
+        workspaceId: workspace._id,
+        name: `${template.label} Template`,
+        templateId: template.id,
+        data: template.seedData({ workspace: { name: workspace.name } }),
+        brandKit: template.defaultBrandKit,
+        contact: template.defaultContact,
+        collectionsPopup: template.defaultCollectionsPopup,
+        ...draftMetadata,
+        createdAt: dayOffset(-20 - index),
+        updatedAt: dayOffset(-20 - index),
+      })
+    ),
   ]);
 
   await Workspace.updateOne(
