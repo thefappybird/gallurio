@@ -1,6 +1,8 @@
 # Perf audit: Puck upgrade blast radius — score 8/10 (upgrade is viable; measured cost is small and concentrated in editor theming)
 
 > A throwaway spike ran the real upgrade on 2026-09-22 against `@puckeditor/core@0.23.0`. **Read `## Spike findings` at the bottom before acting on the predictions above it** — three of the desk audit's estimates were wrong, two in our favour.
+>
+> The upgrade was then carried out for real on `action/portfolio-puck-upgrade` (2026-09-23). **`## What shipped` at the very bottom is the authoritative record** — it corrects one spike finding that was itself wrong, and settles the theming fix the spike only diagnosed.
 
 
 We ship `@measured/puck@0.20.2`. Latest stable is `@puckeditor/core@0.23.0` — three minors ahead, and the package changed npm scope along the way. This audit answers: do we upgrade, and what work keeps every block, every personalization control, and every already-published page intact.
@@ -103,7 +105,7 @@ Sequence, once the spike confirms:
 1. Scope rename across 56 files + `package.json`, as one isolated commit. Typecheck is the gate.
 2. Fix the theming bridge — see `## Spike findings`, which replaces this step's original "full rewrite" estimate with a targeted re-scoping of the semantic tokens.
 3. ~~Replace the overlay/canvas/drawer substring selectors~~ — not needed; the spike confirmed all six still match. Optional cleanup only.
-4. ~~Resolve the Plugin Rail~~ — not needed; the spike confirmed it never renders behind our overrides.
+4. Resolve the Plugin Rail. (The spike claimed this was unnecessary; that claim was retracted — see the section above.)
 5. Only then, on a separate commit, attempt the `ContainerAnchor` deletion. It is the reward, not the migration.
 6. Regression pass: the 157 portfolio unit tests, then one batched Playwright run over the editor at 1280px (editor chrome is not a public surface).
 
@@ -127,9 +129,13 @@ The whole `lib/page-builder` suite — 116 files — passes unchanged on 0.23. N
 
 Measured in the live DOM. Puck 0.23 still emits `_DraggableComponent-overlay_<hash>`, `_DraggableComponent-actionsOverlay_<hash>` and `_DraggableComponent-overlayWrapper_<hash>`, mounted on hover and on selection exactly as in 0.20 (they are absent at rest in both versions — that is the normal lifecycle, not breakage). `PuckCanvas_`, `PuckCanvas-loader` and `DrawerItem-draggable` are all present at rest. **All six `[class*=]` selectors in `editor.css:251-341` survive as-is.** Migrating them to the new `componentOverlay` override is now an optional cleanup, not upgrade work.
 
-### Risk centre 3 was wrong — the Plugin Rail never renders here
+### Risk centre 3 — ~~the Plugin Rail never renders here~~ RETRACTED, it does render
 
-No rail classes exist anywhere in the DOM, and all six of our override tour anchors are present (`canvas`, `canvas-viewport`, `blocks-panel`, `properties-panel-body`, `section-tabs`, `publish`). Because we override `header`, `drawer` and `fields` wholesale, the rail surfaces are replaced before they can render. `legacySideBarPlugin()` is not needed. The plugin system is live alongside our overrides — `_OutlinePlugin_`, `_OutlineWrapper_` and `_OutlineHeader_` classes appear in the DOM — and coexists without conflict.
+**This finding was wrong and was retracted the same day.** It was produced by a DOM probe searching for class names matching `/rail/i`; Puck names them `Nav`, `NavItem`, `PuckPluginTab`, `Sidebar` and `SidebarSection`, so the probe found nothing and the absence was reported as fact. The rail renders plainly — a screenshot settled it. Overriding `header`/`drawer`/`fields` replaces what the rail *contains*, not the rail itself.
+
+Counting DOM nodes is not enough either: `legacySideBarPlugin()` leaves the other plugins mounted and flagged `mobileOnly`, so the tab nodes stay in the document while laid out out of view. The decisive check is geometric — whether the block tree is inset from the sidebar's left edge by roughly a rail's width.
+
+Risk centre 3 was therefore **real**, and cost a real (if small) fix. See `## What shipped`.
 
 ### Risk centre 1 was real, but the cause and the fix are both different
 
@@ -161,3 +167,36 @@ The supporting machinery is confirmed present — `dnd.behavior` accepts `"auto"
 **Upgrade.** The measured cost is far below the estimate: a mechanical 53-file scope rename, a test-only typing fix in 3 files, and one focused `editor.css` change to re-scope the semantic tokens. Nothing in the data layer, the blocks, the custom fields, the overrides or the CSS hooks needs touching, and the full page-builder suite passes untouched.
 
 The anchor deletion — the actual prize — stays a separate, later commit gated on the manual drag check above. Upgrade first for the supported theming API, the outline, and the load-time work; delete the anchor mechanism only once a human has watched a block land where it should.
+
+## What shipped
+
+Carried out on `action/portfolio-puck-upgrade`, 2026-09-23. This section supersedes any prediction above it.
+
+### Theming (risk centre 1)
+
+Fixed as the spike's second option: `editor.css` now re-declares all 30 palette-backed semantic aliases inside `.gallurio-editor`, so they re-resolve in our scope instead of against Puck's `:root` palette. Puck's variables stay scoped to the editor subtree rather than leaking app-wide. **One block added; the ~190-line rewrite the desk audit budgeted was not needed.**
+
+`editorThemeBridge.test.ts` guards it structurally: it reads Puck's own shipped `dist/index.css`, extracts every `--puck-*` property defined in terms of a palette variable, and asserts each one is re-declared in `editor.css`. A future Puck release that adds an alias fails the test instead of silently painting light-on-light.
+
+### The sidebar (risk centre 3)
+
+The rail was first removed with `legacySideBarPlugin()`, then replaced outright: the editor now mounts its own unlabelled plugin rendering a two-tab column (Components / Outline). A plugin that declares no `label`/`icon` renders as the whole sidebar instead of becoming a rail tab — the same mechanism `legacySideBarPlugin` uses. `Puck.Components` and `Puck.Outline` are public statics on the exported `Puck` function, so both panels are composed through supported API; `Puck.Components` still routes through our `drawer` override.
+
+Verified geometrically (block tree inset 0px from the sidebar's left edge), not by node count — see the retraction above for why that distinction matters.
+
+### RTL
+
+**Puck has no first-class RTL support**, so there was nothing to adopt. Measured in `dist/index.css`: zero `[dir=rtl]` rules, and a mix of logical (30 `inline-start` / 18 `inline-end`) and physical (23 `left:` / 18 `right:`) properties. Disregarded per instruction. Do not re-research this.
+
+### Validation
+
+- `blockSweep.test.tsx` — 242 cases generated from the registry itself (`puckConfig.components`, `SECTION_PRESET_KEYS`, `MANUAL_BLOCK_KEYS`, `PORTFOLIO_TEMPLATES`), so new blocks are covered on registration. Every component renders from its own `defaultProps`, keeps its `data-block` identity in canvas and publish alike, resolves the same inline style in both, honours at least one `_style` override, and (for the manual primitives) keeps spacing out of `defaultProps`.
+- Two contracts pinned rather than skipped: **Navigation's `_style` is inert by design** (`NavigationBlock` destructures it as `_styleIgnored`; nav styling lives on `PortfolioHeaderConfig`), and **preset spacing in `defaultProps` is authored composition**, not a float-up violation — so the de-materialization check is scoped to `MANUAL_BLOCK_KEYS`.
+- `publishRoundTrip.test.tsx` — all six templates published through the real `publishDraftAction` against a throwaway in-memory workspace, then the published data re-rendered through the production config. Publish may *add* structure (`normalizePageBody` wraps bare content in `PageBody`); the invariant pinned is that it never drops blocks.
+- One batched browser pass at 1280px: five templates (57–79 blocks, 28–39 distinct types), the in-app preview iframe and the new-tab preview, zero console errors.
+
+### The ContainerAnchor question — still open, and anchors are KEPT
+
+Disabling the anchors was attempted behind a single flag in `containerAnchorPredicate.ts` and then **reverted**. The mechanism stays, in full: undraggable (Puck 0.23's outline row gates dragging on the same `permissions.getPermissions({ item }).drag` the canvas reads, so the existing `drag: false` covers the outline too — pinned by a test), reconciled in and out of the data by child type, and rendering a real drop zone for the empty and all-container-class cases.
+
+The original question is unchanged: whether 0.23's insertion lines let a block land beside a nested `Container`/`Columns` without the bridge. Synthetic Playwright drags cannot answer it — they no-op against `@dnd-kit` 0.4's rewritten sensors — so it remains a manual check. **Deleting the anchor mechanism is still a separate, later piece of work, gated on that check.**
