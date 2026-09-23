@@ -8,8 +8,10 @@ the upgrade *unlocked* was left out of it on purpose. This is that list.
 Source: the "What we would gain" section of `docs/perf-audit/07-puck-upgrade.md`,
 plus the code-splitting and virtualization audit points (`03`, `05`).
 
-Nothing here is a bug fix. Each item is independently shippable — do not bundle
-them into one commit.
+Items 1-6 are unlocks, not bug fixes. Item 7 is the exception: it is the
+portfolio e2e set the upgrade left red, and it is maintenance rather than new
+capability. Each item is independently shippable — do not bundle them into one
+commit.
 
 ---
 
@@ -199,6 +201,85 @@ another reason.
 
 ---
 
+## 7. Portfolio e2e triage — the one item here that IS maintenance
+
+Everything above is an unlock. This one is not: it is the portfolio e2e set,
+which the upgrade left red. **CI does not run Playwright** (`ci.yml` is
+typecheck / lint / test / build), so none of this gated the upgrade PR — but it
+is real and it is unfinished.
+
+Measured after the dev DB was re-seeded on the footer-normalizer fix, over the
+10 candidate spec files (the 9 known-dead ones excluded): **13 failed, 6 passed**
+in 10.7 minutes. The re-seed alone cleared `batch1-flow`, both
+`portfolio-responsive` canvas/overflow cases and `preset-canvas-parity:114` —
+those had been failing on corrupted fixture data, not on the upgrade.
+
+### Already answered — do not re-investigate
+
+**9 specs are dead on `dev` and were dead before this branch.** They wait on
+`[class*="_ComponentList_"]`, which our `drawer` override makes unreachable: the
+override drops `children`, so Puck's `ComponentList` never renders. `Components`
+is byte-identical in 0.20 and 0.23 and the override is untouched here, so this
+is not upgrade fallout. Decide whether to re-point or delete them; do not
+"fix the upgrade" for them.
+
+- `preset-library.spec.ts` x 5
+- `editor-reliability-batch.spec.ts` x 4
+
+### The dominant live cause — one mechanism, five specs
+
+0.23 **mounts inactive plugin panels rather than unmounting them**:
+`_PuckPluginTab_` is `display: none`, so the blocks and fields panels each exist
+twice with one visible copy. Every one of these is a selector that now matches
+the hidden copy too. The fix is to scope to visible nodes — **not** to delete
+the spec, and **not** to change app code:
+
+| spec | symptom |
+|---|---|
+| `block-floated-parity.spec.ts:38` | `getByLabel('Instagram username')` resolves to 2 |
+| `block-floated-parity.spec.ts:128` | `getByRole('button', { name: 'Gallery' })` resolves to 3 |
+| `portfolio-page-body-batch.spec.ts:32` | `[data-puck-dropzone$=":content"]` expected 1, got 6 |
+| `portfolio-responsive.spec.ts:47` | `canvas-controls-trigger` resolves to 2 buttons |
+| `preset-canvas-parity.spec.ts:263` | `getByRole('button', { name: 'Gallery' })` resolves to 3 |
+
+### Likely the same cause, but UNPROVEN — check before assuming
+
+These time out rather than reporting a strict-mode violation. Clicking a
+`display: none` copy times out exactly this way, and `portfolio-responsive:47`
+above demonstrates the resolver picking a hidden twin — so the hypothesis is
+reasonable. It has **not** been confirmed for any of the five. Verify each
+against the DOM before treating it as solved.
+
+- `block-floated-parity.spec.ts:250` — `waitFor` 15s
+- `item4-defaults-prefill.spec.ts:45` and `:51` — click timeout 90s
+- `portfolio-rtl-scoping.spec.ts:25` — click timeout 60s, popup shell
+- `preset-canvas-parity.spec.ts:182` — `waitFor` 30s
+
+### Genuinely undiagnosed — start here, 3 specs
+
+Nothing explains these yet. Do not fold them into the group above.
+
+- `portfolio-nav-order.spec.ts:17` — the reorder control is not found at all
+  (`element(s) not found`), not a duplicate-match problem.
+- `portfolio-page-body-child-height.spec.ts:16` — geometry: width 461 against an
+  expected `<= 414`. A real layout delta or a stale constant; unknown which.
+- `portfolio-preview-footer-gap.spec.ts:15` — `Cannot read properties of
+  undefined (reading 'getBoundingClientRect')`. The spec dereferences an element
+  it never found, so it is a spec bug masking whatever the real state is; fix the
+  dereference first, then re-read the actual failure.
+
+### Two traps, both already paid for once
+
+1. **A spec that drifted off its selector fails identically to a real
+   regression.** "It fails on `dev` too" must be proven from the code, not
+   inferred from the message.
+2. **`puck023-chrome.spec.ts` writes its JSON artifact before its assertions
+   run.** A failing run leaves a complete-looking artifact; one was misread as
+   proof the rail was gone when it was not. Artifacts record observations, never
+   verdicts.
+
+---
+
 ## Suggested order
 
 1. **Dictionary** — largest user-visible gap, self-contained.
@@ -208,3 +289,8 @@ another reason.
 5. **Code splitting 2b** (per-block) — hardest, and must not break parity.
 6. **`componentOverlay`** — whenever that CSS is open anyway.
 7. **Anchor removal** — only after someone characterises the DnD bug.
+
+**e2e triage (item 7) is not in that sequence — it runs alongside it.** It blocks
+nothing and nothing blocks it, but it is the reason the suite cannot currently
+tell you whether any of the above broke something. Do the 5 visibility-scoping
+fixes first; they are mechanical and buy back most of the signal.
