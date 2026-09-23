@@ -60,9 +60,6 @@ const mockPuckApi = {
 };
 
 vi.mock("@puckeditor/core", () => ({
-  // EditorShell builds its `plugins` array at module scope, so this has to
-  // exist for the module to import at all.
-  legacySideBarPlugin: () => ({ name: "legacy-side-bar" }),
   createUsePuck: () => (selector?: (api: typeof mockPuckApi) => unknown) =>
     selector ? selector(mockPuckApi) : mockPuckApi,
   // Minimal stand-ins for the exported `Drawer`/`Drawer.Item` primitives (the
