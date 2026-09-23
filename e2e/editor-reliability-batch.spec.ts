@@ -11,11 +11,17 @@
  *     that `--pf-color-bg` was declared but never applied, so the app shell's
  *     ground showed through — invisible to any unit test that only inspects the
  *     style object.
- *  2. Whether Puck's <Render> survives being mounted INSIDE <Puck> for the
- *     drawer's live mini-render. Nested Puck contexts are the one real risk in
- *     that feature and a jsdom test with <Render> mocked cannot see it.
- *  3. Whether the app-shell scrollbar rules actually take, and stay off the
+ *  2. Whether the app-shell scrollbar rules actually take, and stay off the
  *     published portfolio.
+ *  3. Whether the seeded e2e fixture draft still provides the Columns shape the
+ *     legacy Columns specs drive, asserted once here so those specs fail near
+ *     the cause rather than far from it.
+ *
+ * The drawer-preview tests that used to live here were deleted with the rest of
+ * the `_ComponentList_` group: our `drawer` override drops `children`, so Puck's
+ * `ComponentList` never renders and nothing could match. Re-covering the preset
+ * drawer means asserting against our own `PresetBlocksDrawer` markup instead —
+ * see `docs/portfolio/puck-023-followups.md`.
  *
  * Read-only: nothing is saved or published, so the shared seeded workspace is
  * left exactly as found.
@@ -23,10 +29,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openEditorWithDraft } from "./helpers";
 import { E2E_FIXTURE_DRAFT_NAME } from "../lib/db/seedE2eDraft";
-
-const SHELL = "[data-testid='portfolio-editor-shell']";
-const ITEM_NAME = '[class*="_DrawerItem-name_"]';
-const CATEGORY_ROOT = '[class*="_ComponentList_"]';
 
 /**
  * Collects uncaught page errors. `nextjs-portal` is NOT a usable signal — the dev
@@ -37,30 +39,6 @@ function collectPageErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   return errors;
-}
-
-async function openEditor(page: Page): Promise<void> {
-  await page.goto("/en/portfolio");
-  await page.locator(SHELL).waitFor({ timeout: 90_000 });
-
-  // `isVisible()` does NOT wait — it answers immediately — so waiting explicitly
-  // is the difference between dismissing the dialog and silently no-opping while
-  // every later click burns its timeout against the backdrop.
-  const dialog = page.getByRole("dialog").first();
-  const appeared = await dialog
-    .waitFor({ state: "visible", timeout: 15_000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (appeared) {
-    // "Continue where you left off" resumes the local draft and closes outright.
-    // "Start from scratch" opens a SECOND dialog (the template chooser).
-    const named = dialog.getByRole("button", { name: /Continue where you left off/i });
-    const resume = (await named.count()) ? named : dialog.getByRole("button");
-    await resume.first().click();
-    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 20_000 });
-  }
-  await page.waitForTimeout(1_000);
 }
 
 test.describe("brand background is painted, not just declared", () => {
@@ -110,37 +88,6 @@ test.describe("app-shell scrollbars", () => {
       await page.evaluate(() => document.documentElement.hasAttribute("data-app-shell")),
       "the app shell carries the scoping attribute"
     ).toBe(true);
-  });
-});
-
-test.describe("drawer preset previews", () => {
-  test("the drawer does not overflow once rows carry a preview control", async ({ page }) => {
-    test.setTimeout(150_000);
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await openEditor(page);
-
-    for (const width of [768, 1280]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.waitForTimeout(400);
-      const overflow = await page.evaluate((rootSel) => {
-        return (Array.from(document.querySelectorAll(rootSel)) as HTMLElement[])
-          .filter((el) => el.scrollWidth > el.clientWidth + 1)
-          .map((el) => `${el.innerText.split("\n")[0]}: ${el.scrollWidth}>${el.clientWidth}`);
-      }, CATEGORY_ROOT);
-      expect(overflow, `no drawer category overflows at ${width}px`).toEqual([]);
-    }
-    // The preview control is gone (hover/click on the row opens it), so nothing
-    // this change added can steal width from a name. Assert the plain property.
-    const clipped = await page.evaluate(
-      (sel) =>
-        (Array.from(document.querySelectorAll(sel)) as HTMLElement[]).filter(
-          (n) => n.scrollWidth > n.clientWidth + 1
-        ).length,
-      ITEM_NAME
-    );
-    // Puck's own drawer truncates long names; this predates the batch and is
-    // asserted as a known baseline rather than as zero.
-    expect(clipped, "name clipping is Puck's own, not introduced here").toBeGreaterThanOrEqual(0);
   });
 });
 

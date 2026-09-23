@@ -226,12 +226,19 @@ They have been **deleted** in this branch rather than left red:
 
 - `preset-library.spec.ts` — whole file removed. All 5 tests were built on
   `CATEGORY_ROOT` / `CATEGORY_TITLE`; there was nothing salvageable in it.
-- `editor-reliability-batch.spec.ts` — 4 of 8 tests removed, **file kept**. The
-  other 4 pass and cover real ground (brand background paints, app-shell
-  scrollbars, drawer overflow, the e2e fixture contract).
+- `editor-reliability-batch.spec.ts` — 5 of 8 tests removed, **file kept**. The
+  remaining 3 pass and cover real ground: the brand background actually painting,
+  app-shell scrollbars, and the e2e fixture contract.
 
-The deletion also orphaned `CATEGORY_TITLE` and the `hoverRow` helper, both
-removed with them.
+The fifth was "the drawer does not overflow once rows carry a preview control",
+which **passed**. It was removed anyway because it passed vacuously: it queried
+the same unreachable `_ComponentList_` selector, and both its assertions hold on
+an empty result (`toEqual([])` over a filtered empty list, and
+`toBeGreaterThanOrEqual(0)`). A green test that proves nothing is worse than a
+red one — it reports coverage that does not exist.
+
+The cut orphaned `CATEGORY_TITLE`, `CATEGORY_ROOT`, `ITEM_NAME`, `SHELL`, and the
+`hoverRow` and `openEditor` helpers, all removed with it.
 
 > **What the drawer still needs, and what it lost.** Deleting these gave up the
 > only browser coverage of the grouped preset drawer — 11 groups, three variants
@@ -240,14 +247,12 @@ removed with them.
 > it must be written against **our** `PresetBlocksDrawer` markup, not Puck's
 > `ComponentList`, which our override means we will never render.
 
-> **One survivor is vacuous and should probably go too.**
-> `editor-reliability-batch.spec.ts`'s "the drawer does not overflow once rows
-> carry a preview control" **passes**, but it queries `CATEGORY_ROOT` — the same
-> unreachable selector — and both its assertions are satisfiable by an empty
-> result (`toEqual([])` over a filtered empty list, and
-> `toBeGreaterThanOrEqual(0)`). It is green while proving nothing, which is worse
-> than red. It was left in place only because it was outside the "delete the 9
-> dead specs" instruction; deleting it is the right call.
+> **The lesson worth keeping.** A test failing against an unreachable selector is
+> loud; a test *passing* against one is silent. `[class*="_ComponentList_"]`
+> produced both here — 9 red and 1 green — and the green one survived the first
+> pass precisely because the failure list was the only thing being read. When a
+> selector is proven unreachable, audit everything that touches it, not just the
+> things that went red.
 
 ### The dominant live cause — one mechanism, five specs
 
