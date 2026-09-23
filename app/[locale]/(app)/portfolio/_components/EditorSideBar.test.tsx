@@ -7,7 +7,8 @@
  * Puck's, the tab wiring is ours.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 
 type Ui = { itemExpanded?: Record<string, boolean> };
 type MockState = {
@@ -44,7 +45,7 @@ beforeEach(() => {
 
 describe("EditorSideBar", () => {
   it("shows the block tree first and swaps to the outline on demand", () => {
-    render(<EditorSideBar componentsLabel="Components" outlineLabel="Outline" />);
+    renderWithProviders(<EditorSideBar />);
 
     expect(screen.getByTestId("components-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("outline-panel")).not.toBeInTheDocument();
@@ -56,7 +57,7 @@ describe("EditorSideBar", () => {
   });
 
   it("expands PageBody the first time the outline is opened, and not again", () => {
-    render(<EditorSideBar componentsLabel="Components" outlineLabel="Outline" />);
+    renderWithProviders(<EditorSideBar />);
     // Everything the owner edits lives inside PageBody, so an outline that
     // opens collapsed shows them nothing but the locked chrome.
     fireEvent.click(screen.getByRole("button", { name: "Outline" }));

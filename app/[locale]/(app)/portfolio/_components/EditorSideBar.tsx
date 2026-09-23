@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Puck } from "@puckeditor/core";
 import { PanelTabs } from "@/components/ui/panel-tabs";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
@@ -53,14 +54,14 @@ function useExpandPageBodyOnce(showingOutline: boolean): void {
  * tab styling, sharing the control the block inspector's Content/Design/Layout
  * header uses. `Puck.Components` still routes through the `drawer` override, so
  * the block tree is unchanged.
+ *
+ * Translates itself rather than taking labels as props: Puck renders its panels
+ * through `createPortal` and never mounts a second React root, so next-intl
+ * context reaches here. That also keeps the `plugins` array module-level, whose
+ * identity Puck must see unchanged between renders.
  */
-export function EditorSideBar({
-  componentsLabel,
-  outlineLabel,
-}: {
-  componentsLabel: string;
-  outlineLabel: string;
-}) {
+export function EditorSideBar() {
+  const t = useTranslations("app.pageBuilder.editor");
   const [tab, setTab] = useState<SideBarTab>("components");
   useExpandPageBodyOnce(tab === "outline");
 
@@ -68,8 +69,8 @@ export function EditorSideBar({
     <div className="flex h-full min-h-0 flex-col">
       <PanelTabs
         tabs={[
-          { id: "components" as const, label: componentsLabel },
-          { id: "outline" as const, label: outlineLabel },
+          { id: "components" as const, label: t("puckConfig.sidebar.components") },
+          { id: "outline" as const, label: t("puckConfig.sidebar.outline") },
         ]}
         value={tab}
         onChange={setTab}

@@ -2863,6 +2863,7 @@
           }
         },
         "puckConfig": {
+          "sidebar": { "components": "Komponen", "outline": "Kerangka" },
           "categories": {
             "presets": "Blok prasetel",
             "manual": "Blok manual",

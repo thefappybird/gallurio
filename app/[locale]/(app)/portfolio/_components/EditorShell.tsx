@@ -309,7 +309,7 @@ const LOCAL_DRAFT_VERSION = 2;
 const puckPlugins: Plugin[] = [
   {
     name: "gallurio-side-bar",
-    render: () => <EditorSideBar componentsLabel="Components" outlineLabel="Outline" />,
+    render: () => <EditorSideBar />,
   },
 ];
 
