@@ -214,17 +214,40 @@ in 10.7 minutes. The re-seed alone cleared `batch1-flow`, both
 `portfolio-responsive` canvas/overflow cases and `preset-canvas-parity:114` —
 those had been failing on corrupted fixture data, not on the upgrade.
 
-### Already answered — do not re-investigate
+### Already answered — DELETED, do not re-investigate
 
-**9 specs are dead on `dev` and were dead before this branch.** They wait on
+**9 specs were dead on `dev` and were dead before this branch.** They waited on
 `[class*="_ComponentList_"]`, which our `drawer` override makes unreachable: the
 override drops `children`, so Puck's `ComponentList` never renders. `Components`
 is byte-identical in 0.20 and 0.23 and the override is untouched here, so this
-is not upgrade fallout. Decide whether to re-point or delete them; do not
-"fix the upgrade" for them.
+was never upgrade fallout.
 
-- `preset-library.spec.ts` x 5
-- `editor-reliability-batch.spec.ts` x 4
+They have been **deleted** in this branch rather than left red:
+
+- `preset-library.spec.ts` — whole file removed. All 5 tests were built on
+  `CATEGORY_ROOT` / `CATEGORY_TITLE`; there was nothing salvageable in it.
+- `editor-reliability-batch.spec.ts` — 4 of 8 tests removed, **file kept**. The
+  other 4 pass and cover real ground (brand background paints, app-shell
+  scrollbars, drawer overflow, the e2e fixture contract).
+
+The deletion also orphaned `CATEGORY_TITLE` and the `hoverRow` helper, both
+removed with them.
+
+> **What the drawer still needs, and what it lost.** Deleting these gave up the
+> only browser coverage of the grouped preset drawer — 11 groups, three variants
+> each, collapsed-except-Hero, no horizontal overflow, Arabic chrome. That
+> behaviour is still shipping and is now only unit-tested. If it gets re-covered,
+> it must be written against **our** `PresetBlocksDrawer` markup, not Puck's
+> `ComponentList`, which our override means we will never render.
+
+> **One survivor is vacuous and should probably go too.**
+> `editor-reliability-batch.spec.ts`'s "the drawer does not overflow once rows
+> carry a preview control" **passes**, but it queries `CATEGORY_ROOT` — the same
+> unreachable selector — and both its assertions are satisfiable by an empty
+> result (`toEqual([])` over a filtered empty list, and
+> `toBeGreaterThanOrEqual(0)`). It is green while proving nothing, which is worse
+> than red. It was left in place only because it was outside the "delete the 9
+> dead specs" instruction; deleting it is the right call.
 
 ### The dominant live cause — one mechanism, five specs
 
