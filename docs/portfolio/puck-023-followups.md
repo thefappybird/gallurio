@@ -65,6 +65,17 @@ question and is **not** in this scope.
 changes Puck's own strings, asserted on rendered text (which also catches
 mojibake).
 
+**Landed 2026-09-25.** Puck 0.23's `defaultDictionary` has 72 keys; 27 are
+`field-richtext-*` for a field type this app never registers, so 45 are
+localized under a top-level `puck.chrome` block in all five catalogs.
+`lib/page-builder/puckDictionary.ts` builds the prop from `t.raw(key)` — raw,
+not `t(key)`, because Puck interpolates its own `{title}`/`{count}` syntax and
+next-intl would otherwise try to ICU-format those braces. `EditorShell`
+memoizes it on the `puck.chrome` translator; `puckPlugins` stayed module-level.
+Tests pin the key list, per-locale presence, placeholder parity with `en`, and
+a copy-paste guard (at most three values per locale may equal English). The
+rendered-text assertion in `ar` belongs to the batched browser run.
+
 ---
 
 ## 2. Code splitting — the editor, then the published page
@@ -299,6 +310,27 @@ correct, leave it where a `div` genuinely is the right box.
 verify (assert the tag name in the existing public-page tests), no behaviour
 change.
 
+**Audited 2026-09-25 — no `as` warranted.** The premise above was half right:
+`ContainerBlock` does render a real `<section>` with a `div` slot inside it, but
+that pattern holds for every slot, and in each case the semantic element is
+already the block's own root, so the slot `div` is a layout box, not a missing
+landmark. Adding `as="section"` to any of them would nest a section inside a
+section.
+
+| slot | block root (already semantic) | slot element | verdict |
+|---|---|---|---|
+| `PageBody.content` (`PageBodyBlock.tsx:157`) | `<main data-block="page-body">` | `div`, block-flow, padded | keep — the `<main>` is the landmark; the slot is the gutter box |
+| `Container.content` (`manualBlocks.tsx:1407`) | `<section data-block="container">` | `div`, flex column/row | keep — a `<section>` inside a `<section>` adds an outline level with no heading |
+| `Columns.content` (`manualBlocks.tsx:1014`) | `<div data-block="columns">` | `div`, CSS grid | keep — a column grid is layout, not a document section; the children carry their own semantics |
+| `Navigation.content` (`NavigationBlock.tsx`) | `<div data-block="navigation">` wrapping a `<nav aria-label>` | `div` (brand heading slot) | keep — the landmark is the inner `<nav>`; the slot holds the brand mark |
+| `GalleryGrid.content` / `GalleryMasonry.content` + `column1..4` | `<section data-block="gallery-*">` | `div` grid / lanes | keep — tiles are figures, not list items; the gallery `<section>` is the landmark |
+
+Every preset renders through `ContainerBlock`, so the preset rows collapse into
+the Container row. The document outline on the public page is therefore
+`main > section*` with `nav` and `footer` from their blocks — flat where the
+content is flat, which is correct, not a defect. Item closed; item 12's
+close-out stands.
+
 ---
 
 ## 6. `componentOverlay` override — insurance only
@@ -470,6 +502,47 @@ Turbopack, not the app.
    run.** A failing run leaves a complete-looking artifact; one was misread as
    proof the rail was gone when it was not. Artifacts record observations, never
    verdicts.
+
+---
+
+## 14. Editor panel sections open and close instantly
+
+Added 2026-09-25 from the owner's review: every collapsible section in the
+editor's left panel (Presets header, each preset group, Manual blocks) and
+right panel (every Content/Design/Layout section, the collections-popup
+dialog) snaps between closed and open. It reads as unfinished.
+
+**Surfaces:** editor only.
+
+**What the "dropdowns" are.** Two components of ours, not Puck chrome:
+`components/ui/collapsible-drawer.tsx` (`CollapsibleDrawer`, left panel; also
+`PublishDialog` and the booking-session stacks) and
+`lib/page-builder/EditorDrawerSection.tsx` (`EditorDrawerSection` +
+`EditorDrawerGroup`, right panel, open state persisted per block in
+`drawerOpenStore.ts`). Both render the body with `{open && …}`, so there is
+nothing to transition. Puck's own expanders (outline tree nodes, array-field
+items) are not in scope; if wanted they are a separate item against Puck's
+hashed classes.
+
+**Mechanism: Base UI `Collapsible`** (`@base-ui/react`, the shadcn-v4
+foundation the rest of `components/ui` already stands on) — not `motion`. It
+animates height through `--collapsible-panel-height` with
+`data-starting-style`/`data-ending-style`, keeps the panel **unmounted while
+closed** (so the right panel's sections don't stay mounted through Puck's
+per-keystroke field re-renders, and "content absent when closed" tests keep
+their meaning), and keeps `aria-expanded` on the trigger so every existing e2e
+selector survives. 200 ms, default easing, `motion-reduce:transition-none`,
+per DESIGN.md §Motion. A shared `components/ui/collapsible.tsx` wrapper is
+registered in `REUSABLE_CODE.md`; both components consume it.
+
+**Test gotcha:** happy-dom 20.9 implements `getAnimations` on `ShadowRoot`
+only, and Base UI waits on `element.getAnimations()` before unmounting a
+closed panel — a test that asserts the body disappears may need a per-file
+stub.
+
+**Done when:** opening and closing a left-panel group and a right-panel
+section visibly animates at 1280 in the batched browser run, `aria-expanded`
+still drives the existing specs, and reduced-motion disables it.
 
 ---
 
