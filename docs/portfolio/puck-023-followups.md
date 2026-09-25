@@ -542,10 +542,12 @@ Diagnosed, deliberately not "fixed" in the spec:
   control exists. The spec describes a feature that is not there. Product
   decision needed: restore/implement per-item nav reordering, or delete the
   spec. Not an e2e fix.
-- `portfolio-page-body-child-height.spec.ts:92` — the 414 is computed live
-  (`geometry.slotContentWidth + 1`), so it is not a stale constant: a dropped
-  section really does overflow its page-body slot by 47 px. App-code
-  investigation for the next session.
+- `portfolio-page-body-child-height.spec.ts:92` — **corrected 2026-09-26:
+  spec bug, not an app bug.** The dropped preset is `overallWidth: "full"` by
+  design, and `PageBodyBlock` deliberately bleeds full-width sections across
+  its side margin (unit-pinned). The 47 px was that bleed. The spec now
+  asserts edge-to-edge for full-width sections and inside-the-margin for
+  page-fit ones, and passes.
 - `puck023-chrome.spec.ts` — trap 2 below stands as a *reading* rule, but the
   write order is deliberate and commented: several assertions run before the
   write, and the artifact exists to preserve diagnostics when the later ones
@@ -566,7 +568,7 @@ server dies with it). What ran:
 | the remaining 12 tests in the batch | not reached | rerun on a box with memory to spare (or with `CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1` if the session runs under Claude Code), per-file so a kill loses little |
 
 Known outcomes for the unreached set, from the code: `portfolio-page-body-child-height`
-will still fail (real 47 px overflow, app bug); `item4-defaults-prefill`
+will still fail (47 px — later shown to be the designed full-bleed, spec fixed); `item4-defaults-prefill`
 should pass on a quiet server; the rest carry the re-scoping fixes and are
 expected green but **unproven**.
 
@@ -1070,8 +1072,8 @@ DevTools). Fill both *before* items 8 and 10 change anything.
 5. **3 / 11** — images + `next/image` Cloudflare loader; Lighthouse after.
 6. **2b** — per-block splitting; today A and B download byte-identical JS
    (1,591,671 B / 40 chunks), which is the number to beat.
-7. App bugs surfaced by triage, not fixed here: a dropped section overflows
-   its page-body slot by 47 px (`portfolio-page-body-child-height`); per-item
+7. App bugs surfaced by triage, not fixed here (current list:
+   `puck-023-next-session-handoff.md`): per-item
    nav reordering does not exist (spec deleted — decide whether to build it);
    the public page logs React "unique key" warnings on `/w/[orgSlug]` in dev.
 8. Re-validate the Playwright drag recipe against dnd-kit 0.4 so anchor

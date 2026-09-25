@@ -31,10 +31,10 @@ reference.
 
 ## Browser results at hand-off
 
-**Runs 4–6, 2026-09-26 (current state; supersedes the Run 3 table below).**
+**Runs 4–7, 2026-09-26 (current state; supersedes the Run 3 table below).**
 One `--project=setup` login, then every file with `--no-deps` — no rate
 limit. Each failure was diagnosed from trace + code before anything was
-edited. Artifacts: `e2e/.artifacts/run4|run5|run6/<spec>/` (gitignored).
+edited. Artifacts: `e2e/.artifacts/run4`…`run7/<spec>/` (gitignored).
 
 | spec | now | diagnosis | action |
 |---|---|---|---|
@@ -44,10 +44,10 @@ edited. Artifacts: `e2e/.artifacts/run4|run5|run6/<spec>/` (gitignored).
 | `portfolio-page-body-batch` | **pass** | spec drift: `section > div > [role=button]` also matched 8 canvas block roots (Puck 0.23 gives them `role=button`, `cursor: grab`) | excludes `[data-puck-component]`; assertion now names offenders |
 | `block-floated-parity` `:249` footer links | **pass** (all presets, contrast ≥ bar) | spec drift: expected brand *background*; `FOOTER_STATEMENT_PRESET` pins the links to `textColorToken: "foreground"` | expects `--pf-color-fg` |
 | `block-floated-parity` `:131` GalleryGrid padding | **red** | fixture drift: **no seeded template contains a `GalleryGrid`** (Editorial's gallery zone is FeaturedWork) — zone switch works | not fixed. Insert a "Classic grid" preset (`GalleryGridPreset`, drawer group "Gallery grid") with the file's own `dragDrawerItemToCanvas`, or move the placeholder assertion to a unit test |
-| `preset-canvas-parity` `:182` button families | **red** | fixture drift: the spec's premise (soft "Get in Touch" → brand primary on Home; no-`_style` "Send a Message" → brand fg) is gone since `cdb012aa` re-ported the templates. Editorial Home now has soft **"View Gallery"** (`buttonColorToken: "foreground"`) and outline "Send a Message"; "Get in Touch" is outline, lower in the tree | not fixed — rewrite needs a decision on which button families still need live coverage |
+| `preset-canvas-parity` `:183` button families | **pass** (3/3, Run 7) | template drift: the spec's premise (soft "Get in Touch" → brand primary on Home; no-`_style` "Send a Message" → brand fg) is gone since `cdb012aa` re-ported the templates | rewritten to the families Editorial Home ships: soft "View Gallery" (label = brand fg, tinted fill) and outline "Send a Message" (label + border = brand fg, no fill); contrast checks kept |
 | `portfolio-rtl-scoping` | **red** | fixture drift: clicks a "Glow" featured-work tile — **no "Glow" collection exists in `seed.ts`**, and the "Minimal Template" draft's FeaturedWork tiles are unconfigured ("select a collection") | not fixed — needs the seed to create a collection and a draft whose FeaturedWork points at it |
 | `portfolio-responsive` 375 px | **red — probable app bug** | spec drifts fixed (Welcome dialog used `isVisible({timeout})`; "works best on a larger screen" banner now dismissed via "Continue anyway"). After that, the editor toolbar is in the a11y tree but **the Puck canvas paints over it** — `canvas-controls-trigger` click is intercepted by `Navigation-editorial-home-0`. Screenshot: no toolbar row under the app header | not fixed — probe the toolbar's and canvas's `getBoundingClientRect()` at 375 px first |
-| `portfolio-page-body-child-height` | **red — app bug** | 461 px vs ≤ 414: the known page-body overflow (below) | not fixed |
+| `portfolio-page-body-child-height` | **pass** (Run 7) | **not an app bug** (the Run 3 read was wrong): presets are `overallWidth: "full"` by design (`sectionPresets.ts` `pageFitPresetProps`), and `PageBodyBlock` deliberately bleeds a full-width section across its side margin (unit-pinned in `PageBodyBlock.test.tsx:103-128`). The 47 px was that bleed | spec asserts the real rule: full-width sections span the slot edge to edge (±1.5 px), page-fit ones stay inside the margin |
 
 Run 3 table (history — the traces it points at are superseded):
 
@@ -75,7 +75,7 @@ pnpm exec playwright test --project=setup
 pnpm exec playwright test <spec file> --project=chromium --no-deps --trace retain-on-failure --reporter=list
 ```
 
-**Four reds remain (see the Runs 4–6 table); resolve them before the perf
+**Three reds remain (see the Runs 4–7 table); resolve them before the perf
 wave** — the suite has to be able to say whether 2a/10/8 broke something. Rule from this session's
 experience: prove from the trace + code whether each is spec drift or a real
 regression before editing either side; a drifted spec and a real bug fail
@@ -83,15 +83,13 @@ identically.
 
 ## Next session — do these in order
 
-0. **Close the four reds** from the Runs 4–6 table. Diagnosis is done;
+0. **Close the three reds** from the Runs 4–7 table. Diagnosis is done;
    what's left is:
    - the 375 px toolbar geometry probe, then the fix (app);
-   - the page-body overflow fix (app);
    - a seed decision for `rtl-scoping` and `:131` (a collection plus a
      configured FeaturedWork, and a GalleryGrid somewhere), to ask the owner
      about;
-   - the `preset-canvas-parity` rewrite (owner decision on button-family
-     coverage).
+   - the FeaturedWork empty-state locale bug (below).
    End with one consolidated re-run.
 1. **Capture the two missing "before" rows first** (both have recipes in scope
    doc item 13; neither may be skipped — items 8 and 10 are unfalsifiable
@@ -125,9 +123,6 @@ identically.
 
 ## Known app bugs surfaced (not fixed; triage before or alongside the perf wave)
 
-- **Page-body overflow:** a section dropped into the page body renders 47 px
-  wider than its slot (`portfolio-page-body-child-height.spec.ts`; the
-  expected value is computed live, so the spec is right).
 - **Per-item nav reordering does not exist.** The spec that expected it was
   deleted; the owner decides whether to build it.
 - **Crashed public page may stay indexable** (`generateMetadata` resolves
@@ -140,10 +135,13 @@ identically.
   probed.
 - **Seed gaps block two specs:** no gallery collection named in any draft's
   FeaturedWork, and no GalleryGrid in any seeded template.
-- **Question for the owner:** the FeaturedWork empty-state hint ("Select a
-  collection to feature.") renders in the *portfolio's* language (Arabic in
-  `rtl-scoping`) inside the editor preview, while the CRM locale is `en`. Intended
-  or not is the owner's call (not checked on the published page).
+- **FeaturedWork empty-state hint uses the wrong locale (owner confirmed not
+  intended, 2026-09-26).** "Select a collection to feature." / "No featured
+  images yet." render in the *portfolio's* language (Arabic in
+  `rtl-scoping`'s Live preview) while the CRM locale is `en`. Editor-facing
+  hints should follow the CRM locale. Not fixed. Find where FeaturedWork
+  resolves these strings, and check whether the published page shows them at
+  all.
 
 ## Rules this box enforces (learned the hard way — follow them)
 
