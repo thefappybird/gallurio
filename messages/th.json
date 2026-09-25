@@ -3277,6 +3277,16 @@
           "continue": "ดำเนินการต่อ"
         }
       },
+      "errorBoundary": {
+        "title": "เกิดข้อผิดพลาดบางอย่าง",
+        "draftSafe": "ฉบับร่างของคุณปลอดภัย — บันทึกไว้ในเบราว์เซอร์นี้แล้ว โหลดตัวแก้ไขใหม่เพื่อทำงานต่อ หรือเปิดฉบับร่างเพื่อดำเนินการต่อจากที่นั่น",
+        "retry": "ลองอีกครั้ง",
+        "reload": "โหลดตัวแก้ไขใหม่"
+      },
+      "previewError": {
+        "title": "โหลดตัวอย่างไม่สำเร็จ",
+        "retry": "ลองอีกครั้ง"
+      },
       "wizard": {
         "title": "มาสร้างพอร์ตโฟลิโอของคุณกัน",
         "subtitle": "ทำตามขั้นตอนสั้น ๆ แล้วคุณจะมีหน้าเว็บที่ใช้งานได้จริง",
@@ -3931,6 +3941,55 @@
         "title": "เกิดข้อผิดพลาดบางอย่าง",
         "description": "เราไม่สามารถดำเนินการคำเชิญของคุณให้เสร็จสมบูรณ์ได้ โปรดลองอีกครั้งหรือติดต่อฝ่ายสนับสนุน"
       }
+    }
+  },
+  "puck": {
+    "chrome": {
+      "header-publish": "เผยแพร่",
+      "header-undo": "เลิกทำ",
+      "header-redo": "ทำซ้ำ",
+      "header-toggle-leftsidebar": "สลับแถบด้านซ้าย",
+      "header-toggle-rightsidebar": "สลับแถบด้านขวา",
+      "header-toggle-menubar": "สลับแถบเมนู",
+      "action-selectparent": "เลือกองค์ประกอบหลัก",
+      "action-duplicate": "ทำสำเนา",
+      "action-delete": "ลบ",
+      "label-page": "หน้า",
+      "label-component": "องค์ประกอบ",
+      "outline-empty": "ไม่มีรายการ",
+      "outline-item-collapse": "ย่อ",
+      "outline-item-expand": "ขยาย",
+      "outline-header-title": "โครงร่าง",
+      "outline-header-collapseall": "ย่อทั้งหมด",
+      "outline-item-duplicate": "ทำสำเนา",
+      "outline-item-delete": "ลบ",
+      "drawer-category-collapse": "ย่อ {title}",
+      "drawer-category-expand": "ขยาย {title}",
+      "drawer-category-other": "อื่น ๆ",
+      "canvas-noconfig": "ไม่มีการตั้งค่าสำหรับ {type}",
+      "field-readonly": "อ่านอย่างเดียว",
+      "field-arrayitem-summary": "รายการ #{index}",
+      "field-arrayitem-duplicate": "ทำสำเนา",
+      "field-arrayitem-delete": "ลบ",
+      "field-external-selectdata": "เลือกข้อมูล",
+      "field-external-search": "ค้นหา",
+      "field-external-togglefilters": "สลับตัวกรอง",
+      "field-external-item": "รายการภายนอก",
+      "field-external-result-singular": "{count} ผลลัพธ์",
+      "field-external-result-plural": "{count} ผลลัพธ์",
+      "viewport-zoom-in": "ซูมมุมมองเข้า",
+      "viewport-zoom-out": "ซูมมุมมองออก",
+      "viewport-zoom-auto": "{zoom}% (อัตโนมัติ)",
+      "viewport-toggle-menu": "สลับเมนูมุมมอง",
+      "viewport-switch": "สลับไปยังมุมมอง {label}",
+      "viewport-switch-default": "สลับมุมมอง",
+      "plugin-blocks": "บล็อก",
+      "plugin-outline": "โครงร่าง",
+      "plugin-fields": "ฟิลด์",
+      "plugin-components": "องค์ประกอบ",
+      "layout-maximize": "ขยายใหญ่สุด",
+      "layout-minimize": "ย่อเล็กสุด",
+      "loader-loading": "กำลังโหลด"
     }
   }
 }

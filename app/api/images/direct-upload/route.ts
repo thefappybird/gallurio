@@ -25,10 +25,14 @@ export async function POST(req: Request) {
     );
   }
 
-  const { imageId, uploadURL } = await requestDirectUpload(
-    ctx.workspace._id.toString(),
-    parsed.data.subfolder
-  );
-
-  return NextResponse.json({ imageId, uploadURL });
+  try {
+    const { imageId, uploadURL } = await requestDirectUpload(
+      ctx.workspace._id.toString(),
+      parsed.data.subfolder
+    );
+    return NextResponse.json({ imageId, uploadURL });
+  } catch (err) {
+    console.error("[direct-upload]", err);
+    return NextResponse.json({ error: "upload_unavailable" }, { status: 502 });
+  }
 }

@@ -3277,6 +3277,16 @@
           "continue": "متابعة"
         }
       },
+      "errorBoundary": {
+        "title": "حدث خطأ ما",
+        "draftSafe": "مسودتك بأمان — محفوظة في هذا المتصفح. أعد تحميل المحرر للمتابعة، أو افتح المسودات لاستئنافها من هناك.",
+        "retry": "حاول مرة أخرى",
+        "reload": "إعادة تحميل المحرر"
+      },
+      "previewError": {
+        "title": "تعذّر تحميل المعاينة",
+        "retry": "حاول مرة أخرى"
+      },
       "wizard": {
         "title": "لنبنِ معرض أعمالك",
         "subtitle": "بضع خطوات سريعة وستحصل على صفحة مباشرة.",
@@ -3931,6 +3941,55 @@
         "title": "حدث خطأ ما",
         "description": "تعذّر علينا إكمال دعوتك. يرجى المحاولة مرة أخرى أو التواصل مع الدعم."
       }
+    }
+  },
+  "puck": {
+    "chrome": {
+      "header-publish": "نشر",
+      "header-undo": "تراجع",
+      "header-redo": "إعادة",
+      "header-toggle-leftsidebar": "تبديل الشريط الجانبي الأيسر",
+      "header-toggle-rightsidebar": "تبديل الشريط الجانبي الأيمن",
+      "header-toggle-menubar": "تبديل شريط القوائم",
+      "action-selectparent": "تحديد العنصر الأصل",
+      "action-duplicate": "تكرار",
+      "action-delete": "حذف",
+      "label-page": "الصفحة",
+      "label-component": "المكوّن",
+      "outline-empty": "لا توجد عناصر",
+      "outline-item-collapse": "طي",
+      "outline-item-expand": "توسيع",
+      "outline-header-title": "المخطط",
+      "outline-header-collapseall": "طي الكل",
+      "outline-item-duplicate": "تكرار",
+      "outline-item-delete": "حذف",
+      "drawer-category-collapse": "طي {title}",
+      "drawer-category-expand": "توسيع {title}",
+      "drawer-category-other": "أخرى",
+      "canvas-noconfig": "لا يوجد إعداد لـ {type}",
+      "field-readonly": "للقراءة فقط",
+      "field-arrayitem-summary": "العنصر رقم {index}",
+      "field-arrayitem-duplicate": "تكرار",
+      "field-arrayitem-delete": "حذف",
+      "field-external-selectdata": "اختيار البيانات",
+      "field-external-search": "بحث",
+      "field-external-togglefilters": "تبديل عوامل التصفية",
+      "field-external-item": "عنصر خارجي",
+      "field-external-result-singular": "{count} نتيجة",
+      "field-external-result-plural": "{count} نتائج",
+      "viewport-zoom-in": "تكبير منطقة العرض",
+      "viewport-zoom-out": "تصغير منطقة العرض",
+      "viewport-zoom-auto": "{zoom}% (تلقائي)",
+      "viewport-toggle-menu": "تبديل قائمة منطقة العرض",
+      "viewport-switch": "التبديل إلى منطقة عرض {label}",
+      "viewport-switch-default": "تبديل منطقة العرض",
+      "plugin-blocks": "الكتل",
+      "plugin-outline": "المخطط",
+      "plugin-fields": "الحقول",
+      "plugin-components": "المكوّنات",
+      "layout-maximize": "تكبير",
+      "layout-minimize": "تصغير",
+      "loader-loading": "جارٍ التحميل"
     }
   }
 }

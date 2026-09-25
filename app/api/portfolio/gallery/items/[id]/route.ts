@@ -50,38 +50,46 @@ export async function PATCH(req: Request, { params }: Params) {
       { status: 400, headers: { "Cache-Control": "no-store" } }
     );
   }
-  if (!(await galleryLinksBelongToWorkspace({
-    workspaceId: ctx.workspace._id.toString(),
-    bookingId: parsed.data.bookingId,
-    clientId: parsed.data.clientId,
-  }))) {
-    return NextResponse.json({ error: "invalid_link" }, { status: 400, headers: { "Cache-Control": "no-store" } });
-  }
-
-  const item = await updateItemMeta({
-    workspaceId: ctx.workspace._id.toString(),
-    itemId: id,
-    ...parsed.data,
-  });
-  if (!item) {
-    return NextResponse.json({ error: "not_found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
-  }
-
-  // Metadata save already committed — an edited description must reach the live
-  // page without waiting for the next publish (see propagateItemAltText).
-  // A propagation failure must not fail this request: the write it's built
-  // on top of already succeeded, so log and still return 200.
-  if (parsed.data.altText !== undefined || parsed.data.caption !== undefined) {
-    try {
-      await propagateItemAltText({
-        workspaceId: ctx.workspace._id.toString(),
-        itemId: id,
-        alt: item.caption || item.altText || "",
-      });
-    } catch (err) {
-      console.error("[gallery:items:patch] alt propagation to published page failed", err);
+  try {
+    if (!(await galleryLinksBelongToWorkspace({
+      workspaceId: ctx.workspace._id.toString(),
+      bookingId: parsed.data.bookingId,
+      clientId: parsed.data.clientId,
+    }))) {
+      return NextResponse.json({ error: "invalid_link" }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }
-  }
 
-  return NextResponse.json(item, { status: 200, headers: { "Cache-Control": "no-store" } });
+    const item = await updateItemMeta({
+      workspaceId: ctx.workspace._id.toString(),
+      itemId: id,
+      ...parsed.data,
+    });
+    if (!item) {
+      return NextResponse.json({ error: "not_found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+
+    // Metadata save already committed — an edited description must reach the live
+    // page without waiting for the next publish (see propagateItemAltText).
+    // A propagation failure must not fail this request: the write it's built
+    // on top of already succeeded, so log and still return 200.
+    if (parsed.data.altText !== undefined || parsed.data.caption !== undefined) {
+      try {
+        await propagateItemAltText({
+          workspaceId: ctx.workspace._id.toString(),
+          itemId: id,
+          alt: item.caption || item.altText || "",
+        });
+      } catch (err) {
+        console.error("[gallery:items:patch] alt propagation to published page failed", err);
+      }
+    }
+
+    return NextResponse.json(item, { status: 200, headers: { "Cache-Control": "no-store" } });
+  } catch (err) {
+    console.error("[gallery:items:patch]", err);
+    return NextResponse.json(
+      { error: "gallery_item_update_failed" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
+    );
+  }
 }

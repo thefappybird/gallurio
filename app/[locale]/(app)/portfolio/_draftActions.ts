@@ -80,13 +80,18 @@ export async function refreshCollectionReferencesAction(input: unknown): Promise
   if (!parsed.data.data.home || !parsed.data.data.gallery) return { error: "invalid_data" };
 
   const workspaceId = String(ctx.workspace._id);
-  return {
-    ok: true,
-    data: {
-      home: await reconcileFeaturedCollections(workspaceId, parsed.data.data.home as unknown as PuckData),
-      gallery: await reconcileFeaturedCollections(workspaceId, parsed.data.data.gallery as unknown as PuckData),
-    },
-  };
+  try {
+    return {
+      ok: true,
+      data: {
+        home: await reconcileFeaturedCollections(workspaceId, parsed.data.data.home as unknown as PuckData),
+        gallery: await reconcileFeaturedCollections(workspaceId, parsed.data.data.gallery as unknown as PuckData),
+      },
+    };
+  } catch (err) {
+    console.error("[portfolio-draft-actions] refreshCollectionReferencesAction", err);
+    return { error: "refresh_collection_references_failed" };
+  }
 }
 
 export async function createDraftAction(input: unknown): Promise<DraftMutationResult> {
@@ -203,35 +208,45 @@ export async function deleteDraftAction(id: unknown): Promise<DraftActionResult>
   const idParsed = z.string().min(1).max(64).safeParse(id);
   if (!idParsed.success) return { error: "invalid_id" };
 
-  await connectDB();
-  const target = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId: ctx.workspace._id })
-    .select({ _id: 1 })
-    .lean();
-  if (!target) {
+  try {
+    await connectDB();
+    const target = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId: ctx.workspace._id })
+      .select({ _id: 1 })
+      .lean();
+    if (!target) {
+      revalidatePath("/portfolio");
+      return { ok: true };
+    }
+    const count = await PortfolioDraft.countDocuments({ workspaceId: ctx.workspace._id });
+    if (count <= 1) return { error: "last_draft" };
+    await PortfolioDraft.deleteOne({ _id: idParsed.data, workspaceId: ctx.workspace._id });
     revalidatePath("/portfolio");
     return { ok: true };
+  } catch (err) {
+    console.error("[portfolio-draft-actions] deleteDraftAction", err);
+    return { error: "delete_draft_failed" };
   }
-  const count = await PortfolioDraft.countDocuments({ workspaceId: ctx.workspace._id });
-  if (count <= 1) return { error: "last_draft" };
-  await PortfolioDraft.deleteOne({ _id: idParsed.data, workspaceId: ctx.workspace._id });
-  revalidatePath("/portfolio");
-  return { ok: true };
 }
 
 export async function listDraftsAction(): Promise<DraftSummary[]> {
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return [];
-  await connectDB();
-  const docs = await PortfolioDraft.find({ workspaceId: ctx.workspace._id })
-    .sort({ updatedAt: -1 })
-    .select({ name: 1, templateId: 1, updatedAt: 1 })
-    .lean();
-  return docs.map((d) => ({
-    id: String(d._id),
-    name: d.name,
-    templateId: d.templateId ?? "",
-    updatedAt: (d.updatedAt instanceof Date ? d.updatedAt : new Date()).toISOString(),
-  }));
+  try {
+    await connectDB();
+    const docs = await PortfolioDraft.find({ workspaceId: ctx.workspace._id })
+      .sort({ updatedAt: -1 })
+      .select({ name: 1, templateId: 1, updatedAt: 1 })
+      .lean();
+    return docs.map((d) => ({
+      id: String(d._id),
+      name: d.name,
+      templateId: d.templateId ?? "",
+      updatedAt: (d.updatedAt instanceof Date ? d.updatedAt : new Date()).toISOString(),
+    }));
+  } catch (err) {
+    console.error("[portfolio-draft-actions] listDraftsAction", err);
+    return [];
+  }
 }
 
 export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
@@ -240,28 +255,33 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
   const idParsed = z.string().min(1).max(64).safeParse(id);
   if (!idParsed.success) return { error: "invalid_id" };
 
-  await connectDB();
-  const doc = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId: ctx.workspace._id }).lean();
-  if (!doc) return { error: "draft_not_found" };
-  return {
-    ok: true,
-    draft: {
-      id: String(doc._id),
-      name: doc.name,
-      templateId: doc.templateId ?? "",
-      updatedAt: (doc.updatedAt instanceof Date ? doc.updatedAt : new Date()).toISOString(),
-      data: {
-        home: (doc.data?.home as PuckData | null) ?? null,
-        gallery: (doc.data?.gallery as PuckData | null) ?? null,
+  try {
+    await connectDB();
+    const doc = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId: ctx.workspace._id }).lean();
+    if (!doc) return { error: "draft_not_found" };
+    return {
+      ok: true,
+      draft: {
+        id: String(doc._id),
+        name: doc.name,
+        templateId: doc.templateId ?? "",
+        updatedAt: (doc.updatedAt instanceof Date ? doc.updatedAt : new Date()).toISOString(),
+        data: {
+          home: (doc.data?.home as PuckData | null) ?? null,
+          gallery: (doc.data?.gallery as PuckData | null) ?? null,
+        },
+        brandKit: doc.brandKit ?? null,
+        contact: doc.contact ?? null,
+        header: doc.header ?? null,
+        collectionsPopup: doc.collectionsPopup ?? null,
+        formLocale: doc.formLocale ?? "",
+        formDir: doc.formDir ?? "",
       },
-      brandKit: doc.brandKit ?? null,
-      contact: doc.contact ?? null,
-      header: doc.header ?? null,
-      collectionsPopup: doc.collectionsPopup ?? null,
-      formLocale: doc.formLocale ?? "",
-      formDir: doc.formDir ?? "",
-    },
-  };
+    };
+  } catch (err) {
+    console.error("[portfolio-draft-actions] getDraftAction", err);
+    return { error: "get_draft_failed" };
+  }
 }
 
 export type SeedTemplateResult =
@@ -295,23 +315,28 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
   const template = getTemplate(parsed.data);
   if (!template) return { error: "unknown_template" };
 
-  const data = template.seedData({
-    workspace: { name: ctx.workspace.name as string },
-  });
+  try {
+    const data = template.seedData({
+      workspace: { name: ctx.workspace.name as string },
+    });
 
-  return {
-    ok: true,
-    seed: {
-      templateId: template.id,
-      data: {
-        home: (data.home as PuckData) ?? { content: [], root: {} },
-        gallery: (data.gallery as PuckData) ?? { content: [], root: {} },
+    return {
+      ok: true,
+      seed: {
+        templateId: template.id,
+        data: {
+          home: (data.home as PuckData) ?? { content: [], root: {} },
+          gallery: (data.gallery as PuckData) ?? { content: [], root: {} },
+        },
+        brandKit: template.defaultBrandKit,
+        contact: template.defaultContact,
+        collectionsPopup: template.defaultCollectionsPopup,
       },
-      brandKit: template.defaultBrandKit,
-      contact: template.defaultContact,
-      collectionsPopup: template.defaultCollectionsPopup,
-    },
-  };
+    };
+  } catch (err) {
+    console.error("[portfolio-draft-actions] seedTemplateAction", err);
+    return { error: "seed_template_failed" };
+  }
 }
 
 export async function publishDraftAction(id: unknown): Promise<DraftActionResult> {
@@ -320,119 +345,124 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   const idParsed = z.string().min(1).max(64).safeParse(id);
   if (!idParsed.success) return { error: "invalid_id" };
 
-  await connectDB();
   const workspaceId = ctx.workspace._id;
-  const [doc, workspace] = await Promise.all([
-    PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean(),
-    Workspace.findById(workspaceId)
-      .select({
-        "publicPage.settingsDraft": 1,
-        "publicPage.seo.ogImageAssetId": 1,
-        "publicPage.siteIcon.assetId": 1,
-      })
-      .lean(),
-  ]);
-  if (!doc) return { error: "draft_not_found" };
+  try {
+    await connectDB();
+    const [doc, workspace] = await Promise.all([
+      PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean(),
+      Workspace.findById(workspaceId)
+        .select({
+          "publicPage.settingsDraft": 1,
+          "publicPage.seo.ogImageAssetId": 1,
+          "publicPage.siteIcon.assetId": 1,
+        })
+        .lean(),
+    ]);
+    if (!doc) return { error: "draft_not_found" };
 
-  // Captured before the write below, so we can delete a live og/icon image
-  // that publish is about to supersede — but only if it was actually live.
-  const liveOgAssetId = workspace?.publicPage?.seo?.ogImageAssetId || undefined;
-  const liveSiteIconAssetId = workspace?.publicPage?.siteIcon?.assetId || undefined;
+    // Captured before the write below, so we can delete a live og/icon image
+    // that publish is about to supersede — but only if it was actually live.
+    const liveOgAssetId = workspace?.publicPage?.seo?.ogImageAssetId || undefined;
+    const liveSiteIconAssetId = workspace?.publicPage?.siteIcon?.assetId || undefined;
 
-  const wsIdStr = String(workspaceId);
-  let home = (doc.data?.home as PuckData | null) ?? null;
-  let gallery = (doc.data?.gallery as PuckData | null) ?? null;
-  // Guarantee the nav invariant (one Navigation block, at index 0) on both
-  // zones before they ever reach the live public page — belt-and-suspenders
-  // against a client posting a zone with a displaced/duplicated nav.
-  // normalizeChrome cannot invent a Navigation out of a zone that has none
-  // (that requires template/config data it doesn't have); a zone that
-  // genuinely has none is logged and published as-is rather than blocked —
-  // this can only happen from a pre-migration/legacy draft or a client bug,
-  // and rejecting publish outright would strand an owner on a state they
-  // have no in-app way to fix yet.
-  if (home) {
-    home = normalizePresetLayouts(normalizePageBody(normalizeChrome(home as unknown as Data)) as unknown as PuckData);
-    if (!findChrome(home as unknown as Data, "nav")) {
-      console.warn("[portfolio] publish: home zone has no Navigation block", wsIdStr);
+    const wsIdStr = String(workspaceId);
+    let home = (doc.data?.home as PuckData | null) ?? null;
+    let gallery = (doc.data?.gallery as PuckData | null) ?? null;
+    // Guarantee the nav invariant (one Navigation block, at index 0) on both
+    // zones before they ever reach the live public page — belt-and-suspenders
+    // against a client posting a zone with a displaced/duplicated nav.
+    // normalizeChrome cannot invent a Navigation out of a zone that has none
+    // (that requires template/config data it doesn't have); a zone that
+    // genuinely has none is logged and published as-is rather than blocked —
+    // this can only happen from a pre-migration/legacy draft or a client bug,
+    // and rejecting publish outright would strand an owner on a state they
+    // have no in-app way to fix yet.
+    if (home) {
+      home = normalizePresetLayouts(normalizePageBody(normalizeChrome(home as unknown as Data)) as unknown as PuckData);
+      if (!findChrome(home as unknown as Data, "nav")) {
+        console.warn("[portfolio] publish: home zone has no Navigation block", wsIdStr);
+      }
     }
-  }
-  if (gallery) {
-    gallery = normalizePresetLayouts(normalizePageBody(normalizeChrome(gallery as unknown as Data)) as unknown as PuckData);
-    if (!findChrome(gallery as unknown as Data, "nav")) {
-      console.warn("[portfolio] publish: gallery zone has no Navigation block", wsIdStr);
+    if (gallery) {
+      gallery = normalizePresetLayouts(normalizePageBody(normalizeChrome(gallery as unknown as Data)) as unknown as PuckData);
+      if (!findChrome(gallery as unknown as Data, "nav")) {
+        console.warn("[portfolio] publish: gallery zone has no Navigation block", wsIdStr);
+      }
     }
-  }
 
-  const set: Record<string, unknown> = {};
-  set["publicPage.data.home"] = home
-    ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, home))
-    : null;
-  set["publicPage.data.gallery"] = gallery
-    ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, gallery))
-    : null;
-  // A fully-saved draft always carries these (brandKit required, the rest default
-  // to {}). The guards only skip a null left by a migrated/legacy draft, so we
-  // never overwrite live published config with null.
-  if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
-  if (doc.contact) set["publicPage.contact"] = doc.contact;
-  // publicPage.header is DEPRECATED (read-only legacy migration source — see
-  // Workspace.ts). Publish no longer writes it; the header now lives inside
-  // the zone data above as a Navigation block, and the settings-page logo
-  // control that used to feed this promotion is gone.
-  if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
-  set["publicPage.formLocale"] = doc.formLocale ?? "";
-  set["publicPage.formDir"] = doc.formDir ?? "";
-  set["publicPage.seoTitle"] = doc.seoTitle ?? "";
-  set["publicPage.seoDescription"] = doc.seoDescription ?? "";
-  set["publicPage.siteIcon.url"] = doc.siteIcon?.url ?? "";
-  set["publicPage.siteIcon.assetId"] = doc.siteIcon?.assetId ?? "";
-  set["publicPage.seo.ogImageUrl"] = doc.seo?.ogImageUrl ?? "";
-  set["publicPage.seo.ogImageAssetId"] = doc.seo?.ogImageAssetId ?? "";
-  set["publicPage.seo.galleryDescription"] = doc.seo?.galleryDescription ?? "";
-  set["publicPage.seo.noindex"] = doc.seo?.noindex ?? false;
-  set["publicPage.seo.keywords"] = doc.seo?.keywords ?? [];
-  const settingsDraft = workspace?.publicPage?.settingsDraft;
-  if (settingsDraft) {
-    set["publicPage.seoTitle"] = settingsDraft.seoTitle ?? "";
-    set["publicPage.seoDescription"] = settingsDraft.seoDescription ?? "";
-    set["publicPage.siteIcon.url"] = settingsDraft.siteIcon?.url ?? "";
-    set["publicPage.siteIcon.assetId"] = settingsDraft.siteIcon?.assetId ?? "";
-    set["publicPage.seo.keywords"] = settingsDraft.seo?.keywords ?? [];
-    set["publicPage.seo.ogImageUrl"] = settingsDraft.seo?.ogImageUrl ?? "";
-    set["publicPage.seo.ogImageAssetId"] = settingsDraft.seo?.ogImageAssetId ?? "";
-    set["publicPage.seo.galleryDescription"] =
-      settingsDraft.seo?.galleryDescription ?? "";
-    set["publicPage.seo.noindex"] = settingsDraft.seo?.noindex ?? false;
-  }
-  set["publicPage.templateId"] =
-    doc.templateId &&
-    PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])
-      ? doc.templateId
-      : "scratch";
-
-  const now = new Date();
-  set["publicPage.publishedAt"] = now;
-  set["publicPage.lastPublishedAt"] = now;
-
-  await Workspace.updateOne({ _id: workspaceId }, { $set: set });
-
-  const newOgAssetId = (set["publicPage.seo.ogImageAssetId"] as string | undefined) || undefined;
-  if (liveOgAssetId && liveOgAssetId !== newOgAssetId) {
-    try {
-      await deleteImage(liveOgAssetId);
-    } catch (err) {
-      console.warn("[portfolio] failed to delete superseded live OG image asset", err);
+    const set: Record<string, unknown> = {};
+    set["publicPage.data.home"] = home
+      ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, home))
+      : null;
+    set["publicPage.data.gallery"] = gallery
+      ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, gallery))
+      : null;
+    // A fully-saved draft always carries these (brandKit required, the rest default
+    // to {}). The guards only skip a null left by a migrated/legacy draft, so we
+    // never overwrite live published config with null.
+    if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
+    if (doc.contact) set["publicPage.contact"] = doc.contact;
+    // publicPage.header is DEPRECATED (read-only legacy migration source — see
+    // Workspace.ts). Publish no longer writes it; the header now lives inside
+    // the zone data above as a Navigation block, and the settings-page logo
+    // control that used to feed this promotion is gone.
+    if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
+    set["publicPage.formLocale"] = doc.formLocale ?? "";
+    set["publicPage.formDir"] = doc.formDir ?? "";
+    set["publicPage.seoTitle"] = doc.seoTitle ?? "";
+    set["publicPage.seoDescription"] = doc.seoDescription ?? "";
+    set["publicPage.siteIcon.url"] = doc.siteIcon?.url ?? "";
+    set["publicPage.siteIcon.assetId"] = doc.siteIcon?.assetId ?? "";
+    set["publicPage.seo.ogImageUrl"] = doc.seo?.ogImageUrl ?? "";
+    set["publicPage.seo.ogImageAssetId"] = doc.seo?.ogImageAssetId ?? "";
+    set["publicPage.seo.galleryDescription"] = doc.seo?.galleryDescription ?? "";
+    set["publicPage.seo.noindex"] = doc.seo?.noindex ?? false;
+    set["publicPage.seo.keywords"] = doc.seo?.keywords ?? [];
+    const settingsDraft = workspace?.publicPage?.settingsDraft;
+    if (settingsDraft) {
+      set["publicPage.seoTitle"] = settingsDraft.seoTitle ?? "";
+      set["publicPage.seoDescription"] = settingsDraft.seoDescription ?? "";
+      set["publicPage.siteIcon.url"] = settingsDraft.siteIcon?.url ?? "";
+      set["publicPage.siteIcon.assetId"] = settingsDraft.siteIcon?.assetId ?? "";
+      set["publicPage.seo.keywords"] = settingsDraft.seo?.keywords ?? [];
+      set["publicPage.seo.ogImageUrl"] = settingsDraft.seo?.ogImageUrl ?? "";
+      set["publicPage.seo.ogImageAssetId"] = settingsDraft.seo?.ogImageAssetId ?? "";
+      set["publicPage.seo.galleryDescription"] =
+        settingsDraft.seo?.galleryDescription ?? "";
+      set["publicPage.seo.noindex"] = settingsDraft.seo?.noindex ?? false;
     }
-  }
-  const newSiteIconAssetId =
-    (set["publicPage.siteIcon.assetId"] as string | undefined) || undefined;
-  if (liveSiteIconAssetId && liveSiteIconAssetId !== newSiteIconAssetId) {
-    try {
-      await deleteImage(liveSiteIconAssetId);
-    } catch (err) {
-      console.warn("[portfolio] failed to delete superseded live site icon asset", err);
+    set["publicPage.templateId"] =
+      doc.templateId &&
+      PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])
+        ? doc.templateId
+        : "scratch";
+
+    const now = new Date();
+    set["publicPage.publishedAt"] = now;
+    set["publicPage.lastPublishedAt"] = now;
+
+    await Workspace.updateOne({ _id: workspaceId }, { $set: set });
+
+    const newOgAssetId = (set["publicPage.seo.ogImageAssetId"] as string | undefined) || undefined;
+    if (liveOgAssetId && liveOgAssetId !== newOgAssetId) {
+      try {
+        await deleteImage(liveOgAssetId);
+      } catch (err) {
+        console.warn("[portfolio] failed to delete superseded live OG image asset", err);
+      }
     }
+    const newSiteIconAssetId =
+      (set["publicPage.siteIcon.assetId"] as string | undefined) || undefined;
+    if (liveSiteIconAssetId && liveSiteIconAssetId !== newSiteIconAssetId) {
+      try {
+        await deleteImage(liveSiteIconAssetId);
+      } catch (err) {
+        console.warn("[portfolio] failed to delete superseded live site icon asset", err);
+      }
+    }
+  } catch (err) {
+    console.error("[portfolio-draft-actions] publishDraftAction", err);
+    return { error: "publish_draft_failed" };
   }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);

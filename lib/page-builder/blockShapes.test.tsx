@@ -104,7 +104,7 @@ describe("puckConfig — registry shape", () => {
 
   it("each user-editable block has at least one field definition", () => {
     for (const [name, block] of Object.entries(puckConfig.components)) {
-      if (name === "MasonryClone") {
+      if (name === "MasonryClone" || name === "ContainerAnchor") {
         expect(block.fields).toEqual({});
         expect(block.permissions).toMatchObject({
           drag: false,

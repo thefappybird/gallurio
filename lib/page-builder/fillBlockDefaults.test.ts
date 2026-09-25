@@ -4,10 +4,9 @@ import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
+  CONTAINER_PRESET_KEYS,
   LEGACY_NAV_PRESET_KEYS,
 } from "./blocks/sectionPresets";
-
-const CONTAINER_PRESET_KEYS = SECTION_PRESET_KEYS.filter((key) => !NAV_PRESET_KEYS.includes(key));
 
 describe("fillBlockDefaults", () => {
   it.each(CONTAINER_PRESET_KEYS)(

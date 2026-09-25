@@ -322,7 +322,6 @@ export const minimalTemplate: PortfolioTemplate = {
                         type: "ContainerAnchor",
                         props: {
                           id: "Container-1e889fe1-33f5-4d8c-9aef-1c0ed7200f6e--anchor",
-                          height: 0,
                         },
                       },
                     ],

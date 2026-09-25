@@ -52,7 +52,10 @@ test.describe("ContactDetails: floated controls actually paint the canvas", () =
     // socials row until at least one social field is filled in on the
     // Content tab.
     await clickTab(page, "Content");
-    await page.getByLabel("Instagram username").fill("teststudio");
+    // Puck 0.23 mounts the inactive fields-panel copy hidden (display:none)
+    // instead of unmounting it, so an unscoped getByLabel resolves 2 —
+    // intersect with :visible to grab the one actually on screen.
+    await page.getByLabel("Instagram username").and(page.locator(":visible")).fill("teststudio");
 
     const socialsRow = contact.locator("dd:has(a)");
     await socialsRow.waitFor({ state: "visible", timeout: 15_000 });
@@ -132,7 +135,10 @@ test.describe("Gallery blocks: padding controls float the real render default", 
     await page.setViewportSize({ width: 1280, height: 900 });
     await openEditorWithDraft(page, DRAFT_NAME);
 
-    await page.getByRole("button", { name: "Gallery", exact: true }).click();
+    // The zone switcher's "Gallery" also collides with a hidden dnd-kit
+    // draggable handle and the canvas's own rendered "Gallery" nav link —
+    // the toolbar testid disambiguates to the real switcher button.
+    await page.getByTestId("portfolio-toolbar-grid").getByRole("button", { name: "Gallery", exact: true }).click();
 
     const canvas = canvasOf(page);
     const gallery = canvas.locator('[data-block="gallery-grid"]').first();
@@ -157,8 +163,8 @@ test.describe("Gallery blocks: padding controls float the real render default", 
 
 const SHELL = "[data-testid='portfolio-editor-shell']";
 
-/** Resolve --pf-color-bg / --pf-color-fg the same way preset-canvas-parity does. */
-async function readBrandTokens(page: Page): Promise<{ brandBg: string; appFg: string }> {
+/** Resolve --pf-color-fg / --foreground the same way preset-canvas-parity does. */
+async function readBrandTokens(page: Page): Promise<{ brandFg: string; appFg: string }> {
   return page.evaluate((shellSel) => {
     const shell = document.querySelector(shellSel) as HTMLElement;
     const probe = document.createElement("div");
@@ -170,10 +176,10 @@ async function readBrandTokens(page: Page): Promise<{ brandBg: string; appFg: st
       probe.style.color = "";
       return computed;
     };
-    const brandBg = read("var(--pf-color-bg)");
+    const brandFg = read("var(--pf-color-fg)");
     const appFg = read("var(--foreground)");
     probe.remove();
-    return { brandBg, appFg };
+    return { brandFg, appFg };
   }, SHELL);
 }
 
@@ -192,33 +198,26 @@ async function applyPreset(page: Page, name: string): Promise<void> {
   await page.waitForTimeout(300);
 }
 
-// Puck ships CSS-module class names; match on the stable hashed prefix. The
-// drawer's expand state lives on the category root's class (`--isExpanded`),
-// not on the clickable title as aria-expanded.
-const CATEGORY_TITLE = '[class*="_ComponentList-title_"]';
-const CATEGORY_ROOT = '[class*="_ComponentList_"]';
-
-function categoryFor(page: Page, title: string): Locator {
-  return page
-    .locator(CATEGORY_ROOT)
-    .filter({ has: page.locator(CATEGORY_TITLE).filter({ hasText: new RegExp(`^${title}$`, "i") }) })
-    .first();
-}
-
+// Puck's own drawer categories/items are real buttons with stable accessible
+// names (see hoverPreset() in portfolio-maker-demo-editor.spec.ts) — prefer
+// role/name over Puck's CSS-module class names, which are implementation
+// details. `_ComponentList_`/`_ComponentList-title_` no longer exist: our
+// `drawer` override drops Puck's ComponentList entirely.
 async function expandDrawerGroup(page: Page, title: string): Promise<void> {
-  const category = categoryFor(page, title);
-  await category.waitFor({ state: "visible", timeout: 15_000 });
-  if ((await category.getAttribute("class"))?.includes("--isExpanded")) return;
-  await category.locator(CATEGORY_TITLE).first().click();
-  await page.waitForTimeout(250);
+  const group = page.getByRole("button", { name: title, exact: true }).first();
+  await group.scrollIntoViewIfNeeded();
+  await group.waitFor({ state: "visible", timeout: 15_000 });
+  if ((await group.getAttribute("aria-expanded")) !== "true") {
+    await group.click();
+    await page.waitForTimeout(250);
+  }
 }
 
 /** Puck's dnd-kit ghost-copy drawer item + activation-threshold drag (see the portfolio-testing skill). */
 async function dragDrawerItemToCanvas(page: Page, itemName: string): Promise<void> {
   const item = page
-    .locator('[class*="_DrawerItem-name_"]')
-    .filter({ hasText: new RegExp(`^${itemName}$`) })
-    .first();
+    .getByRole("button", { name: new RegExp(`^${itemName}$`) })
+    .last();
   await item.scrollIntoViewIfNeeded();
   const source = await item.boundingBox();
   if (!source) throw new Error(`drawer item "${itemName}" has no bounding box`);
@@ -276,7 +275,7 @@ test.describe("FooterStatementPreset: link buttons stay legible on a primary ban
 
     for (const preset of PRESETS) {
       await applyPreset(page, preset);
-      const { brandBg, appFg } = await readBrandTokens(page);
+      const { brandFg, appFg } = await readBrandTokens(page);
 
       for (const [label, link] of [
         ["Home", homeLink],
@@ -286,8 +285,10 @@ test.describe("FooterStatementPreset: link buttons stay legible on a primary ban
         expect(paint.color, `${preset}: ${label} link is not the app-shell foreground`).not.toBe(
           appFg
         );
-        expect(paint.color, `${preset}: ${label} link paints brand background on its primary band`).toBe(
-          brandBg
+        // FOOTER_STATEMENT_PRESET pins these links to textColorToken "foreground"
+        // on a primaryBandSection (footer.ts); legibility is the contrast check below.
+        expect(paint.color, `${preset}: ${label} link paints brand foreground on its primary band`).toBe(
+          brandFg
         );
         const contrast = contrastRatio(paint.labelRgb, paint.effectiveRgb);
         expect(

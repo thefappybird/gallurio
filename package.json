@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development PORT=3000 tsx server.ts",
     "build": "next build",
+    "analyze": "next experimental-analyze",
     "start": "cross-env NODE_ENV=development PORT=3000 tsx server.ts",
     "start:prod": "cross-env NODE_ENV=production tsx server.ts",
     "lint": "eslint",

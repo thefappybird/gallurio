@@ -3277,6 +3277,16 @@
           "continue": "Continue"
         }
       },
+      "errorBoundary": {
+        "title": "Something went wrong",
+        "draftSafe": "Your draft is safe — it's saved in this browser. Reload the editor to keep working, or open Drafts to pick it up from there.",
+        "retry": "Try again",
+        "reload": "Reload editor"
+      },
+      "previewError": {
+        "title": "Preview couldn't load",
+        "retry": "Try again"
+      },
       "wizard": {
         "title": "Let's build your portfolio",
         "subtitle": "A few quick steps and you'll have a live page.",
@@ -3931,6 +3941,55 @@
         "title": "Something went wrong",
         "description": "We could not complete your invitation. Please try again or contact support."
       }
+    }
+  },
+  "puck": {
+    "chrome": {
+      "header-publish": "Publish",
+      "header-undo": "undo",
+      "header-redo": "redo",
+      "header-toggle-leftsidebar": "Toggle left sidebar",
+      "header-toggle-rightsidebar": "Toggle right sidebar",
+      "header-toggle-menubar": "Toggle menu bar",
+      "action-selectparent": "Select parent",
+      "action-duplicate": "Duplicate",
+      "action-delete": "Delete",
+      "label-page": "Page",
+      "label-component": "Component",
+      "outline-empty": "No items",
+      "outline-item-collapse": "Collapse",
+      "outline-item-expand": "Expand",
+      "outline-header-title": "Outline",
+      "outline-header-collapseall": "Collapse all",
+      "outline-item-duplicate": "Duplicate",
+      "outline-item-delete": "Delete",
+      "drawer-category-collapse": "Collapse {title}",
+      "drawer-category-expand": "Expand {title}",
+      "drawer-category-other": "Other",
+      "canvas-noconfig": "No configuration for {type}",
+      "field-readonly": "Read-only",
+      "field-arrayitem-summary": "Item #{index}",
+      "field-arrayitem-duplicate": "Duplicate",
+      "field-arrayitem-delete": "Delete",
+      "field-external-selectdata": "Select data",
+      "field-external-search": "Search",
+      "field-external-togglefilters": "Toggle filters",
+      "field-external-item": "External item",
+      "field-external-result-singular": "{count} result",
+      "field-external-result-plural": "{count} results",
+      "viewport-zoom-in": "Zoom viewport in",
+      "viewport-zoom-out": "Zoom viewport out",
+      "viewport-zoom-auto": "{zoom}% (Auto)",
+      "viewport-toggle-menu": "Toggle viewport menu",
+      "viewport-switch": "Switch to {label} viewport",
+      "viewport-switch-default": "Switch viewport",
+      "plugin-blocks": "Blocks",
+      "plugin-outline": "Outline",
+      "plugin-fields": "Fields",
+      "plugin-components": "Components",
+      "layout-maximize": "maximize",
+      "layout-minimize": "minimize",
+      "loader-loading": "loading"
     }
   }
 }

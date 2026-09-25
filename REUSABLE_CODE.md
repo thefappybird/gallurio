@@ -44,6 +44,7 @@ frames use `--radius-surface` (default sharp/0rem) — see Design rules in `CLAU
 | `components/ui/popover.tsx` | `Popover`, `PopoverTrigger`, `PopoverContent` | Floating content | `side`/`align`/`sideOffset` |
 | `components/ui/tooltip.tsx` | `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider` | Hover tooltip | `side`/`align`; `delay` |
 | `components/ui/tabs.tsx` | `Tabs`, `TabsList`, `TabsTab`, `TabsPanel` | Tab navigation | border-bottom active indicator |
+| `components/ui/collapsible.tsx` | `Collapsible`, `CollapsibleTrigger`, `CollapsiblePanel` | Base UI `@base-ui/react/collapsible` wrapper for a height-animated open/close primitive (200ms, `motion-reduce:transition-none`). `CollapsibleTrigger` adds a `group` class for `group-data-panel-open:*` chevron rotation; use `render` to swap the trigger's host element while keeping Base UI's keyboard/ARIA wiring. Backs `CollapsibleDrawer` and `EditorDrawerSection`. | `open`/`defaultOpen`/`onOpenChange` (1:1 with Base UI Root) |
 | `components/ui/skeleton.tsx` | `Skeleton` | Loading placeholder | pulse animation |
 | `components/ui/sonner.tsx` | `Toaster` | Toast container | themed via next-themes; bottom-right; 4s |
 | `components/ui/sidebar.tsx` | `Sidebar*` system + `useSidebar` | Full sidebar layout (collapse, mobile sheet, cookie persist, Ctrl+B) | `variant`: sidebar/floating/inset; `collapsible`: offcanvas/icon/none; `side` |

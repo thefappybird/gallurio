@@ -90,6 +90,26 @@ describe("editorPuckConfig parity with production puckConfig", () => {
       expect(componentsOf(editorPuckConfig)[key]?.defaultProps).toEqual(expected);
       expect(componentsOf(puckConfig)[key]?.defaultProps).toEqual(expected);
     });
+
+    if (NAV_PRESET_KEYS.includes(key)) {
+      it("carries no resolveData (renders through NavigationBlock, not ContainerBlock)", () => {
+        const cfg = componentsOf(editorPuckConfig)[key] as { resolveData?: unknown };
+        expect(cfg.resolveData).toBeUndefined();
+      });
+    } else {
+      it("resolveData appends the anchor-host anchor, matching the live reconciler", () => {
+        type ResolveDataFn = (data: unknown) => { props: { content: unknown[] } };
+        const cfg = componentsOf(editorPuckConfig)[key] as { resolveData?: ResolveDataFn };
+        expect(cfg.resolveData, `${key}.resolveData must exist`).toBeDefined();
+        const result = cfg.resolveData!({
+          props: { id: "sectionid", content: [{ type: "Container", props: { id: "inner" } }] },
+        });
+        expect(result.props.content.at(-1)).toEqual({
+          type: "ContainerAnchor",
+          props: { id: "sectionid--anchor" },
+        });
+      });
+    }
   });
 
   const nonPresetDefaults: Record<string, unknown> = {
@@ -216,7 +236,7 @@ describe("Container resolveData — anchor id idempotency", () => {
       props: {
         id: containerId,
         content: [
-          { type: "ContainerAnchor", props: { id: wrongAnchorId, height: 0 } },
+          { type: "ContainerAnchor", props: { id: wrongAnchorId } },
         ],
       },
     };
@@ -225,7 +245,7 @@ describe("Container resolveData — anchor id idempotency", () => {
       props: { content: Array<{ type: string; props: { id?: string } }> };
     };
     expect(result.props.content).toEqual([
-      { type: "ContainerAnchor", props: { id: "myblock--anchor", height: 0 } },
+      { type: "ContainerAnchor", props: { id: "myblock--anchor" } },
     ]);
   });
 
@@ -239,7 +259,7 @@ describe("Container resolveData — anchor id idempotency", () => {
       props: {
         id: "myblock",
         content: [
-          { type: "ContainerAnchor", props: { id: "myblock--anchor", height: 0 } },
+          { type: "ContainerAnchor", props: { id: "myblock--anchor" } },
           heading,
         ],
       },
@@ -529,7 +549,7 @@ describe("Container resolveData vs the live anchor reconciler", () => {
       editorPuckConfig.components.Container as unknown as { resolveData: ResolveDataFn }
     ).resolveData;
     const columns = { type: "Columns", props: { id: "cols" } };
-    const anchor = { type: "ContainerAnchor", props: { id: "c1--anchor", height: 0 } };
+    const anchor = { type: "ContainerAnchor", props: { id: "c1--anchor" } };
 
     const resolved = resolveData({ props: { id: "c1", content: [columns, anchor] } });
 

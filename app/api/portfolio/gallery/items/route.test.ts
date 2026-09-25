@@ -339,3 +339,16 @@ describe("POST /api/portfolio/gallery/items — collectionId", () => {
     expect(item?.collectionId).toBeNull();
   });
 });
+
+describe("POST /api/portfolio/gallery/items — DB failure", () => {
+  it("returns 500 gallery_item_failed when the write throws, and logs it", async () => {
+    const spy = vi.spyOn(GalleryItem, "create").mockRejectedValueOnce(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = (await POST(makeReq(validPayload()))) as unknown as MockResp;
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "gallery_item_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-gallery-items]", expect.any(Error));
+    spy.mockRestore();
+    errSpy.mockRestore();
+  });
+});

@@ -471,6 +471,13 @@ export const NAV_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.
   (key) => SECTION_PRESETS[key].componentType === "Navigation"
 );
 
+/** Presets that render through `ContainerBlock` (componentType: "Container") —
+ *  these count as container-class children for the anchor predicate, and as
+ *  anchor hosts, the same as the base `Container` type. */
+export const CONTAINER_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(
+  (key) => SECTION_PRESETS[key].componentType === "Container"
+);
+
 /** Presets that need the (auth-gated) collections picker — hidden in demo mode. */
 export const COLLECTION_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(
   (key) => SECTION_PRESETS[key].dependsOn.includes("collections")

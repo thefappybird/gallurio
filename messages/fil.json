@@ -3277,6 +3277,16 @@
           "continue": "Magpatuloy"
         }
       },
+      "errorBoundary": {
+        "title": "May nangyaring mali",
+        "draftSafe": "Ligtas ang iyong draft — naka-save ito sa browser na ito. I-reload ang editor para magpatuloy, o buksan ang Mga Draft para ituloy doon.",
+        "retry": "Subukan muli",
+        "reload": "I-reload ang editor"
+      },
+      "previewError": {
+        "title": "Hindi na-load ang preview",
+        "retry": "Subukan muli"
+      },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",
         "subtitle": "Ilang mabilis na hakbang at magkakaroon ka ng live na pahina.",
@@ -3931,6 +3941,55 @@
         "title": "May naganap na error",
         "description": "Hindi namin makumpleto ang iyong imbitasyon. Pakisubukan muli o makipag-ugnayan sa suporta."
       }
+    }
+  },
+  "puck": {
+    "chrome": {
+      "header-publish": "I-publish",
+      "header-undo": "bawiin",
+      "header-redo": "ibalik",
+      "header-toggle-leftsidebar": "I-toggle ang kaliwang sidebar",
+      "header-toggle-rightsidebar": "I-toggle ang kanang sidebar",
+      "header-toggle-menubar": "I-toggle ang menu bar",
+      "action-selectparent": "Piliin ang parent",
+      "action-duplicate": "I-duplicate",
+      "action-delete": "Tanggalin",
+      "label-page": "Pahina",
+      "label-component": "Bahagi",
+      "outline-empty": "Walang laman",
+      "outline-item-collapse": "Itago",
+      "outline-item-expand": "Ipakita",
+      "outline-header-title": "Balangkas",
+      "outline-header-collapseall": "Itago lahat",
+      "outline-item-duplicate": "I-duplicate",
+      "outline-item-delete": "Tanggalin",
+      "drawer-category-collapse": "Itago ang {title}",
+      "drawer-category-expand": "Ipakita ang {title}",
+      "drawer-category-other": "Iba pa",
+      "canvas-noconfig": "Walang configuration para sa {type}",
+      "field-readonly": "Read-only",
+      "field-arrayitem-summary": "Item #{index}",
+      "field-arrayitem-duplicate": "I-duplicate",
+      "field-arrayitem-delete": "Tanggalin",
+      "field-external-selectdata": "Pumili ng data",
+      "field-external-search": "Maghanap",
+      "field-external-togglefilters": "I-toggle ang mga filter",
+      "field-external-item": "External na item",
+      "field-external-result-singular": "{count} resulta",
+      "field-external-result-plural": "{count} na resulta",
+      "viewport-zoom-in": "I-zoom in ang viewport",
+      "viewport-zoom-out": "I-zoom out ang viewport",
+      "viewport-zoom-auto": "{zoom}% (Awtomatiko)",
+      "viewport-toggle-menu": "I-toggle ang menu ng viewport",
+      "viewport-switch": "Lumipat sa {label} viewport",
+      "viewport-switch-default": "Lumipat ng viewport",
+      "plugin-blocks": "Mga Block",
+      "plugin-outline": "Balangkas",
+      "plugin-fields": "Mga Field",
+      "plugin-components": "Mga Bahagi",
+      "layout-maximize": "palakihin",
+      "layout-minimize": "paliitin",
+      "loader-loading": "naglo-load"
     }
   }
 }
