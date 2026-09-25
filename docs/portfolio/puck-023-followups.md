@@ -74,7 +74,11 @@ next-intl would otherwise try to ICU-format those braces. `EditorShell`
 memoizes it on the `puck.chrome` translator; `puckPlugins` stayed module-level.
 Tests pin the key list, per-locale presence, placeholder parity with `en`, and
 a copy-paste guard (at most three values per locale may equal English). The
-rendered-text assertion in `ar` belongs to the batched browser run.
+rendered-text assertion in `ar` belongs to the batched browser run — **Run 2,
+2026-09-25: passed.** On `/ar/portfolio` Puck's outline header renders the
+`puck.chrome` Arabic string (asserted on a visible non-button instance, since
+the same text also labels Puck's hidden rail tab and our own tab), and no
+editor chrome container overflows horizontally under RTL.
 
 ---
 
@@ -282,6 +286,13 @@ With the anchor gone, the parent became the un-droppable case above.
 `@dnd-kit` 0.4, so Run 2 only asserts anchor presence inside a preset's slot
 and the absence of hover/selection chrome on it. Re-validating the drag recipe
 in the `portfolio-testing` skill is a follow-up for the next session.
+
+**Run 2 evidence (2026-09-25, Editorial Template, 1280):** anchors whose ids
+carry a preset type (`…Preset-…--anchor`) are present in the canvas; no
+`DraggableComponent-overlay` or `-actionsOverlay` node exists under any anchor,
+before or after hovering one; no "setData is expensive" warning during the
+1.5 s after load. The `anchor-snapshot-loop` spec's own verdict is in the item
+7 batch-2 table.
 
 ---
 
@@ -540,6 +551,25 @@ Diagnosed, deliberately not "fixed" in the spec:
   write, and the artifact exists to preserve diagnostics when the later ones
   fail. Do not move the write; do not read the artifact as a verdict.
 
+### Run 2, 2026-09-25 — partial; the host reaper killed it twice
+
+The batched wave spec (`e2e/puck023-followups-wave.spec.ts`) is green on all
+five tests (warm-up, item 4 anchors, item 14 transitions, item 1 Arabic
+chrome, item 2b A/B transfer). The batch over the ten candidate specs was
+killed by the host's low-memory reaper after its third test, twice (the dev
+server dies with it). What ran:
+
+| spec | Run 2 | verdict |
+|---|---|---|
+| `anchor-snapshot-loop.spec.ts:7` | **passed** (12.8 s, warm server) | Run 1's timeout was the cold compile, as diagnosed; presets hosting anchors introduces no `getSnapshot` loop |
+| `block-floated-parity.spec.ts:38` | **passed** (18.6 s) | the `:visible` scoping fix works |
+| the remaining 12 tests in the batch | not reached | rerun on a box with memory to spare (or with `CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1` if the session runs under Claude Code), per-file so a kill loses little |
+
+Known outcomes for the unreached set, from the code: `portfolio-page-body-child-height`
+will still fail (real 47 px overflow, app bug); `item4-defaults-prefill`
+should pass on a quiet server; the rest carry the re-scoping fixes and are
+expected green but **unproven**.
+
 ### Two traps, both already paid for once
 
 1. **A spec that drifted off its selector fails identically to a real
@@ -590,6 +620,20 @@ stub.
 **Done when:** opening and closing a left-panel group and a right-panel
 section visibly animates at 1280 in the batched browser run, `aria-expanded`
 still drives the existing specs, and reduced-motion disables it.
+
+**Landed 2026-09-25.** `components/ui/collapsible.tsx` wraps Base UI's
+Root/Trigger/Panel; `CollapsibleDrawer` keeps its `div role="button"` header
+through the Trigger's `render` prop (so the sibling `actions` region and the
+nested-control click guard survive via `preventBaseUIHandler`), and
+`EditorDrawerSection` is a controlled Root fed by `drawerOpenStore`. Public
+APIs unchanged; every caller's existing test passed unmodified. The
+`getAnimations` stub was **not** needed: with no stylesheet loaded, happy-dom
+reports a 0 s transition and Base UI unmounts synchronously. Browser check
+(Run 2, 1280): a left-panel group and a right-panel Design section both
+report `transition-property: height`, `transition-duration: 0.2s`, toggle
+`aria-expanded`, and hide after the exit transition. Note for spec authors:
+the fields-panel Content/Design/Layout switches and the sidebar tabs are
+`aria-pressed` buttons, not `role="tab"`.
 
 ---
 
@@ -901,8 +945,8 @@ smell, not a placeholder.
 | 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | |
 | 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | |
 | 2b | route client JS (gzip), `/w/[orgSlug]` — shared ceiling | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
-| 2b | transferred JS on first load, `/w/<slug>` (portfolio A = seeded editorial) | Playwright network sum | | |
-| 2b | transferred JS on first load, `/w/<slug>` (portfolio B = minimal draft, re-published) | Playwright network sum | | |
+| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio A = seeded editorial) | Playwright network sum, fresh context, `pnpm dev` (unminified) | 1,591,671 B / 40 chunks (2026-09-25) | |
+| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio B = "Minimal Template" published, then A restored) | same | 1,591,671 B / 40 chunks — **identical to A** (2026-09-25) | |
 | 2b | route client JS (gzip), `/w/[orgSlug]/gallery` | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
 | 13 | `/portfolio` with `optimizePackageImports: ["@puckeditor/core"]` | `analyze-summary.mjs` | 1445.6 KB (−0.8 KB vs row 2a; reverted) | n/a |
 | 8 | duplicate `/api/portfolio/gallery` requests | picker script | | |
@@ -973,3 +1017,59 @@ Decisions taken while planning:
   are unit-tested, with a Playwright case only where a throw can be forced externally.
 - **Playwright budget**: three consolidated runs for the whole session (baseline
   after reseed, post-fix with every item's browser check folded in, one retry).
+
+## Session 2026-09-25 — what landed, what next
+
+Commits on `update/portfolio-maker-updates`, each gated on `tsc --noEmit`
+(and scoped vitest + eslint by the executor that wrote it):
+
+| commit | item | outcome |
+|---|---|---|
+| `d4f22686` | — | this doc's scope + plan |
+| `a2fc593c` | 13 | `pnpm analyze` (Turbopack), `scripts/perf/analyze-summary.mjs`, baseline rows; `optimizePackageImports` measured (noise) and reverted |
+| `9a232853` | 4 + 6 | presets are container-class and host anchors; dead `height` prop removed; `componentOverlay` override replaces the CSS hack |
+| `74bacaab` | 1 | 45 Puck chrome strings under `puck.chrome` × 5 locales; `buildPuckDictionary` via `t.raw`; wired in `EditorShell` |
+| `58d9922d` | 5 | slot-`as` audit: zero changes warranted (table in item 5) |
+| `254bd02b` | 14 | Base UI `Collapsible` behind `CollapsibleDrawer` + `EditorDrawerSection` |
+| `56206b20` | 7 | four specs re-scoped from Run 1 traces; findings recorded |
+| `c39be3e9` | 9 | three boundaries, 16 actions, 5 handlers, 25 new tests |
+| `770ee07c` | 7 | `portfolio-nav-order.spec.ts` deleted (control does not exist) |
+| (final) | 7 | `e2e/puck023-followups-wave.spec.ts` — the batched checks for 4, 14, 1 and the 2b baseline |
+
+**Baseline table state.** Filled: 2a ×2, 2b ×5 (analyzer ceiling + runtime
+A/B, identical today), 13, 11 ×5. Deferred to the start of the next session,
+each with its recipe above: **row 8** (network count — needs the gallery
+picker driven, not done blind) and **row 10** (React Profiler — needs
+DevTools). Fill both *before* items 8 and 10 change anything.
+
+**Environment facts that shaped the session (keep):**
+- `node_modules` was stale (`@measured/puck` 0.20.2 installed, lockfile on
+  `@puckeditor/core` 0.23.0) — the earlier e2e measurements in this doc were
+  taken against the wrong package. `pnpm install` first, always.
+- The dev box has 7 GB RAM. `pnpm dev` + Playwright + one vitest-running
+  agent tripped the host's low-memory reaper and killed all three mid-run.
+  Sequence work as: static agent phases → stop everything → dev server +
+  browser runs alone → stop server → typecheck. Never edit the worktree while
+  a browser run is up (HMR reloads the editor mid-test — that is what the
+  `item4-defaults-prefill` timeouts were).
+- Lighthouse numbers are dev-mode (Turbopack dev, unminified); the box cannot
+  `next build`. Compare only against numbers taken the same way.
+
+**Open for the next session, in order:**
+1. **2a** — `dynamic(..., { ssr: false })` the Puck mount in `EditorShell`;
+   compare against rows 2a via `pnpm analyze -- -o` +
+   `node scripts/perf/analyze-summary.mjs "[locale]/portfolio" "[locale]/portfolio-preview"`.
+2. Row 8 and row 10 "before" captures (recipes in item 13).
+3. **10** — answer the `puck`-prop stability question before wrapping.
+4. **8** — react-query at the editor boundary.
+5. **3 / 11** — images + `next/image` Cloudflare loader; Lighthouse after.
+6. **2b** — per-block splitting; today A and B download byte-identical JS
+   (1,591,671 B / 40 chunks), which is the number to beat.
+7. App bugs surfaced by triage, not fixed here: a dropped section overflows
+   its page-body slot by 47 px (`portfolio-page-body-child-height`); per-item
+   nav reordering does not exist (spec deleted — decide whether to build it);
+   the public page logs React "unique key" warnings on `/w/[orgSlug]` in dev.
+8. Re-validate the Playwright drag recipe against dnd-kit 0.4 so anchor
+   drops can be asserted, not eyeballed.
+9. Item 9's noindex caveat on a crashed public page (see item 9) if SEO wants
+   it closed.
