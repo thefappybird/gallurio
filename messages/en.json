@@ -2863,6 +2863,7 @@
           }
         },
         "puckConfig": {
+          "sidebar": { "components": "Components", "outline": "Outline" },
           "categories": {
             "presets": "Preset blocks",
             "manual": "Manual blocks",

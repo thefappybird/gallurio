@@ -27,9 +27,17 @@ import {
 } from "./presets/footer";
 import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
-import { Render } from "@measured/puck";
+import { Render } from "@puckeditor/core";
 import { puckConfig } from "../config";
-import type { SlotComponent, Permissions } from "@measured/puck";
+// Puck 0.23 narrows `resolvePermissions`'s `changed` param to `never` on the
+// DEFAULT config type, so our precisely-typed config no longer satisfies the
+// base `Config` a bare <Render> expects. Production call sites already cast the
+// same way (EditorShell, the public page renderers); this mirrors them once per
+// file rather than at every usage.
+const renderConfig = puckConfig as unknown as Config;
+
+import type { Config } from "@puckeditor/core";
+import type { SlotComponent, Permissions } from "@puckeditor/core";
 
 // ---------------------------------------------------------------------------
 // HeadingBlock
@@ -393,14 +401,14 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
 
   // Item 12, hypothesis 1: does puck.metadata reach an ImageBlock nested
   // inside a Container's slot? Rendered through the REAL Puck pipeline (not
-  // a hand-built puck prop) — @measured/puck's SlotRender explicitly forwards
+  // a hand-built puck prop) — @puckeditor/core's SlotRender explicitly forwards
   // the same top-level `metadata` to every slot-nested item, so this is
   // expected to already pass; the sidebar leaf's panel (SidebarLayout.tsx)
   // renders unconditionally, making it a reliable non-caption probe.
   it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{
           root: {},
           content: [

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Render, type Data } from "@measured/puck";
+import { Render, type Data } from "@puckeditor/core";
 import { puckConfig } from "@/lib/page-builder/config";
 import type { PuckData } from "@/lib/page-builder/types";
 import type { RenderWorkspace } from "@/lib/page-builder/serverContext";

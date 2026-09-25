@@ -1,9 +1,9 @@
 "use client";
 
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
-import { Puck, Drawer, type Config, type Data } from "@measured/puck";
+import { Puck, Drawer, type Config, type Data, type Plugin } from "@puckeditor/core";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
 import { ManualDrawerItem, PresetDrawerItem, PresetPreviewPanel } from "./PresetPreviewCard";
+import { EditorSideBar } from "./EditorSideBar";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -297,6 +298,23 @@ const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectio
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
 const LOCAL_DRAFT_VERSION = 2;
+
+// Module-level so the array identity never changes between renders — Puck
+// treats a new `plugins` reference the same way it treats a new `overrides`
+// one, and would remount the sidebar subtree on every keystroke.
+//
+// The name is load-bearing and must stay exactly `legacy-side-bar`. It is the
+// ONLY way to opt out of Puck 0.21's icon rail: the rail hard-codes that
+// literal, flipping every other plugin to `mobileOnly` and this one to
+// `desktopOnly` so a single render owns the whole desktop sidebar. Any other
+// name (including no `label`/`icon`, which only changes the tab's caption)
+// leaves the rail up and adds a third tab beside Blocks and Outline.
+const puckPlugins: Plugin[] = [
+  {
+    name: "legacy-side-bar",
+    render: () => <EditorSideBar />,
+  },
+];
 
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
@@ -892,7 +910,7 @@ export function resolveDrawerItemPreset(name: string): SectionPresetEntry | unde
 
 /**
  * Renders `overrides.drawerItem` (or `overrides.componentItem`) for a raw
- * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@measured/puck` are
+ * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@puckeditor/core` are
  * unwired primitives — only Puck's own default `ComponentList.Item` (internal,
  * not exported) applies the `drawerItem` override automatically. Since
  * PresetBlocksDrawer builds every `Drawer.Item` itself, it passes this render
@@ -3135,6 +3153,11 @@ export function EditorShell({
             onChange={handleChange}
             onPublish={() => void handlePublish()}
             iframe={{ enabled: false }}
+            // Puck 0.21 replaced the single left sidebar with an icon "plugin
+            // rail" (Blocks / Outline as separate tabs). EditorSideBar replaces
+            // the rail with our own two-tab column; `Puck.Components` inside it
+            // still routes through the `drawer` override below.
+            plugins={puckPlugins}
             headerTitle={headerTitle}
             metadata={{
               workspace: {

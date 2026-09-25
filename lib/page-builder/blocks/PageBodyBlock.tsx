@@ -1,5 +1,5 @@
 /** Locked structural content slot between portfolio Navigation and Footer. */
-import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
+import type { ComponentConfig, Field, Slot, SlotComponent } from "@puckeditor/core";
 import type { CSSProperties } from "react";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import {

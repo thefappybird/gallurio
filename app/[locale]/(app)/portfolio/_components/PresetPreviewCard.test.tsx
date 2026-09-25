@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import type { Config } from "@measured/puck";
+import type { Config } from "@puckeditor/core";
 import { __resetPresetPreview, getActivePresetPreview } from "@/lib/page-builder/presetPreviewStore";
+import { PREVIEW_CLOSE_DELAY_MS } from "@/lib/page-builder/anchoredPreviewStore";
 import { collectBlocks } from "@/lib/page-builder/blockTree";
 
 // Puck's <Render> mounts the whole block tree — irrelevant to what this file
 // asserts (the row's interaction contract) and slow. Stand it in with a marker
 // that still proves the preset key reaches the renderer.
-vi.mock("@measured/puck", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@measured/puck")>()),
+vi.mock("@puckeditor/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@puckeditor/core")>()),
   Render: ({ data }: { data: { content: { type: string }[] } }) => (
     <div data-testid="mini-render">{data.content[0]?.type}</div>
   ),
@@ -89,7 +90,7 @@ describe("PresetDrawerItem", () => {
 
   // The product contract: leaving the row must NOT dismiss it, so the user can
   // move the pointer toward the panel without it vanishing.
-  it("stays open when the pointer merely leaves the row", async () => {
+  it("closes once the pointer leaves the row without reaching the card", async () => {
     renderItem();
     const row = screen.getByTestId("row-label");
     fireEvent.pointerEnter(row);
@@ -97,8 +98,27 @@ describe("PresetDrawerItem", () => {
 
     fireEvent.pointerLeave(row);
 
-    expect(screen.getByText(DESCRIPTION)).toBeInTheDocument();
+    await waitFor(() => expect(getActivePresetPreview()).toBeNull());
+    expect(screen.queryByText(DESCRIPTION)).not.toBeInTheDocument();
+  });
+
+  it("survives the gap between the row and the card", async () => {
+    renderItem();
+    const row = screen.getByTestId("row-label");
+    fireEvent.pointerEnter(row);
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+
+    // Leaving the row arms the close, but landing on the card calls it off —
+    // otherwise the card would be impossible to reach with the pointer.
+    fireEvent.pointerLeave(row);
+    fireEvent.pointerEnter(screen.getByRole("tooltip"));
+
+    await new Promise((resolve) => setTimeout(resolve, PREVIEW_CLOSE_DELAY_MS * 3));
     expect(getActivePresetPreview()).toBe("HeroPreset");
+
+    // ...and leaving the card itself does close it.
+    fireEvent.pointerLeave(screen.getByRole("tooltip"));
+    await waitFor(() => expect(getActivePresetPreview()).toBeNull());
   });
 
   // Puck mounts each drawer row twice (draggable + ghost). Two rows for the SAME

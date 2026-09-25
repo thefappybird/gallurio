@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { Render, type Permissions, type SlotComponent } from "@measured/puck";
+import { Render, type Permissions, type SlotComponent } from "@puckeditor/core";
 import { puckConfig } from "../config";
+// Puck 0.23 narrows `resolvePermissions`'s `changed` param to `never` on the
+// DEFAULT config type, so our precisely-typed config no longer satisfies the
+// base `Config` a bare <Render> expects. Production call sites already cast the
+// same way (EditorShell, the public page renderers); this mirrors them once per
+// file rather than at every usage.
+const renderConfig = puckConfig as unknown as Config;
+
+import type { Config } from "@puckeditor/core";
 import {
   PAGE_BODY_MARGIN_X_DEFAULT,
   PAGE_BODY_SLOT_CLASS,
@@ -102,7 +110,7 @@ describe("PageBodyBlock", () => {
   it("matches a direct full-width Container in a real Puck PageBody slot", () => {
     const { container } = render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{
           root: {},
           content: [{
@@ -123,7 +131,7 @@ describe("PageBodyBlock", () => {
   it("renders a PageBody carrying nested future-container defaults", () => {
     expect(() => render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{
           root: {},
           content: [{

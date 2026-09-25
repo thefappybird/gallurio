@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ComponentData, Data } from "@measured/puck";
+import type { ComponentData, Data } from "@puckeditor/core";
 import {
   PAGE_BODY_ID,
   PAGE_BODY_TYPE,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 import {
   NavigationBlock,
   navigationDefaultProps,

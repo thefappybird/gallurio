@@ -4,7 +4,7 @@ import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonr
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { ImageBlock } from "./manualBlocks";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 import { puckConfig } from "@/lib/page-builder/config";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;

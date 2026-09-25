@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import type { Permissions } from "@measured/puck";
+import type { Permissions } from "@puckeditor/core";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
@@ -320,6 +320,21 @@ describe("PRESET_GROUPS + MANUAL_BLOCK_KEYS — the drawer's two source lists", 
     expect(editorPuckConfig.components.FeaturedWork.permissions?.insert).toBe(false);
     const allListed = [...PRESET_GROUPS.flatMap((g) => g.keys), ...MANUAL_BLOCK_KEYS];
     expect(allListed).not.toContain("FeaturedWork");
+  });
+
+  // Puck 0.23 made the outline draggable. Its Layer row gates that on
+  // `permissions.getPermissions({ item }).drag` (the same permission the canvas
+  // uses), so the anchor's `drag: false` covers the outline too — it is not an
+  // extra opt-out we would have to remember. This pins the permission the
+  // outline reads, so dropping it cannot quietly make the anchor draggable.
+  it("keeps ContainerAnchor undraggable, on the canvas and in the outline alike", () => {
+    expect(editorPuckConfig.components.ContainerAnchor.permissions).toEqual({
+      drag: false,
+      delete: false,
+      duplicate: false,
+      insert: false,
+      edit: false,
+    });
   });
 
   it("keeps MasonryClone internal and completely read-only, and out of both drawer lists", () => {

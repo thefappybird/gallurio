@@ -2863,6 +2863,7 @@
           }
         },
         "puckConfig": {
+          "sidebar": { "components": "ส่วนประกอบ", "outline": "โครงร่าง" },
           "categories": {
             "presets": "บล็อกสำเร็จรูป",
             "manual": "บล็อกกำหนดเอง",

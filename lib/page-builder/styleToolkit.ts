@@ -14,7 +14,7 @@
  * `--pf-font-heading` / `--pf-font-body` locally so headings and body both follow.
  */
 
-import type { Field } from "@measured/puck";
+import type { Field } from "@puckeditor/core";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
 import type { BrandKitFontPair, BlockButtonStyle } from "./types";

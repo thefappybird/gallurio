@@ -16,7 +16,7 @@ import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page
 import { normalizeChrome, findChrome } from "@/lib/page-builder/chromeSync";
 import { normalizePageBody } from "@/lib/page-builder/pageBody";
 import { normalizePresetLayouts } from "@/lib/page-builder/templates/normalizePresetLayouts";
-import type { Data } from "@measured/puck";
+import type { Data } from "@puckeditor/core";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
 import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";

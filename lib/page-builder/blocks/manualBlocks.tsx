@@ -13,7 +13,7 @@
  */
 
 import { isValidElement, type ReactNode } from "react";
-import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
+import type { ComponentConfig, Field, Slot, SlotComponent } from "@puckeditor/core";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
 import {

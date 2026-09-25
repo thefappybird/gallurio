@@ -2863,6 +2863,7 @@
           }
         },
         "puckConfig": {
+          "sidebar": { "components": "Mga Bloke", "outline": "Balangkas" },
           "categories": {
             "presets": "Mga preset na bloke",
             "manual": "Mga manuwal na bloke",

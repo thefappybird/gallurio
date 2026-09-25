@@ -10,7 +10,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@measured/puck";
+import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@puckeditor/core";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,

@@ -6,7 +6,7 @@
  * this pure makes the same migration usable by the editor, draft preview, and
  * public renderer.
  */
-import type { ComponentData, Data } from "@measured/puck";
+import type { ComponentData, Data } from "@puckeditor/core";
 
 export const PAGE_BODY_TYPE = "PageBody";
 export const PAGE_BODY_ID = "page-body";

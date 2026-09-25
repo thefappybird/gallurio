@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from "vitest";
 // breaks module resolution in this environment — mock them out (same
 // minimal set EditorShell.test.tsx already uses) purely so the module loads;
 // none of these mocks are exercised by the pure helpers under test here.
-vi.mock("@measured/puck", () => ({
+vi.mock("@puckeditor/core", () => ({
   createUsePuck: () => () => undefined,
   Puck: () => null,
 }));

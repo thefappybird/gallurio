@@ -22,9 +22,16 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Render } from "@measured/puck";
+import { Render, type Config } from "@puckeditor/core";
 import React from "react";
 import { puckConfig } from "./config";
+// Puck 0.23 narrows `resolvePermissions`'s `changed` param to `never` on the
+// DEFAULT config type, so our precisely-typed config no longer satisfies the
+// base `Config` a bare <Render> expects. Production call sites already cast the
+// same way (EditorShell, the public page renderers); this mirrors them once per
+// file rather than at every usage.
+const renderConfig = puckConfig as unknown as Config;
+
 import { homeDataFixture, FIXTURE_HEADING_TEXT, FIXTURE_HERO_HEADLINE } from "./__fixtures__/homeData";
 import { HERO_PRESET, SERVICES_PRESET } from "./blocks/sectionPresets";
 
@@ -131,7 +138,7 @@ describe("blockShapes integration — Heading renders from fixture", () => {
     expect(() =>
       render(
         React.createElement(Render, {
-          config: puckConfig,
+          config: renderConfig,
           data: { root: {}, content: [headingEntry] },
         })
       )
@@ -142,7 +149,7 @@ describe("blockShapes integration — Heading renders from fixture", () => {
     const headingEntry = homeDataFixture.content.find((b) => b.type === "Heading")!;
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [headingEntry] }}
       />
     );
@@ -155,7 +162,7 @@ describe("blockShapes integration — HeroPreset renders composed children", () 
     expect(() =>
       render(
         <Render
-          config={puckConfig}
+          config={renderConfig}
           data={{ root: {}, content: [{ type: "HeroPreset", props: { id: "hero-1", ...HERO_PRESET } }] }}
         />
       )
@@ -165,7 +172,7 @@ describe("blockShapes integration — HeroPreset renders composed children", () 
   it("renders FIXTURE_HERO_HEADLINE text", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [{ type: "HeroPreset", props: { id: "hero-1", ...HERO_PRESET } }] }}
       />
     );
@@ -175,7 +182,7 @@ describe("blockShapes integration — HeroPreset renders composed children", () 
   it("renders the CTA button text", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [{ type: "HeroPreset", props: { id: "hero-1", ...HERO_PRESET } }] }}
       />
     );
@@ -185,7 +192,7 @@ describe("blockShapes integration — HeroPreset renders composed children", () 
   it("renders the section element (Container data-block attribute)", () => {
     const { container } = render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [{ type: "HeroPreset", props: { id: "hero-1", ...HERO_PRESET } }] }}
       />
     );
@@ -210,7 +217,7 @@ describe("blockShapes integration — ServicesPreset renders nested Columns", ()
     expect(() =>
       render(
         <Render
-          config={puckConfig}
+          config={renderConfig}
           data={{ root: {}, content: [{ type: "ServicesPreset", props: { id: "svc-1", ...SERVICES_PRESET } }] }}
         />
       )
@@ -220,7 +227,7 @@ describe("blockShapes integration — ServicesPreset renders nested Columns", ()
   it("renders service category names", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [{ type: "ServicesPreset", props: { id: "svc-1", ...SERVICES_PRESET } }] }}
       />
     );
@@ -231,7 +238,7 @@ describe("blockShapes integration — ServicesPreset renders nested Columns", ()
   it("renders pricing text", () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{ root: {}, content: [{ type: "ServicesPreset", props: { id: "svc-1", ...SERVICES_PRESET } }] }}
       />
     );
