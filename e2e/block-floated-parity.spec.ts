@@ -163,8 +163,8 @@ test.describe("Gallery blocks: padding controls float the real render default", 
 
 const SHELL = "[data-testid='portfolio-editor-shell']";
 
-/** Resolve --pf-color-bg / --pf-color-fg the same way preset-canvas-parity does. */
-async function readBrandTokens(page: Page): Promise<{ brandBg: string; appFg: string }> {
+/** Resolve --pf-color-fg / --foreground the same way preset-canvas-parity does. */
+async function readBrandTokens(page: Page): Promise<{ brandFg: string; appFg: string }> {
   return page.evaluate((shellSel) => {
     const shell = document.querySelector(shellSel) as HTMLElement;
     const probe = document.createElement("div");
@@ -176,10 +176,10 @@ async function readBrandTokens(page: Page): Promise<{ brandBg: string; appFg: st
       probe.style.color = "";
       return computed;
     };
-    const brandBg = read("var(--pf-color-bg)");
+    const brandFg = read("var(--pf-color-fg)");
     const appFg = read("var(--foreground)");
     probe.remove();
-    return { brandBg, appFg };
+    return { brandFg, appFg };
   }, SHELL);
 }
 
@@ -275,7 +275,7 @@ test.describe("FooterStatementPreset: link buttons stay legible on a primary ban
 
     for (const preset of PRESETS) {
       await applyPreset(page, preset);
-      const { brandBg, appFg } = await readBrandTokens(page);
+      const { brandFg, appFg } = await readBrandTokens(page);
 
       for (const [label, link] of [
         ["Home", homeLink],
@@ -285,8 +285,10 @@ test.describe("FooterStatementPreset: link buttons stay legible on a primary ban
         expect(paint.color, `${preset}: ${label} link is not the app-shell foreground`).not.toBe(
           appFg
         );
-        expect(paint.color, `${preset}: ${label} link paints brand background on its primary band`).toBe(
-          brandBg
+        // FOOTER_STATEMENT_PRESET pins these links to textColorToken "foreground"
+        // on a primaryBandSection (footer.ts); legibility is the contrast check below.
+        expect(paint.color, `${preset}: ${label} link paints brand foreground on its primary band`).toBe(
+          brandFg
         );
         const contrast = contrastRatio(paint.labelRgb, paint.effectiveRgb);
         expect(

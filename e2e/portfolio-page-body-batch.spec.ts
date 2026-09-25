@@ -65,7 +65,11 @@ test("page body, component drawer, preset previews, and drafts stay coherent", a
   expect(bodyGeometry.rootMinHeight).toBeGreaterThanOrEqual(899);
   expect(bodyGeometry.slotPaddingInline).toEqual(["24px", "24px"]);
 
-  const structuralHeadings = page.locator(`${SHELL} section > div > [role="button"]:visible`);
+  // Puck 0.23 gives every canvas block root role="button" (cursor: grab);
+  // those also match `section > div > [role=button]`, so exclude them.
+  const structuralHeadings = page.locator(
+    `${SHELL} section > div > [role="button"]:not([data-puck-component]):visible`
+  );
   expect(await structuralHeadings.count()).toBeGreaterThan(3);
   expect(
     await structuralHeadings.evaluateAll((nodes) =>
@@ -75,7 +79,14 @@ test("page body, component drawer, preset previews, and drafts stay coherent", a
     expect.objectContaining({ text: "Preset blocks", cursor: "pointer" }),
     expect.objectContaining({ text: "Footer", cursor: "pointer" }),
   ]));
-  expect(await structuralHeadings.evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).cursor === "pointer"))).toBe(true);
+  // Name the offenders instead of a bare boolean, so a failure says which node.
+  expect(
+    await structuralHeadings.evaluateAll((nodes) =>
+      nodes
+        .filter((node) => getComputedStyle(node).cursor !== "pointer")
+        .map((node) => `${node.tagName.toLowerCase()} "${(node.textContent ?? "").trim().slice(0, 40)}" cursor=${getComputedStyle(node).cursor}`)
+    )
+  ).toEqual([]);
   await expect(page.locator(ITEM_NAME).filter({ hasText: /^Page body$/i })).toHaveCount(0);
 
   const previewPanel = page.locator('[data-preset-preview-panel="true"]');
