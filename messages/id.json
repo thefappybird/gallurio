@@ -3277,6 +3277,16 @@
           "continue": "Lanjutkan"
         }
       },
+      "errorBoundary": {
+        "title": "Terjadi kesalahan",
+        "draftSafe": "Draf Anda aman — tersimpan di browser ini. Muat ulang editor untuk melanjutkan, atau buka Draf untuk melanjutkan dari sana.",
+        "retry": "Coba lagi",
+        "reload": "Muat ulang editor"
+      },
+      "previewError": {
+        "title": "Pratinjau gagal dimuat",
+        "retry": "Coba lagi"
+      },
       "wizard": {
         "title": "Mari buat portofolio Anda",
         "subtitle": "Beberapa langkah cepat dan Anda akan memiliki halaman yang siap tayang.",

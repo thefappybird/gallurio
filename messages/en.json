@@ -3277,6 +3277,16 @@
           "continue": "Continue"
         }
       },
+      "errorBoundary": {
+        "title": "Something went wrong",
+        "draftSafe": "Your draft is safe — it's saved in this browser. Reload the editor to keep working, or open Drafts to pick it up from there.",
+        "retry": "Try again",
+        "reload": "Reload editor"
+      },
+      "previewError": {
+        "title": "Preview couldn't load",
+        "retry": "Try again"
+      },
       "wizard": {
         "title": "Let's build your portfolio",
         "subtitle": "A few quick steps and you'll have a live page.",

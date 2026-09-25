@@ -37,6 +37,7 @@ import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-
 import { deleteImage, verifyImageOwnership, updateImageMetadata } from "@/lib/storage/cloudflareImages";
 import { PortfolioDraft, Workspace, GalleryItem } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { getTemplate } from "@/lib/page-builder/templates";
 import {
   createDraftAction,
   updateDraftAction,
@@ -44,6 +45,7 @@ import {
   deleteDraftAction,
   listDraftsAction,
   getDraftAction,
+  seedTemplateAction,
   publishDraftAction,
   importDemoPortfolioAction,
 } from "./_draftActions";
@@ -594,5 +596,76 @@ describe("importDemoPortfolioAction", () => {
     if (!("ok" in res)) throw new Error("expected ok, got " + JSON.stringify(res));
 
     expect(res.draft.id).toBe(String(winner._id));
+  });
+});
+
+describe("DB errors are caught and surfaced as typed results", () => {
+  let errSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("refreshCollectionReferencesAction -> refresh_collection_references_failed", async () => {
+    const reconcileModule = await import("@/lib/page-builder/reconcile");
+    const spy = vi
+      .spyOn(reconcileModule, "reconcileFeaturedCollections")
+      .mockRejectedValueOnce(new Error("boom"));
+    const res = await refreshCollectionReferencesAction({ data: snapshot.data });
+    expect(res).toEqual({ error: "refresh_collection_references_failed" });
+    expect(errSpy).toHaveBeenCalledWith(
+      "[portfolio-draft-actions] refreshCollectionReferencesAction",
+      expect.any(Error)
+    );
+    spy.mockRestore();
+  });
+
+  it("deleteDraftAction -> delete_draft_failed", async () => {
+    const created = await createDraftAction({ name: "ToDelete", ...snapshot });
+    if (!("ok" in created)) throw new Error("setup failed");
+    const spy = vi.spyOn(PortfolioDraft, "countDocuments").mockRejectedValueOnce(new Error("boom"));
+    const res = await deleteDraftAction(created.draft.id);
+    expect(res).toEqual({ error: "delete_draft_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-draft-actions] deleteDraftAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("listDraftsAction -> [] on DB failure", async () => {
+    const spy = vi.spyOn(PortfolioDraft, "find").mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const res = await listDraftsAction();
+    expect(res).toEqual([]);
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-draft-actions] listDraftsAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("getDraftAction -> get_draft_failed", async () => {
+    const mongooseDbModule = await import("@/lib/db/mongoose");
+    const spy = vi.spyOn(mongooseDbModule, "connectDB").mockRejectedValueOnce(new Error("boom"));
+    const res = await getDraftAction("507f1f77bcf86cd799439011");
+    expect(res).toEqual({ error: "get_draft_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-draft-actions] getDraftAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("seedTemplateAction -> seed_template_failed", async () => {
+    const tpl = getTemplate("minimal");
+    if (!tpl) throw new Error("setup failed");
+    const spy = vi.spyOn(tpl, "seedData").mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const res = await seedTemplateAction("minimal");
+    expect(res).toEqual({ error: "seed_template_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-draft-actions] seedTemplateAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("publishDraftAction -> publish_draft_failed", async () => {
+    const mongooseDbModule = await import("@/lib/db/mongoose");
+    const spy = vi.spyOn(mongooseDbModule, "connectDB").mockRejectedValueOnce(new Error("boom"));
+    const res = await publishDraftAction("507f1f77bcf86cd799439011");
+    expect(res).toEqual({ error: "publish_draft_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-draft-actions] publishDraftAction", expect.any(Error));
+    spy.mockRestore();
   });
 });

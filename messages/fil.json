@@ -3277,6 +3277,16 @@
           "continue": "Magpatuloy"
         }
       },
+      "errorBoundary": {
+        "title": "May nangyaring mali",
+        "draftSafe": "Ligtas ang iyong draft — naka-save ito sa browser na ito. I-reload ang editor para magpatuloy, o buksan ang Mga Draft para ituloy doon.",
+        "retry": "Subukan muli",
+        "reload": "I-reload ang editor"
+      },
+      "previewError": {
+        "title": "Hindi na-load ang preview",
+        "retry": "Subukan muli"
+      },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",
         "subtitle": "Ilang mabilis na hakbang at magkakaroon ka ng live na pahina.",

@@ -720,6 +720,38 @@ returns a typed 4xx/5xx with a log line. One Playwright case per boundary
 forces a throw and asserts the boundary copy renders — folded into the batched
 run, not a run of its own.
 
+**Landed 2026-09-25.**
+
+- Boundaries: all three exist, each with an RTL test (copy renders, `reset`
+  fires, prefixed `console.error`). The portfolio boundary says the local
+  draft is safe and offers retry + reload; the preview boundary is chrome-less.
+  The public boundary is **hardcoded English**: neither `app/(public)/layout.tsx`
+  nor `w/[orgSlug]/layout.tsx` mounts an intl provider (public components take
+  copy as props by design), so a client `error.tsx` there has no translator —
+  same trade-off `app/(public)/error.tsx` already makes. Log prefix
+  `[public-workspace-error-boundary]`, distinct from the layout-level one.
+- **Index-safety caveat, not fixable from `error.tsx`:** `page.tsx`'s
+  `generateMetadata` resolves before the render that can throw, so a crashed
+  public page ships whatever robots value the metadata computed (indexable for
+  a normal published page) with the boundary's body. `error.tsx` cannot export
+  metadata. Leaving it: a boundary render is transient, and forcing `noindex`
+  would mean moving the decision into `generateMetadata` on speculation.
+- Actions: 11 in `_actions.ts` and 5 in `_draftActions.ts` wrapped with the
+  `<action>_failed` key convention and a `[portfolio-actions]` /
+  `[portfolio-draft-actions]` log prefix; `listDraftsAction` returns `[]` on
+  failure because its result type has no error channel (kept; flagged).
+  `publishDraftAction` was the surprise: its only `try`s guarded the optional
+  superseded-asset cleanup, and the whole connect→normalise→reconcile→update
+  section was uncaught. Now `publish_draft_failed`. 17 new unit tests.
+- Handlers: `direct-upload` → 502 `upload_unavailable`; gallery GET → 500
+  `gallery_unavailable`; items POST → 500 `gallery_item_failed`; collections
+  POST and items PATCH had their pre-`try` reads folded into one outer try
+  (tests force a throw from a call that used to sit outside). One new test
+  file for items PATCH, which had none.
+- Playwright: no boundary case. No external way to force a throw was found
+  that does not add a test hook to prod code, which the plan ruled out. The
+  boundaries are covered by their unit tests only.
+
 ---
 
 ## 10. Audit 04 — memoization: `memo()` the block renderers
