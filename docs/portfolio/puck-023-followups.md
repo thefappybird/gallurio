@@ -13,6 +13,28 @@ portfolio e2e set the upgrade left red, and it is maintenance rather than new
 capability. Each item is independently shippable — do not bundle them into one
 commit.
 
+**This doc is also the portfolio-module slice of the perf audits.** The
+`docs/perf-audit/01`–`06` files score the whole application; they are being
+worked **per module**, and items 8–13 below are the portfolio module's share.
+Every item names which of these surfaces it applies to:
+
+- **Editor** — the Puck canvas and every control/tab around it
+  (`app/[locale]/(app)/portfolio/_components/*`, `lib/page-builder/*` including
+  `StyleToolkitField`, `galleryPicker/*`, `MediaPicker`, `LayoutPicker`, the
+  dialogs).
+- **Published page** — `app/(public)/w/[orgSlug]/{page,gallery/page,layout}.tsx`,
+  rendered through `Render` from `@puckeditor/core/rsc`.
+- **Preview** — the editor's Preview tab (iframe) and "preview in new tab" are
+  **one route**, `app/[locale]/portfolio-preview/page.tsx` →
+  `_components/PreviewClient.tsx`, which renders **client-side** with `Render`
+  from `@puckeditor/core` (not `/rsc`) from the localStorage draft. One route,
+  one fix surface — never count it twice.
+
+"Passing" an audit here means **measured before/after**, not "fix applied":
+every item that touches a rendered surface carries a `Measure:` line naming the
+metric, the tool, the page or script, and where the number is recorded. The
+`0X` audit files are not re-scored by this branch.
+
 ---
 
 ## 1. Dictionary API — localize Puck's own chrome
@@ -61,7 +83,19 @@ doubles that: **1.29 MB -> 2.65 MB unpacked**, plus `@tiptap/*`,
 
 **Measure first.** The audit says to measure rather than assume, and that has
 still not been done. Add a bundle analyzer to `next.config.ts` and record the
-before/after — otherwise "we improved it" is unfalsifiable.
+before/after — otherwise "we improved it" is unfalsifiable. The analyzer and the
+baseline capture are item 13; do not start 2a before item 13 has landed.
+
+**Surfaces:** editor, and preview. `/portfolio-preview` imports the client
+`Render` from `@puckeditor/core` (`PreviewClient.tsx:4`), so the preview route
+also ships Puck's client renderer plus every block. Whatever split 2a applies to
+the editor mount, check the preview route's first-load JS in the same analyzer
+run.
+
+**Measure:** first-load JS (gzipped) for the `/portfolio` and `/portfolio-preview`
+routes from the item-13 analyzer, before and after, recorded in the baseline
+table. Done when the number moved and the editor still boots in the batched
+Playwright run.
 
 > Settled during the upgrade, so nobody re-investigates: **`happy-dom` never
 > loads at runtime.** It is a hard dependency of `@puckeditor/core`, and
@@ -84,18 +118,31 @@ the masonry gallery, the lightbox, the carousel and the contact sheet.
 **Work:** split the *client* blocks behind `next/dynamic` at the config level,
 keyed by block type, so a page only pulls the blocks its data actually contains.
 
+**Surfaces:** published page and preview. `puckConfig` has **two** consumers, not
+one: `app/(public)/w/[orgSlug]/page.tsx:4` (server `Render`) and
+`app/[locale]/portfolio-preview/_components/PreviewClient.tsx:5` (client
+`Render`). The split must land on both, or the preview keeps paying the full
+bundle the published page no longer does.
+
 **Constraints that make this non-trivial — read before starting:**
 - The editor and the renderer share one config (`lib/page-builder/config.ts` vs
   `editorConfig.tsx`). A split that only applies to the public renderer must not
   fork block behaviour, or it breaks the canvas/preview/publish parity invariant
-  that `blockSweep.test.tsx` pins.
+  that `blockSweep.test.tsx` pins. Parity is three-way — canvas, preview,
+  publish — and the preview is the one most likely to be forgotten because it is
+  client-rendered from localStorage rather than from the DB.
 - Many blocks are server-rendered already. Splitting those buys nothing and
   costs a suspense boundary.
 - Above-the-fold blocks (nav, hero) must **not** be lazy — that trades bundle
   size for LCP, which is the wrong direction on the surface SEO cares about.
 
+**Measure:** first-load JS for `/w/[orgSlug]` and `/w/[orgSlug]/gallery` for
+two seeded portfolios with different block sets, from the item-13 analyzer, plus
+the `/portfolio-preview` route. Before/after in the baseline table.
+
 **Done when:** two portfolios with different block sets provably download
-different JS, and `blockSweep`'s parity assertions still pass.
+different JS, the preview route's number moved with them, and `blockSweep`'s
+parity assertions still pass.
 
 ---
 
@@ -119,15 +166,41 @@ What is worth virtualizing is **images**, in three places:
 `@tanstack/react-virtual` now arrives as a Puck dependency, so it is already in
 the tree either way.
 
+**Surfaces:** published page first (it is the one visitors and Core Web Vitals
+see), preview and editor canvas for parity.
+
+**Image element — decided 2026-09-25: `next/image` with a custom Cloudflare
+Images loader.** `05-virtualization.md` asks for `next/image` (responsive
+`srcSet`, `priority`, blur placeholder); the earlier draft of this item said
+plain `<img loading="lazy">` for crawlability. `next/image` wins: it still
+renders a real `<img>` with `src`/`srcset`/`width`/`height`, so it is exactly as
+crawlable, and it gets `sizes` and `priority` right for free.
+
+- The loader is a thin wrapper over `imageDeliveryUrl` in
+  `lib/storage/cloudflareImages.ts:140` (client twin
+  `lib/storage/imageDelivery.client`), which already builds flexible-variant
+  URLs (`https://imagedelivery.net/<hash>/<id>/<parts.join(",")>`) — map
+  `width` → `w=` and `quality` → `q=`. `next.config.ts` already allows the
+  `imagedelivery.net` remote pattern; it does not yet declare a loader.
+- `sizes` is derived from the block's column count (the grid and masonry blocks
+  both know it); `priority` only on tiles that are above the fold on the home
+  page — never on the gallery page's full grid.
+- Blur placeholder is optional; only if Cloudflare's smallest variant is cheap
+  enough to inline. Do not add a per-image blur-hash pipeline for this.
+- The same loader must be used in the editor canvas and in the preview, or the
+  three surfaces stop rendering the same bytes (parity).
+
 **Constraints:**
 - Masonry lanes are column-partitioned (`column1..column4` slots) — virtualizing
   per lane, not per flat list.
 - The public gallery is an SEO surface. Virtualized images must still be
-  crawlable, which in practice means real `<img>` with `loading="lazy"` and
-  correct dimensions rather than a JS-only windowed list. Coordinate with
-  `feat/portfolio-seo-discovery`.
+  crawlable — `next/image` satisfies that; a JS-only windowed list that mounts
+  nothing until scroll does not. Coordinate with `feat/portfolio-seo-discovery`.
 - Editor canvas parity: a virtualized gallery must still look right in the
   canvas, where it is not scrolled the same way.
+
+**Measure:** see item 11 — Lighthouse LCP/CLS on the seeded home and gallery
+pages, plus DOM node count on the gallery page, before and after.
 
 ---
 
@@ -322,17 +395,308 @@ Nothing explains these yet. Do not fold them into the group above.
 
 ---
 
+# Perf-audit coverage — portfolio module
+
+Each `docs/perf-audit/0X` file stays app-wide and keeps its score. The items
+below are the portfolio module's slice of each — the fix direction applied to
+the three surfaces named at the top of this doc, with a measurement contract
+per item. Audits `03` (code splitting) and `05` (virtualization) are already
+items 2 and 3 above; items 11 and 13 add their measurement contracts rather than
+restating the work. Audit `07` is the source of items 1–6 and is closed.
+
+---
+
+## 8. Audit 01 — server state: react-query for the editor's fetches
+
+**Surfaces:** editor only. The published page is server-rendered from the DB
+and the preview renders from localStorage; neither has client fetches worth
+caching.
+
+**Decided 2026-09-25: adopt `@tanstack/react-query`** (new dependency — the
+repo currently has `@tanstack/react-table` only). One `QueryClientProvider`
+mounted at the editor boundary — `EditorShell` or a client wrapper in
+`portfolio/page.tsx` — **not** app-wide. The list pages elsewhere in the app
+are Server-Component-first and the audit says to leave them alone.
+
+**Work, in this order:**
+1. `lib/page-builder/galleryPicker/usePickerData.ts` — three `useEffect` +
+   `fetch` + `useState` sites against `/api/portfolio/gallery` (`:34`, `:76`,
+   `:114`). Move to `useQuery`, and delete
+   `GalleryPickerCacheContext.tsx`'s hand-rolled `useRef<Map<string,
+   CachedPage[]>>` once react-query owns that cache — it is the closest thing to
+   a query cache in the repo and it becomes dead code.
+2. `MediaPicker.tsx` — `fetchFeed` (cursor-paginated, `useCallback` at `:229`)
+   → `useInfiniteQuery`.
+3. The one-off dialog fetches: `LayoutPicker.tsx`, `CollectionPopup.tsx`,
+   `EditCollectionDialog.tsx`, `ImageMetaWizard.tsx`, `ImageBlockMetaSection.tsx`,
+   `StyleToolkitField.tsx`. Lower value; do them because they otherwise keep
+   the `useEffect`+`fetch` pattern alive next to the migrated code.
+
+**Constraints:**
+- Every query key includes `workspaceId`. A workspace switch must never serve
+  another tenant's cached collections.
+- Gallery mutations (upload, delete, collection edit) invalidate the relevant
+  keys instead of calling `router.refresh()`, which re-runs the whole Server
+  Component subtree.
+- `ContactForm.tsx` and `PageViewBeacon.tsx` on the public page are single-shot
+  POSTs — explicitly out of scope, they are not "server state".
+
+**Measure:** network-panel request count for a fixed script — open a block's
+gallery picker, switch collection, switch back, open a second block's picker —
+before and after. Expected: duplicate `/api/portfolio/gallery` requests for an
+already-seen collection go to zero. Record in the baseline table (item 13).
+
+---
+
+## 9. Audit 02 — error handling
+
+**Surfaces:** all three.
+
+### Boundaries
+
+- `app/[locale]/(app)/portfolio/error.tsx` — missing; a Puck crash falls back to
+  the generic `(app)/error.tsx`. The local draft already survives a crash (it
+  lives in localStorage, see the `portfolio-drafts` skill), so the boundary's
+  job is to **say so** and offer reload plus a route back into the Drafts
+  dialog — not to invent a recovery mechanism.
+- `app/(public)/w/[orgSlug]/error.tsx` — missing; only `not-found.tsx` exists
+  at that level, the shared `(public)/error.tsx` catches everything else. Must
+  render inside the brand shell and stay index-safe.
+- `app/[locale]/portfolio-preview/error.tsx` — missing, not named in the audit,
+  same class of gap. Chrome-less, since it renders inside the editor's iframe.
+  `portfolio-preview/loading.tsx` is also missing — optional, note it, do not
+  block on it.
+
+### Server Actions — typed-result `try/catch`
+
+Sweep on 2026-09-25, line numbers as of that date:
+
+- `app/[locale]/(app)/portfolio/_actions.ts` — 13 exported actions, 4 covered.
+  Uncaught: `savePortfolioDraftAction:60-69`, `publishPortfolioAction:84-104`,
+  `updateBrandKitAction:124-128`, `updateContactConfigAction:147-151`,
+  `updateCollectionsPopupConfigAction:169-173`, `switchTemplateAction:196`,
+  `dismissPortfolioGuideAction:213-217`, `completeStoryPromptAction:263-322`,
+  `updateFormLocaleAction:379-383`, `saveThemeAction:423-447`,
+  `updateThemeAction:480-508`, `deleteThemeAction:561-565`.
+- `app/[locale]/(app)/portfolio/_draftActions.ts` — 9 exported, 7 covered.
+  Uncaught: `refreshCollectionReferencesAction:86-88`,
+  `deleteDraftAction:206-216`, `listDraftsAction:224-228`,
+  `getDraftAction:243-244`, `seedTemplateAction:295`,
+  `publishDraftAction:325-418`.
+
+Convention to match: `try { … } catch { return { error: "…" } }` as in
+`settings/_actions.ts` and `inquiries/_actions.ts`. The client already toasts
+the `error` field through `sonner`.
+
+### Route Handlers the editor depends on
+
+Pattern to match: `app/api/webhooks/lemonsqueezy/route.ts:48-155` — try/catch
+around each phase, logged before returning a typed status.
+
+- `app/api/images/direct-upload/route.ts:28` — the Cloudflare
+  `requestDirectUpload` call has no try/catch (audit-named). Every editor upload
+  goes through here.
+- `app/api/portfolio/gallery/route.ts:25-28` GET — no try/catch at all.
+- `app/api/portfolio/gallery/items/route.ts:54-115` POST — no try/catch at all.
+- `app/api/portfolio/gallery/collections/route.ts:72-112` POST — has a
+  try/catch, but `verifyImageOwnership`, `validatePhotoMeta`, `connectDB`,
+  `Workspace.findOne` and `GalleryCollection.create` all run before it opens.
+- `app/api/portfolio/gallery/items/[id]/route.ts:54-55` PATCH — the initial
+  read sits outside the try; the existing try only covers propagation cleanup.
+
+### Explicitly NOT gaps — do not re-audit
+
+- The awaited DB reads in the public `page.tsx`, `gallery/page.tsx` and
+  `layout.tsx` sit outside any try/catch. They are Server Components; the
+  boundary above is the correct mechanism, not try/catch. They must keep
+  calling `notFound()` on a missing slug.
+- `PageViewBeacon.tsx:33` swallows with a silent `.catch()`. Intentional — it is
+  a fire-and-forget beacon, and surfacing a failure to a visitor is wrong.
+- `ContactForm.tsx:327-346`, `usePickerData.ts:82-104` and
+  `CollectionPopup.tsx:228-298` already catch and surface errors.
+- `PreviewClient.tsx` makes no network calls; it reads localStorage.
+
+**Measure:** not a perf number. Unit tests assert each listed action returns
+`{ error }` when the underlying Mongoose call throws, and each listed handler
+returns a typed 4xx/5xx with a log line. One Playwright case per boundary
+forces a throw and asserts the boundary copy renders — folded into the batched
+run, not a run of its own.
+
+---
+
+## 10. Audit 04 — memoization: `memo()` the block renderers
+
+**Surfaces:** editor canvas is the one that hurts — Puck re-renders the whole
+tree on every drag and every field edit. The published page and preview get
+the same wrapping for free through the shared config.
+
+**Work:**
+- Wrap the nine top-level `*Block` renderers in
+  `lib/page-builder/blocks/manualBlocks.tsx` and the block components in
+  `blocks/*.tsx` that `config.ts` imports — `GalleryGridBlock`,
+  `GalleryMasonryBlock`, `FeaturedWorkBlock`, `CollectionCardBlock`, `VideoBlock`,
+  `ContactDetailsBlock`, `MasonryCloneBlock` — in `memo()`. The repo currently has
+  **zero** `memo()` usage anywhere; this is the first.
+- Check `editorConfig.tsx` field `render` functions and `StyleToolkitField` for
+  per-render object or array literals passed as props — those defeat `memo()`
+  silently. The audit reports `editorConfig.tsx` has no memoization at all;
+  verify what it passes rather than trusting that.
+
+**Constraint — record the answer before wrapping anything:** Puck passes a
+`puck` prop to every renderer, and it may be a fresh object per render. If it
+is, plain `memo()` never hits and the item is a no-op. Check what 0.23 actually
+passes; either compare on props minus `puck` with a custom comparator, or
+confirm `puck` is referentially stable. Write the finding into this item.
+
+**Measure:** React Profiler — commit count and render count of one block that is
+**not** being edited, during a fixed script (edit one Heading's text ten times,
+then drag one other block once), before and after. Record in the baseline
+table.
+
+---
+
+## 11. Audit 05 — images and virtualization: measurement contract
+
+The work is item 3, including the `next/image` + Cloudflare loader decision.
+This item only pins how it is measured, because "gallery is faster" is
+unfalsifiable otherwise.
+
+**Surfaces:** published page (`/w/[orgSlug]` and `/w/[orgSlug]/gallery`) for
+the seeded owner.
+
+**Measure:**
+- Lighthouse LCP, CLS and TBT on both pages, at 375 (mobile throttling) and
+  1280, before and after. Three runs each, take the median.
+- DOM node count on the gallery page before and after — the direct evidence
+  that virtualization mounted less.
+- Preview and canvas are not measured; they are held to parity by
+  `blockSweep.test.tsx`, not by Lighthouse.
+
+---
+
+## 12. Audit 06 — accessibility: closed for this module
+
+`06-accessibility.md`'s single gap is the app-shell `Sidebar` root in
+`components/ui/sidebar.tsx` lacking a navigation landmark. That is the
+dashboard shell, not the portfolio module — it belongs to whichever module
+takes the app shell.
+
+The portfolio slice of this audit is **item 5 (slot `as`)** — semantic
+elements on the public page. Everything else the audit sampled inside this
+module already passes: the contact form is fully labeled, `BlockActionsToolbar`
+gives every drag a keyboard path, RTL is scoped correctly, `focus-visible` is
+paired with every `outline-none`. Nothing further to do here; do not re-audit.
+
+---
+
+## 13. Measurement harness — prerequisite for 2a, 2b, 3, 8, 10, 11
+
+Nothing above is "done" until a number moved, so the harness lands **first** and
+the baseline is captured **before** any of 2a, 3, 8 or 10 changes a byte.
+
+**Work:**
+- `@next/bundle-analyzer` behind `ANALYZE=1` in `next.config.ts`. **Open
+  check:** `next build` on the dev box reaches "Compiled successfully" and then
+  dies with a Windows access violation in its TypeScript worker, which is why
+  `tsc --noEmit` is the local typecheck gate rather than a full build.
+  Establish whether the analyzer output is written before that crash, or
+  whether the analyzer run has to happen in CI; record the answer here. Do not
+  assume either.
+- `optimizePackageImports: ["@puckeditor/core"]` in `next.config.ts`
+  (`experimental`). Measure it as its own before/after row — it is cheap and may
+  account for a chunk of 2a on its own.
+- A Lighthouse recipe against the seeded `/w/<slug>` and `/w/<slug>/gallery` —
+  a documented manual recipe is enough; do not build a `scripts/perf/` runner
+  unless the manual recipe proves too slow to repeat.
+- The React Profiler script for item 10 and the network script for item 8,
+  written down as steps so a second person gets the same number.
+
+**Where numbers live:** in this doc, in the "Baseline" appendix below — not in a
+second doc. The docs-hygiene rule allows one changed doc per PR and this is it.
+
+**Done when:** the baseline table has a "before" column filled for every row
+below, committed on this branch, before any perf item starts.
+
+---
+
+## Baseline
+
+Fill "before" first. One row per measurement named above. Empty cells are a
+smell, not a placeholder.
+
+| item | metric | page / script | before | after |
+|---|---|---|---|---|
+| 2a | first-load JS, `/portfolio` | analyzer | | |
+| 2a | first-load JS, `/portfolio-preview` | analyzer | | |
+| 2b | first-load JS, `/w/<slug>` (portfolio A) | analyzer | | |
+| 2b | first-load JS, `/w/<slug>` (portfolio B) | analyzer | | |
+| 2b | first-load JS, `/w/<slug>/gallery` | analyzer | | |
+| 13 | first-load JS, `/portfolio`, `optimizePackageImports` only | analyzer | | |
+| 8 | duplicate `/api/portfolio/gallery` requests | picker script | | |
+| 10 | commits / renders of an unedited block | Profiler script | | |
+| 11 | LCP / CLS / TBT, `/w/<slug>`, 375 | Lighthouse, median of 3 | | |
+| 11 | LCP / CLS / TBT, `/w/<slug>`, 1280 | Lighthouse, median of 3 | | |
+| 11 | LCP / CLS / TBT, `/w/<slug>/gallery`, 375 | Lighthouse, median of 3 | | |
+| 11 | LCP / CLS / TBT, `/w/<slug>/gallery`, 1280 | Lighthouse, median of 3 | | |
+| 11 | DOM node count, `/w/<slug>/gallery` | DevTools | | |
+
+---
+
 ## Suggested order
 
-1. **Dictionary** — largest user-visible gap, self-contained.
-2. **Slot `as`** — cheap, helps the public surfaces, low risk.
-3. **Code splitting 2a** (editor mount) — measure, then split.
-4. **Virtualization** — bigger, needs SEO coordination.
-5. **Code splitting 2b** (per-block) — hardest, and must not break parity.
-6. **`componentOverlay`** — whenever that CSS is open anyway.
-7. **Anchor removal** — only after someone characterises the DnD bug.
+1. **Measurement harness (13)** — first, or nothing after it is falsifiable.
+2. **Dictionary (1)** — largest user-visible gap, self-contained.
+3. **Slot `as` (5)** + **a11y close-out (12)** — cheap, helps the public
+   surfaces, low risk.
+4. **Error handling (9)** — independent, mechanical, touches no rendering.
+5. **Code splitting 2a** (editor mount) — baseline exists now; split.
+6. **Memoization (10)** — answer the `puck`-prop question, then wrap.
+7. **Server state (8)** — new dependency, editor-only blast radius.
+8. **Images + virtualization (3, measured by 11)** — bigger, needs SEO
+   coordination.
+9. **Code splitting 2b** (per-block) — hardest, and must not break three-way
+   parity.
+10. **`componentOverlay` (6)** — whenever that CSS is open anyway.
+11. **Anchor removal (4)** — only after someone characterises the DnD bug.
 
 **e2e triage (item 7) is not in that sequence — it runs alongside it.** It blocks
 nothing and nothing blocks it, but it is the reason the suite cannot currently
 tell you whether any of the above broke something. Do the 5 visibility-scoping
 fixes first; they are mechanical and buy back most of the signal.
+
+---
+
+# Session 2026-09-25 — foundation wave (approved plan)
+
+Scope for this branch (`update/portfolio-maker-updates`, one commit per item):
+install → **13** harness + baseline → **4** anchor (revised, below) → **1** dictionary →
+**14** panel transitions (new, below) → **5** slot `as` → **9** error handling, with **7**
+e2e triage alongside. Perf-changing items (2a, 10, 8, 3, 2b) are the next session's
+entry point, starting at 2a, against the baseline captured here.
+
+Decisions taken while planning:
+
+- **`node_modules` was stale**: `@measured/puck` 0.20.2 was installed while the
+  lockfile pins `@puckeditor/core` 0.23.0. `pnpm install` is step 0.
+- **Analyzer tool (item 13) corrected**: the repo builds with Turbopack, so
+  `@next/bundle-analyzer` (webpack-only) is the wrong tool. Next 16.2 ships
+  `next experimental-analyze`, Turbopack-native and build-free — it also sidesteps
+  the TS-worker crash noted in item 13. `optimizePackageImports` is measured as
+  its own row but Turbopack already analyses barrel imports; expect ~0.
+- **Item 2b fixture**: the seed has one published portfolio. Portfolio A/B are two
+  drafts switched and re-published on the seeded workspace (sandbox DB).
+- **Baseline row 10** (React Profiler) needs DevTools and is captured at the start
+  of the next session, before item 10 starts. Every other "before" cell is filled
+  on this branch.
+- **Item 4 is no longer blocked** — see its rewritten section once Phase 2 lands.
+  Manual test (owner, 2026-09-25): without the anchor, drops land in the nested
+  container instead of the parent; the outline and block-actions controls help but
+  do not replace it. The anchor stays and gets a correct predicate.
+- **Item 14 (new)**: the collapsible sections in the editor's left and right panels
+  open/close instantly. They are our own two components (`CollapsibleDrawer`,
+  `EditorDrawerSection`); the transition uses Base UI `Collapsible`, the repo's UI
+  foundation. Puck-internal expanders (outline tree, array fields) are out of scope.
+- **Item 9 boundaries**: no test-only crash hook is added to prod code; boundaries
+  are unit-tested, with a Playwright case only where a throw can be forced externally.
+- **Playwright budget**: three consolidated runs for the whole session (baseline
+  after reseed, post-fix with every item's browser check folded in, one retry).
