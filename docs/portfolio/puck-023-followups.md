@@ -204,7 +204,11 @@ pages, plus DOM node count on the gallery page, before and after.
 
 ---
 
-## 4. Remove `ContainerAnchor` — BLOCKED, do not start
+## 4. `ContainerAnchor` — kept, predicate fixed, leaner (was: remove — BLOCKED)
+
+**Resolved 2026-09-25.** The anchor stays. What changed and why is at the end of
+this section; the original analysis is kept above it because it is still the
+reason the mechanism exists.
 
 The actual prize of the upgrade, and still not available.
 
@@ -228,6 +232,45 @@ of this can be tested rather than eyeballed.
 **Prerequisite before this item is even scopeable:** characterise *how* it is
 buggy — which drop targets, which nesting depth, whether `dnd.behavior` set to
 `"fluid"` or `"static"` changes it. Until that exists, this is not a task.
+
+### Decision 2026-09-25 — keep it, fix the predicate, host it on presets
+
+**Characterisation (owner, manual, 0.23 insertion lines, anchor emission off):**
+dropping a block "beside" a nested container lands it *inside* the nested
+container, not in the parent, at every nesting depth tried. The outline panel
+and the block-actions toolbar give a workable keyboard/menu path, but they do
+not replace a direct drop. With the anchor on, the drop works. So the anchor is
+not redundant; the question becomes why it sometimes disappears.
+
+**The bug that actually bit:** `isContainerClass` only knew `Container` and
+`Columns`. A parent Container holding `[Container, Container, HeroPreset]` lost
+its anchor the moment the preset arrived, because every section preset has its
+own type (`HeroSplitPreset`, …) even though it renders through `ContainerBlock`.
+With the anchor gone, the parent became the un-droppable case above.
+
+**What landed:**
+- Container-class children = `Container | Columns | every preset with
+  componentType "Container"` (`CONTAINER_PRESET_KEYS`, exported from
+  `sectionPresets.ts`). Nav presets are not container-class.
+- Anchor hosts = `Container` + container presets (`isAnchorHost`). The live
+  reconciler walks preset nodes and every preset editor config now carries the
+  same `resolveData` as the manual Container, so the two writers agree. Every
+  non-nav preset wraps its content in one page-fit Container child, so every
+  preset now carries a bridge anchor — the drop-beside-the-nested-container
+  case is exactly the one the owner wanted.
+- Columns stays child-class only. It has one grid slot, not per-column slots;
+  the owner's verdict was that Columns drops fine as-is. A per-column anchor
+  would need a per-column-slot migration and is not planned.
+- Mixed children (any ordinary block) → no anchor. Unchanged, for the churn
+  reasons in the predicate header.
+- Leaner: the dead `height` prop is gone from the anchor's type, defaults,
+  fields, reconciler literal and the five template files; item 6's
+  `componentOverlay` override replaced the three hashed-class CSS rules.
+
+**Still manual:** drag verification. Synthetic Playwright drags no-op against
+`@dnd-kit` 0.4, so Run 2 only asserts anchor presence inside a preset's slot
+and the absence of hover/selection chrome on it. Re-validating the drag recipe
+in the `portfolio-testing` skill is a follow-up for the next session.
 
 ---
 
@@ -271,6 +314,14 @@ selectors fail without erroring: the editor just looks wrong.
 
 Lowest priority here. Worth doing opportunistically while touching that CSS for
 another reason.
+
+**Closed 2026-09-25** inside item 4's commit: `EditorShell` passes
+`overrides.componentOverlay`, which returns `null` for any `componentId` ending
+in `--anchor` and the default `children` otherwise. The three
+`[class*="DraggableComponent-*"]` rules and their comment block are deleted
+from `editor.css`. Puck's overlay node is purely visual (outline/background,
+`cursor: pointer`; the actions overlay is `pointer-events: none`), so removing
+it does not touch drop detection.
 
 ---
 
@@ -595,21 +646,63 @@ Nothing above is "done" until a number moved, so the harness lands **first** and
 the baseline is captured **before** any of 2a, 3, 8 or 10 changes a byte.
 
 **Work:**
-- `@next/bundle-analyzer` behind `ANALYZE=1` in `next.config.ts`. **Open
-  check:** `next build` on the dev box reaches "Compiled successfully" and then
-  dies with a Windows access violation in its TypeScript worker, which is why
-  `tsc --noEmit` is the local typecheck gate rather than a full build.
-  Establish whether the analyzer output is written before that crash, or
-  whether the analyzer run has to happen in CI; record the answer here. Do not
-  assume either.
-- `optimizePackageImports: ["@puckeditor/core"]` in `next.config.ts`
-  (`experimental`). Measure it as its own before/after row — it is cheap and may
-  account for a chunk of 2a on its own.
-- A Lighthouse recipe against the seeded `/w/<slug>` and `/w/<slug>/gallery` —
-  a documented manual recipe is enough; do not build a `scripts/perf/` runner
-  unless the manual recipe proves too slow to repeat.
-- The React Profiler script for item 10 and the network script for item 8,
-  written down as steps so a second person gets the same number.
+- ~~`@next/bundle-analyzer` behind `ANALYZE=1`~~ — **wrong tool, corrected
+  2026-09-25.** That plugin is webpack-only and this app builds with Turbopack.
+  Next 16.2 ships `next experimental-analyze` (Turbopack-native; "does not
+  produce an application build"), wired as `pnpm analyze`. **Open check
+  answered:** `pnpm analyze -- -o` completes on the dev box in ~80 s with no
+  TypeScript worker involved, so there is no crash to route around and no need
+  for CI. Output lands in `.next/diagnostics/analyze/data/<route>/analyze.data`
+  as length-prefixed records; the interactive UI (`pnpm analyze`, port 4000)
+  shows the same graph. `node scripts/perf/analyze-summary.mjs "<route>"`
+  prints a route's client-JS total from those files — the number in the
+  baseline table is *every client chunk reachable from the route's chunk
+  graph, gzip*, lazy chunks included, so it is a route ceiling rather than a
+  first-paint figure. Compare before/after under that same definition. (The
+  script exists because the data file is binary-framed; the interactive UI is
+  the manual alternative but gives no copyable per-route total.)
+- `optimizePackageImports: ["@puckeditor/core"]` — **measured 2026-09-25, not
+  kept.** Turbopack already analyses barrel imports; the delta was 0.8 KB gzip
+  on 1446 KB for `/portfolio` and 0.7 KB on the public routes. Noise. The
+  config line was reverted; row 13 below records it.
+- The analyzer is per-route and data-independent: `/w/[orgSlug]` and
+  `/w/[orgSlug]/gallery` report identical totals whichever portfolio is
+  published. Item 2b's "two portfolios download different JS" therefore cannot
+  be read from the analyzer; its A/B rows are measured at runtime (Playwright:
+  sum of transferred `.js` bytes on first load of each published portfolio) and
+  the analyzer row is the shared ceiling.
+- **Lighthouse recipe (used for the baseline; dev-mode numbers).** The box
+  cannot `next build` (TS-worker crash), so `pnpm start:prod` is unavailable
+  and Lighthouse runs against `pnpm dev` (Turbopack dev, unminified, no
+  prod caching). The numbers are only comparable with each other under the same
+  conditions — never against a production deployment or a Lighthouse score
+  from CI.
+  1. `pnpm dev`, then warm both pages once with a plain GET (first compile
+     takes ~50 s and would otherwise land inside run #1).
+  2. For each page and form factor, three times:
+     `npx -y lighthouse <url> --output=json --output-path=<file> --only-categories=performance --quiet --chrome-flags=--headless=new`
+     adding `--preset=desktop` for the 1280 column. Mobile is Lighthouse's
+     default 375-wide emulation with its default CPU/network throttling.
+  3. Read `audits["largest-contentful-paint"|"cumulative-layout-shift"|"total-blocking-time"].numericValue`
+     and `audits["dom-size-insight"].numericValue` (Lighthouse 13 moved DOM
+     size to the "insight" audit; the old `dom-size` key is absent). Take the
+     median of the three.
+  Lighthouse 13.5 warns that this CPU is slower than its calibration
+  assumes; it is the same box every time, so the warning is noted, not fixed.
+- **Item 8 network recipe.** Open `/portfolio`, load the e2e fixture draft,
+  select a Gallery block → open its gallery picker → switch to a second
+  collection → switch back to the first → select a second Gallery block → open
+  its picker. Count requests whose URL starts with `/api/portfolio/gallery`.
+  Captured by a Playwright request listener in the batched run; the "before"
+  number is the count for that exact script.
+- **Item 10 React Profiler recipe** (needs React DevTools in a real browser;
+  not automatable here — captured at the start of the next session before item
+  10 changes anything). Open `/portfolio` with DevTools → Profiler → "Record why
+  each component rendered". Load the e2e fixture draft. Start recording. Edit
+  one Heading's text ten times (one character each), then drag one *other*
+  block once. Stop. Select a block that was neither edited nor dragged (a
+  Text block) and record its commit count and render count from the
+  right-hand panel.
 
 **Where numbers live:** in this doc, in the "Baseline" appendix below — not in a
 second doc. The docs-hygiene rule allows one changed doc per PR and this is it.
@@ -626,19 +719,20 @@ smell, not a placeholder.
 
 | item | metric | page / script | before | after |
 |---|---|---|---|---|
-| 2a | first-load JS, `/portfolio` | analyzer | | |
-| 2a | first-load JS, `/portfolio-preview` | analyzer | | |
-| 2b | first-load JS, `/w/<slug>` (portfolio A) | analyzer | | |
-| 2b | first-load JS, `/w/<slug>` (portfolio B) | analyzer | | |
-| 2b | first-load JS, `/w/<slug>/gallery` | analyzer | | |
-| 13 | first-load JS, `/portfolio`, `optimizePackageImports` only | analyzer | | |
+| 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | |
+| 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | |
+| 2b | route client JS (gzip), `/w/[orgSlug]` — shared ceiling | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
+| 2b | transferred JS on first load, `/w/<slug>` (portfolio A = seeded editorial) | Playwright network sum | | |
+| 2b | transferred JS on first load, `/w/<slug>` (portfolio B = minimal draft, re-published) | Playwright network sum | | |
+| 2b | route client JS (gzip), `/w/[orgSlug]/gallery` | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
+| 13 | `/portfolio` with `optimizePackageImports: ["@puckeditor/core"]` | `analyze-summary.mjs` | 1445.6 KB (−0.8 KB vs row 2a; reverted) | n/a |
 | 8 | duplicate `/api/portfolio/gallery` requests | picker script | | |
 | 10 | commits / renders of an unedited block | Profiler script | | |
-| 11 | LCP / CLS / TBT, `/w/<slug>`, 375 | Lighthouse, median of 3 | | |
-| 11 | LCP / CLS / TBT, `/w/<slug>`, 1280 | Lighthouse, median of 3 | | |
-| 11 | LCP / CLS / TBT, `/w/<slug>/gallery`, 375 | Lighthouse, median of 3 | | |
-| 11 | LCP / CLS / TBT, `/w/<slug>/gallery`, 1280 | Lighthouse, median of 3 | | |
-| 11 | DOM node count, `/w/<slug>/gallery` | DevTools | | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 3471 ms / 0.000 / 2127 ms (2026-09-25) | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 903 ms / 0.000 / 133 ms (2026-09-25) | |
+| 11 | DOM node count, `/w/seed-owner-demo/gallery` (home for reference) | Lighthouse `dom-size-insight` | 421 (home 477) (2026-09-25) | |
 
 ---
 
