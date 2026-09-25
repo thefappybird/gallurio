@@ -41,6 +41,11 @@ test("the preview page ends at the footer, with no dead space above it", async (
     const slot = main.firstElementChild as HTMLElement;
     const kids = Array.from(slot.children) as HTMLElement[];
     const last = kids[kids.length - 1];
+    if (!last) {
+      throw new Error(
+        `page-body content slot has no children (childCount=${kids.length}) — template content did not land on the preview`
+      );
+    }
     return {
       holderDisplay: getComputedStyle(holder).display,
       holderDirection: getComputedStyle(holder).flexDirection,

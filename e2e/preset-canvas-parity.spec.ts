@@ -265,7 +265,10 @@ test.describe("theme presets: floated values match the canvas", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await openEditorWithDraft(page, DRAFT_NAME);
 
-    await page.getByRole("button", { name: "Gallery", exact: true }).click();
+    // Unscoped, this also matches a hidden dnd-kit draggable handle and the
+    // canvas's own rendered "Gallery" nav link — the toolbar testid
+    // disambiguates to the real zone-switcher button.
+    await page.getByTestId("portfolio-toolbar-grid").getByRole("button", { name: "Gallery", exact: true }).click();
 
     const canvas = page.locator("[data-puck-preview]").first();
     await canvas.waitFor({ state: "visible", timeout: 30_000 });

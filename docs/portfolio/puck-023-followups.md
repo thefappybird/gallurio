@@ -493,6 +493,53 @@ last 7 (`portfolio-responsive` ×2, `portfolio-rtl-scoping`,
 plain GET before the first editor spec, or the first spec's timeout measures
 Turbopack, not the app.
 
+### Static fixes 2026-09-25 (from the Run 1 traces; no app code touched)
+
+Fixed, awaiting Run 2:
+
+- `block-floated-parity.spec.ts:38` — `getByLabel('Instagram username')`
+  scoped with `.and(page.locator(":visible"))`.
+- `block-floated-parity.spec.ts:128` and `preset-canvas-parity.spec.ts:268`
+  (the real line; `:182`/`:263` above had drifted) — the three "Gallery"
+  buttons are the zone-switcher button, a hidden dnd-kit handle and the canvas
+  nav link; scoped through `getByTestId("portfolio-toolbar-grid")`.
+- `block-floated-parity.spec.ts` (`:250` test, dead selector at `:210`) —
+  `expandDrawerGroup` / `dragDrawerItemToCanvas` rewritten to role/name +
+  `aria-expanded` against our `PresetBlocksDrawer`, mirroring `hoverPreset()`.
+- `portfolio-page-body-batch.spec.ts:41` — **the table above was wrong about
+  the cause.** Count was 6 every retry, not a hidden twin: the descendant
+  selector `[data-puck-dropzone$=":content"]` also matched every nested
+  Container's own content slot. Fixed to `:scope > …` (the direct-child form
+  `portfolio-page-body-child-height.spec.ts` already used).
+- `portfolio-preview-footer-gap.spec.ts` — the dereference now throws a
+  message naming the child count, so the next run reports the real state.
+- `portfolio-rtl-scoping.spec.ts`, `portfolio-responsive.spec.ts` — already
+  carried `:visible` scoping; nothing to do.
+
+Diagnosed, deliberately not "fixed" in the spec:
+
+- `item4-defaults-prefill.spec.ts:45` / `:51` — the trace shows the "Welcome
+  back" dialog still open with a `navigated to /portfolio` entry inside the
+  click wait: a full page reload mid-test. Cause: this session edited the
+  message catalogs while Run 1 was in flight and Turbopack HMR reloaded the
+  editor. Not a selector bug. Rule: **no worktree edits while a browser run is
+  up** (see the session log for the RAM constraint that forces the same
+  sequencing).
+- `portfolio-nav-order.spec.ts:17` — `Move Contact up` is **absent from the
+  app**, not hidden. The only reorder controls in the codebase are the
+  whole-block `moveUp`/`moveDown` toolbar actions; no per-item nav reorder
+  control exists. The spec describes a feature that is not there. Product
+  decision needed: restore/implement per-item nav reordering, or delete the
+  spec. Not an e2e fix.
+- `portfolio-page-body-child-height.spec.ts:92` — the 414 is computed live
+  (`geometry.slotContentWidth + 1`), so it is not a stale constant: a dropped
+  section really does overflow its page-body slot by 47 px. App-code
+  investigation for the next session.
+- `puck023-chrome.spec.ts` — trap 2 below stands as a *reading* rule, but the
+  write order is deliberate and commented: several assertions run before the
+  write, and the artifact exists to preserve diagnostics when the later ones
+  fail. Do not move the write; do not read the artifact as a verdict.
+
 ### Two traps, both already paid for once
 
 1. **A spec that drifted off its selector fails identically to a real

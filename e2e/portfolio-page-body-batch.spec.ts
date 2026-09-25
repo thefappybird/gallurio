@@ -38,7 +38,11 @@ test("page body, component drawer, preset previews, and drafts stay coherent", a
   const rootDropZone = preview.locator('[data-puck-dropzone="root:default-zone"]');
   const pageBody = preview.locator('[data-block="page-body"]');
   await expect(pageBody).toHaveCount(1);
-  await expect(pageBody.locator('[data-puck-dropzone$=":content"]')).toHaveCount(1);
+  // Unscoped, this descendant selector also matches every nested Container's
+  // OWN content dropzone (its suffix match isn't anchored to a direct child)
+  // — scope to page-body's immediate dropzone, same as the SLOT constant in
+  // portfolio-page-body-child-height.spec.ts.
+  await expect(pageBody.locator(':scope > [data-puck-dropzone$=":content"]')).toHaveCount(1);
 
   const bodyGeometry = await pageBody.evaluate((body) => {
     const bodyStyle = getComputedStyle(body);
