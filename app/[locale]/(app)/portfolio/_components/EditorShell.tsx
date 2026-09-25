@@ -3189,6 +3189,11 @@ export function EditorShell({
               { width: 390, label: t("devices.mobile"), icon: "Smartphone" },
             ]}
             overrides={{
+              // Anchors (id ends with "--anchor") are invisible structural
+              // spacers — skip Puck's hover/selection chrome for them instead
+              // of the editor.css hashed-class substring hack this replaces.
+              componentOverlay: ({ children, componentId }) =>
+                componentId.endsWith("--anchor") ? <></> : <>{children}</>,
               // Full custom header: nav left · canvas controls center · tools +
               // Puck's Publish action (`actions`) right. The center cluster also
               // carries the sidebar-panel toggles the default header would own.

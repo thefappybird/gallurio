@@ -362,7 +362,6 @@ export const romanticTemplate: PortfolioTemplate = {
                               type: "ContainerAnchor",
                               props: {
                                 id: "Container-84dd3c24-b153-49e9-89e9-0fe38e44500d--anchor",
-                                height: 0,
                               },
                             },
                           ],
@@ -435,7 +434,6 @@ export const romanticTemplate: PortfolioTemplate = {
                               type: "ContainerAnchor",
                               props: {
                                 id: "Container-74c9babf-5795-4ecd-bb50-d2ada392550e--anchor",
-                                height: 0,
                               },
                             },
                           ],
@@ -508,7 +506,6 @@ export const romanticTemplate: PortfolioTemplate = {
                               type: "ContainerAnchor",
                               props: {
                                 id: "Container-28b40e35-e095-450f-aed9-e6dcd0f5f3d1--anchor",
-                                height: 0,
                               },
                             },
                           ],
@@ -581,7 +578,6 @@ export const romanticTemplate: PortfolioTemplate = {
                               type: "ContainerAnchor",
                               props: {
                                 id: "Container-ce599fb4-9fc2-43ac-8094-2220ff4c09fd--anchor",
-                                height: 0,
                               },
                             },
                           ],
@@ -719,7 +715,6 @@ export const romanticTemplate: PortfolioTemplate = {
                         type: "ContainerAnchor",
                         props: {
                           id: "Container-3c747873-4d2c-499c-a8ff-867fc4df4f1e--anchor",
-                          height: 0,
                         },
                       },
                     ],
@@ -1180,7 +1175,6 @@ export const romanticTemplate: PortfolioTemplate = {
                         type: "ContainerAnchor",
                         props: {
                           id: "Container-7609b4b9-75a9-43f0-8572-a63b3f5364b6--anchor",
-                          height: 0,
                         },
                       },
                     ],
@@ -1322,7 +1316,6 @@ export const romanticTemplate: PortfolioTemplate = {
                         type: "ContainerAnchor",
                         props: {
                           id: "Container-dd5cf4fb-bc7f-44af-97b7-40119ca810b0--anchor",
-                          height: 0,
                         },
                       },
                     ],

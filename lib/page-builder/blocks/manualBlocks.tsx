@@ -1556,33 +1556,24 @@ export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
 // for the resolveData logic that maintains it.
 // ---------------------------------------------------------------------------
 
-export type ContainerAnchorProps = {
-  height: number;
-};
+// No persisted geometry — height is computed live in the editor by
+// EditorContainerAnchor (from the parent's own data), never stored on the anchor.
+export type ContainerAnchorProps = Record<string, never>;
 
-export const containerAnchorDefaultProps: ContainerAnchorProps = { height: 128 };
+export const containerAnchorDefaultProps: ContainerAnchorProps = {};
 
 export function ContainerAnchorBlock({
-  height,
   puck,
 }: ContainerAnchorProps & { puck?: BlockPuck }) {
   // Public page: render nothing — anchor is editor infrastructure only.
   if (!puck?.isEditing) return <></>;
-  return (
-    <div
-      className="pf-container-anchor"
-      aria-hidden
-      style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
-    />
-  );
+  return <div className="pf-container-anchor" aria-hidden style={{ pointerEvents: "none" }} />;
 }
 
 export const containerAnchorBlockConfig: ComponentConfig<ContainerAnchorProps> = {
   label: "ContainerAnchor",
   defaultProps: containerAnchorDefaultProps,
-  fields: {
-    height: { type: "number", label: "Height" } as Field<number>,
-  },
+  fields: {},
   permissions: {
     drag: false,
     delete: false,

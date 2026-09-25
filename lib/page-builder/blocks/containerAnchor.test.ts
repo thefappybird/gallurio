@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { containerAnchorDefaultProps, containerAnchorBlockConfig } from "./manualBlocks";
 
 describe("ContainerAnchor block", () => {
-  it("has a default height of 128px", () => {
-    expect(containerAnchorDefaultProps.height).toBe(128);
+  it("has no default props (the anchor carries no persisted geometry)", () => {
+    expect(containerAnchorDefaultProps).toEqual({});
   });
 
   it("registers the correct label", () => {

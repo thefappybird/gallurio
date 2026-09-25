@@ -591,7 +591,6 @@ export const luxuryTemplate: PortfolioTemplate = {
                         type: "ContainerAnchor",
                         props: {
                           id: "Container-88e14747-12c8-4e62-835d-77ee709b8181--anchor",
-                          height: 0,
                         },
                       },
                     ],

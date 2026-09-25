@@ -434,6 +434,33 @@ Nothing explains these yet. Do not fold them into the group above.
   it never found, so it is a spec bug masking whatever the real state is; fix the
   dereference first, then re-read the actual failure.
 
+### Run 1, 2026-09-25 — what the fresh seed + 0.23 install actually shows
+
+Run against a re-seeded dev DB with `@puckeditor/core` 0.23.0 genuinely
+installed (the previous measurement was taken with a stale `node_modules`
+still holding `@measured/puck` 0.20.2 — see the session log at the end). The
+run was killed by the host's low-memory reaper after 12 of 19 tests, so the
+last 7 (`portfolio-responsive` ×2, `portfolio-rtl-scoping`,
+`preset-canvas-parity` ×2, `puck023-chrome`, the rest of
+`anchor-snapshot-loop`) have no fresh evidence yet. Traces exist for the 12.
+
+| spec | Run 1 | verdict |
+|---|---|---|
+| `block-floated-parity.spec.ts:38` | `getByLabel('Instagram username')` → 2 | hidden-panel duplicate, **confirmed** |
+| `block-floated-parity.spec.ts:128` | `getByRole('button', { name: 'Gallery' })` → 3 | hidden-panel duplicate, **confirmed** |
+| `block-floated-parity.spec.ts:250` | `waitFor` 15 s on `[class*="_ComponentList_"]` … `_ComponentList-title_` /^Footer$/ | **not** the hidden-panel cause — it is the unreachable selector this doc already purged from nine other specs. Same fix as those: target our `PresetBlocksDrawer` buttons by role. |
+| `item4-defaults-prefill.spec.ts:45` / `:51` | 90 s timeout, both | still unproven; read the traces before assuming |
+| `portfolio-nav-order.spec.ts:17` | `getByRole('button', { name: 'Move Contact up' })` not visible | reproduced as described; undiagnosed |
+| `portfolio-page-body-batch.spec.ts:32` | `[data-puck-dropzone$=":content"]` count ≠ 1 | hidden-panel duplicate, **confirmed** |
+| `portfolio-page-body-child-height.spec.ts:16` | 461 > 414 | reproduced; real delta vs stale constant still open |
+| `portfolio-preview-footer-gap.spec.ts:15` | `getBoundingClientRect` of `undefined` | reproduced; spec bug first |
+| `anchor-snapshot-loop.spec.ts:7` | 60 s timeout; the page snapshot shows the app shell, not the editor | ran **first** after a cold dev server, so it ate `/portfolio`'s first Turbopack compile. Not loop evidence. Warm `/portfolio` before this spec. |
+| `block-floated-parity.spec.ts:90` | passed | — |
+
+**Run-order rule learned:** warm `/portfolio` and `/portfolio-preview` with a
+plain GET before the first editor spec, or the first spec's timeout measures
+Turbopack, not the app.
+
 ### Two traps, both already paid for once
 
 1. **A spec that drifted off its selector fails identically to a real
