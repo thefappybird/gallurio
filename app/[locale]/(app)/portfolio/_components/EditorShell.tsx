@@ -9,6 +9,7 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
 import { useEditorCanvasHotkeys } from "@/lib/page-builder/useEditorCanvasHotkeys";
+import { buildPuckDictionary } from "@/lib/page-builder/puckDictionary";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -1028,6 +1029,10 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
   const tNav = useTranslations("publicPage.nav");
+  const tChrome = useTranslations("puck.chrome");
+  // .raw, not t(): Puck's own {placeholder} syntax must pass through untouched,
+  // not get parsed as an ICU argument.
+  const puckDictionary = useMemo(() => buildPuckDictionary((k) => tChrome.raw(k)), [tChrome]);
   const errMsg = useActionError();
   // Declared ahead of editorConfig below (normally further down with the rest
   // of this component's state) because the Navigation field panel's detach
@@ -3158,6 +3163,7 @@ export function EditorShell({
             // the rail with our own two-tab column; `Puck.Components` inside it
             // still routes through the `drawer` override below.
             plugins={puckPlugins}
+            dictionary={puckDictionary}
             headerTitle={headerTitle}
             metadata={{
               workspace: {
