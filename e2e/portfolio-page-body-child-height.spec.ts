@@ -74,11 +74,13 @@ test("a block dropped into the page body keeps its own height", async ({ page })
     ) as HTMLElement[];
     return {
       slotHeight: box.height,
+      slotWidth: box.width,
+      slotLeft: box.left,
       slotContentWidth: box.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
       slotContentLeft: box.left + parseFloat(cs.paddingLeft),
       sections: sections.map((s) => {
         const r = s.getBoundingClientRect();
-        return { height: r.height, width: r.width, left: r.left };
+        return { height: r.height, width: r.width, left: r.left, fullWidth: s.hasAttribute("data-pf-full-width") };
       }),
     };
   });
@@ -88,9 +90,16 @@ test("a block dropped into the page body keeps its own height", async ({ page })
   // No section swallows the row; each keeps its own natural height.
   for (const s of geometry.sections) {
     expect(s.height).toBeLessThan(geometry.slotHeight * 0.75);
-    // ...and stays inside the body's horizontal margin instead of bleeding out.
-    expect(s.width).toBeLessThanOrEqual(geometry.slotContentWidth + 1);
-    expect(s.left).toBeGreaterThanOrEqual(geometry.slotContentLeft - 1);
+    if (s.fullWidth) {
+      // Presets are full-width by design (sectionPresets.ts), and PageBodyBlock
+      // bleeds a full-width section across the body margin: edge to edge.
+      expect(Math.abs(s.width - geometry.slotWidth)).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(s.left - geometry.slotLeft)).toBeLessThanOrEqual(1.5);
+    } else {
+      // A page-fit section stays inside the body's horizontal margin.
+      expect(s.width).toBeLessThanOrEqual(geometry.slotContentWidth + 1);
+      expect(s.left).toBeGreaterThanOrEqual(geometry.slotContentLeft - 1);
+    }
   }
   expect(geometry.sections.length).toBeGreaterThan(0);
 

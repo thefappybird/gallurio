@@ -165,11 +165,12 @@ test.describe("theme presets: floated values match the canvas", () => {
 
   /**
    * The heading/paragraph test above never touches a Button — exactly what the
-   * reported bug was about. Two buttons on the Home zone cover two of the
-   * families a button can resolve through:
-   *  - a "soft" button (colorVar defaults to brand primary) on a secondary band,
-   *  - a no-`_style` "legacy" button that cascades to the section text token
-   *    (unset here, so it falls all the way to brand foreground).
+   * reported bug was about. Two buttons on the Editorial Home zone cover the
+   * two fill families its template ships (editorial.ts, re-ported in cdb012aa):
+   *  - "View Gallery": soft, `buttonColorToken`/`textColorToken` foreground —
+   *    brand-foreground label over a tinted wash,
+   *  - "Send a Message": outline, `buttonColorToken` foreground — brand-
+   *    foreground label and border, no fill.
    * (The third family — an outline button pinned onto a primary band — lives
    * on the Gallery zone and is covered by its own test below: the Theme panel
    * is a modal dialog, and its backdrop blocks clicks on the zone switcher
@@ -196,10 +197,10 @@ test.describe("theme presets: floated values match the canvas", () => {
     // scope to the anchor tag specifically.
     const buttonByLabel = (label: string) =>
       canvas.locator('a[role="button"]').filter({ hasText: new RegExp(`^${label}$`) });
-    const softButton = buttonByLabel("Get in Touch");
-    const legacyButton = buttonByLabel("Send a Message");
+    const softButton = buttonByLabel("View Gallery");
+    const outlineButton = buttonByLabel("Send a Message");
     await softButton.waitFor({ state: "visible", timeout: 30_000 });
-    await legacyButton.waitFor({ state: "visible", timeout: 30_000 });
+    await outlineButton.waitFor({ state: "visible", timeout: 30_000 });
 
     await openThemePanel(page);
 
@@ -207,10 +208,10 @@ test.describe("theme presets: floated values match the canvas", () => {
       await applyPreset(page, preset);
       const probe = await readBrandProbe(page);
 
-      // --- Soft button (Home zone): label is brand primary, fill is a
-      // visible tint, both legible.
+      // --- Soft button: label is brand foreground, fill is a visible tint,
+      // both legible.
       const soft = await readButtonPaint(softButton);
-      expect(soft.color, `${preset}: soft button label is brand primary`).toBe(probe.brandPrimary);
+      expect(soft.color, `${preset}: soft button label is brand foreground`).toBe(probe.brandFg);
       expect(soft.color, `${preset}: soft button label is not the app-shell foreground`).not.toBe(
         probe.appFg
       );
@@ -226,19 +227,19 @@ test.describe("theme presets: floated values match the canvas", () => {
         `${preset}: soft button label legible on its own fill (${softLabelContrast.toFixed(2)}:1)`
       ).toBeGreaterThanOrEqual(4.5);
 
-      // --- Legacy button (Home zone, no _style): cascades to brand
-      // foreground for both label and border, paints no fill.
-      const legacy = await readButtonPaint(legacyButton);
-      expect(legacy.color, `${preset}: legacy button label is brand foreground`).toBe(probe.brandFg);
+      // --- Outline button: brand foreground for both label and border,
+      // paints no fill.
+      const outline = await readButtonPaint(outlineButton);
+      expect(outline.color, `${preset}: outline button label is brand foreground`).toBe(probe.brandFg);
       expect(
-        legacy.borderBottomColor,
-        `${preset}: legacy button border is brand foreground`
+        outline.borderBottomColor,
+        `${preset}: outline button border is brand foreground`
       ).toBe(probe.brandFg);
-      expect(legacy.ownBgAlpha, `${preset}: legacy button paints no fill`).toBeLessThan(0.01);
-      const legacyContrast = contrastRatio(legacy.labelRgb, legacy.effectiveRgb);
+      expect(outline.ownBgAlpha, `${preset}: outline button paints no fill`).toBeLessThan(0.01);
+      const outlineContrast = contrastRatio(outline.labelRgb, outline.effectiveRgb);
       expect(
-        legacyContrast,
-        `${preset}: legacy button label legible (${legacyContrast.toFixed(2)}:1)`
+        outlineContrast,
+        `${preset}: outline button label legible (${outlineContrast.toFixed(2)}:1)`
       ).toBeGreaterThanOrEqual(4.5);
     }
   });
