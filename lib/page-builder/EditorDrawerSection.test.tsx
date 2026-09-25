@@ -14,6 +14,16 @@ describe("EditorDrawerSection", () => {
     expect(screen.getByText("child content")).toBeTruthy();
   });
 
+  it("(i) chevron rotation is driven by the trigger's data-panel-open state", () => {
+    render(
+      <EditorDrawerSection title="Effects">
+        <span>effect controls</span>
+      </EditorDrawerSection>,
+    );
+    const chevron = screen.getByRole("button").querySelector("svg");
+    expect(chevron).toHaveClass("group-data-panel-open:rotate-180");
+  });
+
   it("(h) header button carries a pointer-cursor affordance", () => {
     render(
       <EditorDrawerSection title="Effects">

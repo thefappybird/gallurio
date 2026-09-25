@@ -1,7 +1,8 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ChevronDownIcon } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,59 +28,41 @@ export function CollapsibleDrawer({
   className,
   bodyClassName,
 }: Props) {
-  const bodyId = useId();
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const expanded = open ?? internalOpen;
-
-  function setExpanded(next: boolean) {
-    if (open === undefined) {
-      setInternalOpen(next);
-    }
-    onOpenChange?.(next);
-  }
-
   return (
-    <section className={cn("border border-border bg-card text-card-foreground", className)}>
+    <Collapsible
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      render={<section className={cn("border border-border bg-card text-card-foreground", className)} />}
+    >
       <div className="flex items-stretch gap-2">
-        <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={expanded}
-          aria-controls={bodyId}
+        <CollapsibleTrigger
+          nativeButton={false}
           onClick={(e) => {
             const t = e.target as HTMLElement;
             if (
               t.closest("input,select,textarea,button,a,[contenteditable=true]") &&
               t !== e.currentTarget
-            )
+            ) {
+              e.preventBaseUIHandler();
               return;
-            setExpanded(!expanded);
-          }}
-          onKeyDown={(e) => {
-            if (e.target !== e.currentTarget) return;
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setExpanded(!expanded);
             }
           }}
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          render={<div />}
         >
-          <ChevronDownIcon
-            className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")}
-          />
+          <ChevronDownIcon className="size-4 shrink-0 transition-transform group-data-panel-open:rotate-180 motion-reduce:transition-none" />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="min-w-0">{title}</span>
             {subtitle ? <span className="min-w-0">{subtitle}</span> : null}
           </span>
-        </div>
+        </CollapsibleTrigger>
         {actions ? <div className="flex items-center gap-1 pe-3">{actions}</div> : null}
       </div>
 
-      {expanded ? (
-        <div id={bodyId} className={cn("border-t border-border px-3 py-3", bodyClassName)}>
-          {children}
-        </div>
-      ) : null}
-    </section>
+      <CollapsiblePanel>
+        <div className={cn("border-t border-border px-3 py-3", bodyClassName)}>{children}</div>
+      </CollapsiblePanel>
+    </Collapsible>
   );
 }
