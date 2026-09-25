@@ -22,7 +22,7 @@ reference.
 | item | outcome | where to look |
 |---|---|---|
 | 13 | `pnpm analyze` (Turbopack `experimental-analyze`, build-free) + `scripts/perf/analyze-summary.mjs`; baseline table filled except rows 8 and 10 | scope doc item 13 + "Baseline" |
-| 4 + 6 | presets are container-class **and** host bridge anchors; dead `height` prop removed; `overrides.componentOverlay` replaces the hashed-class CSS | `lib/page-builder/containerAnchorPredicate.ts`, `containerAnchorReconciler.ts`, `editorConfig.tsx` preset cfg, `EditorShell.tsx` overrides |
+| 4 + 6 | presets are container-class **and** host bridge anchors; dead `height` prop removed; `overrides.componentOverlay` replaces the hashed-class CSS. **Owner manual drag test passed 2026-09-26**: (a) a block dropped on a preset's anchor lands as a sibling of the preset's inner Container, not inside it; (b) parent Container holding `[Container, Container, HeroPreset]` keeps its anchor and accepts a drop at its own level | `lib/page-builder/containerAnchorPredicate.ts`, `containerAnchorReconciler.ts`, `editorConfig.tsx` preset cfg, `EditorShell.tsx` overrides |
 | 1 | 45 Puck chrome strings under `puck.chrome` × 5 locales, built with `t.raw` (not `t`) so Puck's `{placeholder}` syntax survives | `lib/page-builder/puckDictionary.ts` |
 | 5 | slot-`as` audit: zero changes warranted | scope doc item 5 table |
 | 14 | Base UI `Collapsible` behind `CollapsibleDrawer` + `EditorDrawerSection` (200 ms, reduced-motion aware) | `components/ui/collapsible.tsx` |
@@ -89,7 +89,10 @@ identically.
    - a seed decision for `rtl-scoping` and `:131` (a collection plus a
      configured FeaturedWork, and a GalleryGrid somewhere), to ask the owner
      about;
-   - the FeaturedWork empty-state locale bug (below).
+   - the FeaturedWork empty-state locale bug (below);
+   - the three owner-requested editor UI changes (sidebar scroll, presets
+     collapsed at start, drawer gap; see "Owner-requested editor UI
+     changes").
    End with one consolidated re-run.
 1. **Capture the two missing "before" rows first** (both have recipes in scope
    doc item 13; neither may be skipped — items 8 and 10 are unfalsifiable
@@ -120,6 +123,27 @@ identically.
 6. **2b — per-block splitting.** Today portfolios A and B download
    byte-identical JS (1,591,671 B / 40 chunks, dev mode) — that is the number
    to beat. Must keep `blockSweep` three-way parity green.
+
+## Owner-requested editor UI changes (2026-09-26; do in the next session)
+
+Editor chrome only, so verify at 1280 px. Do all three in one change and one
+browser check.
+
+1. **Each sidebar scrolls on its own.** The left (Components/Outline) and
+   right (fields) panels each get their own y-scrollbar, isolated from the
+   page. They stay pinned (sticky) in view while the page or the canvas
+   scrolls vertically. First find which ancestor scrolls today (canvas root
+   vs. page vs. panel) before choosing `overflow-y-auto` + height vs.
+   `sticky`.
+2. **Preset blocks open with every group collapsed.** Today the Navigation
+   group opens by default: `EditorShell.tsx:968`,
+   `defaultOpen={group.id === "nav"}`. Remove that so nothing opens at the
+   start. Check whether any e2e helper relies on Navigation starting open
+   (`expandDrawerGroup` already clicks when `aria-expanded` is false).
+3. **Remove the vertical gap between the "Preset blocks" and "Manual blocks"
+   dropdowns.** They are sibling `CollapsibleDrawer`s inside Puck's `<Drawer>`
+   (`EditorShell.tsx:961-991`). Measure where the space comes from (Drawer
+   gap/padding vs. the drawer's own margin) before changing anything.
 
 ## Known app bugs surfaced (not fixed; triage before or alongside the perf wave)
 
