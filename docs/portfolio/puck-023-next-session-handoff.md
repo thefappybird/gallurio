@@ -31,10 +31,25 @@ reference.
 
 ## Browser results at hand-off
 
-Run 3, 2026-09-26, `pnpm dev` + Playwright alone on the box, one spec file
-per invocation (runner: logs each file as it finishes). Nothing was reaped
-this time. Artifacts + traces: `e2e/.artifacts/run3/<spec>/` (gitignored,
-local to this machine).
+**Runs 4–6, 2026-09-26 (current state; supersedes the Run 3 table below).**
+One `--project=setup` login, then every file with `--no-deps` — no rate
+limit. Each failure was diagnosed from trace + code before anything was
+edited. Artifacts: `e2e/.artifacts/run4|run5|run6/<spec>/` (gitignored).
+
+| spec | now | diagnosis | action |
+|---|---|---|---|
+| `puck023-chrome` | pass | — | — |
+| `portfolio-preview-footer-gap` | **pass** | spec drift: read `main.firstElementChild` as the slot; PageBodyBlock renders a `<style>` tag first | selects `:scope > .pf-page-body-slot` |
+| `item4-defaults-prefill` | **pass** (2/2) | spec drift: Puck 0.23 canvas wrappers have no accessible name, so `getByRole('button', {name:'Columns'})` matched nothing | `dispatchEvent("click")` on `[data-puck-component="e2e-columns"]` |
+| `portfolio-page-body-batch` | **pass** | spec drift: `section > div > [role=button]` also matched 8 canvas block roots (Puck 0.23 gives them `role=button`, `cursor: grab`) | excludes `[data-puck-component]`; assertion now names offenders |
+| `block-floated-parity` `:249` footer links | **pass** (all presets, contrast ≥ bar) | spec drift: expected brand *background*; `FOOTER_STATEMENT_PRESET` pins the links to `textColorToken: "foreground"` | expects `--pf-color-fg` |
+| `block-floated-parity` `:131` GalleryGrid padding | **red** | fixture drift: **no seeded template contains a `GalleryGrid`** (Editorial's gallery zone is FeaturedWork) — zone switch works | not fixed. Insert a "Classic grid" preset (`GalleryGridPreset`, drawer group "Gallery grid") with the file's own `dragDrawerItemToCanvas`, or move the placeholder assertion to a unit test |
+| `preset-canvas-parity` `:182` button families | **red** | fixture drift: the spec's premise (soft "Get in Touch" → brand primary on Home; no-`_style` "Send a Message" → brand fg) is gone since `cdb012aa` re-ported the templates. Editorial Home now has soft **"View Gallery"** (`buttonColorToken: "foreground"`) and outline "Send a Message"; "Get in Touch" is outline, lower in the tree | not fixed — rewrite needs a decision on which button families still need live coverage |
+| `portfolio-rtl-scoping` | **red** | fixture drift: clicks a "Glow" featured-work tile — **no "Glow" collection exists in `seed.ts`**, and the "Minimal Template" draft's FeaturedWork tiles are unconfigured ("select a collection") | not fixed — needs the seed to create a collection and a draft whose FeaturedWork points at it |
+| `portfolio-responsive` 375 px | **red — probable app bug** | spec drifts fixed (Welcome dialog used `isVisible({timeout})`; "works best on a larger screen" banner now dismissed via "Continue anyway"). After that, the editor toolbar is in the a11y tree but **the Puck canvas paints over it** — `canvas-controls-trigger` click is intercepted by `Navigation-editorial-home-0`. Screenshot: no toolbar row under the app header | not fixed — probe the toolbar's and canvas's `getBoundingClientRect()` at 375 px first |
+| `portfolio-page-body-child-height` | **red — app bug** | 461 px vs ≤ 414: the known page-body overflow (below) | not fixed |
+
+Run 3 table (history — the traces it points at are superseded):
 
 | spec | result | failure | read |
 |---|---|---|---|
@@ -60,15 +75,24 @@ pnpm exec playwright test --project=setup
 pnpm exec playwright test <spec file> --project=chromium --no-deps --trace retain-on-failure --reporter=list
 ```
 
-**Triage these six before starting the perf wave** — the suite has to be
-able to say whether 2a/10/8 broke something. Rule from this session's
+**Four reds remain (see the Runs 4–6 table); resolve them before the perf
+wave** — the suite has to be able to say whether 2a/10/8 broke something. Rule from this session's
 experience: prove from the trace + code whether each is spec drift or a real
 regression before editing either side; a drifted spec and a real bug fail
 identically.
 
 ## Next session — do these in order
 
-0. **Triage the six red specs above** (and run the three unrun ones with `--no-deps`). Delegate per-spec diagnosis to read-only agents with the trace paths; fix spec or app per the evidence; one consolidated re-run at the end.
+0. **Close the four reds** from the Runs 4–6 table. Diagnosis is done;
+   what's left is:
+   - the 375 px toolbar geometry probe, then the fix (app);
+   - the page-body overflow fix (app);
+   - a seed decision for `rtl-scoping` and `:131` (a collection plus a
+     configured FeaturedWork, and a GalleryGrid somewhere), to ask the owner
+     about;
+   - the `preset-canvas-parity` rewrite (owner decision on button-family
+     coverage).
+   End with one consolidated re-run.
 1. **Capture the two missing "before" rows first** (both have recipes in scope
    doc item 13; neither may be skipped — items 8 and 10 are unfalsifiable
    without them):
@@ -109,6 +133,17 @@ identically.
 - **Crashed public page may stay indexable** (`generateMetadata` resolves
   before the render throws). Documented in item 9; SEO's call.
 - **React "unique key" warnings** on `/w/[orgSlug]` in dev.
+- **375 px editor: the Puck canvas covers the toolbar.** This was found in
+  Run 5/6, after dismissing the "larger screen" banner. The toolbar's buttons
+  exist, but a canvas block intercepts the click, so on a phone the canvas
+  controls (device toggle, language, etc.) are unreachable. Geometry not yet
+  probed.
+- **Seed gaps block two specs:** no gallery collection named in any draft's
+  FeaturedWork, and no GalleryGrid in any seeded template.
+- **Question for the owner:** the FeaturedWork empty-state hint ("Select a
+  collection to feature.") renders in the *portfolio's* language (Arabic in
+  `rtl-scoping`) inside the editor preview, while the CRM locale is `en`. Intended
+  or not is the owner's call (not checked on the published page).
 
 ## Rules this box enforces (learned the hard way — follow them)
 
