@@ -1020,6 +1020,11 @@ Decisions taken while planning:
 
 ## Session 2026-09-25 — what landed, what next
 
+> **Next session: start at `docs/portfolio/puck-023-next-session-handoff.md`.**
+> It carries the Run 3 browser results (2026-09-26: six specs red, three
+> unrun because of a WorkOS login rate limit), which supersede the partial
+> Run 2 table in item 7, plus the ordered task list and this box's rules.
+
 Commits on `update/portfolio-maker-updates`, each gated on `tsc --noEmit`
 (and scoped vitest + eslint by the executor that wrote it):
 
