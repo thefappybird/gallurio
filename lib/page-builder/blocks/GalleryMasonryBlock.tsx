@@ -30,7 +30,7 @@ import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { galleryAltFallback } from "./galleryAlt";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
-import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { LazyGalleryLightboxTrigger } from "./lazy";
 import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -254,7 +254,7 @@ export function GalleryMasonryBlock({
                   breakInside: "avoid",
                 }}
               >
-                <GalleryLightboxTrigger
+                <LazyGalleryLightboxTrigger
                   image={{ id: img.id, publicId: img.publicId, alt: altFallback(img, i) }}
                   images={legacyLightboxImages}
                   index={i}
@@ -294,7 +294,7 @@ export function GalleryMasonryBlock({
                       style={{ width: "100%", display: "block", height: "auto" }}
                     />
                   )}
-                </GalleryLightboxTrigger>
+                </LazyGalleryLightboxTrigger>
               </figure>
             );
             })}

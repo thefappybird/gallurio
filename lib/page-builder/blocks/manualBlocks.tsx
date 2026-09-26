@@ -35,7 +35,7 @@ import {
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "@/lib/page-builder/responsive";
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { getGalleryChromeLabelsFrom, getPreviewNavFrom } from "@/lib/page-builder/blockContext";
-import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { LazyGalleryLightboxTrigger } from "./lazy";
 import type { LightboxLabels } from "./Lightbox";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
@@ -416,7 +416,7 @@ export function ImageBlock({
               photoOf: chromeLabels.lightboxPhotoOf,
             };
             return (
-              <GalleryLightboxTrigger
+              <LazyGalleryLightboxTrigger
                 image={{
                   id: effectiveStyle?.bgImagePublicId ?? "image",
                   publicId: effectiveStyle?.bgImagePublicId ?? "",
@@ -439,7 +439,7 @@ export function ImageBlock({
                 )}
               >
                 {picture}
-              </GalleryLightboxTrigger>
+              </LazyGalleryLightboxTrigger>
             );
           })()}
         </div>

@@ -31,7 +31,7 @@ import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/r
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { galleryAltFallback } from "./galleryAlt";
-import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { LazyGalleryLightboxTrigger } from "./lazy";
 import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -217,7 +217,7 @@ export function GalleryGridBlock({
             if (!src) return null;
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
-                <GalleryLightboxTrigger
+                <LazyGalleryLightboxTrigger
                   image={{ id: img.id, publicId: img.publicId, alt: altFallback(img, i) }}
                   images={legacyLightboxImages}
                   index={i}
@@ -235,7 +235,7 @@ export function GalleryGridBlock({
                     sizes={galleryImageSizes(columns)}
                     style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
                   />
-                </GalleryLightboxTrigger>
+                </LazyGalleryLightboxTrigger>
               </figure>
             );
             })}

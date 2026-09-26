@@ -1,6 +1,6 @@
 import type { ComponentConfig } from "@puckeditor/core";
 import type { BlockPuck } from "../blockContext";
-import { MasonryCloneClient } from "./MasonryCloneClient";
+import { LazyMasonryCloneClient } from "./lazy";
 
 export type MasonryCloneProps = {
   masonryId: string;
@@ -21,7 +21,7 @@ export const masonryCloneDefaultProps: MasonryCloneProps = {
 };
 
 export function MasonryCloneBlock(props: MasonryCloneProps & { id?: string; puck?: BlockPuck }) {
-  return <MasonryCloneClient {...props} />;
+  return <LazyMasonryCloneClient {...props} />;
 }
 
 export const masonryCloneBlockConfig: ComponentConfig<MasonryCloneProps> = {

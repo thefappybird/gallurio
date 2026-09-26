@@ -32,7 +32,7 @@ import {
   type BlockPuck,
   type CollectionPopupLabels,
 } from "@/lib/page-builder/blockContext";
-import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
+import { LazyFeaturedCollectionsClient } from "./lazy";
 import type { FeaturedCollectionRef } from "./FeaturedWorkBlock";
 import { PRESET_MEDIA_STRONG, PresetPhotoTile } from "./PresetMediaPlaceholder";
 
@@ -113,7 +113,7 @@ export function CollectionCardBlock({
       {...resolveBlockAttrs(_style)}
     >
       {hasCollection ? (
-        <FeaturedCollectionsClient
+        <LazyFeaturedCollectionsClient
           tiles={[
             {
               id: collection!.id,

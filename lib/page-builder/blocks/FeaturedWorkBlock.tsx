@@ -25,7 +25,7 @@ import {
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
-import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
+import { LazyFeaturedCollectionsClient } from "./lazy";
 import { GALLERY_PAD_SHORTHAND, padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight, resolveBannerLayers, GalleryBannerLayers } from "./bannerLayers";
@@ -165,7 +165,7 @@ export function FeaturedWorkBlock({
             ))}
           </div>
         ) : (
-          <FeaturedCollectionsClient
+          <LazyFeaturedCollectionsClient
             tiles={tiles}
             columns={columns}
             mode={mode}

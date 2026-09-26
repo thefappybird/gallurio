@@ -18,6 +18,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { Render, type Config, type Data } from "@puckeditor/core";
 import React from "react";
+
+// GalleryGrid/GalleryMasonry/FeaturedWork/CollectionCard/MasonryClone wrap
+// lazy-loaded client islands (item 2b, docs/portfolio/puck-023-followups.md)
+// behind the real (unmocked) next/dynamic. Every assertion below reads either
+// the block's OWN outer element (data-block, _style, inline style — painted
+// synchronously by the isomorphic block itself, not the island) or only
+// checks "doesn't throw", so the island's dynamic()-loading state (which
+// paints nothing until its import() resolves) never affects these — no mock
+// needed. lazy.test.tsx/lazySplit.test.tsx/lazySsr.test.tsx cover the split
+// and its content directly.
 import { puckConfig } from "./config";
 import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 import { MANUAL_BLOCK_KEYS } from "./blockCategories";
