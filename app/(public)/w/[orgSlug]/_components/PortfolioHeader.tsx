@@ -266,7 +266,7 @@ export function PortfolioHeader({
             overflow: "hidden",
           }}
         >
-          {config?.logoUrl && !logo.failed && (
+          {config?.logoUrl && !logo.failed && logo.src && (
             <Image
               src={logo.src}
               alt=""
