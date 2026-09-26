@@ -154,6 +154,17 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
     expect(img.style.height).toBe("");
   });
 
+  it("renders via next/image with a srcset, sizes, and a CF Images src when dimensions are known", () => {
+    const withDims: GalleryImage[] = [{ id: "d1", publicId: "pid-d1", width: 1200, height: 800 }];
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: withDims, _style: { galleryColumns: 3 } })
+    );
+    const img = container.querySelector("figure img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
+  });
+
   it("omits width/height attrs and aspect-ratio for legacy images without dimensions", () => {
     const noDims: GalleryImage[] = [{ id: "d2", publicId: "pid-d2" }];
     const { container } = render(GalleryMasonryBlock({ ...base, images: noDims }));

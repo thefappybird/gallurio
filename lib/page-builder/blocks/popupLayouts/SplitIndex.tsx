@@ -2,8 +2,17 @@
 
 import { useId } from "react";
 import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import Image from "next/image";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
+
+// Rough per-tile height guess (masonry columns balance items dynamically —
+// no fixed row concept) — only used as the virtualizer's estimate.
+const ESTIMATED_ITEM_PX = 260;
+const ITEM_GAP_PX = 8;
+const FALLBACK_ITEM_COUNT = 12;
 
 /**
  * `split-index` — a sticky narrative column (name, description, facts) on the
@@ -28,9 +37,35 @@ export function SplitIndex({
   onLoadMore,
   onOpen,
   labels,
+  scrollContainerRef,
 }: PopupLayoutBodyProps) {
   const scopeId = useId().replace(/:/g, "");
   const countLabel = formatPhotoCount(total, labels);
+
+  const itemVirtualizer = useVirtualizer({
+    count: images.length,
+    getScrollElement: () => scrollContainerRef?.current ?? null,
+    estimateSize: () => ESTIMATED_ITEM_PX + ITEM_GAP_PX,
+    overscan: 6,
+  });
+  const rawVirtualItems = itemVirtualizer.getVirtualItems();
+  // Before the scroll container has a real measured size, fall back to a
+  // small fixed window rather than rendering nothing.
+  const virtualItems =
+    rawVirtualItems.length > 0
+      ? rawVirtualItems
+      : Array.from({ length: Math.min(images.length, FALLBACK_ITEM_COUNT) }, (_, i) => ({
+          index: i,
+          start: i * (ESTIMATED_ITEM_PX + ITEM_GAP_PX),
+          end: (i + 1) * (ESTIMATED_ITEM_PX + ITEM_GAP_PX),
+        }));
+  const totalSize = rawVirtualItems.length > 0 ? itemVirtualizer.getTotalSize() : 0;
+  const firstItem = virtualItems[0];
+  const lastItem = virtualItems[virtualItems.length - 1];
+  const topSpacer = firstItem ? firstItem.start : 0;
+  const bottomSpacer = lastItem ? Math.max(0, totalSize - lastItem.end) : 0;
+  const startIndex = firstItem?.index ?? 0;
+  const endIndex = Math.min(images.length, (lastItem?.index ?? 0) + 1);
 
   return (
     <div className={`pf-split-index-${scopeId}`} style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
@@ -79,7 +114,9 @@ export function SplitIndex({
             padding: 0,
           }}
         >
-          {images.map((img, index) => {
+          {topSpacer > 0 && <li aria-hidden style={{ columnSpan: "all", height: topSpacer }} />}
+          {images.slice(startIndex, endIndex).map((img, i) => {
+            const index = startIndex + i;
             const thumbSrc = imageDeliveryUrl(img.publicId, { width: 600, fit: "scale-down" });
             const aspect =
               img.width && img.height && img.width > 0 && img.height > 0 ? img.width / img.height : 1;
@@ -102,9 +139,13 @@ export function SplitIndex({
                   }}
                 >
                   {thumbSrc ? (
-                    <img
+                    <Image
                       src={thumbSrc}
                       alt={img.alt || labels.photo}
+                      loader={cfImageLoader}
+                      width={img.width ?? 600}
+                      height={img.height ?? Math.round(600 / aspect)}
+                      sizes={`${Math.round(100 / popupColumns)}vw`}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                   ) : (
@@ -114,6 +155,7 @@ export function SplitIndex({
               </li>
             );
           })}
+          {bottomSpacer > 0 && <li aria-hidden style={{ columnSpan: "all", height: bottomSpacer }} />}
         </ul>
 
         {hasMore && !loadMoreError && !isLoadingMore ? (

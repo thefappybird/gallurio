@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import { CollectionPopup } from "./CollectionPopup";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { gridColsVar } from "@/lib/page-builder/responsive";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
+import { galleryImageSizes } from "./gallerySizes";
 
 // ---------------------------------------------------------------------------
 // Types (exported so the parent block can import and adapt to this shape)
@@ -164,13 +167,15 @@ export function FeaturedCollectionsClient({
               // it's crawlable in server HTML. aria-hidden keeps it out of the
               // a11y tree so it isn't announced twice: the wrapping <button>
               // already carries the collection name as its accessible name.
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
+              <Image
                 src={tile.coverUrl}
                 alt={tile.name}
                 aria-hidden="true"
+                loader={cfImageLoader}
                 loading="lazy"
-                decoding="async"
+                width={700}
+                height={900}
+                sizes={columns === 1 ? "100vw" : galleryImageSizes(columns as 2 | 3 | 4)}
                 style={{
                   width: "100%",
                   aspectRatio,

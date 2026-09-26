@@ -13,6 +13,7 @@
  */
 
 import { isValidElement, type ReactNode } from "react";
+import Image from "next/image";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@puckeditor/core";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
@@ -66,6 +67,7 @@ function highlightBandStyle(
   };
 }
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import type { ChromeKind } from "@/lib/page-builder/chromeSync";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -348,6 +350,13 @@ export function ImageBlock({
   const hasImage = Boolean(src);
   const presetPreview = puck?.metadata?.presetPreview === true;
   const isEditing = puck?.isEditing === true;
+  // ImageBlock never knows the picked photo's natural dimensions (no width/
+  // height baked onto ImageBlockBakedMeta) — always fill. `sizes` uses the
+  // block's own explicit pixel width when the Layout tab set one, else a
+  // conservative full-viewport default. The block can't know its page zone
+  // (home vs gallery), so no `priority` — same rule as GalleryGrid/Masonry.
+  const imageSizes =
+    effectiveStyle?.width && /px$/.test(effectiveStyle.width) ? effectiveStyle.width : "100vw";
 
   return (
     <div
@@ -373,17 +382,14 @@ export function ImageBlock({
         >
           {(() => {
             const picture = (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={src as string}
                 alt={alt || meta?.caption || meta?.altText || ""}
+                loader={cfImageLoader}
+                fill
+                sizes={imageSizes}
                 loading="lazy"
-                decoding="async"
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
                   objectFit: effectiveStyle?.imageFit ?? "cover",
                   objectPosition: "center",
                 }}
@@ -985,12 +991,14 @@ export function ColumnsBlock({
       {hasBg && (
         <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
           {layers.length === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={layers[0].src}
               alt=""
               aria-hidden="true"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+              loader={cfImageLoader}
+              fill
+              sizes="100vw"
+              style={{ objectFit: "cover" }}
             />
           )}
           {layers.length >= 2 && (
@@ -1367,12 +1375,14 @@ export function ContainerBlock({
       {hasBg && (
         <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
           {layers.length === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={layers[0].src}
               alt=""
               aria-hidden="true"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+              loader={cfImageLoader}
+              fill
+              sizes="100vw"
+              style={{ objectFit: "cover" }}
             />
           )}
           {layers.length >= 2 && (

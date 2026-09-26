@@ -8,7 +8,10 @@
  */
 
 import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@puckeditor/core";
+import Image from "next/image";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
+import { galleryImageSizes } from "./gallerySizes";
 import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
@@ -259,25 +262,38 @@ export function GalleryMasonryBlock({
                   brandVars={brandVars}
                   layout={imageModalLayout}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt={altFallback(img, i)}
-                    loading="lazy"
-                    decoding="async"
-                    width={img.width}
-                    height={img.height}
-                    style={{
-                      width: "100%",
-                      display: "block",
-                      // When both dimensions are known, reserve vertical space via aspect-ratio
-                      // so the browser doesn't shift content as the image loads (CLS fix).
-                      // When absent (legacy images), fall back to height:auto as before.
-                      ...(img.width != null && img.height != null
-                        ? { aspectRatio: `${img.width} / ${img.height}` }
-                        : { height: "auto" }),
-                    }}
-                  />
+                  {img.width != null && img.height != null ? (
+                    // Known natural dimensions: next/image's width/height reserve the
+                    // exact aspect ratio (CLS fix), same contract as the legacy <img>.
+                    <Image
+                      src={src}
+                      alt={altFallback(img, i)}
+                      loader={cfImageLoader}
+                      loading="lazy"
+                      width={img.width}
+                      height={img.height}
+                      sizes={galleryImageSizes(columns)}
+                      style={{
+                        width: "100%",
+                        display: "block",
+                        aspectRatio: `${img.width} / ${img.height}`,
+                      }}
+                    />
+                  ) : (
+                    // No persisted dimensions (pre-metadata legacy images) — next/image
+                    // requires a known width/height (or `fill`, which needs a sized
+                    // ancestor); this CSS-columns masonry instead derives each tile's
+                    // height from the image's own natural aspect, so it keeps the plain
+                    // <img> here rather than guessing a size that would distort the flow.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={src}
+                      alt={altFallback(img, i)}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: "100%", display: "block", height: "auto" }}
+                    />
+                  )}
                 </GalleryLightboxTrigger>
               </figure>
             );

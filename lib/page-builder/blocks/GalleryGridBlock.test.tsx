@@ -130,6 +130,17 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(grid.style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(3, 1fr))");
   });
 
+  it("renders via next/image with a srcset, sizes, and a CF Images src (parity loader)", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), _style: { galleryColumns: 3 } })
+    );
+    const el = container.querySelector("img") as HTMLImageElement;
+    expect(el.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("srcset")).toBeTruthy();
+    expect(el.getAttribute("srcset")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
+  });
+
   it("does not import server-only cloudinary (no SDK access in client bundle)", () => {
     // The block must NOT call server-side storage; this test renders
     // without any vi.mock and still produces CF Images URLs.

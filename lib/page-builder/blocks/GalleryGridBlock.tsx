@@ -11,7 +11,10 @@
  */
 
 import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@puckeditor/core";
+import Image from "next/image";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
+import { galleryImageSizes } from "./gallerySizes";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -222,13 +225,14 @@ export function GalleryGridBlock({
                   brandVars={brandVars}
                   layout={imageModalLayout}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={src}
                     alt={altFallback(img, i)}
+                    loader={cfImageLoader}
                     loading="lazy"
-                    width={img.width}
-                    height={img.height}
+                    width={thumbWidth}
+                    height={thumbWidth}
+                    sizes={galleryImageSizes(columns)}
                     style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
                   />
                 </GalleryLightboxTrigger>

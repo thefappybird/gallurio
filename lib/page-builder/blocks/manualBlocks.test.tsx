@@ -330,6 +330,22 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect(img.src).toContain("photo.jpg");
   });
 
+  it("renders via next/image with a srcset and sizes (parity loader)", () => {
+    const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("100vw");
+  });
+
+  it("uses an explicit pixel width as sizes when _style.width is a px length", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg", width: "320px" }} />
+    );
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("sizes")).toBe("320px");
+  });
+
   it("does NOT show the placeholder when a background image is set", () => {
     render(<ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
