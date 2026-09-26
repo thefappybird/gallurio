@@ -959,11 +959,11 @@ smell, not a placeholder.
 | 13 | `/portfolio` with `optimizePackageImports: ["@puckeditor/core"]` | `analyze-summary.mjs` | 1445.6 KB (−0.8 KB vs row 2a; reverted) | n/a |
 | 8 | duplicate `/api/portfolio/gallery` requests | picker script (Minimal Template, Gallery zone: tile 1 → Choose photo → Weddings → back → Editorial → back → Weddings → close → tile 2 → Choose photo → Weddings; `e2e/puck023-perf-probes.spec.ts`) | 4 requests, of which 3 are the same `collections/<weddings>?limit=16` feed — the picker-data list itself was 0 (already cached at editor load) (2026-09-26) | 2 requests (Weddings once, Editorial once), 0 duplicates (2026-09-26, react-query `useInfiniteQuery` keyed by workspace + collection) |
 | 10 | commits / renders of an unedited block | Profiler script | not captured — needs React DevTools; owner asked 2026-09-26 | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 3471 ms / 0.000 / 2127 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 903 ms / 0.000 / 133 ms (2026-09-25) | |
-| 11 | DOM node count, `/w/seed-owner-demo/gallery` (home for reference) | Lighthouse `dom-size-insight` | 421 (home 477) (2026-09-25) | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | 2138 ms / 0.000 / 2947 ms (2026-09-26, after item 3) |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | 711 ms / 0.000 / 253 ms (2026-09-26) |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 3471 ms / 0.000 / 2127 ms (2026-09-25) | 2785 ms / 0.016 / 2730 ms (2026-09-26) — LCP −20 %; the 0.016 CLS is new (next/image sizing on the gallery tiles) and TBT in dev mode is unminified noise on the same box |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 903 ms / 0.000 / 133 ms (2026-09-25) | 884 ms / 0.000 / 238 ms (2026-09-26) |
+| 11 | DOM node count, `/w/seed-owner-demo/gallery` (home for reference) | Lighthouse `dom-size-insight` | 421 (home 477) (2026-09-25) | 229 (home 285) (2026-09-26) |
 
 ---
 

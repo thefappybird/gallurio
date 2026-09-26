@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { openEditorWithDraft } from "./helpers";
+import { E2E_FIXTURE_DRAFT_NAME } from "@/lib/db/seedE2eDraft";
 import en from "../messages/en.json";
 import fil from "../messages/fil.json";
 import id from "../messages/id.json";
@@ -30,7 +32,7 @@ const BREAKPOINTS = [375, 768, 1280] as const;
 const SCHEMES = ["light", "dark"] as const;
 const LOCALES = { en, fil, id, ar, th } as const;
 
-type Catalog = { publicPage: { nav: { home: string; gallery: string } } };
+type Catalog = { publicPage: { nav: { home: string; gallery: string; openMenu: string } } };
 
 function record(name: string, data: unknown) {
   mkdirSync(ARTIFACT_DIR, { recursive: true });
@@ -136,30 +138,54 @@ test("preview route: 5 formLocales render their own chrome at 375, ar popup is R
   for (const [locale, catalog] of Object.entries(LOCALES) as Array<[string, Catalog]>) {
     await page.goto(`/en/portfolio-preview?zone=home&formLocale=${locale}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
+    // At 375 the nav links sit behind the menu button: assert the button's
+    // localized label first, open it, then the localized "home" link.
     const navHome = catalog.publicPage.nav.home;
-    await expect(page.getByText(navHome, { exact: true }).first(), `${locale}: nav "home" string renders`).toBeVisible({ timeout: 15_000 });
+    const menuButton = page.getByRole("button", { name: catalog.publicPage.nav.openMenu }).first();
+    await expect(menuButton, `${locale}: nav menu button carries the localized label`).toBeVisible({ timeout: 15_000 });
+    await menuButton.click();
+    // The desktop link stays in the DOM (display:none) next to the menu's copy.
+    await expect(
+      page.getByText(navHome, { exact: true }).and(page.locator(":visible")).first(),
+      `${locale}: nav "home" string renders`,
+    ).toBeVisible({ timeout: 15_000 });
     const m = await pageMetrics(page);
     out[locale] = { navHome, overflow: m.scrollWidth - m.clientWidth, nodeCount: m.nodeCount };
     expect(m.scrollWidth, `${locale}: no horizontal overflow at 375`).toBeLessThanOrEqual(m.clientWidth + 1);
   }
 
-  // ar: open the seeded featured-work popup from the preview and check its
-  // direction + geometry (the RTL surface is the popup, not the page).
-  await page.goto(`/en/portfolio-preview?zone=gallery&formLocale=ar&formDir=rtl`, { waitUntil: "networkidle" });
-  const tile = page.locator("[data-featured-tile]").first();
-  const hasTile = await tile.waitFor({ state: "visible", timeout: 15_000 }).then(() => true).catch(() => false);
-  if (hasTile) {
-    await tile.click();
-    const shell = page.locator("[data-popup-shell]");
-    await expect(shell).toBeVisible({ timeout: 15_000 });
-    await expect(shell).toHaveAttribute("dir", "rtl");
-    const box = await shell.boundingBox();
-    expect(box, "popup shell has a box").not.toBeNull();
-    expect(box!.x, "popup starts inside the viewport").toBeGreaterThanOrEqual(-1);
-    expect(box!.x + box!.width, "popup ends inside the viewport").toBeLessThanOrEqual(376);
-    out.arPopup = box;
-  } else {
-    out.arPopup = "no featured tile in the published gallery zone — popup geometry not exercised";
-  }
+  // ar: the published gallery zone's FeaturedWork is unconfigured, so the
+  // popup is exercised on the E2E fixture draft (a FeaturedWork bound to the
+  // seeded Weddings collection). The preview route reads the ACTIVE draft
+  // server-side through `draftId`; take that id from the editor's
+  // "Open in new tab" popup URL, then load the fixture in Arabic at 375.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openEditorWithDraft(page, E2E_FIXTURE_DRAFT_NAME);
+  const [popup] = await Promise.all([
+    page.context().waitForEvent("page", { timeout: 15_000 }),
+    page.getByRole("button", { name: "Open in new tab" }).first().click(),
+  ]);
+  const draftId = new URL(popup.url()).searchParams.get("draftId");
+  await popup.close();
+  expect(draftId, "editor exposes the active draft id to the preview").toBeTruthy();
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(
+    `/en/portfolio-preview?zone=home&formLocale=ar&formDir=rtl&draftId=${encodeURIComponent(draftId!)}`,
+    { waitUntil: "networkidle" },
+  );
+  const tile = page.locator("[data-featured-tile]").filter({ hasText: "Weddings" }).first();
+  await expect(tile, "fixture FeaturedWork tile renders in the preview").toBeVisible({ timeout: 20_000 });
+  await tile.click();
+  const shell = page.locator("[data-popup-shell]");
+  await expect(shell).toBeVisible({ timeout: 15_000 });
+  await expect(shell).toHaveAttribute("dir", "rtl");
+  const box = await shell.boundingBox();
+  expect(box, "popup shell has a box").not.toBeNull();
+  expect(box!.x, "popup starts inside the viewport").toBeGreaterThanOrEqual(-1);
+  expect(box!.x + box!.width, "popup ends inside the viewport").toBeLessThanOrEqual(376);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "no horizontal overflow with the ar popup open").toBeLessThanOrEqual(1);
+  out.arPopup = { draftId, box, overflow };
   record("preview-locales", out);
 });
