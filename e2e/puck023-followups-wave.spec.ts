@@ -194,21 +194,29 @@ test("item 2b baseline: transferred JS for portfolio A (editorial) and B (minima
   await page.setViewportSize({ width: 1280, height: 900 });
   mkdirSync(ARTIFACT_DIR, { recursive: true });
 
+  // Home AND gallery: the templates' home zones share the same client
+  // islands, so the per-block split (item 2b) can only show on the gallery
+  // page (Editorial = FeaturedWork chain, Minimal = masonry + lightbox chain).
+  const measureBoth = async () => ({
+    home: await measureFirstLoadJs(browser, "/w/seed-owner-demo"),
+    gallery: await measureFirstLoadJs(browser, "/w/seed-owner-demo/gallery"),
+  });
+
   // A = what is published now (seed: editorial template).
-  const a = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const a = await measureBoth();
 
   // B = publish the Minimal Template draft, measure, then restore A by
   // re-publishing the Editorial Template draft. Sandbox DB; approved.
   await openEditorWithDraft(page, "Minimal Template");
   await publishCurrent(page);
-  const b = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const b = await measureBoth();
   await openEditorWithDraft(page, "Editorial Template");
   await publishCurrent(page);
-  const aAgain = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const aAgain = await measureBoth();
 
   const result = { capturedAt: new Date().toISOString(), mode: "pnpm dev (unminified)", a, b, aRestored: aAgain };
   writeFileSync(`${ARTIFACT_DIR}/item-2b-transfer.json`, JSON.stringify(result, null, 2));
   test.info().annotations.push({ type: "2b", description: JSON.stringify(result) });
-  expect(a.count, "portfolio A loaded JS chunks").toBeGreaterThan(0);
-  expect(b.count, "portfolio B loaded JS chunks").toBeGreaterThan(0);
+  expect(a.home.count, "portfolio A loaded JS chunks").toBeGreaterThan(0);
+  expect(b.home.count, "portfolio B loaded JS chunks").toBeGreaterThan(0);
 });
