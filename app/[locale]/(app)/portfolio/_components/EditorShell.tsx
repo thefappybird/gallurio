@@ -292,6 +292,9 @@ type Props = {
   demoMode?: boolean;
 };
 
+/** Type-only export for EditorShellLoader's dynamic-import wrapper — no runtime change. */
+export type EditorShellProps = Props;
+
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const SCRATCH_TEMPLATE_ID = "scratch";
 // Demo caps — locked copy references "10" and "20" directly; keep in sync.
@@ -2692,6 +2695,42 @@ export function EditorShell({
   // every render. Feeds the wrapper div's inline style below, the cssVars prop
   // threaded into PresetPreviewPanel, and Puck's metadata.workspace.brandVars.
   const { cssVars, className } = useMemo(() => resolveBrandKit(brandKit), [brandKit]);
+  // Puck 0.23 memoizes every block's render (MemoizeComponent, deepEqual on
+  // `puck`), but `metadata` itself is read by that same deepEqual — a fresh
+  // object literal here defeats the memo for every block on every
+  // EditorShell render. Hoisted so the reference is stable across renders
+  // that don't change any of these values.
+  const puckMetadata = useMemo(
+    () => ({
+      workspace: {
+        _id: "",
+        name: workspaceName,
+        slug,
+        editorPreview: true,
+        publicPage: { collectionsPopup },
+        brandVars: cssVars,
+        dir: canvasContactDir,
+        // Without this, getNavChromeLabelsFrom falls back to English — the
+        // public page and the preview route both pass chrome.nav already;
+        // the canvas was the one surface missing it.
+        chrome: {
+          nav: {
+            navLandmark: tNav("navLandmark"),
+            home: tNav("home"),
+            gallery: tNav("gallery"),
+            contact: tNav("contact"),
+            openMenu: tNav("openMenu"),
+            closeMenu: tNav("closeMenu"),
+          },
+          gallery: {
+            featuredEmpty: tPublicChrome("gallery.featuredEmpty"),
+            featuredSelect: tPublicChrome("gallery.featuredSelect"),
+          },
+        },
+      },
+    }),
+    [workspaceName, slug, collectionsPopup, cssVars, canvasContactDir, tNav, tPublicChrome],
+  );
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
   // Use resolveEffectiveFonts so legacy-kit portfolios (only `fontPair` set, no
@@ -3177,34 +3216,7 @@ export function EditorShell({
             plugins={puckPlugins}
             dictionary={puckDictionary}
             headerTitle={headerTitle}
-            metadata={{
-              workspace: {
-                _id: "",
-                name: workspaceName,
-                slug,
-                editorPreview: true,
-                publicPage: { collectionsPopup },
-                brandVars: cssVars,
-                dir: canvasContactDir,
-                // Without this, getNavChromeLabelsFrom falls back to English —
-                // the public page and the preview route both pass chrome.nav
-                // already; the canvas was the one surface missing it.
-                chrome: {
-                  nav: {
-                    navLandmark: tNav("navLandmark"),
-                    home: tNav("home"),
-                    gallery: tNav("gallery"),
-                    contact: tNav("contact"),
-                    openMenu: tNav("openMenu"),
-                    closeMenu: tNav("closeMenu"),
-                  },
-                  gallery: {
-                    featuredEmpty: tPublicChrome("gallery.featuredEmpty"),
-                    featuredSelect: tPublicChrome("gallery.featuredSelect"),
-                  },
-                },
-              },
-            }}
+            metadata={puckMetadata}
             viewports={[
               { width: 1280, label: t("devices.desktop"), icon: "Monitor" },
               { width: 768, label: t("devices.tablet"), icon: "Tablet" },

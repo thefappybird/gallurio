@@ -2178,6 +2178,19 @@ describe("EditorShell", () => {
       expect(heading?.props?.id).toBeTruthy();
     });
 
+    it("keeps the Puck metadata object referentially stable across a re-render that doesn't touch any of its inputs (Task 10 memoization)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const first = __capturedPuckMetadata;
+
+      // Opening the Theme panel re-renders EditorShell without changing any
+      // of metadata's own inputs (workspaceName/slug/collectionsPopup/
+      // cssVars/dir/nav+chrome translators).
+      fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+      const second = __capturedPuckMetadata;
+
+      expect(second).toBe(first);
+    });
+
     it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
