@@ -15,6 +15,7 @@
  */
 import { test, expect } from "@playwright/test";
 import { openEditorWithDraft } from "./helpers";
+import { E2E_FIXTURE_DRAFT_NAME } from "@/lib/db/seedE2eDraft";
 
 const SHELL = "[data-testid='portfolio-editor-shell']";
 const CHEVRON_LEFT_D = "m15 18-6-6 6-6";
@@ -23,7 +24,7 @@ const CHEVRON_RIGHT_D = "m9 18 6-6-6-6";
 test.use({ viewport: { width: 1280, height: 900 } });
 
 test("RTL stays scoped to contact form + featured-work popup/lightbox; general content and canvas stay LTR", async ({ page }) => {
-  await openEditorWithDraft(page, "Minimal Template");
+  await openEditorWithDraft(page, E2E_FIXTURE_DRAFT_NAME);
 
   const shell = page.locator(SHELL);
   await expect(shell).toHaveAttribute("dir", "ltr");
@@ -65,12 +66,12 @@ test("RTL stays scoped to contact form + featured-work popup/lightbox; general c
   const frame = page.frameLocator('iframe[title="Live preview"]');
   await expect(frame.locator("body")).toBeVisible({ timeout: 15_000 });
 
-  // Click the real "Glow" featured-work tile (a seeded 5-photo collection) —
-  // this is the genuine interactive path (unlike the editing canvas, where
-  // Puck's overlay intercepts clicks for block selection), so it opens the
-  // REAL CollectionPopup with its REAL fetch, exactly as on the published
-  // site and previously reported as never flipping (bug 2.2).
-  await frame.getByText("Glow", { exact: true }).click();
+  // Click the real "Weddings" featured-work tile (the fixture's seeded
+  // collection) — this is the genuine interactive path (unlike the editing
+  // canvas, where Puck's overlay intercepts clicks for block selection), so
+  // it opens the REAL CollectionPopup with its REAL fetch, exactly as on the
+  // published site and previously reported as never flipping (bug 2.2).
+  await frame.getByText("Weddings", { exact: true }).click();
   const popupShell = frame.locator("[data-popup-shell]");
   await expect(popupShell).toBeVisible({ timeout: 15_000 });
   await expect(popupShell).toHaveAttribute("dir", "rtl");

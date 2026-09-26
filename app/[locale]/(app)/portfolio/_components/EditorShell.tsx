@@ -87,6 +87,7 @@ import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import { getPageBodyContent, normalizePageBody } from "@/lib/page-builder/pageBody";
 import { normalizePresetLayouts } from "@/lib/page-builder/templates/normalizePresetLayouts";
+import { ensureBlockIds } from "@/lib/page-builder/ensureBlockIds";
 import { applyPageBodyContainerDefaults } from "@/lib/page-builder/pageBodyContainerDefaults";
 import {
   dismissPortfolioGuideAction,
@@ -825,7 +826,9 @@ function prepareForEditorWithMeta(
 ): { data: Data; repaired: boolean } {
   const seeded = ensureNavigation(data, headerFallback, workspaceName);
   const navInjected = seeded !== data;
-  const withBody = normalizePresetLayouts(normalizePageBody(seeded as unknown as Data) as unknown as PuckData);
+  const withBody = ensureBlockIds(
+    normalizePresetLayouts(normalizePageBody(seeded as unknown as Data) as unknown as PuckData),
+  );
   const withDefaults = fillBlockDefaults(withBody as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
@@ -840,7 +843,7 @@ function prepareForEditorWithMeta(
     prepared = next;
   }
   const chromeNormalized = normalizeChrome(prepared);
-  const normalized = normalizePageBody(chromeNormalized);
+  const normalized = ensureBlockIds(normalizePageBody(chromeNormalized));
   const reordered = normalized !== prepared;
   return { data: normalized, repaired: navInjected || rescued || reordered };
 }
@@ -959,36 +962,41 @@ function PresetBlocksDrawer({
 
   return (
     <Drawer>
-      <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
-        <div className="flex flex-col gap-2">
-          {PRESET_GROUPS.map((group) => {
-            const keys = group.keys.filter((key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key));
-            if (keys.length === 0) return null;
-            return (
-              <CollapsibleDrawer key={group.id} title={t(group.labelKey)} defaultOpen={group.id === "nav"}>
-                <div className="flex flex-col gap-1">
-                  {keys.map((key) => (
-                    <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
-                      {drawerItem}
-                    </Drawer.Item>
-                  ))}
-                </div>
-              </CollapsibleDrawer>
-            );
-          })}
-        </div>
-      </CollapsibleDrawer>
-      {!hideManualBlocks && manualKeys.length > 0 && (
-        <CollapsibleDrawer title={t("puckConfig.categories.manual")}>
-          <div className="flex flex-col gap-1">
-            {manualKeys.map((key) => (
-              <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
-                {drawerItem}
-              </Drawer.Item>
-            ))}
+      {/* Puck's <Drawer> root applies `gap` between its direct children — a
+       *  single wrapper keeps Presets + Manual touching as one flex child
+       *  instead of two gapped siblings. */}
+      <div className="flex flex-col">
+        <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
+          <div className="flex flex-col gap-2">
+            {PRESET_GROUPS.map((group) => {
+              const keys = group.keys.filter((key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key));
+              if (keys.length === 0) return null;
+              return (
+                <CollapsibleDrawer key={group.id} title={t(group.labelKey)}>
+                  <div className="flex flex-col gap-1">
+                    {keys.map((key) => (
+                      <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                        {drawerItem}
+                      </Drawer.Item>
+                    ))}
+                  </div>
+                </CollapsibleDrawer>
+              );
+            })}
           </div>
         </CollapsibleDrawer>
-      )}
+        {!hideManualBlocks && manualKeys.length > 0 && (
+          <CollapsibleDrawer title={t("puckConfig.categories.manual")}>
+            <div className="flex flex-col gap-1">
+              {manualKeys.map((key) => (
+                <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                  {drawerItem}
+                </Drawer.Item>
+              ))}
+            </div>
+          </CollapsibleDrawer>
+        )}
+      </div>
     </Drawer>
   );
 }
@@ -1030,6 +1038,10 @@ export function EditorShell({
   const tDemo = useTranslations("app.portfolioMakerDemo");
   const tNav = useTranslations("publicPage.nav");
   const tChrome = useTranslations("puck.chrome");
+  // Editor-facing FeaturedWork canvas hints follow the CRM locale, not the
+  // portfolio's own formLocale (owner decision 2026-09-26) — same rationale
+  // as tNav above.
+  const tPublicChrome = useTranslations("publicPage.chrome");
   // .raw, not t(): Puck's own {placeholder} syntax must pass through untouched,
   // not get parsed as an ICU argument.
   const puckDictionary = useMemo(() => buildPuckDictionary((k) => tChrome.raw(k)), [tChrome]);
@@ -1790,7 +1802,7 @@ export function EditorShell({
       // does. Canvas selection is lost on that remount, same as every other
       // reseed path here.
       const preNormalize = zones[activeZone];
-      const normalizedActive = normalizePageBody(normalizeChrome(preNormalize));
+      const normalizedActive = ensureBlockIds(normalizePageBody(normalizeChrome(preNormalize)));
       const chromeOrderCorrected = normalizedActive !== preNormalize || rescued || pageBodyDefaultsApplied;
       // Only meaningful when normalizeChrome itself is what changed the order —
       // null for a rescued/pageBodyDefaults-only reseed, correctly skipping the nudge.
@@ -3185,6 +3197,10 @@ export function EditorShell({
                     contact: tNav("contact"),
                     openMenu: tNav("openMenu"),
                     closeMenu: tNav("closeMenu"),
+                  },
+                  gallery: {
+                    featuredEmpty: tPublicChrome("gallery.featuredEmpty"),
+                    featuredSelect: tPublicChrome("gallery.featuredSelect"),
                   },
                 },
               },

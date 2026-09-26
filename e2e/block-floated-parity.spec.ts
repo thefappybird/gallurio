@@ -13,6 +13,7 @@
  */
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import { openEditorWithDraft, contrastRatio, readButtonPaint } from "./helpers";
+import { E2E_FIXTURE_DRAFT_NAME } from "@/lib/db/seedE2eDraft";
 
 const DRAFT_NAME = "Editorial Summer Refresh";
 const PRESETS = ["Minimal", "Editorial", "Luxury", "Bold", "Romantic", "Modern"] as const;
@@ -133,7 +134,9 @@ test.describe("Gallery blocks: padding controls float the real render default", 
   }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1280, height: 900 });
-    await openEditorWithDraft(page, DRAFT_NAME);
+    // DRAFT_NAME's Gallery zone has no GalleryGrid — use the fixture draft,
+    // whose Gallery zone is seeded with one (seedE2eDraft.ts contract 6).
+    await openEditorWithDraft(page, E2E_FIXTURE_DRAFT_NAME);
 
     // The zone switcher's "Gallery" also collides with a hidden dnd-kit
     // draggable handle and the canvas's own rendered "Gallery" nav link —

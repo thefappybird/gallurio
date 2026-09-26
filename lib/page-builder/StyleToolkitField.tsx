@@ -772,9 +772,6 @@ const NAV_ITEM_LABELS: Record<NavItemKey, string> = {
  * owner who wants e.g. Contact-Gallery-Home-Logo order for an RTL-language
  * site builds it here by hand.
  */
-// Legacy saved nav orders remain render-compatible; the editor now uses the
-// direction checkbox below rather than exposing this control.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NavOrderControl({
   order,
   onChange,
@@ -877,6 +874,7 @@ export function NavigationContentPanel({
             className="size-4 accent-foreground"
           />
         </label>
+        <NavOrderControl order={config.navOrder} onChange={(next) => set("navOrder", next)} />
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">

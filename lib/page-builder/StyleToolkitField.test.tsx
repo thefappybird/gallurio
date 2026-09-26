@@ -703,6 +703,13 @@ describe("Navigation direction (Navigation Content panel)", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Right-to-left layout" }));
     expect(setProp).toHaveBeenCalledWith("navDirection", "rtl");
   });
+
+  it("reorders per-item nav order with the Move up/down control (default order: logo, home, gallery, contact)", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: "Move Contact up" }));
+    expect(setProp).toHaveBeenCalledWith("navOrder", ["logo", "home", "contact", "gallery"]);
+  });
 });
 
 describe("Navigation Design panel", () => {

@@ -2125,6 +2125,56 @@ describe("EditorShell", () => {
       expect(metadata?.workspace?.chrome?.nav?.home).toBe("TRANSLATED_HOME_LABEL");
     });
 
+    it("threads the CRM-locale FeaturedWork canvas hints into the editor canvas's Puck metadata", async () => {
+      const messages = structuredClone(enMessages);
+      messages.publicPage.chrome.gallery.featuredEmpty = "TRANSLATED_FEATURED_EMPTY";
+      messages.publicPage.chrome.gallery.featuredSelect = "TRANSLATED_FEATURED_SELECT";
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, { messages });
+
+      const metadata = __capturedPuckMetadata as {
+        workspace?: { chrome?: { gallery?: { featuredEmpty?: string; featuredSelect?: string } } };
+      };
+      expect(metadata?.workspace?.chrome?.gallery?.featuredEmpty).toBe("TRANSLATED_FEATURED_EMPTY");
+      expect(metadata?.workspace?.chrome?.gallery?.featuredSelect).toBe("TRANSLATED_FEATURED_SELECT");
+    });
+
+    it("assigns deterministic ids to id-less nested Columns slot children on initial canvas load (React unique-key fix)", async () => {
+      const localDraftWithNestedNoId = {
+        ...LOCAL_DRAFT_V2,
+        data: {
+          ...LOCAL_DRAFT_V2.data,
+          home: {
+            content: [
+              { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+              {
+                type: "Columns",
+                props: {
+                  id: "c-Columns-1",
+                  content: [
+                    {
+                      type: "Container",
+                      props: { id: "c-Container-1", content: [{ type: "Heading", props: { text: "Hi" } }] },
+                    },
+                  ],
+                },
+              },
+            ],
+            root: {},
+          },
+        },
+      };
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, localDraftWithNestedNoId);
+
+      const seed = __capturedPuckSeed as { content: unknown[] };
+      const cols = pageBodyChildrenFromZone(seed).find((b) => b.type === "Columns") as
+        | { props?: { content?: { props?: { content?: { props?: { id?: string } }[] } }[] } }
+        | undefined;
+      const container = cols?.props?.content?.[0];
+      const heading = container?.props?.content?.[0];
+      expect(heading?.props?.id).toBeTruthy();
+    });
+
     it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -3182,7 +3232,10 @@ describe("EditorShell — two-level preset drawer", () => {
       expect(screen.getByRole("button", { name: englishPuckT(group.labelKey) })).toBeInTheDocument();
     }
 
-    // nav is open by default, with its single neutral preset visible immediately.
+    // Every group — nav included — starts collapsed at load; nothing is
+    // visible until its own group is opened.
+    expect(screen.queryByTestId("drawer-item:NavigationPreset")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.nav") }));
     expect(screen.getByTestId("drawer-item:NavigationPreset")).toBeInTheDocument();
     for (const key of ["NavBorderedPreset", "NavUnderlinedPreset", "NavScaledPreset"]) {
       expect(screen.queryByTestId(`drawer-item:${key}`)).not.toBeInTheDocument();
@@ -3200,6 +3253,15 @@ describe("EditorShell — two-level preset drawer", () => {
     expect(screen.queryByTestId("drawer-item:Heading")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
     expect(screen.getByTestId("drawer-item:Heading")).toBeInTheDocument();
+  });
+
+  it("touches the Preset blocks and Manual blocks drawers together as one flex child (no gap between them)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Puck's <Drawer> root applies `gap` between its direct children — the
+    // override must nest both drawers under a single wrapper so the root
+    // has exactly one flex child instead of two gapped siblings.
+    expect(screen.getByTestId("drawer-root").children).toHaveLength(1);
   });
 
   it("keeps the tour anchor on the drawer wrapper", async () => {

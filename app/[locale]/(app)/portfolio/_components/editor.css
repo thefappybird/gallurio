@@ -208,6 +208,16 @@
   --puck-user-right-side-bar-width: clamp(186px, 17cqw, 280px);
 }
 
+/* Our canvas wrapper (`[data-tour-id="canvas"]`) measures 981px tall against
+ * a 900px `.gallurio-editor > div` box (perf-probe run 1,
+ * e2e/.artifacts/perf-probes/scroll-ancestors.json) — Puck's `_PuckLayout_`
+ * inside it is `height: 100dvh`, so that 81px overflow made the outer Puck
+ * root scroll instead of letting its sidebars (already `overflow-y: auto`)
+ * scroll themselves. Fill our own wrapper's box instead. */
+[data-tour-id="canvas"] > div {
+  height: 100%;
+}
+
 /* The editor header gets the width left after the app sidebar, so viewport
  * breakpoints are too optimistic on 1024-1440px devices. The right-side
  * portfolio actions are icon buttons at every width; constrained widths also
