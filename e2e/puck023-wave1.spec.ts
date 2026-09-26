@@ -20,7 +20,9 @@ test.use({ viewport: { width: 1280, height: 900 } });
 test("drawer groups start collapsed and the two drawers touch", async ({ page }) => {
   await openEditorWithDraft(page, "Editorial Template");
 
-  const blocksPanel = page.locator('[data-tour-id="blocks-panel"]');
+  // Puck 0.23 also mounts a hidden fields-panel twin of the blocks panel —
+  // scope to the visible copy only.
+  const blocksPanel = page.locator('[data-tour-id="blocks-panel"]:visible');
   const triggers = blocksPanel.locator('[data-slot="collapsible-trigger"]:visible');
   const count = await triggers.count();
   expect(count).toBeGreaterThan(0);
@@ -31,9 +33,10 @@ test("drawer groups start collapsed and the two drawers touch", async ({ page })
     await expect(trigger, `trigger "${label}" must start collapsed`).toHaveAttribute("aria-expanded", "false");
   }
 
-  // Presets and Manual blocks sit as the panel's two top-level <section>s —
-  // measure the vertical gap between them directly.
-  const sections = blocksPanel.locator("section");
+  // Presets and Manual blocks are the two direct <section> children of our
+  // own wrapper div (data-testid="drawer-root") inside Puck's <Drawer> —
+  // scope there directly rather than to any <section> in the whole panel.
+  const sections = page.locator('[data-testid="drawer-root"]:visible > section');
   const sectionCount = await sections.count();
   expect(sectionCount).toBeGreaterThanOrEqual(2);
   const presetsBox = await sections.first().boundingBox();
@@ -102,6 +105,10 @@ test("375: canvas controls trigger is hittable after dismissing the banner", asy
 
   const trigger = page.locator('[data-testid="canvas-controls-trigger"]');
   await expect(trigger).toBeVisible();
+  // The editor header keeps horizontal overflow scrollable by design at this
+  // width (page.tsx wrapper comment) — the trigger can sit off-screen to the
+  // right until scrolled into view.
+  await trigger.scrollIntoViewIfNeeded();
   const hit = await trigger.evaluate((el) => {
     const box = el.getBoundingClientRect();
     const cx = box.x + box.width / 2;
@@ -136,7 +143,13 @@ test("canvas FeaturedWork hint follows the CRM locale", async ({ page }) => {
   // fixture to observe the hint string rendering live.
   const canvas = page.locator("[data-puck-preview]").first();
   await expect(canvas.getByText(ar.publicPage.chrome.gallery.featuredSelect, { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Content", exact: true })).toBeVisible();
+  // No block is selected after openEditorWithDraft, so the fields panel
+  // shows the Page root (Design/Layout only, no Content tab) — assert the
+  // visible tab's English label stayed English (CRM locale unaffected by
+  // the portfolio's own Arabic formLocale switch).
+  await expect(
+    page.getByRole("button", { name: "Design", exact: true }).and(page.locator(":visible")),
+  ).toBeVisible();
 });
 
 test("published page logs no unique-key warning", async ({ browser }) => {

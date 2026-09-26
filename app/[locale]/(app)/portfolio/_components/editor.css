@@ -213,7 +213,19 @@
  * e2e/.artifacts/perf-probes/scroll-ancestors.json) — Puck's `_PuckLayout_`
  * inside it is `height: 100dvh`, so that 81px overflow made the outer Puck
  * root scroll instead of letting its sidebars (already `overflow-y: auto`)
- * scroll themselves. Fill our own wrapper's box instead. */
+ * scroll themselves. Fill our own wrapper's box instead.
+ *
+ * `[data-tour-id="canvas"] > div { height: 100% }` alone re-probed as a
+ * no-op (Run 2): the wrapper itself had no DEFINITE height — its parent is
+ * `.gallurio-editor > div` (the `_Puck_` root), which is NOT a flex
+ * container, so the wrapper's own `flex-1` (now dropped from its className,
+ * EditorShell.tsx) did nothing and it fell back to content height. Give the
+ * wrapper itself a definite height first — `.gallurio-editor` is already
+ * `height: 100%` chained up to the page wrapper's `h-svh`. */
+[data-tour-id="canvas"] {
+  height: 100%;
+}
+
 [data-tour-id="canvas"] > div {
   height: 100%;
 }

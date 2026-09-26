@@ -965,7 +965,7 @@ function PresetBlocksDrawer({
       {/* Puck's <Drawer> root applies `gap` between its direct children — a
        *  single wrapper keeps Presets + Manual touching as one flex child
        *  instead of two gapped siblings. */}
-      <div className="flex flex-col">
+      <div data-testid="drawer-root" className="flex flex-col">
         <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
           <div className="flex flex-col gap-2">
             {PRESET_GROUPS.map((group) => {
@@ -2784,7 +2784,7 @@ export function EditorShell({
       // Puck context so createUsePuck selectors are available), and
       // EditorCanvasHotkeys (undo/redo + delete key handling, same reason).
       puck: ({ children }: { children: ReactNode }) => (
-        <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
+        <div data-tour-id="canvas" className="flex min-h-0 flex-col">
           {children}
           <RootCanvasStyle />
           <BlockActionsToolbar />

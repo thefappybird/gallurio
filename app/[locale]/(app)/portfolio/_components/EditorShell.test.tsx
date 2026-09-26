@@ -70,7 +70,10 @@ vi.mock("@puckeditor/core", () => ({
   // (not at module scope): vi.mock factories cannot close over top-level
   // variables, since the mock call is hoisted above them.
   Drawer: Object.assign(
-    ({ children }: { children: ReactNode }) => <div data-testid="drawer-root">{children}</div>,
+    // Mocked Drawer boundary — distinct from the real "drawer-root" testid
+    // the component itself puts on its OWN wrapper div (used by e2e), so the
+    // two don't collide when nested inside this mock in tests.
+    ({ children }: { children: ReactNode }) => <div data-testid="drawer-mock-root">{children}</div>,
     {
       Item: ({
         name,
@@ -3261,7 +3264,7 @@ describe("EditorShell — two-level preset drawer", () => {
     // Puck's <Drawer> root applies `gap` between its direct children — the
     // override must nest both drawers under a single wrapper so the root
     // has exactly one flex child instead of two gapped siblings.
-    expect(screen.getByTestId("drawer-root").children).toHaveLength(1);
+    expect(screen.getByTestId("drawer-mock-root").children).toHaveLength(1);
   });
 
   it("keeps the tour anchor on the drawer wrapper", async () => {

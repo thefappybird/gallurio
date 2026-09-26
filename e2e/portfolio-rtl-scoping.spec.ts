@@ -14,6 +14,7 @@
  * until Save).
  */
 import { test, expect } from "@playwright/test";
+import ar from "../messages/ar.json";
 import { openEditorWithDraft } from "./helpers";
 import { E2E_FIXTURE_DRAFT_NAME } from "@/lib/db/seedE2eDraft";
 
@@ -71,7 +72,11 @@ test("RTL stays scoped to contact form + featured-work popup/lightbox; general c
   // canvas, where Puck's overlay intercepts clicks for block selection), so
   // it opens the REAL CollectionPopup with its REAL fetch, exactly as on the
   // published site and previously reported as never flipping (bug 2.2).
-  await frame.getByText("Weddings", { exact: true }).click();
+  // `getByText("Weddings")` is a strict-mode violation — the fixture's
+  // Columns grid also has a "Weddings" gridCard heading — so target the
+  // FeaturedWork tile itself (FeaturedCollectionsClient.tsx sets
+  // data-featured-tile on each tile, aria-label `${name} — ${count}`).
+  await frame.locator("[data-featured-tile]").filter({ hasText: "Weddings" }).first().click();
   const popupShell = frame.locator("[data-popup-shell]");
   await expect(popupShell).toBeVisible({ timeout: 15_000 });
   await expect(popupShell).toHaveAttribute("dir", "rtl");
@@ -80,11 +85,13 @@ test("RTL stays scoped to contact form + featured-work popup/lightbox; general c
   // swapped for RTL (Lightbox previously hardcoded ChevronLeft/Right
   // regardless of direction).
   await frame.locator("[data-popup-thumb]").first().click();
-  // CollectionPopup doesn't pass Lightbox a `labels` prop, so it falls back
-  // to its own English defaults ("Previous image"/"Next image") regardless
-  // of formLocale — a separate, pre-existing gap, not part of this fix.
-  const prevBtn = frame.getByRole("button", { name: "Previous image" });
-  const nextBtn = frame.getByRole("button", { name: "Next image" });
+  // CollectionPopup passes Lightbox its localized labels
+  // (publicPage.collectionPopup.previousPhoto/nextPhoto, CollectionPopup.tsx
+  // `labels`), so under an Arabic formLocale the buttons carry the Arabic
+  // strings — assert on those, read from the catalog.
+  const popupLabels = (ar as { publicPage: { collectionPopup: Record<string, string> } }).publicPage.collectionPopup;
+  const prevBtn = frame.getByRole("button", { name: popupLabels.previousPhoto });
+  const nextBtn = frame.getByRole("button", { name: popupLabels.nextPhoto });
   await expect(prevBtn).toBeVisible({ timeout: 10_000 });
   await expect(prevBtn.locator("path")).toHaveAttribute("d", CHEVRON_RIGHT_D);
   await expect(nextBtn.locator("path")).toHaveAttribute("d", CHEVRON_LEFT_D);
