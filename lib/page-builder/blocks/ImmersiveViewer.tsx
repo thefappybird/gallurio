@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Image from "next/image";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   Loader2Icon,
 } from "lucide-react";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import type { LightboxImage, PhotoMetadataLabels } from "./Lightbox";
 import { DotPagination } from "./imageModal/DotPagination";
 
@@ -98,6 +101,29 @@ export function ImmersiveViewer({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const loadingImage = Boolean(fullSrc) && loadedSrc !== fullSrc;
 
+  // The filmstrip mounts its whole image list up front (item 3,
+  // docs/portfolio/puck-023-followups.md) — window it so a large collection
+  // doesn't paint hundreds of thumbnail requests at once. 62px = 56px thumb +
+  // 6px gap (the original flex `gap`, now baked into each slot's stride).
+  const THUMB_STRIDE = 62;
+  const filmstripRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: images.length,
+    getScrollElement: () => filmstripRef.current,
+    horizontal: true,
+    estimateSize: () => THUMB_STRIDE,
+    overscan: 8,
+  });
+  // Before the scroll element has a real measured size (first paint, or a
+  // container that's momentarily 0×0 e.g. hidden/display:none), the
+  // virtualizer legitimately reports no visible range. Fall back to a small
+  // fixed window rather than rendering nothing.
+  const rawVirtualItems = virtualizer.getVirtualItems();
+  const virtualItems =
+    rawVirtualItems.length > 0
+      ? rawVirtualItems
+      : images.slice(0, 20).map((_, i) => ({ index: i, start: i * THUMB_STRIDE }));
+
   return (
     <div
       data-immersive-viewer=""
@@ -137,8 +163,15 @@ export function ImmersiveViewer({
         {image && fullSrc ? (
           <div data-modal-image-slot="" aria-busy={loadingImage || undefined} style={{ position: "relative", width: "90vw", height: "calc(100vh - 140px)" }}>
             {loadingImage && <div data-modal-image-skeleton="" aria-hidden style={{ position: "absolute", inset: 0, background: "#222", animation: "pf-immersive-pulse 1.1s ease-in-out infinite" }} />}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={fullSrc} alt={image.alt} onLoad={() => setLoadedSrc(fullSrc)} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: loadingImage ? 0 : 1 }} />
+            <Image
+              src={fullSrc}
+              alt={image.alt}
+              loader={cfImageLoader}
+              fill
+              sizes="90vw"
+              onLoad={() => setLoadedSrc(fullSrc)}
+              style={{ objectFit: "contain", opacity: loadingImage ? 0 : 1 }}
+            />
           </div>
         ) : (
           <div style={{ padding: "2rem", textAlign: "center" }}>
@@ -182,70 +215,78 @@ export function ImmersiveViewer({
       ) : null}
 
       <div
+        ref={filmstripRef}
         role="listbox"
         aria-label={filmstripLabel}
         aria-orientation="horizontal"
         data-immersive-filmstrip=""
         style={{
-          display: "flex",
-          gap: "6px",
+          position: "relative",
           overflowX: "auto",
           padding: "10px 12px",
           background: "#000",
           flexShrink: 0,
         }}
       >
-        {images.map((frame, frameIndex) => {
-          const thumbSrc = imageDeliveryUrl(frame.publicId, {
-            width: 160,
-            height: 160,
-            fit: "cover",
-          });
-          const selected = frameIndex === index;
+        <div
+          style={{
+            position: "relative",
+            height: "56px",
+            width: virtualizer.getTotalSize(),
+          }}
+        >
+          {virtualItems.map((virtualItem) => {
+            const frame = images[virtualItem.index];
+            const thumbSrc = imageDeliveryUrl(frame.publicId, {
+              width: 160,
+              height: 160,
+              fit: "cover",
+            });
+            const selected = virtualItem.index === index;
 
-          return (
-            <button
-              key={frame.id}
-              type="button"
-              role="option"
-              aria-selected={selected}
-              aria-label={frame.alt || imageFallbackLabel}
-              tabIndex={selected ? 0 : -1}
-              data-immersive-thumb=""
-              onClick={() => onSelect(frameIndex)}
-              style={{
-                flexShrink: 0,
-                width: "56px",
-                height: "56px",
-                padding: 0,
-                border: "none",
-                outline: selected ? "2px solid #fff" : "2px solid transparent",
-                outlineOffset: "-2px",
-                background: "transparent",
-                cursor: "pointer",
-                overflow: "hidden",
-                opacity: selected ? 1 : 0.6,
-              }}
-            >
-              {thumbSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={thumbSrc}
-                  alt=""
-                  aria-hidden="true"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <div style={{ width: "100%", height: "100%", background: "#333" }} />
-              )}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={frame.id}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                aria-label={frame.alt || imageFallbackLabel}
+                tabIndex={selected ? 0 : -1}
+                data-immersive-thumb=""
+                onClick={() => onSelect(virtualItem.index)}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  insetInlineStart: virtualItem.start,
+                  width: "56px",
+                  height: "56px",
+                  padding: 0,
+                  border: "none",
+                  outline: selected ? "2px solid #fff" : "2px solid transparent",
+                  outlineOffset: "-2px",
+                  background: "transparent",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  opacity: selected ? 1 : 0.6,
+                }}
+              >
+                {thumbSrc ? (
+                  <Image
+                    src={thumbSrc}
+                    alt=""
+                    aria-hidden="true"
+                    loader={cfImageLoader}
+                    fill
+                    sizes="56px"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", background: "#333" }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

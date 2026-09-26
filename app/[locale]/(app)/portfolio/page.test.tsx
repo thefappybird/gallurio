@@ -55,20 +55,20 @@ type MockEditorShellProps = {
   initialActiveDraftName?: string;
 };
 
-vi.mock("./_components/EditorShell", () => ({
-  EditorShell: ({
-    initialData,
-    initialBrandKit,
-    initialContact,
-    initialFormLocale,
-    currentTemplateId,
-    initialSeoDescription,
-    initialSeoKeywords,
-    initialInquiryRecipientEmail,
-    hasBeenPublished,
-    initialActiveDraftId,
-    initialActiveDraftName,
-  }: MockEditorShellProps) => (
+function MockEditorShell({
+  initialData,
+  initialBrandKit,
+  initialContact,
+  initialFormLocale,
+  currentTemplateId,
+  initialSeoDescription,
+  initialSeoKeywords,
+  initialInquiryRecipientEmail,
+  hasBeenPublished,
+  initialActiveDraftId,
+  initialActiveDraftName,
+}: MockEditorShellProps) {
+  return (
     <div>
       <div data-testid="initial-data">{JSON.stringify(initialData)}</div>
       <div data-testid="initial-brand-kit">{JSON.stringify(initialBrandKit)}</div>
@@ -82,7 +82,17 @@ vi.mock("./_components/EditorShell", () => ({
       <div data-testid="active-draft-id">{initialActiveDraftId ?? ""}</div>
       <div data-testid="active-draft-name">{initialActiveDraftName ?? ""}</div>
     </div>
-  ),
+  );
+}
+
+vi.mock("./_components/EditorShell", () => ({
+  EditorShell: MockEditorShell,
+}));
+
+// page.tsx now renders EditorShellLoader (client-only dynamic() wrapper around
+// EditorShell, item 2a) instead of EditorShell directly — mock it the same way.
+vi.mock("./_components/EditorShellLoader", () => ({
+  EditorShellLoader: MockEditorShell,
 }));
 
 import PageBuilderEntry from "./page";

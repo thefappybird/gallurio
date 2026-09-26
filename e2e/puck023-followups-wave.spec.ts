@@ -1,8 +1,8 @@
-import { test, expect, type Browser } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import en from "../messages/en.json";
 import ar from "../messages/ar.json";
-import { openEditorWithDraft, publishCurrent } from "./helpers";
+import { measureFirstLoadJs, openEditorWithDraft, publishCurrent } from "./helpers";
 
 /**
  * Batched browser checks for the Puck 0.23 follow-ups wave (see
@@ -186,35 +186,6 @@ test("item 1: Puck's own chrome renders in Arabic on /ar/portfolio", async ({ pa
   await page.screenshot({ path: `${ARTIFACT_DIR}/ar-editor-1280.png`, fullPage: false });
 });
 
-// A fresh, cache-less context per measurement: a second load in the same
-// context is served from the memory cache and reports 0 body bytes.
-async function measureFirstLoadJs(browser: Browser, url: string) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  let bytes = 0;
-  let count = 0;
-  const pending: Promise<void>[] = [];
-  page.on("response", (res) => {
-    const u = res.url();
-    if (!/\/_next\/static\/.*\.js(\?|$)/.test(u)) return;
-    pending.push(
-      res
-        .request()
-        .sizes()
-        .then((sizes) => {
-          bytes += sizes.responseBodySize;
-          count += 1;
-        })
-        .catch(() => {}),
-    );
-  });
-  await page.goto(url, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
-  await Promise.all(pending);
-  await context.close();
-  return { url, count, bytes };
-}
-
 test("item 2b baseline: transferred JS for portfolio A (editorial) and B (minimal)", async ({ page, browser }) => {
   // Re-publishes the seeded workspace twice; opt in explicitly so routine runs
   // never touch the published page: MEASURE_2B=1 pnpm exec playwright test ...
@@ -223,21 +194,29 @@ test("item 2b baseline: transferred JS for portfolio A (editorial) and B (minima
   await page.setViewportSize({ width: 1280, height: 900 });
   mkdirSync(ARTIFACT_DIR, { recursive: true });
 
+  // Home AND gallery: the templates' home zones share the same client
+  // islands, so the per-block split (item 2b) can only show on the gallery
+  // page (Editorial = FeaturedWork chain, Minimal = masonry + lightbox chain).
+  const measureBoth = async () => ({
+    home: await measureFirstLoadJs(browser, "/w/seed-owner-demo"),
+    gallery: await measureFirstLoadJs(browser, "/w/seed-owner-demo/gallery"),
+  });
+
   // A = what is published now (seed: editorial template).
-  const a = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const a = await measureBoth();
 
   // B = publish the Minimal Template draft, measure, then restore A by
   // re-publishing the Editorial Template draft. Sandbox DB; approved.
   await openEditorWithDraft(page, "Minimal Template");
   await publishCurrent(page);
-  const b = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const b = await measureBoth();
   await openEditorWithDraft(page, "Editorial Template");
   await publishCurrent(page);
-  const aAgain = await measureFirstLoadJs(browser, "/w/seed-owner-demo");
+  const aAgain = await measureBoth();
 
   const result = { capturedAt: new Date().toISOString(), mode: "pnpm dev (unminified)", a, b, aRestored: aAgain };
   writeFileSync(`${ARTIFACT_DIR}/item-2b-transfer.json`, JSON.stringify(result, null, 2));
   test.info().annotations.push({ type: "2b", description: JSON.stringify(result) });
-  expect(a.count, "portfolio A loaded JS chunks").toBeGreaterThan(0);
-  expect(b.count, "portfolio B loaded JS chunks").toBeGreaterThan(0);
+  expect(a.home.count, "portfolio A loaded JS chunks").toBeGreaterThan(0);
+  expect(b.home.count, "portfolio B loaded JS chunks").toBeGreaterThan(0);
 });

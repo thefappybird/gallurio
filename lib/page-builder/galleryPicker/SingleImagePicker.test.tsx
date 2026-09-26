@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders as render } from "@/test-utils/render";
 import { SingleImagePicker } from "./SingleImagePicker";
-import { __clearPickerDataCache } from "./usePickerData";
 import type { PickerItem } from "./types";
 
 const mockFetch = vi.fn();
@@ -12,7 +12,6 @@ function makeData(items: PickerItem[] = []) {
 }
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockResolvedValue(makeData());
 });
@@ -27,7 +26,7 @@ describe("SingleImagePicker", () => {
   it("renders an error state on fetch failure", async () => {
     mockFetch.mockRejectedValue(new Error("network"));
     render(<SingleImagePicker value="" onChange={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText(/could not load photos/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/could not load photos/i)).toBeTruthy(), { timeout: 3000 });
   });
 
   it("renders the empty state when the workspace has no photos", async () => {

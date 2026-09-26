@@ -91,6 +91,40 @@ describe("PuckUiPersistence — restore on mount", () => {
       expect(call[0]?.ui?.itemSelector).toBeUndefined();
     }
   });
+
+  it("skips restoring sidebar visibility below Puck's own 638px breakpoint (Puck already forced both sidebars closed on mount)", async () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
+    const pendingUiRef = {
+      current: { leftSideBarVisible: true, rightSideBarVisible: true, componentList: { manual: { expanded: false } } } as PersistedPuckUi | null,
+    };
+    const { dispatch } = mountStore();
+
+    await act(async () => {
+      render(<PuckUiPersistence pendingUiRef={pendingUiRef} />);
+    });
+
+    const ui = dispatch.mock.calls[0][0].ui;
+    expect(ui).not.toHaveProperty("leftSideBarVisible");
+    expect(ui).not.toHaveProperty("rightSideBarVisible");
+    expect(ui.componentList).toEqual({ manual: { expanded: false } });
+    vi.unstubAllGlobals();
+  });
+
+  it("restores sidebar visibility at/above Puck's own 638px breakpoint", async () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    const pendingUiRef = { current: { leftSideBarVisible: false, rightSideBarVisible: false } as PersistedPuckUi | null };
+    const { dispatch } = mountStore();
+
+    await act(async () => {
+      render(<PuckUiPersistence pendingUiRef={pendingUiRef} />);
+    });
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "setUi",
+      ui: expect.objectContaining({ leftSideBarVisible: false, rightSideBarVisible: false }),
+    });
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("PuckUiPersistence — continuous capture", () => {

@@ -2,6 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
+
+// ImageBlock wraps its clickable tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// THIS module (manualBlocks.tsx), which imports THIS SAME "./lazy"
+// specifier, deadlocking the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import {
   HeadingBlock,
   TextBlock,
@@ -328,6 +340,22 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     const img = container.querySelector("img") as HTMLImageElement;
     expect(img).not.toBeNull();
     expect(img.src).toContain("photo.jpg");
+  });
+
+  it("renders via next/image with a srcset and sizes (parity loader)", () => {
+    const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("100vw");
+  });
+
+  it("uses an explicit pixel width as sizes when _style.width is a px length", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg", width: "320px" }} />
+    );
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("sizes")).toBe("320px");
   });
 
   it("does NOT show the placeholder when a background image is set", () => {

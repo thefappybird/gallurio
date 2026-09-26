@@ -7,6 +7,19 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// FeaturedWorkBlock renders its tiles through the lazy-loaded
+// FeaturedCollectionsClient island (item 2b) — bypass to the real component so
+// synchronous render()/container assertions below see the real DOM. Imported
+// directly (not via the shared test-utils/mockLazyBlocks helper) — that
+// helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { FeaturedCollectionsClient } = await import("./FeaturedCollectionsClient");
+  return { LazyFeaturedCollectionsClient: FeaturedCollectionsClient };
+});
+
 import { puckConfig } from "@/lib/page-builder/config";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
 import type { GalleryImage } from "./GalleryGridBlock";

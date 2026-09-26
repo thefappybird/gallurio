@@ -18,12 +18,12 @@
 import type { PuckData, PuckBlockEntry } from "@/lib/page-builder/types";
 
 /** Props keys holding image records, never nested blocks — never recurse into these. */
-const NON_BLOCK_ARRAY_PROPS = new Set(["images", "backgroundImages"]);
+export const NON_BLOCK_ARRAY_PROPS = new Set(["images", "backgroundImages"]);
 
 /** Recursion depth cap while walking untrusted persisted Puck JSON. */
-const MAX_WALK_DEPTH = 10;
+export const MAX_WALK_DEPTH = 10;
 
-function isBlockEntry(value: unknown): value is PuckBlockEntry {
+export function isBlockEntry(value: unknown): value is PuckBlockEntry {
   if (!value || typeof value !== "object") return false;
   const v = value as { type?: unknown; props?: unknown };
   return typeof v.type === "string" && !!v.props && typeof v.props === "object" && !Array.isArray(v.props);

@@ -542,6 +542,11 @@ Diagnosed, deliberately not "fixed" in the spec:
   control exists. The spec describes a feature that is not there. Product
   decision needed: restore/implement per-item nav reordering, or delete the
   spec. Not an e2e fix.
+  **Corrected 2026-09-26:** the control did exist — `NavOrderControl` in
+  `StyleToolkitField.tsx`, defined but unmounted since the direction checkbox
+  replaced it, with `navOrder` still typed, validated and rendered by
+  `PortfolioHeader`. It is mounted again under the checkbox; the spec is
+  restored from `770ee07c^` (scoped to the visible fields panel) and passes.
 - `portfolio-page-body-child-height.spec.ts:92` — **corrected 2026-09-26:
   spec bug, not an app bug.** The dropped preset is `overallWidth: "full"` by
   design, and `PageBodyBlock` deliberately bleeds full-width sections across
@@ -782,6 +787,10 @@ run, not a run of its own.
   a normal published page) with the boundary's body. `error.tsx` cannot export
   metadata. Leaving it: a boundary render is transient, and forcing `noindex`
   would mean moving the decision into `generateMetadata` on speculation.
+  **Closed (2026-09-26):** `error.tsx` now renders `<meta name="robots"
+  content="noindex" />` directly in its JSX; React 19 hoists `<title>`/`<meta>`/
+  `<link>` from anywhere in the tree into `<head>`, so `generateMetadata`
+  stays untouched and the crashed body still ships noindex.
 - Actions: 11 in `_actions.ts` and 5 in `_draftActions.ts` wrapped with the
   `<action>_failed` key convention and a `[portfolio-actions]` /
   `[portfolio-draft-actions]` log prefix; `listDraftsAction` returns `[]` on
@@ -944,20 +953,22 @@ smell, not a placeholder.
 
 | item | metric | page / script | before | after |
 |---|---|---|---|---|
-| 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | |
-| 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | |
-| 2b | route client JS (gzip), `/w/[orgSlug]` — shared ceiling | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
-| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio A = seeded editorial) | Playwright network sum, fresh context, `pnpm dev` (unminified) | 1,591,671 B / 40 chunks (2026-09-25) | |
-| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio B = "Minimal Template" published, then A restored) | same | 1,591,671 B / 40 chunks — **identical to A** (2026-09-25) | |
-| 2b | route client JS (gzip), `/w/[orgSlug]/gallery` | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
+| 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | 1469.3 KB / 57 chunks (2026-09-26, after 2a + 10 + 8; the +23 KB is `@tanstack/react-query`) |
+| 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | 889.2 KB / 43 chunks (2026-09-26; `ensureBlockIds` + shared chunk drift) |
+| 2a | transferred JS on first load, `/portfolio`, measured to `networkidle` | Playwright network sum, fresh authed context, `pnpm dev` (`e2e/puck023-perf-probes.spec.ts`) | 2,439,875 B / 64 chunks (2026-09-26) | 2,482,899 B / 69 chunks (2026-09-26) — **did not improve**: the `dynamic()` chunk is requested as soon as the shell hydrates, so by `networkidle` the same bytes have arrived (+ react-query). The split moves Puck out of the shell's SSR/hydration path; it does not remove bytes from the editor's load. |
+| 2a | transferred JS on first load, `/portfolio-preview?zone=home` | same | 1,700,917 B / 42 chunks (2026-09-26) | 1,701,820 B / 42 chunks (2026-09-26; nothing to split — the client `Render` is the page) |
+| 2b | route client JS (gzip), `/w/[orgSlug]` — shared ceiling | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | 836.8 KB / 46 chunks (2026-09-26; ceiling counts the lazy island chunks + `@tanstack/react-virtual`) |
+| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio A = seeded editorial) | Playwright network sum, fresh context, `pnpm dev` (unminified) | 1,591,671 B / 40 chunks (2026-09-25) | home 1,626,646 B / 41 · gallery 1,626,646 B / 41 (2026-09-26) |
+| 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio B = "Minimal Template" published, then A restored) | same | 1,591,671 B / 40 chunks — **identical to A** (2026-09-25) | home 1,626,646 B / 41 (= A: both home zones use the featured-collections chain) · gallery **1,627,346 B / 43** (≠ A: masonry + lightbox-trigger chain). The delta is small because both chains share Lightbox → imageModal → ImmersiveViewer and every seeded template uses one chain on every page; a page with no gallery/featured block would drop the whole chain. Next lever, not taken: split the four `imageModal` and four `popupLayouts` variants per configured layout. |
+| 2b | route client JS (gzip), `/w/[orgSlug]/gallery` | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | 836.8 KB / 46 chunks (2026-09-26) |
 | 13 | `/portfolio` with `optimizePackageImports: ["@puckeditor/core"]` | `analyze-summary.mjs` | 1445.6 KB (−0.8 KB vs row 2a; reverted) | n/a |
-| 8 | duplicate `/api/portfolio/gallery` requests | picker script | | |
-| 10 | commits / renders of an unedited block | Profiler script | | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 3471 ms / 0.000 / 2127 ms (2026-09-25) | |
-| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 903 ms / 0.000 / 133 ms (2026-09-25) | |
-| 11 | DOM node count, `/w/seed-owner-demo/gallery` (home for reference) | Lighthouse `dom-size-insight` | 421 (home 477) (2026-09-25) | |
+| 8 | duplicate `/api/portfolio/gallery` requests | picker script (Minimal Template, Gallery zone: tile 1 → Choose photo → Weddings → back → Editorial → back → Weddings → close → tile 2 → Choose photo → Weddings; `e2e/puck023-perf-probes.spec.ts`) | 4 requests, of which 3 are the same `collections/<weddings>?limit=16` feed — the picker-data list itself was 0 (already cached at editor load) (2026-09-26) | 2 requests (Weddings once, Editorial once), 0 duplicates (2026-09-26, react-query `useInfiniteQuery` keyed by workspace + collection) |
+| 10 | commits / renders of an unedited block | Profiler script | not captured — needs React DevTools; owner asked 2026-09-26 | |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | 2138 ms / 0.000 / 2947 ms (2026-09-26, after item 3) |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | 711 ms / 0.000 / 253 ms (2026-09-26) |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 3471 ms / 0.000 / 2127 ms (2026-09-25) | 2785 ms / 0.016 / 2730 ms (2026-09-26) — LCP −20 %; the 0.016 CLS is new (next/image sizing on the gallery tiles) and TBT in dev mode is unminified noise on the same box |
+| 11 | LCP / CLS / TBT, `/w/seed-owner-demo/gallery`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 903 ms / 0.000 / 133 ms (2026-09-25) | 884 ms / 0.000 / 238 ms (2026-09-26) |
+| 11 | DOM node count, `/w/seed-owner-demo/gallery` (home for reference) | Lighthouse `dom-size-insight` | 421 (home 477) (2026-09-25) | 229 (home 285) (2026-09-26) |
 
 ---
 
@@ -1022,10 +1033,9 @@ Decisions taken while planning:
 
 ## Session 2026-09-25 — what landed, what next
 
-> **Next session: start at `docs/portfolio/puck-023-next-session-handoff.md`.**
-> It carries the Run 3 browser results (2026-09-26: six specs red, three
-> unrun because of a WorkOS login rate limit), which supersede the partial
-> Run 2 table in item 7, plus the ordered task list and this box's rules.
+> The next-session handoff that used to sit beside this doc was consolidated
+> into "Session 2026-09-26 — perf wave" below and deleted; every red it
+> listed is closed there.
 
 Commits on `update/portfolio-maker-updates`, each gated on `tsc --noEmit`
 (and scoped vitest + eslint by the executor that wrote it):
@@ -1072,11 +1082,75 @@ DevTools). Fill both *before* items 8 and 10 change anything.
 5. **3 / 11** — images + `next/image` Cloudflare loader; Lighthouse after.
 6. **2b** — per-block splitting; today A and B download byte-identical JS
    (1,591,671 B / 40 chunks), which is the number to beat.
-7. App bugs surfaced by triage, not fixed here (current list:
-   `puck-023-next-session-handoff.md`): per-item
-   nav reordering does not exist (spec deleted — decide whether to build it);
-   the public page logs React "unique key" warnings on `/w/[orgSlug]` in dev.
+7. App bugs surfaced by triage, not fixed here: per-item nav reordering
+   (spec deleted — decide whether to build it); the public page logs React
+   "unique key" warnings on `/w/[orgSlug]` in dev. (Both closed 2026-09-26,
+   see the next section.)
 8. Re-validate the Playwright drag recipe against dnd-kit 0.4 so anchor
    drops can be asserted, not eyeballed.
 9. Item 9's noindex caveat on a crashed public page (see item 9) if SEO wants
    it closed.
+
+## Session 2026-09-26 — perf wave (branch `feat/portfolio-maker-perf`)
+
+One PR, cut from `dev` after #108. Order followed: install → Run 1 probes and
+the missing baseline rows → the three reds + owner-requested editor UI +
+FeaturedWork hint locale + the three triaged app bugs → 2a → 10 → 8 → 3/11 →
+2b → docs. Every commit gated on scoped vitest + eslint by its executor and
+`tsc --noEmit` by the orchestrator; five browser runs in total.
+
+| commit | item | outcome |
+|---|---|---|
+| `e10a9c68` | 13 | `e2e/puck023-perf-probes.spec.ts`: first-load JS rows, row 8, 375/scroll/console probes; `measureFirstLoadJs` shared in `e2e/helpers.ts` |
+| `b5480814` | 7, 9 | E2E fixture draft gets a Weddings-bound FeaturedWork + a GalleryGrid; preview route resolves the FeaturedWork hints with the CRM locale; `ensureBlockIds` (public, preview, publish) closes the unique-key warnings; public error boundary renders `robots: noindex` |
+| `9c1e4e4a`, `14d19eae`, `572321e7` | 7, 14 | Puck layout fills the editor box (sidebars are the only vertical scrollers); preset groups start collapsed; Presets/Manual drawers flush; `PuckUiPersistence` no longer restores desktop sidebars below 638 px (the 375 px canvas-over-toolbar bug); `NavOrderControl` re-mounted; canvas passes the hint labels in the CRM locale; specs re-pointed; `e2e/puck023-wave1.spec.ts` |
+| `db2eeadf`, `1d30a3c6` | 2a, 10 | `EditorShellLoader` (`dynamic`, `ssr:false`) mounts the editor; Puck `metadata` hoisted into `useMemo` |
+| `585edaf2` | 8 | `@tanstack/react-query` at the editor boundary (`GalleryQueryProvider`, keys under `["gallery", workspaceId, …]`); hand-rolled caches deleted |
+| `866314fe`, `711f4e3b` | 3 | `cfImageLoader` + `next/image` on every public/parity image surface; immersive filmstrip and the three popup layouts windowed with `@tanstack/react-virtual`; `e2e/puck023-wave4-public.spec.ts` |
+| `f11e615b` | 2b | `blocks/lazy.ts`: the lightbox-trigger, featured-collections and masonry-clone islands behind `next/dynamic` (SSR kept) at their import sites, so both `Render` consumers split identically |
+
+**Findings that corrected this doc (verified in code, recorded where the item lives):**
+
+- Item 10: Puck 0.23 already wraps every canvas block in `MemoizeComponent`
+  (`memo` with `shallowEqual` on props and `deepEqual` on `puck`), so `memo()`
+  on our renderers is redundant. The `puck` prop is not referentially stable
+  (its `metadata` came from an inline literal) but the comparator absorbs
+  that; the real cost was the inline `metadata` object, now memoized.
+- Item 8: `usePickerData` already deduped its list fetch; the measured
+  duplicate was the collection *feed* (fetched 3× over the recipe) — that is
+  what react-query removed. `CollectionPopup` stays on `fetch` because it
+  renders on the public page, which mounts no provider.
+- Item 7: "per-item nav reordering does not exist" was wrong —
+  `NavOrderControl` existed unmounted in `StyleToolkitField.tsx` behind the
+  direction checkbox; the deleted spec is restored and passes.
+- Item 2a: the analyzer rows are a ceiling (lazy chunks included) and the
+  first-load bytes to `networkidle` do not drop either — the split moves Puck
+  out of the shell's SSR/hydration path, it does not remove bytes.
+- Item 2b: both client chains share Lightbox → imageModal → ImmersiveViewer
+  and every starter template uses one chain on every page, so the runtime
+  delta between A and B is bounded to the chain-specific code (table).
+- The 375 px toolbar bug was our own `PuckUiPersistence` re-opening the
+  sidebars after Puck's mobile reset (Puck collapses the header row to 0 while
+  a sidebar is visible below 638 px); the "page scrolls" complaint was the
+  Puck layout being `100dvh` inside a non-flex root without a definite height.
+- Unique-key warnings came from Puck's RSC slot renderer keying children by
+  `props.id`, which template-authored nested children never had.
+
+**Browser runs (all green at close):** Run 1 probes (records only); Run 2 —
+`puck023-wave1` 5/5, `portfolio-nav-order` 1/1, `portfolio-rtl-scoping` 1/1,
+`block-floated-parity` 4/4, `portfolio-responsive` 3/3; Run 3 — wave spec 4/4,
+probes after-rows; Run 4 — `puck023-wave4-public` 7/7 (3 breakpoints × light/
+dark on home + gallery, 5 formLocales at 375, `ar` popup RTL in-bounds) +
+Lighthouse recipe; Run 5 — 2b A/B rows + the public sweep again 7/7.
+
+**Owner-decided scope notes:** hints follow the CRM locale in editor + preview
+only (published page unchanged); the three triaged app bugs were all taken;
+starter templates were checked for impact on every change — none needed a
+template or normalizer edit beyond `ensureBlockIds` (which the normalizer
+chain applies to them at load time).
+
+**Still open:** row 10 (React Profiler, needs DevTools — not captured);
+the per-layout split of `imageModal`/`popupLayouts` (2b's next lever);
+re-validating the Playwright drag recipe against dnd-kit 0.4; a `CLS` of
+0.016 appeared on the mobile gallery after `next/image` (tile sizing) and
+should be looked at with real image dimensions on the seeded items.

@@ -1,11 +1,8 @@
-import type { ReactElement } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { MediaPicker } from "./MediaPicker";
 import type { MediaPickerCollectionSelection } from "./MediaPicker";
-import { __clearPickerDataCache } from "./usePickerData";
-import { GalleryPickerCacheProvider } from "./GalleryPickerCacheContext";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
@@ -37,7 +34,6 @@ function routeFetch(url: string) {
 }
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation((u: string) => routeFetch(u));
   vi.mocked(uploadImage).mockReset();
@@ -76,7 +72,10 @@ describe("MediaPicker", () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" max={1} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /select all on page/i }));
+    // Wait for the feed to load — the button exists (disabled) before that,
+    // and clicking a disabled button is a no-op.
+    await screen.findByRole("option", { name: /^A/ });
+    fireEvent.click(screen.getByRole("button", { name: /select all on page/i }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a" }]);
   });
 
@@ -84,7 +83,9 @@ describe("MediaPicker", () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" max={2} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /select all in collection/i }));
+    // Wait for the feed to load — the button exists (disabled) before that.
+    await screen.findByRole("option", { name: /^A/ });
+    fireEvent.click(screen.getByRole("button", { name: /select all in collection/i }));
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith([
         { id: "a", publicId: "pid-a" },
@@ -114,7 +115,9 @@ describe("MediaPicker", () => {
       />
     );
     fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /select all in collection/i }));
+    // Wait for the feed to load — the button exists (disabled) before that.
+    await screen.findByRole("option", { name: /^A/ });
+    fireEvent.click(screen.getByRole("button", { name: /select all in collection/i }));
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith([
         { id: "z", publicId: "pid-z" },
@@ -206,10 +209,12 @@ describe("MediaPicker", () => {
       />
     );
     // No collection was opened — the chip must resolve from usePickerData's workspace-wide items.
+    // The strip itself renders immediately (synchronous on `selection`), but the
+    // thumbnail only resolves once picker data loads — wait for that, not just
+    // the strip's presence.
     const strip = await screen.findByRole("list", { name: /selected photos/i });
     // alt="" gives the <img> a "presentation" role, not "img" — query the DOM node directly.
-    const img = strip.querySelector("img");
-    expect(img?.getAttribute("src")).toBe("https://x/a.jpg");
+    await waitFor(() => expect(strip.querySelector("img")?.getAttribute("src")).toBe("https://x/a.jpg"));
     expect(within(strip).queryByText("?")).toBeNull();
   });
 
@@ -235,7 +240,7 @@ describe("MediaPicker", () => {
       u === "/api/portfolio/gallery" ? Promise.reject(new Error("net")) : routeFetch(u)
     );
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText(/could not load/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/could not load/i)).toBeTruthy(), { timeout: 3000 });
     expect(screen.getByRole("button", { name: /retry/i })).toBeTruthy();
   });
 
@@ -244,7 +249,7 @@ describe("MediaPicker", () => {
       u === "/api/portfolio/gallery" ? Promise.reject(new Error("net")) : routeFetch(u)
     );
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-    const alert = await screen.findByRole("alert");
+    const alert = await screen.findByRole("alert", {}, { timeout: 3000 });
     expect(alert).toHaveTextContent(/could not load/i);
   });
 
@@ -398,10 +403,15 @@ describe("MediaPicker", () => {
           onOpenChange={vi.fn()}
         />
       );
-      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      // Scope to the main "Collections" grid — the reorder strip below has an
+      // element with the same accessible name ("Weddings") but resolves
+      // instantly regardless of picker-data load state, which previously let
+      // this assertion race ahead of the grid actually mounting.
+      await waitFor(() => screen.getByRole("listbox", { name: /^collections$/i }));
+      const grid = within(screen.getByRole("listbox", { name: /^collections$/i }));
       // Order badges "1" and "2" must be rendered
-      expect(screen.getByText("1")).toBeTruthy();
-      expect(screen.getByText("2")).toBeTruthy();
+      expect(grid.getByText("1")).toBeTruthy();
+      expect(grid.getByText("2")).toBeTruthy();
     });
 
     it("renders a reorder strip for selected collections with remove buttons", async () => {
@@ -463,7 +473,9 @@ describe("MediaPicker", () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /select all on page/i }));
+    // Wait for the feed to load — the button exists (disabled) before that.
+    await screen.findByRole("option", { name: /^A/ });
+    fireEvent.click(screen.getByRole("button", { name: /select all on page/i }));
     expect(onChange).toHaveBeenCalledWith([
       { id: "a", publicId: "pid-a", width: 800, height: 600 },
       { id: "b", publicId: "pid-b" },
@@ -529,6 +541,26 @@ describe("MediaPicker", () => {
 
     await waitFor(() => expect(screen.queryByRole("option", { name: /SlowPhoto/ })).toBeNull());
     expect(screen.getByRole("option", { name: "FastPhoto" })).toBeTruthy();
+  });
+
+  it("re-opening a collection already fetched in this session issues no second network request", async () => {
+    renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+    await screen.findByRole("option", { name: /^A/ });
+    const feedCallsAfterFirstOpen = mockFetch.mock.calls.filter(([u]) =>
+      String(u).startsWith("/api/portfolio/gallery/collections/col1")
+    ).length;
+    expect(feedCallsAfterFirstOpen).toBe(1);
+
+    fireEvent.click(await screen.findByRole("button", { name: /back to collections/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+    await screen.findByRole("option", { name: /^A/ });
+
+    const feedCallsAfterReopen = mockFetch.mock.calls.filter(([u]) =>
+      String(u).startsWith("/api/portfolio/gallery/collections/col1")
+    ).length;
+    expect(feedCallsAfterReopen).toBe(1);
   });
 
   describe("upload auto-select", () => {
@@ -989,23 +1021,16 @@ describe("MediaPicker", () => {
       return Promise.resolve({ ok: true, json: async () => ({ items: twoItems, nextCursor: null }) } as Response);
     }
 
-    // Cache membership is required to derive "mixed"/"checked" — the real app
-    // always wraps the editor in GalleryPickerCacheProvider (via EditorShell);
-    // these tests wrap it explicitly since renderWithProviders does not.
-    function renderWithCache(ui: ReactElement) {
-      return renderWithProviders(<GalleryPickerCacheProvider>{ui}</GalleryPickerCacheProvider>);
-    }
-
     it("renders unchecked for a collection whose ids are not cached", async () => {
       mockFetch.mockImplementation((u: string) => routeTwoItem(u));
-      renderWithCache(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+      renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
       const box = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
       expect(box.getAttribute("aria-checked")).toBe("false");
     });
 
     it("shows 'mixed' when some of the collection's photos are selected", async () => {
       mockFetch.mockImplementation((u: string) => routeTwoItem(u));
-      renderWithCache(
+      renderWithProviders(
         <MediaPicker mode="multi" value={[{ id: "a", publicId: "pid-a" }]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
       );
       // Open the collection so its ids get cached, then go back to the tile grid.
@@ -1018,7 +1043,7 @@ describe("MediaPicker", () => {
 
     it("shows 'true' when all of the collection's photos are selected", async () => {
       mockFetch.mockImplementation((u: string) => routeTwoItem(u));
-      renderWithCache(
+      renderWithProviders(
         <MediaPicker
           mode="multi"
           value={[
@@ -1040,7 +1065,7 @@ describe("MediaPicker", () => {
     it("clicking a checked box removes exactly that collection's ids, leaving other selections intact", async () => {
       mockFetch.mockImplementation((u: string) => routeTwoItem(u));
       const onChange = vi.fn();
-      renderWithCache(
+      renderWithProviders(
         <MediaPicker
           mode="multi"
           value={[

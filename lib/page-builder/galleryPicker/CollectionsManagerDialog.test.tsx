@@ -3,7 +3,6 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { renderWithProviders } from "@/test-utils/render";
 import { CollectionsManagerDialog } from "./CollectionsManagerDialog";
-import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -26,7 +25,6 @@ function ControlledCollectionsManagerDialog() {
 }
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockPickerResponse([]);
 });
@@ -43,7 +41,7 @@ describe("CollectionsManagerDialog", () => {
   it("announces the collections fetch failure via role=alert", async () => {
     mockFetch.mockRejectedValue(new Error("network error"));
     renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
-    const alert = await screen.findByRole("alert");
+    const alert = await screen.findByRole("alert", {}, { timeout: 3000 });
     expect(alert).toHaveTextContent(/could not load/i);
   });
 

@@ -11,7 +11,10 @@
  */
 
 import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@puckeditor/core";
+import Image from "next/image";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
+import { galleryImageSizes } from "./gallerySizes";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -28,7 +31,7 @@ import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/r
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { galleryAltFallback } from "./galleryAlt";
-import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { LazyGalleryLightboxTrigger } from "./lazy";
 import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -214,7 +217,7 @@ export function GalleryGridBlock({
             if (!src) return null;
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
-                <GalleryLightboxTrigger
+                <LazyGalleryLightboxTrigger
                   image={{ id: img.id, publicId: img.publicId, alt: altFallback(img, i) }}
                   images={legacyLightboxImages}
                   index={i}
@@ -222,16 +225,17 @@ export function GalleryGridBlock({
                   brandVars={brandVars}
                   layout={imageModalLayout}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={src}
                     alt={altFallback(img, i)}
+                    loader={cfImageLoader}
                     loading="lazy"
-                    width={img.width}
-                    height={img.height}
+                    width={thumbWidth}
+                    height={thumbWidth}
+                    sizes={galleryImageSizes(columns)}
                     style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
                   />
-                </GalleryLightboxTrigger>
+                </LazyGalleryLightboxTrigger>
               </figure>
             );
             })}

@@ -70,7 +70,10 @@ vi.mock("@puckeditor/core", () => ({
   // (not at module scope): vi.mock factories cannot close over top-level
   // variables, since the mock call is hoisted above them.
   Drawer: Object.assign(
-    ({ children }: { children: ReactNode }) => <div data-testid="drawer-root">{children}</div>,
+    // Mocked Drawer boundary — distinct from the real "drawer-root" testid
+    // the component itself puts on its OWN wrapper div (used by e2e), so the
+    // two don't collide when nested inside this mock in tests.
+    ({ children }: { children: ReactNode }) => <div data-testid="drawer-mock-root">{children}</div>,
     {
       Item: ({
         name,
@@ -218,6 +221,29 @@ vi.mock("@/lib/actions/slug", () => ({
   checkSlugAvailabilityAction: vi.fn().mockResolvedValue({ available: true }),
 }));
 
+// Swaps the real GalleryQueryProvider for a DOM-visible marker so the
+// "mounts GalleryQueryProvider scoped to the active workspace" test can
+// assert it's mounted (with the right workspaceId) without exercising Puck's
+// full image-picker chain just to prove a provider is present.
+vi.mock("@/lib/page-builder/galleryPicker/GalleryQueryProvider", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/page-builder/galleryPicker/GalleryQueryProvider")>();
+  return {
+    ...actual,
+    // Wraps (not replaces) the real provider — every gallery-picker consumer
+    // elsewhere in the tree still gets a working QueryClient + workspaceId
+    // context; this just adds a DOM-visible marker so the workspaceId can be
+    // asserted without exercising the full image-picker chain.
+    GalleryQueryProvider: ({ workspaceId, children }: { workspaceId: string; children: ReactNode }) => (
+      <actual.GalleryQueryProvider workspaceId={workspaceId}>
+        <div data-testid="gallery-query-provider" data-workspace-id={workspaceId}>
+          {children}
+        </div>
+      </actual.GalleryQueryProvider>
+    ),
+  };
+});
+
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
@@ -289,6 +315,7 @@ const LOCAL_DRAFT_V2 = {
 
 const baseProps = {
   slug: "studio-aurora",
+  workspaceId: "ws-studio-aurora",
   workspaceName: "Studio Aurora",
   initialData: {
     // Nav explicitly present (id matches what ensureIds would assign anyway —
@@ -429,6 +456,19 @@ describe("EditorShell", () => {
     // renders unconditionally regardless of the entry dialog's open state.
     renderWithProviders(<EditorShell {...baseProps} />, { locale: "ar", messages: arMessages as never });
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("mounts GalleryQueryProvider scoped to the active workspace, so the gallery picker's fetches never bleed across a workspace switch", () => {
+    // renderWithProviders' own default GalleryQueryProvider wrapper also
+    // renders the mocked marker — pin it to the same workspaceId so every
+    // marker in the tree (that outer one, EditorShell's own, and the
+    // spotlight guide sandbox's second internal EditorShell) agrees.
+    renderWithProviders(<EditorShell {...baseProps} />, { workspaceId: baseProps.workspaceId });
+    const providers = screen.getAllByTestId("gallery-query-provider");
+    expect(providers.length).toBeGreaterThan(0);
+    for (const provider of providers) {
+      expect(provider.getAttribute("data-workspace-id")).toBe(baseProps.workspaceId);
+    }
   });
 
   it("renders the zone switcher and switches the active zone", async () => {
@@ -2125,6 +2165,69 @@ describe("EditorShell", () => {
       expect(metadata?.workspace?.chrome?.nav?.home).toBe("TRANSLATED_HOME_LABEL");
     });
 
+    it("threads the CRM-locale FeaturedWork canvas hints into the editor canvas's Puck metadata", async () => {
+      const messages = structuredClone(enMessages);
+      messages.publicPage.chrome.gallery.featuredEmpty = "TRANSLATED_FEATURED_EMPTY";
+      messages.publicPage.chrome.gallery.featuredSelect = "TRANSLATED_FEATURED_SELECT";
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, { messages });
+
+      const metadata = __capturedPuckMetadata as {
+        workspace?: { chrome?: { gallery?: { featuredEmpty?: string; featuredSelect?: string } } };
+      };
+      expect(metadata?.workspace?.chrome?.gallery?.featuredEmpty).toBe("TRANSLATED_FEATURED_EMPTY");
+      expect(metadata?.workspace?.chrome?.gallery?.featuredSelect).toBe("TRANSLATED_FEATURED_SELECT");
+    });
+
+    it("assigns deterministic ids to id-less nested Columns slot children on initial canvas load (React unique-key fix)", async () => {
+      const localDraftWithNestedNoId = {
+        ...LOCAL_DRAFT_V2,
+        data: {
+          ...LOCAL_DRAFT_V2.data,
+          home: {
+            content: [
+              { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+              {
+                type: "Columns",
+                props: {
+                  id: "c-Columns-1",
+                  content: [
+                    {
+                      type: "Container",
+                      props: { id: "c-Container-1", content: [{ type: "Heading", props: { text: "Hi" } }] },
+                    },
+                  ],
+                },
+              },
+            ],
+            root: {},
+          },
+        },
+      };
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, localDraftWithNestedNoId);
+
+      const seed = __capturedPuckSeed as { content: unknown[] };
+      const cols = pageBodyChildrenFromZone(seed).find((b) => b.type === "Columns") as
+        | { props?: { content?: { props?: { content?: { props?: { id?: string } }[] } }[] } }
+        | undefined;
+      const container = cols?.props?.content?.[0];
+      const heading = container?.props?.content?.[0];
+      expect(heading?.props?.id).toBeTruthy();
+    });
+
+    it("keeps the Puck metadata object referentially stable across a re-render that doesn't touch any of its inputs (Task 10 memoization)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const first = __capturedPuckMetadata;
+
+      // Opening the Theme panel re-renders EditorShell without changing any
+      // of metadata's own inputs (workspaceName/slug/collectionsPopup/
+      // cssVars/dir/nav+chrome translators).
+      fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+      const second = __capturedPuckMetadata;
+
+      expect(second).toBe(first);
+    });
+
     it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -3182,7 +3285,10 @@ describe("EditorShell — two-level preset drawer", () => {
       expect(screen.getByRole("button", { name: englishPuckT(group.labelKey) })).toBeInTheDocument();
     }
 
-    // nav is open by default, with its single neutral preset visible immediately.
+    // Every group — nav included — starts collapsed at load; nothing is
+    // visible until its own group is opened.
+    expect(screen.queryByTestId("drawer-item:NavigationPreset")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.nav") }));
     expect(screen.getByTestId("drawer-item:NavigationPreset")).toBeInTheDocument();
     for (const key of ["NavBorderedPreset", "NavUnderlinedPreset", "NavScaledPreset"]) {
       expect(screen.queryByTestId(`drawer-item:${key}`)).not.toBeInTheDocument();
@@ -3200,6 +3306,15 @@ describe("EditorShell — two-level preset drawer", () => {
     expect(screen.queryByTestId("drawer-item:Heading")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
     expect(screen.getByTestId("drawer-item:Heading")).toBeInTheDocument();
+  });
+
+  it("touches the Preset blocks and Manual blocks drawers together as one flex child (no gap between them)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Puck's <Drawer> root applies `gap` between its direct children — the
+    // override must nest both drawers under a single wrapper so the root
+    // has exactly one flex child instead of two gapped siblings.
+    expect(screen.getByTestId("drawer-mock-root").children).toHaveLength(1);
   });
 
   it("keeps the tour anchor on the drawer wrapper", async () => {

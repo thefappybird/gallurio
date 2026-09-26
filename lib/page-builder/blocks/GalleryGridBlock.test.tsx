@@ -1,5 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+
+// GalleryGridBlock wraps each tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
 import { ImageBlock } from "./manualBlocks";
@@ -128,6 +140,17 @@ describe("GalleryGridBlock — isomorphic render", () => {
     const { container } = render(GalleryGridBlock({ ...base, images: imgs(2) }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
     expect(grid.style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(3, 1fr))");
+  });
+
+  it("renders via next/image with a srcset, sizes, and a CF Images src (parity loader)", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), _style: { galleryColumns: 3 } })
+    );
+    const el = container.querySelector("img") as HTMLImageElement;
+    expect(el.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("srcset")).toBeTruthy();
+    expect(el.getAttribute("srcset")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
   });
 
   it("does not import server-only cloudinary (no SDK access in client bundle)", () => {

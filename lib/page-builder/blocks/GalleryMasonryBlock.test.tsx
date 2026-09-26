@@ -1,5 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+
+// GalleryMasonryBlock wraps each tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -152,6 +164,17 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
     expect(img.style.aspectRatio).toBe("1200 / 800");
     // height:auto must not be set when aspect-ratio handles it
     expect(img.style.height).toBe("");
+  });
+
+  it("renders via next/image with a srcset, sizes, and a CF Images src when dimensions are known", () => {
+    const withDims: GalleryImage[] = [{ id: "d1", publicId: "pid-d1", width: 1200, height: 800 }];
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: withDims, _style: { galleryColumns: 3 } })
+    );
+    const img = container.querySelector("figure img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
   });
 
   it("omits width/height attrs and aspect-ratio for legacy images without dimensions", () => {

@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import Image from "next/image";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import { packRows, DEFAULT_GUTTER, DEFAULT_TARGET_HEIGHT } from "./packRows";
 import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
+
+const FALLBACK_ROW_COUNT = 4;
 
 /** The editor's justified-layout swatch is intentionally a fixed visual
  * rhythm, not a promise about the uploaded files' dimensions. Keep the live
@@ -32,6 +37,7 @@ export function Justified({
   onLoadMore,
   onOpen,
   labels,
+  scrollContainerRef,
 }: PopupLayoutBodyProps) {
   const containerRef = useRef<HTMLUListElement>(null);
   const [width, setWidth] = useState<number | null>(null);
@@ -66,6 +72,40 @@ export function Justified({
   );
   const countLabel = formatPhotoCount(total, labels);
 
+  // packRows already computed every row's real pixel height for the measured
+  // width — reuse those (not a guess) as the virtualizer's per-row size.
+  const rowOffsets = useMemo(() => {
+    let acc = 0;
+    return rows.map((row) => {
+      const start = acc;
+      acc += row.height + DEFAULT_GUTTER;
+      return start;
+    });
+  }, [rows]);
+  const totalRowsHeight = rows.length > 0 ? rowOffsets[rows.length - 1] + rows[rows.length - 1].height : 0;
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollContainerRef?.current ?? null,
+    estimateSize: (i) => (rows[i]?.height ?? DEFAULT_TARGET_HEIGHT) + DEFAULT_GUTTER,
+    overscan: 3,
+  });
+  const rawVirtualRows = rowVirtualizer.getVirtualItems();
+  // Before the scroll container has a real measured size, fall back to a
+  // small fixed window (using the exact row heights we already computed)
+  // rather than rendering nothing.
+  const virtualRows =
+    rawVirtualRows.length > 0
+      ? rawVirtualRows
+      : Array.from({ length: Math.min(rows.length, FALLBACK_ROW_COUNT) }, (_, i) => ({
+          index: i,
+          start: rowOffsets[i] ?? 0,
+          end: (rowOffsets[i] ?? 0) + (rows[i]?.height ?? 0) + DEFAULT_GUTTER,
+        }));
+  const firstRow = virtualRows[0];
+  const lastRow = virtualRows[virtualRows.length - 1];
+  const topSpacer = firstRow ? firstRow.start : 0;
+  const bottomSpacer = lastRow ? Math.max(0, totalRowsHeight - lastRow.end) : 0;
+
   return (
     <>
       {collectionDescription ? (
@@ -98,7 +138,11 @@ export function Justified({
           // doesn't cause a visible height jump.
           <li aria-hidden style={{ height: `${DEFAULT_TARGET_HEIGHT}px` }} />
         ) : (
-          rows.map((row, ri) => (
+          <>
+          {topSpacer > 0 && <li aria-hidden style={{ height: topSpacer }} />}
+          {rows.slice(firstRow?.index ?? 0, (lastRow?.index ?? -1) + 1).map((row, i) => {
+            const ri = (firstRow?.index ?? 0) + i;
+            return (
             <li
               key={ri}
               style={{
@@ -134,9 +178,13 @@ export function Justified({
                     }}
                   >
                     {thumbSrc ? (
-                      <img
+                      <Image
                         src={thumbSrc}
                         alt={item.alt || labels.photo}
+                        loader={cfImageLoader}
+                        width={Math.round(itemWidth)}
+                        height={Math.round(row.height)}
+                        sizes={`${Math.round(itemWidth)}px`}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
                     ) : (
@@ -152,7 +200,10 @@ export function Justified({
                 );
               })}
             </li>
-          ))
+            );
+          })}
+          {bottomSpacer > 0 && <li aria-hidden style={{ height: bottomSpacer }} />}
+          </>
         )}
       </ul>
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import Image from "next/image";
 import { XIcon, ChevronLeftIcon, ChevronRightIcon, Loader2Icon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import { resolveImageModalLayout, type ImageModalLayout } from "@/lib/page-builder/types";
 import { CaptionLayout, SidebarLayout, CinemaLayout, SheetLayout } from "./imageModal";
 
@@ -335,8 +337,16 @@ export function ModalImage({ src, alt, style }: { src: string | null; alt: strin
   return (
     <div data-modal-image-slot="" aria-busy={loading || undefined} style={{ position: "relative", ...style }}>
       {loading && <div aria-hidden data-modal-image-skeleton="" style={{ position: "absolute", inset: 0, minWidth: "12rem", minHeight: "12rem", background: "color-mix(in srgb, currentColor 12%, transparent)", animation: "pf-modal-pulse 1.1s ease-in-out infinite" }} />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: loading ? 0 : 1 }} />
+      <Image
+        src={src}
+        alt={alt}
+        loader={cfImageLoader}
+        fill
+        sizes="100vw"
+        onLoad={() => setLoadedSrc(src)}
+        onError={() => setFailedSrc(src)}
+        style={{ objectFit: "contain", opacity: loading ? 0 : 1 }}
+      />
     </div>
   );
 }

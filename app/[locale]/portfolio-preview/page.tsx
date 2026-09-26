@@ -153,6 +153,11 @@ export default async function PortfolioPreviewPage({
     body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} dir={effectiveDir} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
+    // featuredEmpty/featuredSelect are editor-facing hints (never shown to end
+    // clients — the published page has real collections), so they follow the
+    // CRM `locale`, not the formLocale-driven `chromeLocale` every other chrome
+    // key uses (owner decision 2026-09-26).
+    const tCrm = await getTranslations({ locale, namespace: "publicPage.chrome" });
     let fallbackData: PuckData =
       ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
       { content: [], root: {} };
@@ -197,8 +202,8 @@ export default async function PortfolioPreviewPage({
           noCollection: t("gallery.noCollection"),
           unavailable: t("gallery.unavailable"),
           error: t("gallery.error"),
-          featuredEmpty: t("gallery.featuredEmpty"),
-          featuredSelect: t("gallery.featuredSelect"),
+          featuredEmpty: tCrm("gallery.featuredEmpty"),
+          featuredSelect: tCrm("gallery.featuredSelect"),
           carouselHint: t("gallery.carouselHint"),
           carouselPrev: t("gallery.carouselPrev"),
           carouselNext: t("gallery.carouselNext"),

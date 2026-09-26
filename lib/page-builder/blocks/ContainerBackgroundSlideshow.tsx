@@ -13,6 +13,8 @@
  */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 
 export type SlideshowImage = { id: string; src: string };
 export type BgAnimation = "crossfade" | "kenburns" | "slide";
@@ -33,11 +35,9 @@ function getReducedMotionSnapshot() {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches;
 }
 
+// `fill` (next/image) supplies position/inset/width/height itself; only the
+// object-fit (and any per-layer animation style) rides on top of it.
 const LAYER_BASE: React.CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  width: "100%",
-  height: "100%",
   objectFit: "cover",
 };
 
@@ -82,8 +82,16 @@ export function ContainerBackgroundSlideshow({
     return (
       <div data-bg-slideshow data-animation={animation} aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         {first && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img data-bg-layer="0" data-active="true" src={first.src} alt="" style={LAYER_BASE} />
+          <Image
+            data-bg-layer="0"
+            data-active="true"
+            src={first.src}
+            alt=""
+            loader={cfImageLoader}
+            fill
+            sizes="100vw"
+            style={LAYER_BASE}
+          />
         )}
       </div>
     );
@@ -121,15 +129,16 @@ export function ContainerBackgroundSlideshow({
           }
         }
         return (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             key={img.id}
             data-bg-layer={i}
             data-active={isActive}
             src={img.src}
             alt=""
-            loading={isActive ? undefined : "lazy"}
-            decoding="async"
+            loader={cfImageLoader}
+            fill
+            sizes="100vw"
+            loading={isActive ? "eager" : "lazy"}
             style={style}
           />
         );

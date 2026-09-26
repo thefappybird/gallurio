@@ -8,6 +8,8 @@
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 
 export type CarouselSlide = {
   id: string;
@@ -113,23 +115,21 @@ export function GalleryCarouselClient({
             key={slide.id}
             data-slide
             style={{
+              position: "relative",
               flex: "0 0 88%",
               maxWidth: "880px",
               scrollSnapAlign: "center",
+              aspectRatio: ASPECT_RATIO[aspect],
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={slide.src}
               alt={slide.alt}
+              loader={cfImageLoader}
+              fill
+              sizes="88vw"
               loading="lazy"
-              decoding="async"
-              style={{
-                width: "100%",
-                aspectRatio: ASPECT_RATIO[aspect],
-                objectFit: "cover",
-                display: "block",
-              }}
+              style={{ objectFit: "cover" }}
             />
           </div>
         ))}

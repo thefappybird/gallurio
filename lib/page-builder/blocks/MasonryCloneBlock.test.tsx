@@ -2,6 +2,14 @@ import { render, waitFor } from "@testing-library/react";
 import { Puck, type Config, type Data } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// MasonryCloneBlock renders through the lazy-loaded MasonryCloneClient island
+// (item 2b). Unlike the other block test files, this one can't bypass "./lazy"
+// to the real component: MasonryCloneClient itself imports ImageBlock from
+// "./manualBlocks", which imports "./lazy" right back — an async mock factory
+// that needs to fully load MasonryCloneClient would deadlock re-entering the
+// very specifier it's mocking. Use the REAL next/dynamic instead and await its
+// resolution (findBy*/waitFor) rather than reading the DOM synchronously.
 import { MasonryCloneBlock, masonryCloneBlockConfig } from "./MasonryCloneBlock";
 import { imageBlockConfig } from "./manualBlocks";
 
@@ -32,12 +40,25 @@ describe("MasonryCloneBlock", () => {
       </div>,
     );
 
-    const clones = container.querySelectorAll<HTMLElement>("[data-masonry-clone]");
-    expect(clones).toHaveLength(2);
+    // MasonryCloneBlock renders through the lazy-loaded MasonryCloneClient
+    // island (item 2b) — nothing under it, including its own wrapping
+    // `[data-masonry-clone]` div, exists until the real next/dynamic loader
+    // resolves, so wait for it rather than querying synchronously.
+    let clones: NodeListOf<HTMLElement> = container.querySelectorAll("[data-masonry-clone]");
+    await waitFor(
+      () => {
+        clones = container.querySelectorAll<HTMLElement>("[data-masonry-clone]");
+        expect(clones).toHaveLength(2);
+        expect(clones[0].querySelector("img")).toHaveAttribute(
+          "src",
+          expect.stringContaining("asset/source-1"),
+        );
+      },
+      { timeout: 5000 },
+    );
     expect(clones[0]).toHaveAttribute("inert");
     expect(clones[0]).toHaveAttribute("aria-hidden", "true");
     expect(clones[0]).toHaveAttribute("data-masonry-source-id", "source-1");
-    expect(clones[0].querySelector("img")).toHaveAttribute("src", expect.stringContaining("asset/source-1"));
     const hosts = container.querySelectorAll<HTMLElement>("[data-clone-host]");
     await waitFor(() => {
       expect(hosts[0].style.height).toBe("138px");
@@ -77,9 +98,12 @@ describe("MasonryCloneBlock", () => {
       <Puck config={config} data={data} iframe={{ enabled: false }} onPublish={() => undefined} />,
     );
 
-    await waitFor(() => {
-      expect(container.querySelector("[data-masonry-clone] img"))
-        .toHaveAttribute("src", expect.stringContaining("asset/live-source"));
-    });
+    await waitFor(
+      () => {
+        expect(container.querySelector("[data-masonry-clone] img"))
+          .toHaveAttribute("src", expect.stringContaining("asset/live-source"));
+      },
+      { timeout: 5000 },
+    );
   });
 });
