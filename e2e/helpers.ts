@@ -1,4 +1,4 @@
-import { type Page, type Locator, expect } from "@playwright/test";
+import { type Browser, type Page, type Locator, expect } from "@playwright/test";
 
 // Shared portfolio-editor drivers reused across batch verification specs.
 // The seeded owner has saved drafts, so the entry dialog opens in "returning
@@ -125,6 +125,43 @@ export async function readButtonPaint(button: Locator): Promise<ButtonPaint> {
 
     return { color, backgroundColor, borderBottomColor, bandColor, ownBgAlpha: ownBg.a, labelRgb, effectiveRgb, bandRgb };
   });
+}
+
+/**
+ * Transferred JS bytes on a FIRST load of `url`. A fresh, cache-less context
+ * per measurement: a second load in the same context is served from the
+ * memory cache and reports 0 body bytes. Pass `storageState` for routes
+ * behind auth (the editor); public pages need none.
+ */
+export async function measureFirstLoadJs(
+  browser: Browser,
+  url: string,
+  opts: { storageState?: string } = {},
+): Promise<{ url: string; count: number; bytes: number }> {
+  const context = await browser.newContext(opts.storageState ? { storageState: opts.storageState } : {});
+  const page = await context.newPage();
+  let bytes = 0;
+  let count = 0;
+  const pending: Promise<void>[] = [];
+  page.on("response", (res) => {
+    const u = res.url();
+    if (!/\/_next\/static\/.*\.js(\?|$)/.test(u)) return;
+    pending.push(
+      res
+        .request()
+        .sizes()
+        .then((sizes) => {
+          bytes += sizes.responseBodySize;
+          count += 1;
+        })
+        .catch(() => {}),
+    );
+  });
+  await page.goto(url, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1000);
+  await Promise.all(pending);
+  await context.close();
+  return { url, count, bytes };
 }
 
 /** Publish the currently-loaded draft. Returns the public URL shown in the dialog. */

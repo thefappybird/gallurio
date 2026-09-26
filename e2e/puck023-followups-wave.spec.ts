@@ -1,8 +1,8 @@
-import { test, expect, type Browser } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import en from "../messages/en.json";
 import ar from "../messages/ar.json";
-import { openEditorWithDraft, publishCurrent } from "./helpers";
+import { measureFirstLoadJs, openEditorWithDraft, publishCurrent } from "./helpers";
 
 /**
  * Batched browser checks for the Puck 0.23 follow-ups wave (see
@@ -185,35 +185,6 @@ test("item 1: Puck's own chrome renders in Arabic on /ar/portfolio", async ({ pa
   expect(overflow, "no horizontal overflow in editor chrome under ar").toEqual([]);
   await page.screenshot({ path: `${ARTIFACT_DIR}/ar-editor-1280.png`, fullPage: false });
 });
-
-// A fresh, cache-less context per measurement: a second load in the same
-// context is served from the memory cache and reports 0 body bytes.
-async function measureFirstLoadJs(browser: Browser, url: string) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  let bytes = 0;
-  let count = 0;
-  const pending: Promise<void>[] = [];
-  page.on("response", (res) => {
-    const u = res.url();
-    if (!/\/_next\/static\/.*\.js(\?|$)/.test(u)) return;
-    pending.push(
-      res
-        .request()
-        .sizes()
-        .then((sizes) => {
-          bytes += sizes.responseBodySize;
-          count += 1;
-        })
-        .catch(() => {}),
-    );
-  });
-  await page.goto(url, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
-  await Promise.all(pending);
-  await context.close();
-  return { url, count, bytes };
-}
 
 test("item 2b baseline: transferred JS for portfolio A (editorial) and B (minimal)", async ({ page, browser }) => {
   // Re-publishes the seeded workspace twice; opt in explicitly so routine runs
