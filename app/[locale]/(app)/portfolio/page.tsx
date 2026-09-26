@@ -6,7 +6,8 @@ import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type 
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
-import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
+import { EditorShellLoader } from "./_components/EditorShellLoader";
+import type { EditorTemplateSummary } from "./_components/EditorShell";
 import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
 import { listDraftsAction } from "./_draftActions";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
@@ -171,7 +172,8 @@ export default async function PageBuilderEntry({
   // on constrained screens.
   return (
     <div className="-m-6 h-svh overflow-x-auto">
-      <EditorShell
+      <EditorShellLoader
+        workspaceId={workspaceId}
         slug={workspace.slug}
         workspaceName={workspace.name}
         initialData={initialData}
@@ -202,3 +204,4 @@ export default async function PageBuilderEntry({
     </div>
   );
 }
+
