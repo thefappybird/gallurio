@@ -948,16 +948,16 @@ smell, not a placeholder.
 
 | item | metric | page / script | before | after |
 |---|---|---|---|---|
-| 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | |
-| 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | |
-| 2a | transferred JS on first load, `/portfolio` (the number `dynamic()` can move — the analyzer rows count lazy chunks too) | Playwright network sum, fresh authed context, `pnpm dev` (`e2e/puck023-perf-probes.spec.ts`) | 2,439,875 B / 64 chunks (2026-09-26) | |
-| 2a | transferred JS on first load, `/portfolio-preview?zone=home` | same | 1,700,917 B / 42 chunks (2026-09-26) | |
+| 2a | route client JS (gzip, all reachable chunks), `/portfolio` | `analyze-summary.mjs` | 1446.4 KB / 55 chunks (2026-09-25) | 1469.3 KB / 57 chunks (2026-09-26, after 2a + 10 + 8; the +23 KB is `@tanstack/react-query`) |
+| 2a | route client JS (gzip), `/portfolio-preview` | `analyze-summary.mjs` | 880.7 KB / 42 chunks (2026-09-25) | 889.2 KB / 43 chunks (2026-09-26; `ensureBlockIds` + shared chunk drift) |
+| 2a | transferred JS on first load, `/portfolio`, measured to `networkidle` | Playwright network sum, fresh authed context, `pnpm dev` (`e2e/puck023-perf-probes.spec.ts`) | 2,439,875 B / 64 chunks (2026-09-26) | 2,482,899 B / 69 chunks (2026-09-26) — **did not improve**: the `dynamic()` chunk is requested as soon as the shell hydrates, so by `networkidle` the same bytes have arrived (+ react-query). The split moves Puck out of the shell's SSR/hydration path; it does not remove bytes from the editor's load. |
+| 2a | transferred JS on first load, `/portfolio-preview?zone=home` | same | 1,700,917 B / 42 chunks (2026-09-26) | 1,701,820 B / 42 chunks (2026-09-26; nothing to split — the client `Render` is the page) |
 | 2b | route client JS (gzip), `/w/[orgSlug]` — shared ceiling | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
 | 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio A = seeded editorial) | Playwright network sum, fresh context, `pnpm dev` (unminified) | 1,591,671 B / 40 chunks (2026-09-25) | |
 | 2b | transferred JS on first load, `/w/seed-owner-demo` (portfolio B = "Minimal Template" published, then A restored) | same | 1,591,671 B / 40 chunks — **identical to A** (2026-09-25) | |
 | 2b | route client JS (gzip), `/w/[orgSlug]/gallery` | `analyze-summary.mjs` | 821.1 KB / 43 chunks (2026-09-25) | |
 | 13 | `/portfolio` with `optimizePackageImports: ["@puckeditor/core"]` | `analyze-summary.mjs` | 1445.6 KB (−0.8 KB vs row 2a; reverted) | n/a |
-| 8 | duplicate `/api/portfolio/gallery` requests | picker script (Minimal Template, Gallery zone: tile 1 → Choose photo → Weddings → back → Editorial → back → Weddings → close → tile 2 → Choose photo → Weddings; `e2e/puck023-perf-probes.spec.ts`) | 4 requests, of which 3 are the same `collections/<weddings>?limit=16` feed — the picker-data list itself was 0 (already cached at editor load) (2026-09-26) | |
+| 8 | duplicate `/api/portfolio/gallery` requests | picker script (Minimal Template, Gallery zone: tile 1 → Choose photo → Weddings → back → Editorial → back → Weddings → close → tile 2 → Choose photo → Weddings; `e2e/puck023-perf-probes.spec.ts`) | 4 requests, of which 3 are the same `collections/<weddings>?limit=16` feed — the picker-data list itself was 0 (already cached at editor load) (2026-09-26) | 2 requests (Weddings once, Editorial once), 0 duplicates (2026-09-26, react-query `useInfiniteQuery` keyed by workspace + collection) |
 | 10 | commits / renders of an unedited block | Profiler script | not captured — needs React DevTools; owner asked 2026-09-26 | |
 | 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, mobile | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 2087 ms / 0.001 / 2814 ms (2026-09-25) | |
 | 11 | LCP / CLS / TBT, `/w/seed-owner-demo`, desktop | Lighthouse 13.5 vs `pnpm dev`, median of 3 | 773 ms / 0.000 / 348 ms (2026-09-25) | |
