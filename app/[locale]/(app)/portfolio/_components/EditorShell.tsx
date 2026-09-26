@@ -843,7 +843,7 @@ function prepareForEditorWithMeta(
     prepared = next;
   }
   const chromeNormalized = normalizeChrome(prepared);
-  const normalized = ensureBlockIds(normalizePageBody(chromeNormalized));
+  const normalized = ensureBlockIds(normalizePageBody(chromeNormalized) as unknown as PuckData) as unknown as Data;
   const reordered = normalized !== prepared;
   return { data: normalized, repaired: navInjected || rescued || reordered };
 }

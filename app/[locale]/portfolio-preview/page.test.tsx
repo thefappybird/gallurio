@@ -109,7 +109,10 @@ vi.mock("./_components/PreviewClient", () => ({
     zone: string;
     slug: string;
     workspace: {
-      chrome?: { nav?: { home?: string } };
+      chrome?: {
+        nav?: { home?: string };
+        gallery?: { featuredSelect?: string; featuredEmpty?: string };
+      };
       previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
       publicPage?: { collectionsPopup?: { imageModalLayout?: string } | null } | null;
       dir?: string;
