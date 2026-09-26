@@ -25,4 +25,11 @@ describe("PublicWorkspaceError", () => {
     render(<PublicWorkspaceError error={error} reset={vi.fn()} />);
     expect(spy).toHaveBeenCalledWith("[public-workspace-error-boundary]", error);
   });
+
+  it("renders a noindex robots meta tag so a crashed page is never indexed", () => {
+    render(<PublicWorkspaceError error={new Error("boom")} reset={vi.fn()} />);
+    const meta = document.querySelector('meta[name="robots"]');
+    expect(meta).not.toBeNull();
+    expect(meta).toHaveAttribute("content", "noindex");
+  });
 });

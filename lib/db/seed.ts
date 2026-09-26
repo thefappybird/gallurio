@@ -525,6 +525,8 @@ async function createClients(workspaceId: mongoose.Types.ObjectId): Promise<Clie
 
 async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
   const collections = await GalleryCollection.insertMany([
+    // Weddings MUST stay first — its _id is threaded into the e2e fixture
+    // draft's FeaturedWork block (seedE2eDraft.ts contract 5).
     {
       workspaceId,
       name: "Weddings",
@@ -567,11 +569,13 @@ async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
   );
 
   await GalleryItem.insertMany(items);
+  return collections;
 }
 
 async function createPublishedPortfolio(workspace: {
   _id: mongoose.Types.ObjectId;
   name: string;
+  featuredCollectionId: string;
 }) {
   // Use a current, content-rich template for the marketing screenshots. The
   // secondary drafts let the refreshed drafts dialog and template switcher
@@ -642,7 +646,7 @@ async function createPublishedPortfolio(workspace: {
       // is the "no template chosen yet" signal and sends the editor into the
       // template picker on load, which leaves a dialog over the canvas.
       templateId: minimalTemplate.id,
-      data: buildE2eFixtureData(),
+      data: buildE2eFixtureData({ featuredCollectionId: workspace.featuredCollectionId }),
       brandKit: minimalTemplate.defaultBrandKit,
       contact: minimalTemplate.defaultContact,
       collectionsPopup: minimalTemplate.defaultCollectionsPopup,
@@ -1234,10 +1238,14 @@ async function seedMainWorkspace(owner: SeedIdentity) {
   const teams = await createTeamsAndMembers(workspace._id, owner);
   const clients = await createClients(workspace._id);
 
-  await Promise.all([
-    createGalleryFixtures(workspace._id),
-    createPublishedPortfolio({ _id: workspace._id, name: workspace.name }),
-  ]);
+  // Sequential, not Promise.all: the e2e fixture draft's FeaturedWork block
+  // needs the seeded Weddings collection's real _id (seedE2eDraft.ts contract 5).
+  const collections = await createGalleryFixtures(workspace._id);
+  await createPublishedPortfolio({
+    _id: workspace._id,
+    name: workspace.name,
+    featuredCollectionId: String(collections[0]._id),
+  });
 
   await createBookingsAndTransactions(
     { _id: workspace._id, currency: workspace.currency },

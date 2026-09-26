@@ -8,6 +8,7 @@ import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { normalizePageBody } from "@/lib/page-builder/pageBody";
 import { normalizePresetLayouts } from "@/lib/page-builder/templates/normalizePresetLayouts";
+import { ensureBlockIds } from "@/lib/page-builder/ensureBlockIds";
 import { usePreviewDraft } from "./PreviewDraftContext";
 
 const LOCAL_DRAFT_VERSION = 2;
@@ -34,7 +35,7 @@ function readDraftZone(
     if ((draft.draftId ?? null) !== (draftId ?? null)) return null;
     const zoneData = draft.version === LOCAL_DRAFT_VERSION ? draft.data?.[zone] : undefined;
     return zoneData && Array.isArray(zoneData.content)
-      ? normalizePresetLayouts(normalizePageBody(zoneData as unknown as Data) as unknown as PuckData)
+      ? ensureBlockIds(normalizePresetLayouts(normalizePageBody(zoneData as unknown as Data) as unknown as PuckData))
       : null;
   } catch {
     return null;
@@ -58,7 +59,10 @@ export function PreviewClient({
 }) {
   const { collectionsPopup } = usePreviewDraft();
   const normalizedFallback = useMemo(
-    () => normalizePresetLayouts(normalizePageBody(fallbackData as unknown as Data) as unknown as PuckData),
+    () =>
+      ensureBlockIds(
+        normalizePresetLayouts(normalizePageBody(fallbackData as unknown as Data) as unknown as PuckData),
+      ),
     [fallbackData],
   );
   // PreviewBrandShell does not mount its children until localStorage has been

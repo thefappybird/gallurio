@@ -28,10 +28,13 @@
  *  4. A Hero preset, whose outline label is           batch2-block-panel
  *     "Immersive cover" — the preset library moved labels from the flat group
  *     name to the variant name, so "Hero" no longer selects anything.
+ *  5. A FeaturedWork bound to the seeded Weddings     portfolio-rtl-scoping.spec.ts
+ *     collection (`{ id: featuredCollectionId, name: "Weddings" }`).
+ *  6. A GalleryGrid in the Gallery zone.               block-floated-parity.spec.ts
  */
 
 import type { PuckBlockEntry, PuckData } from "@/lib/page-builder/types";
-import { zone, heading, columns, heroPreset } from "@/lib/page-builder/templates/_blocks";
+import { zone, heading, columns, heroPreset, featuredWork, galleryGrid } from "@/lib/page-builder/templates/_blocks";
 
 /** The draft name the specs load. Changing it breaks them — update both sides. */
 export const E2E_FIXTURE_DRAFT_NAME = "E2E Block Fixture";
@@ -62,7 +65,11 @@ function gridCard(id: string, title: string, body: string): PuckBlockEntry {
   } as unknown as PuckBlockEntry;
 }
 
-export function buildE2eFixtureData(): { home: PuckData; gallery: PuckData } {
+export function buildE2eFixtureData({
+  featuredCollectionId,
+}: {
+  featuredCollectionId: string;
+}): { home: PuckData; gallery: PuckData } {
   return {
     home: zone([
       // Contract 4.
@@ -77,7 +84,12 @@ export function buildE2eFixtureData(): { home: PuckData; gallery: PuckData } {
           gridCard("e2e-card-portraits", "Portraits", "Studio and on-location sessions."),
         ],
       }),
+      // Contract 5.
+      featuredWork("e2e-featured-work", [{ id: featuredCollectionId, name: "Weddings" }]),
     ]),
-    gallery: zone([]),
+    gallery: zone([
+      // Contract 6.
+      galleryGrid("e2e-gallery-grid"),
+    ]),
   };
 }

@@ -782,6 +782,10 @@ run, not a run of its own.
   a normal published page) with the boundary's body. `error.tsx` cannot export
   metadata. Leaving it: a boundary render is transient, and forcing `noindex`
   would mean moving the decision into `generateMetadata` on speculation.
+  **Closed (2026-09-26):** `error.tsx` now renders `<meta name="robots"
+  content="noindex" />` directly in its JSX; React 19 hoists `<title>`/`<meta>`/
+  `<link>` from anywhere in the tree into `<head>`, so `generateMetadata`
+  stays untouched and the crashed body still ships noindex.
 - Actions: 11 in `_actions.ts` and 5 in `_draftActions.ts` wrapped with the
   `<action>_failed` key convention and a `[portfolio-actions]` /
   `[portfolio-draft-actions]` log prefix; `listDraftsAction` returns `[]` on

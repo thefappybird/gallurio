@@ -121,6 +121,8 @@ vi.mock("./_components/PreviewClient", () => ({
     <div data-testid="preview-client">
       {zone}:{slug}
       <div data-testid="preview-client-nav-home">{workspace.chrome?.nav?.home ?? ""}</div>
+      <div data-testid="preview-client-featured-select">{workspace.chrome?.gallery?.featuredSelect ?? ""}</div>
+      <div data-testid="preview-client-featured-empty">{workspace.chrome?.gallery?.featuredEmpty ?? ""}</div>
       <div data-testid="preview-client-nav-home-href">{workspace.previewNav?.homeHref ?? ""}</div>
       <div data-testid="preview-client-nav-gallery-href">{workspace.previewNav?.galleryHref ?? ""}</div>
       <div data-testid="preview-client-nav-active-path">{workspace.previewNav?.activePath ?? ""}</div>
@@ -216,6 +218,21 @@ describe("PortfolioPreviewPage", () => {
     render(page);
 
     expect(screen.getByTestId("preview-client-nav-home")).toHaveTextContent("en:publicPage.nav:home");
+  });
+
+  it("keeps FeaturedWork chrome hints on the route (CRM) locale while other chrome follows formLocale", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", formLocale: "ar" }),
+    });
+
+    render(page);
+
+    // Route locale is "en" (editor-facing hint); chromeLocale is "ar" (formLocale override).
+    expect(screen.getByTestId("preview-client-featured-select")).toHaveTextContent(
+      "en:publicPage.chrome:gallery.featuredSelect",
+    );
+    expect(screen.getByTestId("preview-client-nav-home")).toHaveTextContent("ar:publicPage.nav:home");
   });
 
   it("wires preview-scoped nav hrefs (stay inside the iframe, not the live public site)", async () => {
