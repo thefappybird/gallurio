@@ -1,5 +1,6 @@
 /**
- * Wave 1 of the perf plan (docs/portfolio/puck-023-perf-wave-plan.md) — Run 2
+ * Wave 1 of the perf wave (docs/portfolio/puck-023-followups.md, "Session
+ * 2026-09-26 — perf wave") — Run 2
  * browser assertions for the editor-UI trio (drawer collapse/gap, sidebar
  * scroll isolation), the 375px sidebar-restore regression, the canvas
  * FeaturedWork hint locale, and the published-page unique-key regression
