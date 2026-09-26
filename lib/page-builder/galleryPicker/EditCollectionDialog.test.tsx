@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { EditCollectionDialog } from "./EditCollectionDialog";
-import { __clearPickerDataCache } from "./usePickerData";
 import { UploadError } from "@/lib/uploads/uploadError";
 import { PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 
@@ -34,7 +33,6 @@ function defaultRoute(url: string, init?: RequestInit) {
   return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
 }
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation(defaultRoute);
   vi.mocked(uploadImage).mockReset();

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
-import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -21,7 +20,6 @@ function routeFetch(url: string) {
   return Promise.resolve({ ok: true, json: async () => ({ items: photos, nextCursor: null }) } as Response);
 }
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation((u: string) => routeFetch(u));
 });

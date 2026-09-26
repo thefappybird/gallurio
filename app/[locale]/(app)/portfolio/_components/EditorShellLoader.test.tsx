@@ -17,6 +17,7 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 const baseProps: EditorShellProps = {
   slug: "studio-aurora",
+  workspaceId: "ws-studio-aurora",
   workspaceName: "Studio Aurora",
   initialData: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
   initialBrandKit: DEFAULT_BRAND_KIT,
@@ -44,6 +45,10 @@ describe("EditorShellLoader", () => {
 
     const shell = screen.getByTestId("editor-shell");
     const props = JSON.parse(shell.getAttribute("data-props") ?? "{}");
-    expect(props).toMatchObject({ slug: "studio-aurora", workspaceName: "Studio Aurora" });
+    expect(props).toMatchObject({
+      slug: "studio-aurora",
+      workspaceId: "ws-studio-aurora",
+      workspaceName: "Studio Aurora",
+    });
   });
 });

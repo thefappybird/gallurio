@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,13 +14,11 @@ import {
   ImageMetaWizard,
   useImageWizardLabels,
 } from "./galleryPicker/ImageMetaWizard";
+import { galleryKeys } from "./galleryPicker/queryKeys";
+import { useGalleryWorkspaceId } from "./galleryPicker/GalleryQueryProvider";
 import type { PickerItem } from "./galleryPicker/types";
 
-type LoadState =
-  | { kind: "idle" }
-  | { kind: "ready"; key: string; item: PickerItem }
-  | { kind: "not-found"; key: string }
-  | { kind: "error"; key: string };
+type LoadResult = { kind: "ready"; item: PickerItem } | { kind: "not-found" };
 
 /**
  * Resolves an Image block's asset id, then hands editing to the same
@@ -41,44 +39,30 @@ export function ImageBlockMetaSection({
 }) {
   const t = useTranslations("app.pageBuilder.editor.imageBlockDetails");
   const labels = useImageWizardLabels();
-  const [load, setLoad] = useState<LoadState>({ kind: "idle" });
-  const [reloadToken, setReloadToken] = useState(0);
-  const loadKey = `${assetId ?? ""}:${reloadToken}`;
+  const workspaceId = useGalleryWorkspaceId();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: galleryKeys.itemByAsset(workspaceId, assetId ?? ""),
+    queryFn: async (): Promise<LoadResult> => {
+      const response = await fetch(`/api/portfolio/gallery/items/by-asset/${encodeURIComponent(assetId!)}`);
+      if (response.status === 404) return { kind: "not-found" };
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return { kind: "ready", item: (await response.json()) as PickerItem };
+    },
+    enabled: open && !!assetId,
+  });
 
-  useEffect(() => {
-    if (!open || !assetId) return;
-    const controller = new AbortController();
-    const key = `${assetId}:${reloadToken}`;
-    fetch(`/api/portfolio/gallery/items/by-asset/${encodeURIComponent(assetId)}`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (response.status === 404) {
-          setLoad({ kind: "not-found", key });
-          return;
-        }
-        if (!response.ok) {
-          setLoad({ kind: "error", key });
-          return;
-        }
-        setLoad({ kind: "ready", key, item: (await response.json()) as PickerItem });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setLoad({ kind: "error", key });
-      });
-    return () => controller.abort();
-  }, [assetId, open, reloadToken]);
-
-  const visibleLoad = load.kind !== "idle" && load.key === loadKey ? load : ({ kind: "loading" } as const);
-
-  if (visibleLoad.kind === "ready") {
+  if (query.data?.kind === "ready") {
     return (
       <ImageMetaWizard
-        items={[visibleLoad.item]}
+        items={[query.data.item]}
         open={open}
         onOpenChange={onOpenChange}
         onSaved={(item) => {
-          setLoad({ kind: "ready", key: loadKey, item });
+          queryClient.setQueryData(galleryKeys.itemByAsset(workspaceId, assetId ?? ""), {
+            kind: "ready",
+            item,
+          } satisfies LoadResult);
           onSaved?.(item);
         }}
         labels={labels}
@@ -86,6 +70,12 @@ export function ImageBlockMetaSection({
       />
     );
   }
+
+  const visibleLoad: { kind: "loading" | "not-found" | "error" } = query.isError
+    ? { kind: "error" }
+    : query.data?.kind === "not-found"
+      ? { kind: "not-found" }
+      : { kind: "loading" };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,7 +90,7 @@ export function ImageBlockMetaSection({
         ) : visibleLoad.kind === "error" ? (
           <div role="alert" className="flex items-center justify-between gap-3">
             <p className="text-sm text-destructive">{t("loadError")}</p>
-            <Button type="button" variant="outline" size="sm" onClick={() => setReloadToken((value) => value + 1)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => void query.refetch()}>
               {t("retry")}
             </Button>
           </div>

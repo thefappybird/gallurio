@@ -120,7 +120,7 @@ import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
-import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
+import { GalleryQueryProvider } from "@/lib/page-builder/galleryPicker/GalleryQueryProvider";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import {
   resolveAddSessionAppearance,
@@ -219,6 +219,10 @@ export type EditorTemplateSummary = {
 
 type Props = {
   slug: string;
+  /** Tenant scope for the editor's gallery-picker React Query cache — every
+   * query key must be scoped by this so a workspace switch never serves
+   * another tenant's cached collections/feed data. */
+  workspaceId: string;
   workspaceName: string;
   initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
@@ -1006,6 +1010,7 @@ function PresetBlocksDrawer({
 
 export function EditorShell({
   slug,
+  workspaceId,
   workspaceName,
   initialData,
   initialBrandKit,
@@ -2703,7 +2708,7 @@ export function EditorShell({
   const puckMetadata = useMemo(
     () => ({
       workspace: {
-        _id: "",
+        _id: workspaceId,
         name: workspaceName,
         slug,
         editorPreview: true,
@@ -2729,7 +2734,7 @@ export function EditorShell({
         },
       },
     }),
-    [workspaceName, slug, collectionsPopup, cssVars, canvasContactDir, tNav, tPublicChrome],
+    [workspaceId, workspaceName, slug, collectionsPopup, cssVars, canvasContactDir, tNav, tPublicChrome],
   );
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
@@ -3142,7 +3147,7 @@ export function EditorShell({
   );
 
   return (
-    <GalleryPickerCacheProvider>
+    <GalleryQueryProvider workspaceId={workspaceId}>
       <MobileBanner publicUrl={portfolioPublicUrl(currentSlug)} />
 
       <BrandColorsContext.Provider value={brandColors}>
@@ -3495,6 +3500,7 @@ export function EditorShell({
         ) : (
           guideOpen && (
             <SandboxEditorGuide
+              workspaceId={workspaceId}
               templates={templates}
               onFinished={handleGuideFinish}
               onSkipped={handleGuideSkip}
@@ -3661,7 +3667,7 @@ export function EditorShell({
         </AlertDialogContent>
       </AlertDialog>
 
-    </GalleryPickerCacheProvider>
+    </GalleryQueryProvider>
   );
 }
 

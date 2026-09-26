@@ -221,6 +221,29 @@ vi.mock("@/lib/actions/slug", () => ({
   checkSlugAvailabilityAction: vi.fn().mockResolvedValue({ available: true }),
 }));
 
+// Swaps the real GalleryQueryProvider for a DOM-visible marker so the
+// "mounts GalleryQueryProvider scoped to the active workspace" test can
+// assert it's mounted (with the right workspaceId) without exercising Puck's
+// full image-picker chain just to prove a provider is present.
+vi.mock("@/lib/page-builder/galleryPicker/GalleryQueryProvider", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/page-builder/galleryPicker/GalleryQueryProvider")>();
+  return {
+    ...actual,
+    // Wraps (not replaces) the real provider — every gallery-picker consumer
+    // elsewhere in the tree still gets a working QueryClient + workspaceId
+    // context; this just adds a DOM-visible marker so the workspaceId can be
+    // asserted without exercising the full image-picker chain.
+    GalleryQueryProvider: ({ workspaceId, children }: { workspaceId: string; children: ReactNode }) => (
+      <actual.GalleryQueryProvider workspaceId={workspaceId}>
+        <div data-testid="gallery-query-provider" data-workspace-id={workspaceId}>
+          {children}
+        </div>
+      </actual.GalleryQueryProvider>
+    ),
+  };
+});
+
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
@@ -292,6 +315,7 @@ const LOCAL_DRAFT_V2 = {
 
 const baseProps = {
   slug: "studio-aurora",
+  workspaceId: "ws-studio-aurora",
   workspaceName: "Studio Aurora",
   initialData: {
     // Nav explicitly present (id matches what ensureIds would assign anyway —
@@ -432,6 +456,19 @@ describe("EditorShell", () => {
     // renders unconditionally regardless of the entry dialog's open state.
     renderWithProviders(<EditorShell {...baseProps} />, { locale: "ar", messages: arMessages as never });
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("mounts GalleryQueryProvider scoped to the active workspace, so the gallery picker's fetches never bleed across a workspace switch", () => {
+    // renderWithProviders' own default GalleryQueryProvider wrapper also
+    // renders the mocked marker — pin it to the same workspaceId so every
+    // marker in the tree (that outer one, EditorShell's own, and the
+    // spotlight guide sandbox's second internal EditorShell) agrees.
+    renderWithProviders(<EditorShell {...baseProps} />, { workspaceId: baseProps.workspaceId });
+    const providers = screen.getAllByTestId("gallery-query-provider");
+    expect(providers.length).toBeGreaterThan(0);
+    for (const provider of providers) {
+      expect(provider.getAttribute("data-workspace-id")).toBe(baseProps.workspaceId);
+    }
   });
 
   it("renders the zone switcher and switches the active zone", async () => {
