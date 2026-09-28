@@ -152,19 +152,20 @@ test.describe("tenant modals", () => {
 
     const tile = preview.locator("[data-featured-tile]").filter({ hasText: "Weddings" }).first();
     await expect(tile, "fixture FeaturedWork tile renders").toBeVisible({ timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    // The editor holds a live socket, so it never reaches networkidle; give
+    // the preview a moment to settle before snapshotting the chunk count.
+    await page.waitForTimeout(3000);
     const atIdle = chunks.length;
     await tile.click();
     await expect(preview.locator("[data-popup-shell]"), "collection popup opens").toBeVisible({ timeout: 15_000 });
     const afterPopup = chunks.length;
-    await preview.locator("body").press("Escape");
-    await expect(preview.locator("[data-popup-shell]")).toBeHidden({ timeout: 10_000 });
-
-    const photo = preview.locator("[data-block] button:has(img)").first();
-    await expect(photo, "gallery tile renders").toBeVisible({ timeout: 20_000 });
+    // The fixture's GalleryGrid is unbound (no photos), so the Lightbox chain
+    // is exercised from a photo inside the collection popup, from the keyboard.
+    const photo = preview.locator("[data-popup-shell] button:has(img)").first();
+    await expect(photo, "popup photo renders").toBeVisible({ timeout: 20_000 });
     await photo.focus();
     await photo.press("Enter");
-    await expect(preview.getByRole("dialog").first(), "lightbox opens from the keyboard").toBeVisible({
+    await expect(preview.locator("[data-lightbox-close]").first(), "lightbox opens from the keyboard").toBeVisible({
       timeout: 15_000,
     });
     test.info().annotations.push({
