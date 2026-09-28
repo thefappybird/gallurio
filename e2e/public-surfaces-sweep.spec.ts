@@ -109,6 +109,18 @@ test("SEO head + robots: no redirecting canonical/hreflang, localized editorial 
   expect(editorial.length).toBeGreaterThan(0);
   expect(editorial.every((h) => h === "/resources" || h === "/compare"), JSON.stringify(editorial)).toBe(true);
 
+  // A visitor whose locale preference is not English must reach the
+  // English-only editorial pages without a /fil <-> unprefixed redirect loop,
+  // and no response may advertise redirecting hreflang URLs via a Link header.
+  for (const path of ["/compare", "/resources", "/blog"]) {
+    const res = await page.request.get(path, {
+      headers: { cookie: "NEXT_LOCALE=fil", "accept-language": "th" },
+      maxRedirects: 0,
+    });
+    expect(res.status(), `${path} with a fil cookie serves directly`).toBe(200);
+    expect(res.headers()["link"] ?? "", `${path}: no hreflang Link header`).not.toMatch(/hreflang/);
+  }
+
   const robots = await (await page.request.get("/robots.txt")).text();
   for (const locale of ["fil", "id", "ar", "th"]) {
     expect(robots).toContain(`Allow: /${locale}/portfolio-maker-demo`);
