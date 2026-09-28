@@ -47,6 +47,18 @@ describe("robots()", () => {
     expect(rule.allow).toContain("/portfolio-maker-demo");
   });
 
+  it("re-opens the demo at every locale prefix, not just unprefixed", () => {
+    const rule = ruleFor(robots(), "*");
+
+    for (const prefix of ["", "/fil", "/id", "/ar", "/th"]) {
+      const allowed = `${prefix}/portfolio-maker-demo`;
+      const shadowedBy = `${prefix}/portfolio`;
+      expect(rule.allow).toContain(allowed);
+      expect(rule.disallow).toContain(shadowedBy);
+      expect(allowed.length).toBeGreaterThan(shadowedBy.length);
+    }
+  });
+
   it("includes /sitemap.xml in the sitemap field", () => {
     const result = robots();
     expect(typeof result.sitemap).toBe("string");
