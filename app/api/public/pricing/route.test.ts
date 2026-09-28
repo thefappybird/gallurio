@@ -13,10 +13,10 @@ vi.mock("@/lib/lemonsqueezy/pricing", () => ({
 
 import { GET } from "./route";
 
-function req(ip = "1.2.3.4") {
-  return new Request("http://localhost/api/public/pricing", {
-    headers: { "x-forwarded-for": ip },
-  });
+function req(ip = "1.2.3.4", country?: string) {
+  const headers: Record<string, string> = { "x-forwarded-for": ip };
+  if (country) headers["cf-ipcountry"] = country;
+  return new Request("http://localhost/api/public/pricing", { headers });
 }
 
 beforeEach(() => {
@@ -54,7 +54,7 @@ describe("GET /api/public/pricing", () => {
     expect(getDisplayPricingMock).toHaveBeenCalledWith();
   });
 
-  it("never 500s: falls back to the static base-tier catalog when pricing resolution throws", async () => {
+  it("never 500s: falls back to the country's own tier when pricing resolution throws", async () => {
     getDisplayPricingMock.mockRejectedValueOnce(new Error("network down"));
 
     const res = await GET(req("9.9.9.4"));
@@ -65,23 +65,48 @@ describe("GET /api/public/pricing", () => {
     expect(staticFallbackMock).toHaveBeenCalledWith("base");
   });
 
-  it("keeps the private per-country cache headers on the fallback path", async () => {
+  it("resolves the fallback tier from CF-IPCountry instead of always defaulting to base", async () => {
+    getDisplayPricingMock.mockRejectedValueOnce(new Error("network down"));
+
+    await GET(req("9.9.9.10", "US"));
+
+    expect(staticFallbackMock).toHaveBeenCalledWith("global");
+  });
+
+  it("never caches the error-fallback price — a throttled/erroring visitor must not get a stale wrong-tier price pinned", async () => {
     getDisplayPricingMock.mockRejectedValueOnce(new Error("boom"));
 
     const res = await GET(req("9.9.9.5"));
 
-    expect(res.headers.get("cache-control")).toBe("private, max-age=300");
-    expect(res.headers.get("vary")).toBe("CF-IPCountry");
+    expect(res.headers.get("cache-control")).toBe("no-store");
   });
 
-  it("throttles a hammering client to the static fallback instead of repeatedly resolving live pricing", async () => {
+  it("throttles a hammering client with a 429 instead of repeatedly resolving live pricing", async () => {
     const ip = "9.9.9.6";
-    for (let i = 0; i < 40; i += 1) {
+    for (let i = 0; i < 30; i += 1) {
       await GET(req(ip));
     }
+    const res = await GET(req(ip));
 
-    expect(staticFallbackMock).toHaveBeenCalled();
-    expect(getDisplayPricingMock.mock.calls.length).toBeLessThan(40);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("retry-after")).not.toBeNull();
+    await expect(res.json()).resolves.toEqual({ error: "rate_limited" });
+    expect(getDisplayPricingMock.mock.calls.length).toBeLessThan(31);
+  });
+
+  it("keys the rate limit on cf-connecting-ip over x-forwarded-for, matching getClientIp's trust order", async () => {
+    const make = (xff: string) =>
+      new Request("http://localhost/api/public/pricing", {
+        headers: { "cf-connecting-ip": "5.5.5.5", "x-forwarded-for": xff },
+      });
+    for (let i = 0; i < 30; i += 1) {
+      await GET(make(`9.9.9.${i}`));
+    }
+
+    const res = await GET(make("9.9.9.99"));
+
+    expect(res.status).toBe(429);
   });
 
   it("does not export POST", async () => {

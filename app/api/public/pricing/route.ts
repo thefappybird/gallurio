@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { staticFallback } from "@/lib/lemonsqueezy/pricing";
+import { tierForCountry } from "@/lib/pricing/pricingTier";
 import { getClientIp } from "@/lib/server/getClientIp";
 import { rateLimit } from "@/lib/server/rateLimit";
 
@@ -29,17 +30,29 @@ function betaEnabled(): boolean {
   return process.env.BETA_TESTER_ENABLED === "true";
 }
 
-function fallbackResponse(): Response {
+// Country-dependent, so unlike the success path this must never be cached —
+// a throttled/erroring US/EU/JP visitor pinning $5 (base tier) for 5 minutes
+// while checkout charges the $15 global-tier price would be a real user-facing
+// mismatch, not just a stale display number.
+function fallbackResponse(country: string | null): Response {
   return NextResponse.json(
-    { pricing: staticFallback("base"), betaEnabled: betaEnabled() },
-    { status: 200, headers: CACHE_HEADERS },
+    { pricing: staticFallback(tierForCountry(country)), betaEnabled: betaEnabled() },
+    { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }
 
 export async function GET(req: Request): Promise<Response> {
   const ip = getClientIp(req.headers);
-  if (!rateLimit(`pricing:${ip}`, IP_RATE).ok) {
-    return fallbackResponse();
+  const limit = rateLimit(`pricing:${ip}`, IP_RATE);
+  if (!limit.ok) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000));
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: { "Cache-Control": "no-store", "Retry-After": String(retryAfterSeconds) },
+      },
+    );
   }
 
   try {
@@ -50,8 +63,8 @@ export async function GET(req: Request): Promise<Response> {
     );
   } catch (err) {
     // Never break the price island the marketing page renders — degrade to
-    // the static base-tier catalog instead of a 500.
+    // the visitor's own tier's static catalog instead of a 500.
     console.error("[pricing] getDisplayPricing failed, falling back to static catalog:", err instanceof Error ? err.message : err);
-    return fallbackResponse();
+    return fallbackResponse(req.headers.get("cf-ipcountry"));
   }
 }
