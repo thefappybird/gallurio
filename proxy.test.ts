@@ -10,8 +10,27 @@ const authMiddlewareMock = vi.fn(async () => NextResponse.next());
 const authkitMiddlewareMock = vi.fn(() => authMiddlewareMock);
 const intlMiddlewareMock = vi.fn(() => NextResponse.next());
 
+// Mirrors @workos-inc/authkit-nextjs's real AUTHKIT_REQUEST_HEADERS /
+// isAuthkitRequestHeader (both publicly exported from the package root) —
+// duplicated here rather than importOriginal()'d because the real module's
+// index pulls in authkit's auth.js, which imports "next/cache" in a way this
+// package's own dist resolves incorrectly under vitest's module resolution.
+const AUTHKIT_REQUEST_HEADERS = [
+  "x-workos-middleware",
+  "x-url",
+  "x-redirect-uri",
+  "x-sign-up-paths",
+  "x-workos-session",
+];
+function isAuthkitRequestHeaderMock(name: string): boolean {
+  const lower = name.toLowerCase();
+  return AUTHKIT_REQUEST_HEADERS.includes(lower) || lower.startsWith("x-workos-");
+}
+
 vi.mock("@workos-inc/authkit-nextjs", () => ({
   authkitMiddleware: authkitMiddlewareMock,
+  isAuthkitRequestHeader: isAuthkitRequestHeaderMock,
+  AUTHKIT_REQUEST_HEADERS,
 }));
 
 vi.mock("next-intl/middleware", () => ({
@@ -702,6 +721,56 @@ describe("proxy", () => {
 
       const calledReq = (intlMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
       expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
+    });
+  });
+
+  describe("AuthKit header trust boundary — client-supplied x-workos-* stripped at proxy() entry", () => {
+    it("strips forged inbound AuthKit request headers before AuthKit runs on the /api branch", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/api/health", {
+        headers: { "x-workos-session": "forged", "x-workos-middleware": "true" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+      expect(calledReq.headers.get("x-workos-middleware")).toBeNull();
+    });
+
+    it("strips forged inbound AuthKit request headers before AuthKit runs on the root branch", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/", {
+        headers: { cookie: "wos-session=abc", "x-workos-session": "forged" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+    });
+
+    it("strips forged inbound AuthKit request headers before AuthKit runs on a protected route", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/bookings", {
+        headers: { "x-workos-session": "forged" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+    });
+
+    it("does not redirect a forged x-workos-session header with a junk session cookie on the root", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/", {
+        headers: { cookie: "wos-session=junk", "x-workos-session": "forged" },
+      });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.status).not.toBe(307);
     });
   });
 

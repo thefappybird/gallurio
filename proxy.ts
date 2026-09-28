@@ -1,4 +1,4 @@
-import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import { authkitMiddleware, isAuthkitRequestHeader } from "@workos-inc/authkit-nextjs";
 import type { NextMiddleware } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -235,6 +235,19 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // /w/ bypass) set their own trusted value further down.
   req.headers.delete(PORTFOLIO_SLUG_HEADER);
 
+  // Trust boundary: strip every inbound header AuthKit treats as its own
+  // (x-workos-session, x-workos-middleware, x-url, x-redirect-uri,
+  // x-sign-up-paths, any other x-workos-*) before anything downstream reads
+  // req.headers. AuthKit's own session header is a SEALED-but-unverified
+  // blob at read time (withAuth only unseals it — no JWT check, no TTL), so
+  // a client-sent copy would otherwise be trusted as identity on any branch
+  // that skips AuthKit, and on branches that DO run AuthKit it would leak
+  // into `requestWithAuthkitHeaders`'s base copy before AuthKit's own
+  // override manifest is applied on top.
+  for (const name of Array.from(req.headers.keys())) {
+    if (isAuthkitRequestHeader(name)) req.headers.delete(name);
+  }
+
   // -------------------------------------------------------------------------
   // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
@@ -431,13 +444,16 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     }
 
     const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
-    const enrichedReq = authResponse ? requestWithAuthkitHeaders(req, authResponse) : req;
 
     // AuthKit sets this header (via its x-middleware-override-headers /
     // x-middleware-request-* protocol) only once it has a valid or freshly
     // refreshed session — see session.js's updateSession(). Its absence means
-    // the cookie was missing/expired/invalid, so fall through unchanged.
-    if (enrichedReq.headers.get("x-workos-session")) {
+    // the cookie was missing/expired/invalid, so fall through unchanged. Read
+    // straight off authResponse's own headers — never off a request object
+    // merged with req.headers, so this can only be true when AuthKit itself
+    // vouched for the session this request, not because a forged inbound
+    // header happened to carry the same name.
+    if ((authResponse as Response)?.headers?.get("x-middleware-request-x-workos-session")) {
       const localeMatch = pathname.match(LOCALE_PREFIX_RE);
       const locale = localeMatch ? localeMatch[0].slice(1) : routing.defaultLocale;
       const redirectUrl = new URL("/api/auth/landing", publicOrigin(req));
