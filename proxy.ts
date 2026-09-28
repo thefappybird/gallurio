@@ -91,6 +91,13 @@ const UNAUTHENTICATED_PATHS = [
   "/verify-email",
   // WorkOS OAuth code-exchange callback — must be public
   "/api/auth/callback",
+  // Signed-in landing redirect (branch 4.5 below). Must stay public: AuthKit
+  // still sets its session headers on a public path, and the handler
+  // re-checks getAuthUser() itself — if the session expired between the root
+  // hit and this follow-up request, AuthKit would otherwise turn this into a
+  // raw redirect-to-hosted-auth that the /api branch below converts into a
+  // JSON 401 instead of letting the handler send the visitor to /sign-in.
+  "/api/auth/landing",
   // Invite acceptance landing (auth resolved inside the page/action)
   "/invite",
   "/invite/(.*)",

@@ -73,6 +73,18 @@ describe("proxy", () => {
     );
   });
 
+  it("configures /api/auth/landing as unauthenticated so it can localize an expired session itself", async () => {
+    await import("./proxy");
+
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.arrayContaining(["/api/auth/landing"]),
+        }),
+      }),
+    );
+  });
+
   it("leaves the crawler-facing files and article routes unauthenticated", async () => {
     await import("./proxy");
 
