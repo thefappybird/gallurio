@@ -115,36 +115,76 @@ describe("proxy", () => {
     await expect(response.json()).resolves.toEqual({ error: "not_authenticated" });
   });
 
-  it("routes the marketing root (any locale) through AuthKit so the landing page can read the session", async () => {
+  it("skips AuthKit for an anonymous marketing root visit (no WorkOS session cookie) and runs only intl", async () => {
     const { proxy } = await import("./proxy");
-    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar"]) {
+    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar", "http://localhost/fil"]) {
       authMiddlewareMock.mockClear();
       intlMiddlewareMock.mockClear();
       await proxy(new NextRequest(url));
-      // AuthKit must run so withAuth() works in the page; intl runs after for
-      // locale routing. The mock returns next() (not a redirect), so anonymous
-      // visitors are NOT bounced to sign-in — the root stays public.
-      expect(authMiddlewareMock, `authkit on ${url}`).toHaveBeenCalledTimes(1);
+      // No session cookie -> same as any other public route: skip AuthKit
+      // entirely (avoids building a fresh authorization URL/PKCE cookie per
+      // anonymous hit), run intl for locale routing.
+      expect(authMiddlewareMock, `authkit on ${url}`).not.toHaveBeenCalled();
       expect(intlMiddlewareMock, `intl on ${url}`).toHaveBeenCalledTimes(1);
     }
   });
 
-  it("passes AuthKit's request context into next-intl for the marketing root", async () => {
+  it("redirects a signed-in root visit (valid session cookie) to /api/auth/landing, preserving Set-Cookie", async () => {
+    for (const [url, expectedLocale] of [
+      ["http://localhost/", "en"],
+      ["http://localhost/fil", "fil"],
+    ] as const) {
+      authMiddlewareMock.mockClear();
+      intlMiddlewareMock.mockClear();
+      authMiddlewareMock.mockResolvedValueOnce(
+        (() => {
+          const res = NextResponse.next();
+          res.headers.set("x-middleware-override-headers", "x-workos-session");
+          res.headers.set("x-middleware-request-x-workos-session", "tok");
+          res.headers.set("set-cookie", "wos-session=refreshed; Path=/");
+          return res;
+        })(),
+      );
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest(url, { headers: { cookie: "wos-session=abc" } });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.status, `status on ${url}`).toBe(307);
+      const location = new URL(response.headers.get("location")!);
+      expect(location.pathname, `pathname on ${url}`).toBe("/api/auth/landing");
+      expect(location.searchParams.get("locale"), `locale on ${url}`).toBe(expectedLocale);
+      expect(response.headers.get("set-cookie"), `set-cookie on ${url}`).toContain("wos-session=refreshed");
+      expect(intlMiddlewareMock, `intl on ${url}`).not.toHaveBeenCalled();
+    }
+  });
+
+  it("falls through to normal handling when the root's session cookie is invalid/expired", async () => {
+    // No x-workos-session header in AuthKit's response -> session invalid or
+    // expired; AuthKit's own cookie-cleanup Set-Cookie still reaches the
+    // browser, and intl runs with AuthKit's enriched request context.
     const authHeaders = new Headers({
       "x-workos-middleware": "true",
       "x-url": "http://localhost/",
     });
     authMiddlewareMock.mockResolvedValueOnce(
-      NextResponse.next({ request: { headers: authHeaders } }),
+      (() => {
+        const res = NextResponse.next({ request: { headers: authHeaders } });
+        res.headers.set("set-cookie", "wos-session=; Max-Age=0; Path=/");
+        return res;
+      })(),
     );
 
     const { proxy } = await import("./proxy");
-    await proxy(new NextRequest("http://localhost/"));
+    const req = new NextRequest("http://localhost/", { headers: { cookie: "wos-session=expired" } });
+    const response = (await proxy(req)) as Response;
 
+    expect(authMiddlewareMock).toHaveBeenCalledTimes(1);
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
     const intlRequest = (intlMiddlewareMock.mock.calls as unknown as [[NextRequest]])[0][0];
     expect(intlRequest.headers.get("x-workos-middleware")).toBe("true");
     expect(intlRequest.headers.get("x-url")).toBe("http://localhost/");
+    expect(response.headers.get("set-cookie")).toContain("wos-session=; Max-Age=0");
   });
 
   it("bypasses AuthKit and intl for /opengraph-image (root metadata route, not locale-prefixed)", async () => {
