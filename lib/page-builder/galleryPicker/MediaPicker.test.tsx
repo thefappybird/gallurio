@@ -839,6 +839,10 @@ describe("MediaPicker", () => {
       const okFile = new File(["b"], "ok.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [bigFile, okFile] } });
 
+      // The succeeding file opens the nested details dialog, which hides the
+      // picker from assistive tech until it closes.
+      await screen.findByText("Add photo details");
+      fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
       // Failing file surfaces by name with the real numbers, not a generic message.
       const alert = await screen.findByRole("alert");
       expect(alert.textContent).toMatch(/toobig\.jpg/);

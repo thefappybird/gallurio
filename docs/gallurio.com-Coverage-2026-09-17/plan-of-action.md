@@ -86,6 +86,26 @@ with each other. Probes: `e2e/public-perf-probes.spec.ts` (anonymous, 375 px).
   (keyboard included). `e2e/marketing-landing.spec.ts` now reads its copy from
   the catalogs. All green.
 
+## CI: red on `dev` since the lockfile refresh (fixed here)
+
+`10e655fb` re-resolved the whole lockfile; 8 unit-test files failed on `dev`
+and on this PR, so CI never reached its build step.
+- **react-hook-form 7.88 (real regression, pinned to `7.87.0`).** 7.88's
+  `trigger(name)` with a resolver keeps an object-shaped error only when the
+  path has registered child fields. The booking wizard binds the whole
+  `client` object to one `<Controller name="client">`, so `client.email` /
+  `client.phone` / `client.name` errors were dropped: the step still refused
+  to advance, but showed no message. Still present in 7.89; re-check before
+  unpinning.
+- **happy-dom 20.14 + Base UI 1.8 (test-only).** happy-dom now implements
+  `Element.getAnimations`, which moves Base UI's popup unmount behind an
+  animation frame; `vitest.setup.ts` sets Base UI's own
+  `BASE_UI_ANIMATIONS_DISABLED`. Two test updates for Base UI 1.8 behaviour
+  that a real browser already satisfies: a Select item commits a mouse click
+  only when the press started on it (tests now fire `pointerDown`), and a
+  nested dialog hides its parent from assistive tech (the MediaPicker test
+  closes the photo-details dialog before reading the upload-error alert).
+
 ## After deploy (owner)
 
 1. Deploy, then Lighthouse on live `gallurio.com/` and a tenant page (mobile)

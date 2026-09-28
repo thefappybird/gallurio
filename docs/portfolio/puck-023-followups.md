@@ -619,10 +619,10 @@ selector survives. 200 ms, default easing, `motion-reduce:transition-none`,
 per DESIGN.md §Motion. A shared `components/ui/collapsible.tsx` wrapper is
 registered in `REUSABLE_CODE.md`; both components consume it.
 
-**Test gotcha:** happy-dom 20.9 implements `getAnimations` on `ShadowRoot`
-only, and Base UI waits on `element.getAnimations()` before unmounting a
-closed panel — a test that asserts the body disappears may need a per-file
-stub.
+**Test gotcha:** Base UI waits on `element.getAnimations()` before unmounting
+a closed panel. happy-dom 20.9 implemented it on `ShadowRoot` only; 20.14
+implements it on `Element`, so `vitest.setup.ts` now sets Base UI's
+`BASE_UI_ANIMATIONS_DISABLED` to keep the unmount synchronous in every test.
 
 **Done when:** opening and closing a left-panel group and a right-panel
 section visibly animates at 1280 in the batched browser run, `aria-expanded`
