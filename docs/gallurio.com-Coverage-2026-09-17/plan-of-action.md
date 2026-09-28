@@ -100,7 +100,10 @@ and on this PR, so CI never reached its build step.
 - **happy-dom 20.14 + Base UI 1.8 (test-only).** happy-dom now implements
   `Element.getAnimations`, which moves Base UI's popup unmount behind an
   animation frame; `vitest.setup.ts` sets Base UI's own
-  `BASE_UI_ANIMATIONS_DISABLED`. Two test updates for Base UI 1.8 behaviour
+  `BASE_UI_ANIMATIONS_DISABLED`. The same release gives motion real
+  `Animation` objects whose `cancel()` rejects `finished` unhandled (the spec
+  marks it handled) — 123 unhandled `AbortError`s failed the run with every
+  test green; the setup file marks it handled. Two test updates for Base UI 1.8 behaviour
   that a real browser already satisfies: a Select item commits a mouse click
   only when the press started on it (tests now fire `pointerDown`), and a
   nested dialog hides its parent from assistive tech (the MediaPicker test
