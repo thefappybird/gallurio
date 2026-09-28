@@ -129,6 +129,50 @@ test("SEO head + robots: no redirecting canonical/hreflang, localized editorial 
   }
 });
 
+test("static home: the price island resolves the visitor's local currency", async ({ browser }) => {
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+    extraHTTPHeaders: { "cf-ipcountry": "PH" },
+  });
+  const page = await context.newPage();
+  const pricingResponse = page.waitForResponse((r) => r.url().includes("/api/public/pricing"));
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const res = await pricingResponse;
+  expect(res.status()).toBe(200);
+  expect(res.headers()["cache-control"]).toContain("private");
+  const body = (await res.json()) as { pricing: { local?: { currency: string } | null } };
+  // The island swaps the server-rendered base price for the visitor's
+  // currency; PHP renders with the peso sign.
+  if (body.pricing.local?.currency === "PHP") {
+    await expect(page.locator("#pricing")).toContainText("₱", { timeout: 10_000 });
+  }
+  await context.close();
+});
+
+test.describe("signed-in landing", () => {
+  test.use({ storageState: "e2e/.auth/owner.json" });
+
+  test("/ and /fil send the owner into the app; the header logo does too", async ({ page }) => {
+    test.setTimeout(180_000);
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
+    await page.goto("/fil", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/fil\/dashboard$/, { timeout: 30_000 });
+
+    // Client navigation from a marketing page back to Home.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/pricing", { waitUntil: "networkidle" });
+    // The logo is the header's first link ("/" or "/fil" once the fil visit
+    // above set the locale cookie).
+    await page.locator("header a").first().click();
+    await expect(page).toHaveURL(/\/(fil\/)?dashboard$/, { timeout: 30_000 });
+    expect(errors, "no page errors on the landing redirects").toEqual([]);
+  });
+});
+
 test.describe("tenant modals", () => {
   // The seeded PUBLISHED portfolio binds no collections, so the modals are
   // driven through the preview route with the E2E fixture draft (a
