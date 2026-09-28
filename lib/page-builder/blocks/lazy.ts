@@ -20,6 +20,17 @@
  * One export per island so this file is the single place to see what's
  * split. Above-the-fold blocks (Navigation/PortfolioHeader, hero/section
  * background slideshows) are deliberately NOT here — see the followups doc.
+ *
+ * NOT here: LazyLightbox / LazyCollectionPopup (the modal chunks opened by
+ * GalleryLightboxTrigger / FeaturedCollectionsClient — item T4). Those two
+ * `dynamic()` wrappers live locally in GalleryLightboxTrigger.tsx and
+ * FeaturedCollectionsClient.tsx instead of here, deliberately: this file
+ * already wraps GalleryLightboxTrigger/FeaturedCollectionsClient themselves
+ * as islands (below), so a static `import ... from "./lazy"` inside either
+ * of those two files would make this module and theirs mutually dependent.
+ * webpack/Turbopack still dedupe the underlying chunk by resolved module
+ * path regardless of which file calls `dynamic()` on it, so splitting stays
+ * identical — only the declaration site moves.
  */
 
 import dynamic from "next/dynamic";

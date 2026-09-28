@@ -215,10 +215,10 @@ describe("GalleryMasonryBlock — true masonry flow", () => {
     expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it("keeps the lightbox working when legacy galleryStagger data is present", () => {
+  it("keeps the lightbox working when legacy galleryStagger data is present", async () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } }));
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
@@ -277,18 +277,18 @@ describe("GalleryMasonryBlock — true masonry flow", () => {
 });
 
 describe("GalleryMasonryBlock — lightbox", () => {
-  it("clicking an image opens the shared Lightbox with that image's data", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", async () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       GalleryMasonryBlock({
         ...base,
@@ -307,6 +307,7 @@ describe("GalleryMasonryBlock — lightbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 });
@@ -323,12 +324,12 @@ describe("GalleryMasonryBlock — nav across slot-composed Image children (Item 
     </>
   );
 
-  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", () => {
+  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", async () => {
     render(GalleryMasonryBlock({ ...base, images: [], content: imageSlot }));
 
     fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
 

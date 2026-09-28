@@ -8,9 +8,24 @@
  */
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { Lightbox, type LightboxImage, type LightboxLabels } from "./Lightbox";
+import dynamic from "next/dynamic";
+import type { LightboxImage, LightboxLabels } from "./Lightbox";
 import type { ImageModalLayout } from "@/lib/page-builder/types";
 import { useGallerySlotLightboxContext } from "./GallerySlotLightboxContext";
+
+// Lightbox is a modal-only chunk (closed by default, opened by a click) that
+// never renders during SSR/hydration — `ssr: false`, no markup to preserve.
+// Declared here rather than in lazy.ts: lazy.ts already wraps THIS file as an
+// island, so importing lazy.ts from here would make the two modules
+// mutually dependent (see lazy.ts's header comment). `preloadLightbox` lets
+// the trigger warm the fetch on hover/focus, ahead of the click.
+const LazyLightbox = dynamic(
+  () => import("./Lightbox").then((m) => m.Lightbox),
+  { ssr: false, loading: () => null },
+);
+function preloadLightbox() {
+  void import("./Lightbox");
+}
 
 export function GalleryLightboxTrigger({
   image,
@@ -103,6 +118,8 @@ export function GalleryLightboxTrigger({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        onPointerEnter={preloadLightbox}
+        onFocus={preloadLightbox}
         aria-label={image.alt || "Open photo"}
         style={{
           display: "block",
@@ -117,7 +134,7 @@ export function GalleryLightboxTrigger({
         {children}
       </button>
       {open && (
-        <Lightbox
+        <LazyLightbox
           images={effectiveImages ?? [image]}
           initialIndex={effectiveIndex ?? 0}
           total={total}

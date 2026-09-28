@@ -25,9 +25,11 @@ import { render } from "@testing-library/react";
 import { Render, type Config, type Data } from "@puckeditor/core";
 
 const invokedLoaders = vi.hoisted(() => new Set<string>());
+const dynamicOptsByLoader = vi.hoisted(() => new Map<string, { ssr?: boolean } | undefined>());
 
 vi.mock("next/dynamic", () => ({
-  default: (loader: () => Promise<unknown>) => {
+  default: (loader: () => Promise<unknown>, opts?: { ssr?: boolean }) => {
+    dynamicOptsByLoader.set(loader.toString(), opts);
     return function LazySplitProbe() {
       invokedLoaders.add(loader.toString());
       return null;
@@ -93,5 +95,36 @@ describe("item 2b — per-page island invocation is data-dependent", () => {
 
     expect(invoked("MasonryCloneClient")).toBe(true);
     expect(invoked("FeaturedCollectionsClient")).toBe(false);
+  });
+});
+
+// item T4: the Lightbox / CollectionPopup modal chunks are declared with
+// `dynamic()` too, but locally in their trigger files (not lazy.ts — see
+// lazy.ts's header comment for why), specifically with `ssr: false` since
+// they never render during SSR/hydration (closed by default, opened by a
+// click). Import each trigger module directly (not through a Puck Render —
+// they mount unconditionally as module-level consts, not per-block) to force
+// their `dynamic()` call sites to run and get recorded above.
+describe("item T4 — Lightbox / CollectionPopup modal chunks declare ssr:false", () => {
+  function optsFor(specifier: string) {
+    for (const [loaderSrc, opts] of dynamicOptsByLoader) {
+      if (loaderSrc.includes(specifier)) return opts;
+    }
+    return undefined;
+  }
+
+  it("GalleryLightboxTrigger's Lightbox dynamic import is declared with ssr:false", async () => {
+    await import("./GalleryLightboxTrigger");
+    expect(optsFor("/Lightbox.tsx")?.ssr).toBe(false);
+  });
+
+  it("FeaturedCollectionsClient's CollectionPopup dynamic import is declared with ssr:false", async () => {
+    await import("./FeaturedCollectionsClient");
+    expect(optsFor("/CollectionPopup.tsx")?.ssr).toBe(false);
+  });
+
+  it("the outer trigger islands (lazy.ts's own wraps) stay ssr-default, unlike their inner modals", () => {
+    expect(optsFor("/GalleryLightboxTrigger.tsx")?.ssr).not.toBe(false);
+    expect(optsFor("/FeaturedCollectionsClient.tsx")?.ssr).not.toBe(false);
   });
 });

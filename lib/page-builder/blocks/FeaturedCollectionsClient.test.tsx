@@ -171,11 +171,14 @@ describe("FeaturedCollectionsClient", () => {
       expect(screen.queryByTestId("collection-popup")).toBeNull();
     });
 
-    it("clicking a tile opens the popup for that collection", () => {
+    it("clicking a tile opens the popup for that collection", async () => {
       render(<FeaturedCollectionsClient {...baseProps} />);
       const btn = screen.getByRole("button", { name: /Weddings/i });
       fireEvent.click(btn);
-      const popup = screen.getByTestId("collection-popup");
+      // Popup is a first-open-only chunk (loaded on demand) — not present in
+      // the same synchronous commit as the click.
+      expect(screen.queryByTestId("collection-popup")).toBeNull();
+      const popup = await screen.findByTestId("collection-popup");
       expect(popup).toBeInTheDocument();
       expect(popup.getAttribute("data-collection-id")).toBe("col-1");
       // Popup mock renders the name in a <span>; at least one element with the name exists

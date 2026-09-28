@@ -400,14 +400,15 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect((container.querySelector("img") as HTMLImageElement).style.objectFit).toBe("contain");
   });
 
-  it("opens the view-image modal when clicked outside the editor", () => {
+  it("opens the view-image modal when clicked outside the editor", async () => {
     render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    // Lightbox is a first-open-only chunk (loaded on demand).
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       <ImageBlock
         alt="A photo"
@@ -424,6 +425,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 
@@ -433,7 +435,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
   // the same top-level `metadata` to every slot-nested item, so this is
   // expected to already pass; the sidebar leaf's panel (SidebarLayout.tsx)
   // renders unconditionally, making it a reliable non-caption probe.
-  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
+  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", async () => {
     render(
       <Render
         config={renderConfig}
@@ -464,10 +466,11 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 
-  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", () => {
+  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", async () => {
     render(
       <ImageBlock
         alt=""
@@ -483,7 +486,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Reception at dusk" }));
-    expect(screen.getByText("Golden Hour")).toBeInTheDocument();
+    expect(await screen.findByText("Golden Hour")).toBeInTheDocument();
     expect(screen.getByText("Reception at dusk")).toBeInTheDocument();
   });
 
