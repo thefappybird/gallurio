@@ -81,8 +81,15 @@ describe("Marketing Home page", () => {
     for (const frame of screen.getAllByTestId("marketing-feature-image-frame")) {
       expect(frame).toHaveClass("group-hover:scale-[1.025]");
     }
-    expect(screen.getByAltText("marketing:split.showImageAlt")).not.toHaveClass("group-hover:scale-[1.025]");
-    expect(screen.getByAltText("marketing:features.portfolioBuilder.title")).not.toHaveClass("group-hover:scale-[1.025]");
+    // ThemedShot now renders both light/dark variants (CSS-toggled, not a
+    // client swap), so each alt matches two <img>s; both share the same
+    // className, so checking either is equivalent.
+    for (const img of screen.getAllByAltText("marketing:split.showImageAlt")) {
+      expect(img).not.toHaveClass("group-hover:scale-[1.025]");
+    }
+    for (const img of screen.getAllByAltText("marketing:features.portfolioBuilder.title")) {
+      expect(img).not.toHaveClass("group-hover:scale-[1.025]");
+    }
   });
 
   it("identifies Gallurio in the hero across every launch locale", () => {

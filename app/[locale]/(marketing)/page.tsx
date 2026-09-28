@@ -5,6 +5,7 @@ import { marketingMetadata, baseUrl } from "@/lib/seo/metadata";
 import { buildOrganizationLd, buildWebSiteLd } from "@/lib/seo/marketingJsonLd";
 import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { redirect } from "next/navigation";
+import NextLink from "next/link";
 import { Link } from "@/lib/i18n/navigation";
 import { getAuthUser } from "@/lib/auth/session";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
@@ -330,9 +331,9 @@ export default async function Home({ params }: Props) {
 
       <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
         {t("compareTeaser.intro")}{" "}
-        <Link href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
+        <NextLink href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
           {t("compareTeaser.linkLabel")}
-        </Link>
+        </NextLink>
       </p>
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}

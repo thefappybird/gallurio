@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { MenuIcon } from "lucide-react";
+import NextLink from "next/link";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/theme-toggle";
@@ -76,18 +77,18 @@ export function MarketingHeader() {
             >
               {label("bookDemo")}
             </Link>
-            <Link
+            <NextLink
               href="/resources"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {label("resources")}
-            </Link>
-            <Link
+            </NextLink>
+            <NextLink
               href="/compare"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {label("compare")}
-            </Link>
+            </NextLink>
           </nav>
 
           <div className="flex items-center gap-1 gap-x-4">
@@ -140,12 +141,12 @@ export function MarketingHeader() {
                   <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("bookDemo")}
                   </Link>
-                  <Link href="/resources" className="px-3 py-2 text-sm font-medium text-foreground">
+                  <NextLink href="/resources" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("resources")}
-                  </Link>
-                  <Link href="/compare" className="px-3 py-2 text-sm font-medium text-foreground">
+                  </NextLink>
+                  <NextLink href="/compare" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("compare")}
-                  </Link>
+                  </NextLink>
                   <Link href="/sign-in" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("signIn")}
                   </Link>

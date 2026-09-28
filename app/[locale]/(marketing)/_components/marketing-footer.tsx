@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import NextLink from "next/link";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { isEditorialRoute } from "./editorial-route";
 
@@ -52,12 +53,12 @@ export function MarketingFooter() {
           <Link href="/pricing" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.pricing : tFooter("pricing")}
           </Link>
-          <Link href="/resources" className="hover:text-foreground">
+          <NextLink href="/resources" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.resources : tFooter("resources")}
-          </Link>
-          <Link href="/compare" className="hover:text-foreground">
+          </NextLink>
+          <NextLink href="/compare" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.compare : tFooter("compare")}
-          </Link>
+          </NextLink>
           <Link href="/book-demo" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.bookDemo : tFooter("bookDemo")}
           </Link>
