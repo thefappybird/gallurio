@@ -37,14 +37,28 @@ afterEach(() => {
 });
 
 describe("ContainerBackgroundSlideshow", () => {
-  it("renders one layer per image with the active layer marked (crossfade)", () => {
+  it("mounts only the active and next layer (crossfade), not every image", () => {
     const { container } = render(
       <ContainerBackgroundSlideshow images={IMAGES} animation="crossfade" speed="medium" />
     );
     const layers = container.querySelectorAll("[data-bg-layer]");
-    expect(layers.length).toBe(3);
+    expect(layers.length).toBe(2);
     expect(container.querySelectorAll('[data-active="true"]').length).toBe(1);
     expect(container.querySelector('[data-active="true"]')?.getAttribute("data-bg-layer")).toBe("0");
+  });
+
+  it("with 5 images (crossfade), mounts at most 2 <img> layers, not all 5", () => {
+    const FIVE = [
+      { id: "a", src: "https://x/a.jpg" },
+      { id: "b", src: "https://x/b.jpg" },
+      { id: "c", src: "https://x/c.jpg" },
+      { id: "d", src: "https://x/d.jpg" },
+      { id: "e", src: "https://x/e.jpg" },
+    ];
+    const { container } = render(
+      <ContainerBackgroundSlideshow images={FIVE} animation="crossfade" speed="medium" />
+    );
+    expect(container.querySelectorAll("img").length).toBeLessThanOrEqual(2);
   });
 
   it("marks the root with the animation mode", () => {
@@ -62,6 +76,43 @@ describe("ContainerBackgroundSlideshow", () => {
     expect(container.querySelector('[data-active="true"]')?.getAttribute("data-bg-layer")).toBe("0");
     act(() => { vi.advanceTimersByTime(5000); });
     expect(container.querySelector('[data-active="true"]')?.getAttribute("data-bg-layer")).toBe("1");
+  });
+
+  it("advancing the timer mounts the new next layer and unmounts the one that fell behind", () => {
+    const FIVE = [
+      { id: "a", src: "https://x/a.jpg" },
+      { id: "b", src: "https://x/b.jpg" },
+      { id: "c", src: "https://x/c.jpg" },
+      { id: "d", src: "https://x/d.jpg" },
+      { id: "e", src: "https://x/e.jpg" },
+    ];
+    vi.useFakeTimers();
+    const { container } = render(
+      <ContainerBackgroundSlideshow images={FIVE} animation="crossfade" speed="medium" />
+    );
+    // Initially active=0: layers 0 (active) and 1 (next) are mounted.
+    expect(container.querySelector('[data-bg-layer="0"]')).not.toBeNull();
+    expect(container.querySelector('[data-bg-layer="1"]')).not.toBeNull();
+    expect(container.querySelector('[data-bg-layer="2"]')).toBeNull();
+    act(() => { vi.advanceTimersByTime(5000); });
+    // Now active=1: layers 1 (active) and 2 (next) are mounted; 0 drops off.
+    expect(container.querySelector('[data-bg-layer="1"]')?.getAttribute("data-active")).toBe("true");
+    expect(container.querySelector('[data-bg-layer="2"]')).not.toBeNull();
+    expect(container.querySelector('[data-bg-layer="0"]')).toBeNull();
+  });
+
+  it("slide animation mounts at most 3 layers (prev + active + next)", () => {
+    const FIVE = [
+      { id: "a", src: "https://x/a.jpg" },
+      { id: "b", src: "https://x/b.jpg" },
+      { id: "c", src: "https://x/c.jpg" },
+      { id: "d", src: "https://x/d.jpg" },
+      { id: "e", src: "https://x/e.jpg" },
+    ];
+    const { container } = render(
+      <ContainerBackgroundSlideshow images={FIVE} animation="slide" speed="medium" />
+    );
+    expect(container.querySelectorAll("img").length).toBeLessThanOrEqual(3);
   });
 
   it("fast speed advances at 3s", () => {

@@ -114,35 +114,51 @@ export function ContainerBackgroundSlideshow({
           }
         `}</style>
       )}
-      {images.map((img, i) => {
-        const isActive = i === showIndex;
-        const style: React.CSSProperties = { ...LAYER_BASE };
-        if (animation === "slide") {
-          style.transform = `translateX(${(i - showIndex) * 100}%)`;
-          style.transition = "transform 800ms ease-in-out";
-        } else {
-          style.opacity = isActive ? 1 : 0;
-          style.transition = "opacity 1000ms ease-in-out";
-          if (animation === "kenburns") {
-            // Subtle continuous zoom; alternate so it never hard-resets.
-            style.animation = "pf-bg-kenburns 8s ease-in-out infinite alternate";
+      {images
+        .map((img, i) => ({ img, i }))
+        .filter(({ i }) => {
+          // Mount only what can plausibly be visible next: the active slide,
+          // the incoming one (crossfade/kenburns/slide all advance forward),
+          // and — for "slide" only — the outgoing one, so it can still
+          // translate off-screen instead of popping out mid-transition.
+          const n = images.length;
+          const nextIndex = (showIndex + 1) % n;
+          if (i === showIndex || i === nextIndex) return true;
+          if (animation === "slide") {
+            const prevIndex = (showIndex - 1 + n) % n;
+            return i === prevIndex;
           }
-        }
-        return (
-          <Image
-            key={img.id}
-            data-bg-layer={i}
-            data-active={isActive}
-            src={img.src}
-            alt=""
-            loader={cfImageLoader}
-            fill
-            sizes="100vw"
-            loading={isActive ? "eager" : "lazy"}
-            style={style}
-          />
-        );
-      })}
+          return false;
+        })
+        .map(({ img, i }) => {
+          const isActive = i === showIndex;
+          const style: React.CSSProperties = { ...LAYER_BASE };
+          if (animation === "slide") {
+            style.transform = `translateX(${(i - showIndex) * 100}%)`;
+            style.transition = "transform 800ms ease-in-out";
+          } else {
+            style.opacity = isActive ? 1 : 0;
+            style.transition = "opacity 1000ms ease-in-out";
+            if (animation === "kenburns") {
+              // Subtle continuous zoom; alternate so it never hard-resets.
+              style.animation = "pf-bg-kenburns 8s ease-in-out infinite alternate";
+            }
+          }
+          return (
+            <Image
+              key={img.id}
+              data-bg-layer={i}
+              data-active={isActive}
+              src={img.src}
+              alt=""
+              loader={cfImageLoader}
+              fill
+              sizes="100vw"
+              loading={isActive ? "eager" : "lazy"}
+              style={style}
+            />
+          );
+        })}
     </div>
   );
 }
