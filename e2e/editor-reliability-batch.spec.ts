@@ -27,7 +27,7 @@
  * added back here should follow that, never `_ComponentList_`. What no spec
  * asserts any more is the drawer's structural inventory (group and variant
  * counts, collapsed-except-Hero, overflow, Arabic) — see
- * `docs/portfolio/puck-023-followups.md`.
+ * the 1.5.0 entry in `CHANGELOG.md`.
  *
  * Read-only: nothing is saved or published, so the shared seeded workspace is
  * left exactly as found.

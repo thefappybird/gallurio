@@ -1,6 +1,6 @@
 /**
  * next/dynamic wrappers for the client islands imported by isomorphic block
- * files (item 2b, docs/portfolio/puck-023-followups.md).
+ * files (1.5.0 perf wave).
  *
  * Today every visitor of `/w/[orgSlug]` and `/portfolio-preview` downloads
  * every block's client JS through the one shared `puckConfig`, even though a

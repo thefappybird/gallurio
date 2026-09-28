@@ -14,8 +14,8 @@ import { Render } from "@puckeditor/core/rsc";
 import type { Config, Data } from "@puckeditor/core";
 
 // The editorial template's home zone includes FeaturedWork, which renders
-// through the lazy-loaded FeaturedCollectionsClient island (item 2b,
-// docs/portfolio/puck-023-followups.md) behind the real (unmocked)
+// through the lazy-loaded FeaturedCollectionsClient island (1.5.0 perf
+// wave) behind the real (unmocked)
 // next/dynamic — this test only asserts on console.error calls during
 // render, which the island's dynamic()-loading state doesn't affect, so no
 // mock is needed. lazySsr.test.tsx covers the SSR-with-real-dynamic() case.

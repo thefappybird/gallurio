@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 /**
  * First-load weight of the public surfaces (marketing + tenant portfolio),
  * captured before and after the public-surfaces perf pass
- * (docs/gallurio.com-Coverage-2026-09-17/plan-of-action.md). Every test here
+ * (1.5.0, see `CHANGELOG.md` → SEO). Every test here
  * RECORDS — it writes a JSON artifact and annotates the report — and asserts
  * only that it observed something. Anonymous visitor, no login, read-only.
  */

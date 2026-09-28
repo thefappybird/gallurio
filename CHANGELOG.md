@@ -3,6 +3,58 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.5.0] - 2026-09-28
+
+Release PRs #105 (audit catalog), #106 (Puck 0.23 upgrade), #108 (Puck follow-ups: foundation wave), #109 (Puck follow-ups: perf wave), and #110 (public surfaces: search indexing and first-load performance).
+
+### Added
+- The portfolio editor's own chrome (Puck's buttons, labels, and panels) is now translated into English, Filipino, Indonesian, Arabic, and Thai, not just Gallurio's controls around it.
+- The editor's left sidebar now has Components and Outline tabs, and the outline opens with the page body already expanded.
+- Editor panel sections open and close with a short animation that respects reduced-motion settings.
+- The navigation-order control is back in the editor.
+
+### Changed
+- The portfolio editor now runs on Puck 0.23 (`@puckeditor/core`). Existing portfolios and drafts load unchanged, and no migration is needed.
+- The unsaved-changes dialog keeps all three actions on one row.
+- Section presets start collapsed in the block drawer, and the Presets and Manual drawers sit flush.
+- The marketing site's full desktop navigation now shows from 1280 px wide, with the menu button below that. The home page's trust row wraps instead of running off narrow screens.
+- Signed-in visitors to gallurio.com are sent straight to their dashboard by a dedicated redirect, so the public home page no longer renders per visitor.
+
+### Fixed
+- Editor side panels scroll in place, and at 375 px the editor toolbar is no longer hidden under the canvas.
+- A block dropped onto a section preset now lands beside the preset's inner container, not inside it.
+- The block preview card closes when the pointer leaves it.
+- Featured Work hints in the editor and preview follow the owner's dashboard language rather than the portfolio's language.
+- Sections from starter templates always get their own block ids, which removes duplicate-key warnings on published pages.
+- The portfolio editor and published portfolio pages now have their own error screens. Portfolio actions and upload endpoints report a clear failure instead of crashing, and an image upload that Cloudflare rejects returns a retryable "upload unavailable" error.
+
+### Security
+- The request proxy now strips client-supplied authentication headers at the trust boundary, so a forged session header can never reach a route that skips the auth middleware.
+- The signed-in redirect from the home page is never cached, so a shared cache cannot serve one visitor's redirect to another.
+
+### Performance — assessed and fixed
+Measured in dev mode (unminified), so the numbers compare only with each other, not with production.
+- **Marketing first load:** pages now ship an ~8 KB slice of the message catalog instead of the full 195 KB. The 260 KB logo is now an 8.9 KB PNG, the ambient background is plain CSS, and the light/dark screenshot is chosen by CSS, so only one variant downloads. The home page is served statically, refreshed every minute, and loads the visitor's regional price after the page appears. Results: home HTML 312 KB → 174 KB; `/pricing` HTML 213 KB → 58 KB; mobile Lighthouse LCP 10.98 s → 7.82 s, TBT 4.37 s → 2.56 s, page weight 1,760 KiB → 1,294 KiB.
+- **Public portfolios:** every portfolio image is served through `next/image` with Cloudflare resizing. Large filmstrips and popup layouts render only visible thumbnails, background slideshows load only the current and adjacent slides, and the lightbox and collection popup download on first open. The gallery page's mobile LCP went from 3.47 s to 2.79 s, and its DOM from 421 to 229 nodes. The tenant pages no longer preload the old 192 KB logo.
+- **Portfolio editor:** the editor loads through a lazy boundary. The gallery picker caches its requests, cutting duplicate fetches from 3 to 0. The editor's Puck configuration and metadata are memoized.
+- **Declined after measuring:** `memo()` on block renderers (Puck 0.23 already memoizes them), `optimizePackageImports` (−0.8 KB, noise), and windowing the public gallery grid (it would hide photos from search engines).
+- **Still open:** the booking calendar and dashboard charts are not yet code-split, and the calendar's range fetches are not cached. The billing settings pages lack their own error handling. See the "Known gaps" sections in `docs/modules/`.
+
+### Accessibility — assessed and fixed
+- The portfolio module was re-audited, confirming the labelled contact form, keyboard block moves, focus rings, correct RTL scoping, and semantic section elements.
+- The editor chrome is now translated in all five languages, animations honor reduced motion, and the mobile editor toolbar is reachable again.
+- The marketing site was checked across five languages × light/dark × phone/tablet/desktop, with no overflow and no untranslated keys. The collection popup and lightbox open from the keyboard.
+- **Still open:** the app's sidebar has no navigation landmark, and the Arabic editor chrome is translated but not mirrored.
+
+### SEO — assessed and fixed
+Driven by the Google Search Console coverage report of 2026-09-17.
+- **Page with redirect (8 pages):** localized homes pointed their canonical and hreflang at a trailing-slash URL that redirected. Localized headers and footers linked to redirecting editorial URLs, and the intl middleware sent a conflicting hreflang `Link` header. All three are fixed.
+- **Blocked by robots.txt (1 page):** the Portfolio Maker demo is crawlable again under every language prefix, so Google can read its `noindex`.
+- **Crawled – currently not indexed (4 pages):** these were most likely the localized homes above.
+- The editorial pages (Resources, Blog, Compare) no longer loop between redirects for visitors whose browser or cookie prefers a non-English language.
+- A crashed public portfolio page is marked `noindex`, so an error screen is never indexed.
+- **After deploy:** run "Validate fix" on all three reasons in Search Console and re-check coverage in 2–4 weeks.
+
 ## [1.4.2] - 2026-09-15
 
 Release commits through `6439ed3d`.

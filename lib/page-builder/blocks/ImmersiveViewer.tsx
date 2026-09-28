@@ -101,8 +101,8 @@ export function ImmersiveViewer({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const loadingImage = Boolean(fullSrc) && loadedSrc !== fullSrc;
 
-  // The filmstrip mounts its whole image list up front (item 3,
-  // docs/portfolio/puck-023-followups.md) — window it so a large collection
+  // The filmstrip mounts its whole image list up front (1.5.0 perf
+  // wave) — window it so a large collection
   // doesn't paint hundreds of thumbnail requests at once. 62px = 56px thumb +
   // 6px gap (the original flex `gap`, now baked into each slot's stride).
   const THUMB_STRIDE = 62;

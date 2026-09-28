@@ -3,8 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { measureFirstLoadJs, openEditorWithDraft } from "./helpers";
 
 /**
- * Run 1 of the perf wave (docs/portfolio/puck-023-followups.md, "Session
- * 2026-09-26 — perf wave"): the
+ * Run 1 of the perf wave (1.5.0, 2026-09-26): the
  * "before" numbers and the geometry probes captured BEFORE any app change.
  * Every test here RECORDS — it writes a JSON artifact and annotates the
  * report — and asserts only that it observed something. The numbers land in

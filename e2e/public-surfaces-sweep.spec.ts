@@ -4,8 +4,8 @@ import { openEditorWithDraft } from "./helpers";
 import { E2E_FIXTURE_DRAFT_NAME } from "@/lib/db/seedE2eDraft";
 
 /**
- * Run 2 of the public-surfaces pass (docs/gallurio.com-Coverage-2026-09-17/
- * plan-of-action.md): the marketing sweep (5 locales x light/dark x
+ * Run 2 of the public-surfaces pass (1.5.0, see
+ * `CHANGELOG.md` → SEO): the marketing sweep (5 locales x light/dark x
  * 375/768/1280) after the message-catalog scoping, ThemedShot/Ambient
  * rewrites and logo swap, plus the SEO head checks and the tenant modals
  * that now load on first open. Anonymous visitor; read-only.

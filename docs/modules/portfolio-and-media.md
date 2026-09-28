@@ -171,3 +171,10 @@ The Featured Work collection popup and every standalone image modal (photo grids
 - Store the asset id + provider (`GalleryItem.assetId`, `assetProvider: "cloudflare"`) and the delivery `url`; thumbnails are URL variants via `imageDeliveryUrl()`.
 - **Leak-safe deletion**: never `deleteImage` an asset that is still live. A replaced `settingsDraft` asset (OG image, site icon, logo) is deleted only once it differs from **both** the new value **and** the currently-published value — i.e. only after it's been superseded live (on Publish, or on Save when the old value is no longer the live one). Delete the remote asset whenever the owning document is deleted — never leave orphaned remote images.
 - **Upload leniency**: uploads validate file **type + size only** (`uploadAsset`/`uploadImage`) — no pixel-dimension or aspect-ratio rejection (the old 600px minimum / dimension checks were dropped). Cloudflare delivery-time fit handles sizing on read. `dimensions_too_large` stays in the error union but is unused/harmless. An in-app cropper is a planned future PR.
+
+## Known gaps (as of 1.5.0)
+
+- The next public-page code-splitting lever is to split the `imageModal` / `popupLayouts` variants per configured layout. Today every variant ships with the first-open chunk.
+- Mobile gallery CLS went 0 → 0.016 after the `next/image` tile sizing. It is still well under the 0.1 threshold, but worth tightening.
+- `listDraftsAction` returns `[]` on failure because its result type has no error channel.
+- The React Profiler count of commits per unedited block was never captured; it needs DevTools.

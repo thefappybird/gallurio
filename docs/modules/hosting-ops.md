@@ -51,3 +51,9 @@ Acceptance criteria for every Server Action, Route Handler, and public/server-co
 ## Beta operations
 
 Beta-program admission/close/promo-code ops commands are documented in full in `docs/modules/billing.md` (Beta program lifecycle section) since they're operationally inseparable from the billing lifecycle they drive.
+
+## Performance measurement
+
+- Bundle size: `pnpm analyze` runs Turbopack-native `next experimental-analyze`, not `@next/bundle-analyzer`, which is webpack-only. Summarize with `node scripts/perf/analyze-summary.mjs`, which reports the per-route gzip ceiling from `.next/diagnostics/analyze/data/<route>/analyze.data`.
+- First-load probes: `e2e/public-perf-probes.spec.ts` (marketing and tenant pages, anonymous, 375 px) and `e2e/puck023-perf-probes.spec.ts` (editor and preview).
+- The dev box cannot run `next build`, so local Lighthouse and probe numbers are dev-mode (Turbopack, unminified). They are only comparable with each other, never with production. Judge production with Lighthouse against the live site after deploy.

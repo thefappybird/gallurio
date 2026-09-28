@@ -9,8 +9,7 @@ import ar from "../messages/ar.json";
 import th from "../messages/th.json";
 
 /**
- * Run 4 of the perf wave (docs/portfolio/puck-023-followups.md, "Session
- * 2026-09-26 — perf wave") — the
+ * Run 4 of the perf wave (1.5.0, 2026-09-26) — the
  * public-surface sweep after item 3 (next/image + Cloudflare loader,
  * modal-list virtualization). One consolidated file per the batching rule:
  *

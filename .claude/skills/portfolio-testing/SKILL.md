@@ -55,7 +55,12 @@ A Next-only walker gets STUCK at gated steps (Next is hidden until the gate is s
 Those two are the only gates; the tour is 19 steps ending on `publish`.
 To screenshot/verify a late step you must satisfy each gate, not just click Next.
 
-## dnd-kit drag (validated technique)
+## dnd-kit drag (validated on Puck 0.20 — NOT re-validated on 0.23)
+Since the Puck 0.23 upgrade (`@dnd-kit` 0.4, rewritten sensors) synthetic Playwright drags have
+been seen to no-op. Treat the recipe below as unproven on 0.23: if a drag spec fails, check that
+the block count actually changed before blaming the app, and prefer the toolbar's Move Up/Down
+buttons for anything that isn't specifically about drag.
+
 Puck uses dnd-kit; Playwright `dragTo` doesn't drive its pointer sensor. Do it manually —
 the small initial move passes the activation threshold:
 ```ts
@@ -68,6 +73,12 @@ await page.mouse.move(cx, cy + 4, { steps: 4 });
 await page.mouse.up();
 ```
 This both adds a block and satisfies the `drag-block` gate (verified: `2 of 19 → 3 of 19`).
+
+## Duplicate panels — Puck 0.23 hides, it doesn't unmount
+0.23 keeps inactive plugin/sidebar panels mounted at `display: none`, so the blocks panel and
+the fields panel each exist twice. `getByLabel('Instagram username')` resolves two inputs and
+strict mode fails. Scope to the visible one (`.filter({ visible: true })` or a `:visible`
+selector) instead of reaching for `.first()`.
 
 ## Canvas assertions — the editor canvas is NOT an iframe
 EditorShell mounts `<Puck iframe={{ enabled: false }}>` (EditorShell.tsx:2892), so the editing

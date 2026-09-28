@@ -1,5 +1,5 @@
 /**
- * item 2b (docs/portfolio/puck-023-followups.md): proves the per-block split
+ * 1.5.0 perf wave (per-block split): proves the per-block split
  * is DATA-dependent — a page that never uses an island never mounts it, so
  * that island's chunk is never requested. Complements lazy.test.tsx (which
  * proves the three islands are distinct split points) and the followups

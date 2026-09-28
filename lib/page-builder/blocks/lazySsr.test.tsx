@@ -1,5 +1,5 @@
 /**
- * item 2b (docs/portfolio/puck-023-followups.md): proves the split keeps SSR
+ * 1.5.0 perf wave (per-block split): proves the split keeps SSR
  * intact. `lazy.ts` wraps each island in `next/dynamic` with the default
  * `ssr: true` — a Server Component (the public page's real `@puckeditor/core/rsc`
  * `Render`) must still emit real markup (gallery tile `<img>`s, collection

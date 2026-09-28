@@ -1,5 +1,5 @@
 /**
- * item 2b (docs/portfolio/puck-023-followups.md): proves lazy.ts actually
+ * 1.5.0 perf wave (per-block split): proves lazy.ts actually
  * produces three distinct code-split components, without a browser. The
  * per-template "which chunk gets requested" assertion lives in
  * lazySplit.test.tsx (needs a mocked next/dynamic; this file uses the real
