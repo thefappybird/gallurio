@@ -14,10 +14,13 @@ import { MarketingFooter } from "./_components/marketing-footer";
 // actually reads — see lib/i18n/clientMessages.ts.
 export default async function MarketingLayout({
   children,
+  params,
 }: {
   children: ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
-  const messages = await getMessages();
+  const { locale } = await params;
+  const messages = await getMessages({ locale });
 
   return (
     <NextIntlClientProvider messages={pickMessages(messages, MARKETING_CLIENT_MESSAGE_KEYS)}>

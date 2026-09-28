@@ -31,10 +31,23 @@ import MarketingLayout from "./layout";
 
 describe("MarketingLayout", () => {
   it("wraps children in a provider scoped to only the marketing message subset", async () => {
-    const page = await MarketingLayout({ children: <div data-testid="child" /> });
+    const page = await MarketingLayout({
+      children: <div data-testid="child" />,
+      params: Promise.resolve({ locale: "fil" }),
+    });
     render(page);
 
     expect(captured.messages).toEqual(pickMessages(enMessages, MARKETING_CLIENT_MESSAGE_KEYS));
+  });
+
+  it("passes the route locale to getMessages instead of relying on request-header inference", async () => {
+    const { getMessages } = await import("next-intl/server");
+    await MarketingLayout({
+      children: <div data-testid="child" />,
+      params: Promise.resolve({ locale: "fil" }),
+    });
+
+    expect(getMessages).toHaveBeenCalledWith({ locale: "fil" });
   });
 });
 
@@ -52,6 +65,8 @@ describe("marketing client message coverage", () => {
     const sharedFiles = [
       path.resolve(__dirname, "../../../components/app/theme-toggle.tsx"),
       path.resolve(__dirname, "../../../components/app/locale-switcher.tsx"),
+      path.resolve(__dirname, "../../../components/app/billed-as-note.tsx"),
+      path.resolve(__dirname, "../../../components/app/beta-plan-card.tsx"),
     ];
 
     function collectTsxFiles(dir: string): string[] {
