@@ -1,10 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+
+// GalleryGridBlock wraps each tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
 import { ImageBlock } from "./manualBlocks";
 import { puckConfig } from "@/lib/page-builder/config";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
@@ -103,7 +115,7 @@ describe("GalleryGridBlock — isomorphic render", () => {
   });
 
   it("shows the configured column count for the slot-based preset path", () => {
-    const slot: import("@measured/puck").SlotComponent = (props = {}) => (
+    const slot: import("@puckeditor/core").SlotComponent = (props = {}) => (
       <div data-testid="grid-slot" style={props.style} />
     );
     render(
@@ -128,6 +140,17 @@ describe("GalleryGridBlock — isomorphic render", () => {
     const { container } = render(GalleryGridBlock({ ...base, images: imgs(2) }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
     expect(grid.style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(3, 1fr))");
+  });
+
+  it("renders via next/image with a srcset, sizes, and a CF Images src (parity loader)", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), _style: { galleryColumns: 3 } })
+    );
+    const el = container.querySelector("img") as HTMLImageElement;
+    expect(el.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("srcset")).toBeTruthy();
+    expect(el.getAttribute("srcset")).toContain("imagedelivery.net/test-hash/");
+    expect(el.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
   });
 
   it("does not import server-only cloudinary (no SDK access in client bundle)", () => {
@@ -197,18 +220,19 @@ describe("GalleryGridBlock — banner/container props", () => {
 });
 
 describe("GalleryGridBlock — lightbox", () => {
-  it("clicking an image opens the shared Lightbox with that image's data", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", async () => {
     render(GalleryGridBlock({ ...base, images: imgs(2) }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    // Lightbox is a first-open-only chunk (loaded on demand).
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       GalleryGridBlock({
         ...base,
@@ -227,6 +251,7 @@ describe("GalleryGridBlock — lightbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 });
@@ -249,12 +274,12 @@ describe("GalleryGridBlock — nav across slot-composed Image children (Item 11)
     return ImageSlotStub;
   }
 
-  it("clicking the 2nd of 5 photos opens at index 1 with working prev/next and a 2/5 counter", () => {
+  it("clicking the 2nd of 5 photos opens at index 1 with working prev/next and a 2/5 counter", async () => {
     render(GalleryGridBlock({ ...base, images: [], content: imageSlot(5) }));
 
     fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
     expect(within(dialog).getByRole("button", { name: /previous image/i })).not.toBeDisabled();

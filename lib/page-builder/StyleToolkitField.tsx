@@ -15,6 +15,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PanelTabs } from "@/components/ui/panel-tabs";
 
 export type WorkspaceContactDefaults = {
   email?: string | null;
@@ -64,7 +65,7 @@ import {
   PanelLeft,
   Upload,
 } from "lucide-react";
-import type { ComponentData } from "@measured/puck";
+import type { ComponentData } from "@puckeditor/core";
 import { usePuckStore } from "./puckHooks";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl, SingleCollectionControl } from "./galleryPicker/MediaField";
 import { ImageBlockMetaSection } from "./ImageBlockMetaSection";
@@ -299,24 +300,11 @@ function TabHeader({
     layout: "style-tab-layout",
   };
   return (
-    <div className="flex border-b border-border">
-      {tabs.map((id) => (
-        <button
-          key={id}
-          type="button"
-          data-tour-id={TOUR_IDS[id]}
-          onClick={() => onTabChange(id)}
-          className={cn(
-            "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            tab === id
-              ? "border-b-2 border-foreground text-foreground"
-              : "text-muted-foreground"
-          )}
-        >
-          {LABELS[id]}
-        </button>
-      ))}
-    </div>
+    <PanelTabs
+      tabs={tabs.map((id) => ({ id, label: LABELS[id], tourId: TOUR_IDS[id] }))}
+      value={tab as "content" | "design" | "layout"}
+      onChange={onTabChange}
+    />
   );
 }
 
@@ -784,9 +772,6 @@ const NAV_ITEM_LABELS: Record<NavItemKey, string> = {
  * owner who wants e.g. Contact-Gallery-Home-Logo order for an RTL-language
  * site builds it here by hand.
  */
-// Legacy saved nav orders remain render-compatible; the editor now uses the
-// direction checkbox below rather than exposing this control.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NavOrderControl({
   order,
   onChange,
@@ -889,6 +874,7 @@ export function NavigationContentPanel({
             className="size-4 accent-foreground"
           />
         </label>
+        <NavOrderControl order={config.navOrder} onChange={(next) => set("navOrder", next)} />
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">

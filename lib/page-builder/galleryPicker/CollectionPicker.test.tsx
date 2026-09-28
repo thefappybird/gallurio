@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders as render } from "@/test-utils/render";
 import { CollectionPicker } from "./CollectionPicker";
-import { __clearPickerDataCache } from "./usePickerData";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({ uploadImage: vi.fn() }));
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -21,7 +21,6 @@ function makePickerData(collections: PickerCollection[] = [], items: unknown[] =
 }
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   vi.mocked(uploadImage).mockReset();
   // Default: empty workspace.
@@ -39,14 +38,14 @@ describe("CollectionPicker", () => {
   it("renders error state with retry on fetch failure", async () => {
     mockFetch.mockRejectedValue(new Error("network error"));
     render(<CollectionPicker value="" onChange={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText(/could not load/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/could not load/i)).toBeTruthy(), { timeout: 3000 });
     expect(screen.getByText(/retry/i)).toBeTruthy();
   });
 
   it("announces the fetch-failure message via role=alert", async () => {
     mockFetch.mockRejectedValue(new Error("network error"));
     render(<CollectionPicker value="" onChange={vi.fn()} />);
-    const alert = await screen.findByRole("alert");
+    const alert = await screen.findByRole("alert", {}, { timeout: 3000 });
     expect(alert).toHaveTextContent(/could not load/i);
   });
 

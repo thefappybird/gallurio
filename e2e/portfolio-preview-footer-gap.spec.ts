@@ -38,9 +38,16 @@ test("the preview page ends at the footer, with no dead space above it", async (
   const frame = await body.evaluate((main) => {
     const doc = main.ownerDocument;
     const holder = main.parentElement!;
-    const slot = main.firstElementChild as HTMLElement;
+    // Not firstElementChild: PageBodyBlock renders its full-width <style> tag
+    // (and, with a banner, the scrim/background layers) before the slot.
+    const slot = main.querySelector(":scope > .pf-page-body-slot") as HTMLElement;
     const kids = Array.from(slot.children) as HTMLElement[];
     const last = kids[kids.length - 1];
+    if (!last) {
+      throw new Error(
+        `page-body content slot has no children (childCount=${kids.length}) — template content did not land on the preview`
+      );
+    }
     return {
       holderDisplay: getComputedStyle(holder).display,
       holderDirection: getComputedStyle(holder).flexDirection,

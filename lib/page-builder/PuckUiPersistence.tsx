@@ -49,9 +49,16 @@ export function PuckUiPersistence({
     const pending = pendingUiRef.current;
     if (!pending) return;
 
+    // Puck itself force-closes both sidebars on mount below its own 638px
+    // breakpoint (chunk-55V3NZVF.mjs:13120-13128) — restoring a desktop
+    // session's `true` here would silently re-open them under that width and
+    // paint the canvas over. Same breakpoint, so we don't fight Puck's own call.
+    const isNarrowViewport =
+      typeof window !== "undefined" && !window.matchMedia("(min-width: 638px)").matches;
+
     const ui: Record<string, unknown> = {};
-    if (pending.leftSideBarVisible !== undefined) ui.leftSideBarVisible = pending.leftSideBarVisible;
-    if (pending.rightSideBarVisible !== undefined) ui.rightSideBarVisible = pending.rightSideBarVisible;
+    if (!isNarrowViewport && pending.leftSideBarVisible !== undefined) ui.leftSideBarVisible = pending.leftSideBarVisible;
+    if (!isNarrowViewport && pending.rightSideBarVisible !== undefined) ui.rightSideBarVisible = pending.rightSideBarVisible;
     if (pending.componentList) ui.componentList = pending.componentList;
     if (Object.keys(ui).length > 0) dispatch({ type: "setUi", ui });
 

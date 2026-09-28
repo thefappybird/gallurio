@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
-import { __clearPickerDataCache } from "./usePickerData";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({ uploadImage: vi.fn() }));
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -15,7 +14,6 @@ const collections = [{ id: "c0", name: "Existing", coverUrl: "https://x/c.jpg", 
 const photos = [{ id: "src1", publicId: "pid-src1", thumbUrl: "https://x/s.jpg", caption: "Src", altText: null }];
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   vi.mocked(uploadImage).mockReset();
   mockFetch.mockImplementation((url: string, init?: RequestInit) => {

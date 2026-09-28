@@ -82,6 +82,48 @@ describe("ContactSheet", () => {
     render(<ContactSheet {...baseProps({ loadMoreError: true })} />);
     expect(screen.getByTestId("load-more-retry")).toBeInTheDocument();
   });
+
+  describe("virtualization", () => {
+    function manyImages(n: number): PopupImage[] {
+      return Array.from({ length: n }, (_, i) => ({
+        id: `id${i}`,
+        publicId: `workspace/photo${i}`,
+        alt: `Photo ${i}`,
+        width: 800,
+        height: 600,
+      }));
+    }
+
+    it("mounts 200 images but renders far fewer thumbnail buttons in the DOM", () => {
+      const many = manyImages(200);
+      render(<ContactSheet {...baseProps({ images: many, total: many.length })} />);
+      const thumbs = screen.getAllByRole("button");
+      expect(thumbs.length).toBeGreaterThan(0);
+      expect(thumbs.length).toBeLessThan(200);
+    });
+
+    it("keeps data-popup-thumb selection and grid columns working for rendered rows", () => {
+      const many = manyImages(200);
+      const onOpen = vi.fn();
+      render(<ContactSheet {...baseProps({ images: many, total: many.length, onOpen, popupColumns: 4 })} />);
+      const list = screen.getByRole("list");
+      expect(list).toHaveAttribute("data-popup-columns", "4");
+      expect(list).toHaveStyle({ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" });
+      const thumbs = document.querySelectorAll("[data-popup-thumb]");
+      expect(thumbs.length).toBeGreaterThan(0);
+      fireEvent.click(thumbs[0]);
+      expect(onOpen).toHaveBeenCalledWith(0);
+    });
+
+    it("keeps focusable rendered rows in document tab order", () => {
+      const many = manyImages(200);
+      render(<ContactSheet {...baseProps({ images: many, total: many.length })} />);
+      const thumbs = screen.getAllByRole("button");
+      for (const thumb of thumbs) {
+        expect(thumb.tabIndex).toBe(0);
+      }
+    });
+  });
 });
 
 describe("Justified", () => {
@@ -92,6 +134,61 @@ describe("Justified", () => {
     expect(screen.getByRole("list")).toBeInTheDocument();
     expect(screen.getByRole("list")).toHaveAttribute("data-popup-columns", "5");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  describe("virtualization", () => {
+    function manyImages(n: number): PopupImage[] {
+      return Array.from({ length: n }, (_, i) => ({
+        id: `id${i}`,
+        publicId: `workspace/photo${i}`,
+        alt: `Photo ${i}`,
+        width: 800,
+        height: 600,
+      }));
+    }
+
+    // The row-packing algorithm (packRows) needs a real measured container
+    // width before it can lay anything out — happy-dom's ResizeObserver is a
+    // documented no-op here (see the test above), so this stubs a synchronous
+    // one for this block only, unlocking the measured/virtualized path.
+    let observed: ((entries: unknown[]) => void) | null = null;
+    beforeEach(() => {
+      observed = null;
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(cb: (entries: unknown[]) => void) {
+            observed = cb;
+          }
+          observe() {
+            observed?.([{ contentRect: { width: 900 } }]);
+          }
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("mounts 200 images but renders far fewer thumbnail buttons in the DOM", () => {
+      const many = manyImages(200);
+      render(<Justified {...baseProps({ images: many, total: many.length })} />);
+      const thumbs = screen.getAllByRole("button");
+      expect(thumbs.length).toBeGreaterThan(0);
+      expect(thumbs.length).toBeLessThan(200);
+    });
+
+    it("keeps data-popup-thumb selection working for a rendered row", () => {
+      const many = manyImages(200);
+      const onOpen = vi.fn();
+      render(<Justified {...baseProps({ images: many, total: many.length, onOpen })} />);
+      const thumbs = document.querySelectorAll("[data-popup-thumb]");
+      expect(thumbs.length).toBeGreaterThan(0);
+      fireEvent.click(thumbs[0]);
+      expect(onOpen).toHaveBeenCalledWith(0);
+    });
   });
 });
 
@@ -117,6 +214,39 @@ describe("SplitIndex", () => {
     expect(buttons).toHaveLength(3);
     fireEvent.click(buttons[2]);
     expect(onOpen).toHaveBeenCalledWith(2);
+  });
+
+  describe("virtualization", () => {
+    function manyImages(n: number): PopupImage[] {
+      return Array.from({ length: n }, (_, i) => ({
+        id: `id${i}`,
+        publicId: `workspace/photo${i}`,
+        alt: `Photo ${i}`,
+        width: 800,
+        height: 600,
+      }));
+    }
+
+    it("mounts 200 images but renders far fewer thumbnail buttons in the DOM", () => {
+      const many = manyImages(200);
+      render(<SplitIndex {...baseProps({ images: many, total: many.length })} />);
+      const thumbs = screen.getAllByRole("button");
+      expect(thumbs.length).toBeGreaterThan(0);
+      expect(thumbs.length).toBeLessThan(200);
+    });
+
+    it("keeps data-popup-thumb selection and column count working for rendered rows", () => {
+      const many = manyImages(200);
+      const onOpen = vi.fn();
+      render(<SplitIndex {...baseProps({ images: many, total: many.length, onOpen, popupColumns: 4 })} />);
+      const list = screen.getByRole("list");
+      expect(list).toHaveAttribute("data-popup-columns", "4");
+      expect(list).toHaveStyle({ columnCount: "4" });
+      const thumbs = document.querySelectorAll("[data-popup-thumb]");
+      expect(thumbs.length).toBeGreaterThan(0);
+      fireEvent.click(thumbs[0]);
+      expect(onOpen).toHaveBeenCalledWith(0);
+    });
   });
 });
 
@@ -232,9 +362,12 @@ describe("Immersive", () => {
     const options = screen.getAllByRole("option");
     fireEvent.click(options[2]);
     expect(options[2]).toHaveAttribute("aria-selected", "true");
-    // No nested lightbox rendered on click — still exactly one full-size (w=2000) image.
+    // No nested lightbox rendered on click — still exactly one full-size image
+    // (role=img excludes the alt="" filmstrip thumbnails), now showing photo3.
     const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
-    expect(allImgs.filter((img) => img.src.includes("w=2000"))).toHaveLength(1);
+    expect(allImgs).toHaveLength(1);
+    expect(allImgs[0].src).toContain("imagedelivery.net");
+    expect(allImgs[0].src).toContain("photo3");
   });
 
   it("renders a dot row when hasMore is false and images.length <= 8, and clicking a dot selects it", () => {

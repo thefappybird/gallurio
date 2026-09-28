@@ -475,7 +475,7 @@ export function StoryPromptDialog({
           <div className="flex min-h-0 flex-1 overflow-hidden">
             {step === 0 && (
               <div className="relative flex w-full flex-col items-center justify-center gap-4 py-6 text-center">
-                <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7 scale-200" priority />
+                <Image src="/brand/gallurio-sq-128.png" alt="" width={28} height={28} className="h-7 w-7 scale-200" />
                 <DialogTitle className="text-xl">{t("welcome.title")}</DialogTitle>
                 <DialogDescription className="max-w-sm text-foreground/85">{t("welcome.subtitle")}</DialogDescription>
                 <Button type="button" onClick={() => setStep(1)} className="mt-2">

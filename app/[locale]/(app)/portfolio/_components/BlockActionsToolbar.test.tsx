@@ -1,7 +1,7 @@
 /**
  * BlockActionsToolbar renders nothing when no block is selected, and renders
  * action buttons (anchored to the selected block) when a root block is selected.
- * Depends on createUsePuck from @measured/puck — mocked here. The toolbar gates
+ * Depends on createUsePuck from @puckeditor/core — mocked here. The toolbar gates
  * on a measured anchor (block rect within the canvas band), so the selected-block
  * test stubs the DOM nodes + getBoundingClientRect the rAF loop reads.
  */
@@ -45,7 +45,7 @@ let mockApi: MockApi = {
   getSelectorForId: noopGetSelectorForId,
 };
 
-vi.mock("@measured/puck", () => ({
+vi.mock("@puckeditor/core", () => ({
   createUsePuck: () => (selector?: (api: MockApi) => unknown) =>
     selector ? selector(mockApi) : mockApi,
 }));

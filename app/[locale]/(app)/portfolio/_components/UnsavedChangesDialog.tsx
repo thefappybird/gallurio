@@ -13,10 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Failing test driving next change:
-// FAIL UnsavedChangesDialog > renders a role=alert error above Save and disables Save when nameError is set
-// TestingLibraryElementError: Unable to find an accessible element with the role "alert"
-
 export function UnsavedChangesDialog({
   open,
   saving,
@@ -75,22 +71,24 @@ export function UnsavedChangesDialog({
           <Button type="button" variant="outline" onClick={onDiscard} loading={discarding} disabled={busy}>
             {t("unsavedDialog.discard")}
           </Button>
-          <div className="flex flex-col items-stretch gap-1">
-            {nameError && (
-              <p role="alert" className="text-xs text-destructive">
-                {nameError}
-              </p>
-            )}
-            <Button
-              type="button"
-              onClick={onSave}
-              loading={saving}
-              disabled={busy || !!nameError}
-            >
-              {t("unsavedDialog.save")}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            onClick={onSave}
+            loading={saving}
+            disabled={busy || !!nameError}
+          >
+            {t("unsavedDialog.save")}
+          </Button>
         </AlertDialogFooter>
+
+        {/* Below the actions row, never inside it: the footer is a nowrap flex
+            row that sizes its buttons, so error text placed among them squeezed
+            the buttons and pushed Save onto a line of its own. */}
+        {nameError && (
+          <p role="alert" className="-mt-1 px-4 pb-3 text-xs text-destructive text-start">
+            {nameError}
+          </p>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );

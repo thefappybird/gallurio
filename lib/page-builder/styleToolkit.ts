@@ -14,7 +14,7 @@
  * `--pf-font-heading` / `--pf-font-body` locally so headings and body both follow.
  */
 
-import type { Field } from "@measured/puck";
+import type { Field } from "@puckeditor/core";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
 import type { BrandKitFontPair, BlockButtonStyle } from "./types";
@@ -204,7 +204,7 @@ export type BlockStyle = {
   masonryEvenColumnEvenHeight?: number;
   /** @deprecated GalleryMasonry now always uses independent CSS columns. Existing values are ignored. */
   galleryStagger?: boolean;
-  // CollectionCard â€” independent caption typography. The card shell still uses
+  // CollectionCard — independent caption typography. The card shell still uses
   // the shared frame/background controls above; these target its two visible
   // text nodes rather than applying an opaque, section-wide typography style.
   collectionTitleBold?: boolean;

@@ -58,7 +58,8 @@ describe("normalizePublicPageData", () => {
 
   it("defaults a missing block `props` to an object", () => {
     const out = normalizePublicPageData({ root: {}, content: [{ type: "Heading" }] }, known);
-    expect(bodyContent(out)[0].props).toEqual({});
+    // ensureBlockIds fills the id it needs to key Puck's RSC slot renderer.
+    expect(bodyContent(out)[0].props).toEqual({ id: "page-body--content-0" });
   });
 
   it("returns null when nothing is renderable (so the caller shows its fallback)", () => {
@@ -74,7 +75,8 @@ describe("normalizePublicPageData", () => {
     };
     const out = normalizePublicPageData(data, known);
     expect(out!.root).toEqual({ props: { title: "T" } });
-    expect(bodyContent(out)).toEqual([{ type: "Heading", props: { text: "H" } }]);
+    // ensureBlockIds fills the id it needs to key Puck's RSC slot renderer.
+    expect(bodyContent(out)).toEqual([{ type: "Heading", props: { text: "H", id: "page-body--content-0" } }]);
   });
 
   it("keeps a page whose blocks live only in zones even if top-level content is empty", () => {
@@ -110,11 +112,13 @@ describe("normalizePublicPageData", () => {
       },
       imageKnown
     );
+    // ensureBlockIds fills the id it needs to key Puck's RSC slot renderer.
     expect(bodyContent(out)[0].props).toEqual({
       imagePublicId: "ws/legacy.jpg",
       imageUrl: "",
       alt: "Legacy photo",
       fit: "cover",
+      id: "page-body--content-0",
     });
   });
 

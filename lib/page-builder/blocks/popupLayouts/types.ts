@@ -6,6 +6,7 @@
  * so a layout swap never re-triggers a fetch or duplicates request logic.
  */
 
+import type { RefObject } from "react";
 import type { LightboxImage } from "../Lightbox";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import type { PopupColumns } from "@/lib/page-builder/types";
@@ -50,6 +51,12 @@ export type PopupLayoutBodyProps = {
   /** Index is the position within the currently loaded `images` array. */
   onOpen: (index: number) => void;
   labels: PopupBodyLabels;
+  /** The popup dialog's own scrollable body element (CollectionPopup's
+   *  `overflowY:auto` div) — the leaf mounts directly inside it, so this is
+   *  the correct `useVirtualizer` scroll element for windowing a large photo
+   *  list. Undefined when a caller doesn't own that element (e.g. a future
+   *  standalone render); virtualization degrades to a small fixed window. */
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 };
 
 /** Renders "N photos" from the two singular/plural label strings above. */

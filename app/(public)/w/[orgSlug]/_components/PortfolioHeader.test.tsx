@@ -60,6 +60,24 @@ describe("PortfolioHeader", () => {
     expect(gallery).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
 
+  it("logo image is not lazy-loaded (priority — above the fold on every public page)", () => {
+    const { container } = render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ logoUrl: "https://imagedelivery.net/test-hash/logo-id/public" }}
+      />,
+    );
+    const logoImg = container.querySelector("img") as HTMLImageElement;
+    expect(logoImg).not.toBeNull();
+    // `priority` short-circuits next/image's lazy-loading decision — without it
+    // a plain <img loading> default would still not literally read "lazy" in
+    // jsdom, so this only distinguishes the two given how this Next build's
+    // getImgProps resolves `loading` (see the loader test file for the Red
+    // baseline this asserts against).
+    expect(logoImg).not.toHaveAttribute("loading", "lazy");
+  });
+
   it("renders a Contact button carrying data-cta=contact for the modal delegate", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const contact = screen.getByRole("button", { name: "Contact" });

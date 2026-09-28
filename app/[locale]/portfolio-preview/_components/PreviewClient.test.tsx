@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 
-vi.mock("@measured/puck", () => ({
+vi.mock("@puckeditor/core", () => ({
   Render: ({ data, metadata }: { data: unknown; metadata?: unknown }) => (
     <>
       <pre data-testid="render-data">{JSON.stringify(data)}</pre>

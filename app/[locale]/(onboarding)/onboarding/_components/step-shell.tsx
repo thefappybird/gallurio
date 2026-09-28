@@ -75,7 +75,7 @@ export function StepShell({
             reach when a drawer or a small viewport makes the content tall. */}
         <div className="relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-6rem)] w-full flex-col gap-4 overflow-hidden border border-border bg-background p-4 sm:p-5 md:p-6">
           <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
-            <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+            <Image src="/brand/gallurio-sq-128.png" alt="" width={28} height={28} className="h-7 w-7" />
             <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
           </Link>
 

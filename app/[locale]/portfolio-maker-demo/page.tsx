@@ -61,6 +61,10 @@ export default async function PortfolioMakerDemoPage({
       <EditorShell
         demoMode
         slug=""
+        // No workspace exists for an anonymous demo visitor — a static
+        // constant is fine here since demoMode never issues a gallery-picker
+        // network request against a real tenant's data.
+        workspaceId="demo"
         workspaceName="Your Studio"
         initialData={{ home: EMPTY_ZONE, gallery: EMPTY_ZONE }}
         initialBrandKit={DEFAULT_BRAND_KIT}

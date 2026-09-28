@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { resolveNavOrder, type PortfolioHeaderConfig, type NavItemKey } from "@/lib/page-builder/types";
 import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
 import { useImageRetry } from "@/hooks/useImageRetry";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 
 export type PortfolioHeaderLabels = {
   brand: string;
@@ -264,12 +266,15 @@ export function PortfolioHeader({
             overflow: "hidden",
           }}
         >
-          {config?.logoUrl && !logo.failed && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+          {config?.logoUrl && !logo.failed && logo.src && (
+            <Image
               src={logo.src}
               alt=""
               aria-hidden="true"
+              loader={cfImageLoader}
+              width={160}
+              height={40}
+              priority
               onError={logo.onError}
               style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
             />

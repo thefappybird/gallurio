@@ -68,90 +68,92 @@ export async function POST(req: Request) {
   const { name, description, items } = parsed.data;
   const workspaceId = ctx.workspace._id;
 
-  if (items.length > 0) {
-    const ownershipResults = await Promise.all(
-      items.map((img) => verifyImageOwnership(img.assetId, workspaceId.toString()))
-    );
-    if (ownershipResults.some((ok) => !ok)) {
-      return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
-    }
-  }
-
-  // Server-side photo validation — format, size, and dimensions for every starter item.
-  for (const img of items) {
-    const photoMeta = { format: img.format, sizeBytes: img.sizeBytes, width: img.width, height: img.height };
-    const photoCheck = validatePhotoMeta(photoMeta, PORTFOLIO_PHOTO_MAX_BYTES);
-    if (!photoCheck.ok) {
-      return NextResponse.json(
-        {
-          error: photoCheck.reason,
-          detail: photoCheckDetail(photoCheck.reason, photoMeta, PORTFOLIO_PHOTO_MAX_BYTES),
-          assetId: img.assetId,
-        },
-        { status: 400 }
-      );
-    }
-  }
-
-  await connectDB();
-
-  // Derive a unique slug — append a short random suffix when the base collides.
-  const baseSlug = makeSlug(name);
-  let slug = baseSlug;
-  const existing = await GalleryCollection.findOne({ workspaceId, slug }).lean();
-  if (existing) {
-    slug = `${baseSlug}-${Math.floor(Math.random() * 9000) + 1000}`;
-  }
-
-  const session = await mongoose.startSession();
-  let collectionId: string;
   try {
-    await session.withTransaction(async () => {
-      const [collection] = await GalleryCollection.create(
-        [{ workspaceId, name, slug, isPublic: true, order: 0, description: description ?? "" }],
-        { session }
+    if (items.length > 0) {
+      const ownershipResults = await Promise.all(
+        items.map((img) => verifyImageOwnership(img.assetId, workspaceId.toString()))
       );
-
-      if (items.length > 0) {
-        const docs = items.map((img, i) => ({
-          workspaceId,
-          collectionId: collection._id,
-          assetId: img.assetId,
-          url: img.url,
-          width: img.width ?? null,
-          height: img.height ?? null,
-          format: img.format ?? null,
-          sizeBytes: img.sizeBytes ?? 0,
-          caption: img.caption ?? "",
-          altText: img.altText ?? "",
-          title: img.title ?? "",
-          date: img.date ?? "",
-          location: img.location ?? "",
-          client: img.client ?? "",
-          tags: img.tags ?? [],
-          meta: img.meta ?? [],
-          order: i,
-        }));
-        const createdItems = await GalleryItem.create(docs, { session, ordered: true });
-
-        // Set the first item as the cover.
-        if (createdItems[0]) {
-          await GalleryCollection.updateOne(
-            { _id: collection._id, workspaceId },
-            { $set: { coverItemId: createdItems[0]._id } },
-            { session }
-          );
-        }
+      if (ownershipResults.some((ok) => !ok)) {
+        return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
       }
+    }
 
-      collectionId = String(collection._id);
-    });
+    // Server-side photo validation — format, size, and dimensions for every starter item.
+    for (const img of items) {
+      const photoMeta = { format: img.format, sizeBytes: img.sizeBytes, width: img.width, height: img.height };
+      const photoCheck = validatePhotoMeta(photoMeta, PORTFOLIO_PHOTO_MAX_BYTES);
+      if (!photoCheck.ok) {
+        return NextResponse.json(
+          {
+            error: photoCheck.reason,
+            detail: photoCheckDetail(photoCheck.reason, photoMeta, PORTFOLIO_PHOTO_MAX_BYTES),
+            assetId: img.assetId,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    await connectDB();
+
+    // Derive a unique slug — append a short random suffix when the base collides.
+    const baseSlug = makeSlug(name);
+    let slug = baseSlug;
+    const existing = await GalleryCollection.findOne({ workspaceId, slug }).lean();
+    if (existing) {
+      slug = `${baseSlug}-${Math.floor(Math.random() * 9000) + 1000}`;
+    }
+
+    const session = await mongoose.startSession();
+    let collectionId: string;
+    try {
+      await session.withTransaction(async () => {
+        const [collection] = await GalleryCollection.create(
+          [{ workspaceId, name, slug, isPublic: true, order: 0, description: description ?? "" }],
+          { session }
+        );
+
+        if (items.length > 0) {
+          const docs = items.map((img, i) => ({
+            workspaceId,
+            collectionId: collection._id,
+            assetId: img.assetId,
+            url: img.url,
+            width: img.width ?? null,
+            height: img.height ?? null,
+            format: img.format ?? null,
+            sizeBytes: img.sizeBytes ?? 0,
+            caption: img.caption ?? "",
+            altText: img.altText ?? "",
+            title: img.title ?? "",
+            date: img.date ?? "",
+            location: img.location ?? "",
+            client: img.client ?? "",
+            tags: img.tags ?? [],
+            meta: img.meta ?? [],
+            order: i,
+          }));
+          const createdItems = await GalleryItem.create(docs, { session, ordered: true });
+
+          // Set the first item as the cover.
+          if (createdItems[0]) {
+            await GalleryCollection.updateOne(
+              { _id: collection._id, workspaceId },
+              { $set: { coverItemId: createdItems[0]._id } },
+              { session }
+            );
+          }
+        }
+
+        collectionId = String(collection._id);
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return NextResponse.json({ id: collectionId!, name, slug, description: description ?? "" }, { status: 201 });
   } catch (err) {
     console.error("[portfolio/gallery/collections] create failed:", err);
     return NextResponse.json({ error: "save_failed" }, { status: 500 });
-  } finally {
-    await session.endSession();
   }
-
-  return NextResponse.json({ id: collectionId!, name, slug, description: description ?? "" }, { status: 201 });
 }

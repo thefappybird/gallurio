@@ -292,4 +292,19 @@ describe("POST /api/portfolio/gallery/collections", () => {
     )) as unknown as MockResp;
     expect(res.status).toBe(201);
   });
+
+  it("returns 500 save_failed when the pre-transaction slug lookup throws, and logs it", async () => {
+    // GalleryCollection.findOne runs BEFORE the transaction opens — forcing it to
+    // reject proves the try/catch now covers that earlier DB read too.
+    const spy = vi.spyOn(GalleryCollection, "findOne").mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = (await POST(makeReq({ name: "Whatever" }))) as unknown as MockResp;
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "save_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio/gallery/collections] create failed:", expect.any(Error));
+    spy.mockRestore();
+    errSpy.mockRestore();
+  });
 });

@@ -25,16 +25,18 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Render, type Config, type Data } from "@measured/puck";
+import { Render, type Config, type Data } from "@puckeditor/core";
 import { SECTION_PRESETS, type SectionPresetKey } from "@/lib/page-builder/blocks/sectionPresets";
 import type { ManualBlockKey } from "@/lib/page-builder/blockCategories";
 import { mapBlocks } from "@/lib/page-builder/blockTree";
 import type { PuckData } from "@/lib/page-builder/types";
 import { PF_CONTAINER_NAME } from "@/lib/page-builder/responsive";
 import {
+  cancelPresetPreviewClose,
   closePresetPreview,
   getActivePresetAnchor,
   openPresetPreview,
+  schedulePresetPreviewClose,
   useActivePresetPreview,
 } from "@/lib/page-builder/presetPreviewStore";
 import { computeAnchoredPanelPosition } from "@/lib/page-builder/anchoredPanelPosition";
@@ -223,6 +225,10 @@ function DrawerPreviewTarget({ itemKey, children }: { itemKey: string; children:
       ref={rowRef}
       tabIndex={0}
       onPointerEnter={show}
+      // The card only survives while the pointer is on this row or on the card
+      // itself. Leaving arms the close; the card's own pointerenter calls it
+      // off, which is what makes the gap between them crossable.
+      onPointerLeave={schedulePresetPreviewClose}
       onClick={show}
       onFocus={show}
       onDragStart={closePresetPreview}
@@ -309,6 +315,10 @@ export function PresetPreviewPanel({
       ref={panelRef}
       data-preset-preview-panel="true"
       role="tooltip"
+      // Keeps the card alive while the pointer is on it, and closes it on the
+      // way out — the other half of the row's pointerleave contract.
+      onPointerEnter={cancelPresetPreviewClose}
+      onPointerLeave={schedulePresetPreviewClose}
       style={{
         position: "fixed",
         top: pos?.top ?? -9999,

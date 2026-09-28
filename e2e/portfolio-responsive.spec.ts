@@ -52,16 +52,24 @@ test("editor mobile viewport clamps the full canvas frame and remains horizontal
   // Every /portfolio visit for an account with existing drafts fires the
   // "Welcome back" entry dialog, which blocks all other interaction.
   const continueEditing = page.getByRole("button", { name: "Continue where you left off" });
-  if (await continueEditing.isVisible({ timeout: 5_000 }).catch(() => false)) {
+  // isVisible({ timeout }) never waits, and the dialog mounts after the shell.
+  if (await continueEditing.waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false)) {
     await continueEditing.click();
   }
 
   // The first-visit spotlight guide may also be active and its overlay
   // intercepts clicks elsewhere until dismissed.
   const skipGuide = page.getByRole("button", { name: "Skip Guide" });
-  if (await skipGuide.isVisible({ timeout: 2_000 }).catch(() => false)) {
+  if (await skipGuide.waitFor({ state: "visible", timeout: 3_000 }).then(() => true, () => false)) {
     await skipGuide.click();
     await page.getByRole("button", { name: "Skip Guide" }).click();
+  }
+
+  // Below lg the "works best on a larger screen" banner sits over the toolbar
+  // until dismissed.
+  const continueAnyway = page.getByRole("button", { name: "Continue anyway" });
+  if (await continueAnyway.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) {
+    await continueAnyway.click();
   }
 
   // At 375px the inline canvas controls are hidden and only the compact

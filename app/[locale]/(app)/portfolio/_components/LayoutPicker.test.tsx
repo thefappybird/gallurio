@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders as render } from "@/test-utils/render";
 import { LayoutPicker, LayoutPreviewCard, renderPopupLayoutThumb } from "./LayoutPicker";
 import { __resetLayoutPreview } from "@/lib/page-builder/layoutPreviewStore";
 

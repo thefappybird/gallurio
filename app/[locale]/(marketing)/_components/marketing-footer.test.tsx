@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 
 const route = vi.hoisted(() => ({ pathname: "/" }));
 
-vi.mock("next-intl", () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
-}));
+vi.mock("next-intl", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next-intl")>();
+  return {
+    ...actual,
+    useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
+  };
+});
 
 vi.mock("next/image", () => ({
   default: () => <span data-testid="brand-image" />,
@@ -45,5 +50,17 @@ describe("MarketingFooter", () => {
 
     expect(screen.getByRole("link", { name: "Resources" })).toHaveAttribute("href", "/resources");
     expect(screen.getByRole("link", { name: "Terms of Service" })).toBeInTheDocument();
+  });
+
+  it("links the English-only Resources/Compare pages without a locale prefix under locale fil", () => {
+    route.pathname = "/fil";
+    render(
+      <NextIntlClientProvider locale="fil">
+        <MarketingFooter />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole("link", { name: "marketing.footer:resources" })).toHaveAttribute("href", "/resources");
+    expect(screen.getByRole("link", { name: "marketing.footer:compare" })).toHaveAttribute("href", "/compare");
   });
 });

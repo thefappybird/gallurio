@@ -26,7 +26,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { ArrowUp, ArrowDown, ArrowUpFromLine, Copy, Trash2 } from "lucide-react";
 import { selectedBlockActions } from "@/lib/page-builder/moveBlockToRoot";
 import type { BlockActions } from "@/lib/page-builder/moveBlockToRoot";

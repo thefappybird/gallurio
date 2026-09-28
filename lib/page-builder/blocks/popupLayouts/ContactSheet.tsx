@@ -1,8 +1,17 @@
 "use client";
 
 import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import Image from "next/image";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
+
+// Rough square-tile row height guess (no measured column width available) —
+// only used as the virtualizer's estimate; overscan absorbs the slack.
+const ESTIMATED_ROW_PX = 220;
+const ROW_GAP_PX = 8;
+const FALLBACK_ROW_COUNT = 4;
 
 /**
  * `contact-sheet` — the original popup body (uniform squares, laid out in an
@@ -29,8 +38,34 @@ export function ContactSheet({
   onLoadMore,
   onOpen,
   labels,
+  scrollContainerRef,
 }: PopupLayoutBodyProps) {
   const countLabel = formatPhotoCount(total, labels);
+  const columns = popupColumns || 1;
+  const rowCount = Math.ceil(images.length / columns);
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollContainerRef?.current ?? null,
+    estimateSize: () => ESTIMATED_ROW_PX + ROW_GAP_PX,
+    overscan: 3,
+  });
+  const rawVirtualRows = rowVirtualizer.getVirtualItems();
+  // Before the scroll container has a real measured size (no scrollContainerRef,
+  // or this environment's ResizeObserver never fires — see popupLayouts.test.tsx),
+  // fall back to a small fixed window rather than rendering nothing.
+  const virtualRows =
+    rawVirtualRows.length > 0
+      ? rawVirtualRows
+      : Array.from({ length: Math.min(rowCount, FALLBACK_ROW_COUNT) }, (_, i) => ({
+          index: i,
+          start: i * (ESTIMATED_ROW_PX + ROW_GAP_PX),
+          end: (i + 1) * (ESTIMATED_ROW_PX + ROW_GAP_PX),
+        }));
+  const totalSize = rawVirtualRows.length > 0 ? rowVirtualizer.getTotalSize() : 0;
+  const firstRow = virtualRows[0];
+  const lastRow = virtualRows[virtualRows.length - 1];
+  const topSpacer = firstRow ? firstRow.start : 0;
+  const bottomSpacer = lastRow ? Math.max(0, totalSize - lastRow.end) : 0;
 
   return (
     <>
@@ -75,22 +110,28 @@ export function ContactSheet({
           padding: 0,
         }}
       >
-        {images.map((img, index) => {
-          const thumbSrc = imageDeliveryUrl(img.publicId, {
-            width: 400,
-            height: 400,
-            fit: "cover",
-          });
-          return (
-            <li
-              key={img.id}
-            >
+        {topSpacer > 0 && <li aria-hidden style={{ gridColumn: "1 / -1", height: topSpacer }} />}
+        {(() => {
+          const startIndex = (firstRow?.index ?? 0) * columns;
+          const endIndex = Math.min(images.length, ((lastRow?.index ?? 0) + 1) * columns);
+          return images.slice(startIndex, endIndex).map((img, i) => {
+            const index = startIndex + i;
+            const thumbSrc = imageDeliveryUrl(img.publicId, {
+              width: 400,
+              height: 400,
+              fit: "cover",
+            });
+            return (
+              <li
+                key={img.id}
+              >
               <button
                 type="button"
                 aria-label={img.alt || labels.openPhoto}
                 data-popup-thumb=""
                 onClick={() => onOpen(index)}
                 style={{
+                  position: "relative",
                   width: "100%",
                   aspectRatio: "1 / 1",
                   padding: 0,
@@ -102,14 +143,14 @@ export function ContactSheet({
                 }}
               >
                 {thumbSrc ? (
-                  <img
+                  <Image
                     src={thumbSrc}
                     alt={img.alt || labels.photo}
+                    loader={cfImageLoader}
+                    fill
+                    sizes={`${Math.round(100 / (popupColumns || 1))}vw`}
                     style={{
-                      width: "100%",
-                      height: "100%",
                       objectFit: "cover",
-                      display: "block",
                       transition: "opacity 0.15s",
                     }}
                     onMouseEnter={(e) => {
@@ -137,8 +178,10 @@ export function ContactSheet({
                 )}
               </button>
             </li>
-          );
-        })}
+            );
+          });
+        })()}
+        {bottomSpacer > 0 && <li aria-hidden style={{ gridColumn: "1 / -1", height: bottomSpacer }} />}
       </ul>
 
       {/* Load more / loading more / inline load-more error */}

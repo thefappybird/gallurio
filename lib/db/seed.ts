@@ -59,7 +59,7 @@ import {
   PROMO_CODE_SEEDS,
   type SeedIdentity,
 } from "./seed-fixtures";
-import { getTemplate } from "@/lib/page-builder/templates";
+import { getTemplate, PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { E2E_FIXTURE_DRAFT_NAME, buildE2eFixtureData } from "./seedE2eDraft";
 
 type SessionRange = { startAt: Date; endAt: Date };
@@ -525,6 +525,8 @@ async function createClients(workspaceId: mongoose.Types.ObjectId): Promise<Clie
 
 async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
   const collections = await GalleryCollection.insertMany([
+    // Weddings MUST stay first — its _id is threaded into the e2e fixture
+    // draft's FeaturedWork block (seedE2eDraft.ts contract 5).
     {
       workspaceId,
       name: "Weddings",
@@ -567,11 +569,13 @@ async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
   );
 
   await GalleryItem.insertMany(items);
+  return collections;
 }
 
 async function createPublishedPortfolio(workspace: {
   _id: mongoose.Types.ObjectId;
   name: string;
+  featuredCollectionId: string;
 }) {
   // Use a current, content-rich template for the marketing screenshots. The
   // secondary drafts let the refreshed drafts dialog and template switcher
@@ -642,7 +646,7 @@ async function createPublishedPortfolio(workspace: {
       // is the "no template chosen yet" signal and sends the editor into the
       // template picker on load, which leaves a dialog over the canvas.
       templateId: minimalTemplate.id,
-      data: buildE2eFixtureData(),
+      data: buildE2eFixtureData({ featuredCollectionId: workspace.featuredCollectionId }),
       brandKit: minimalTemplate.defaultBrandKit,
       contact: minimalTemplate.defaultContact,
       collectionsPopup: minimalTemplate.defaultCollectionsPopup,
@@ -650,6 +654,26 @@ async function createPublishedPortfolio(workspace: {
       createdAt: dayOffset(-12),
       updatedAt: dayOffset(-12),
     },
+    // One draft per template, named "<Label> Template". Owned by the e2e
+    // suite: several specs load a template by that name to assert against a
+    // known block tree, and until now those drafts only ever existed as
+    // hand-made leftovers in the shared dev database — so a clean `pnpm seed`
+    // left them failing at the drafts dialog. Generated from the registry so a
+    // new template is covered the day it is added.
+    ...PORTFOLIO_TEMPLATES.filter((template) => template.id !== "scratch").map(
+      (template, index) => ({
+        workspaceId: workspace._id,
+        name: `${template.label} Template`,
+        templateId: template.id,
+        data: template.seedData({ workspace: { name: workspace.name } }),
+        brandKit: template.defaultBrandKit,
+        contact: template.defaultContact,
+        collectionsPopup: template.defaultCollectionsPopup,
+        ...draftMetadata,
+        createdAt: dayOffset(-20 - index),
+        updatedAt: dayOffset(-20 - index),
+      })
+    ),
   ]);
 
   await Workspace.updateOne(
@@ -1214,10 +1238,14 @@ async function seedMainWorkspace(owner: SeedIdentity) {
   const teams = await createTeamsAndMembers(workspace._id, owner);
   const clients = await createClients(workspace._id);
 
-  await Promise.all([
-    createGalleryFixtures(workspace._id),
-    createPublishedPortfolio({ _id: workspace._id, name: workspace.name }),
-  ]);
+  // Sequential, not Promise.all: the e2e fixture draft's FeaturedWork block
+  // needs the seeded Weddings collection's real _id (seedE2eDraft.ts contract 5).
+  const collections = await createGalleryFixtures(workspace._id);
+  await createPublishedPortfolio({
+    _id: workspace._id,
+    name: workspace.name,
+    featuredCollectionId: String(collections[0]._id),
+  });
 
   await createBookingsAndTransactions(
     { _id: workspace._id, currency: workspace.currency },

@@ -6,6 +6,11 @@ describe("localeUrl()", () => {
     expect(localeUrl("en", "/pricing")).toBe("http://localhost:3000/pricing");
     expect(localeUrl("fil", "/pricing")).toBe("http://localhost:3000/fil/pricing");
   });
+
+  it("drops the trailing slash for a prefixed locale's home path", () => {
+    expect(localeUrl("fil", "/")).toBe("http://localhost:3000/fil");
+    expect(localeUrl("en", "/")).toBe("http://localhost:3000/");
+  });
 });
 
 describe("marketingMetadata()", () => {
@@ -63,6 +68,20 @@ describe("marketingMetadata()", () => {
 
     expect(meta.openGraph).toMatchObject({ images: ["http://localhost:3000/fil/opengraph-image"] });
     expect(meta.twitter).toMatchObject({ images: ["http://localhost:3000/fil/opengraph-image"] });
+  });
+
+  it("canonicalises a prefixed locale's home page without a trailing slash", () => {
+    const meta = marketingMetadata({ locale: "fil", path: "/", title: "T", description: "D" });
+
+    expect(meta.alternates?.canonical).toBe("http://localhost:3000/fil");
+    const languages = meta.alternates?.languages as Record<string, string>;
+    for (const [code, url] of Object.entries(languages)) {
+      if (code === "en" || code === "x-default") {
+        expect(url).toBe("http://localhost:3000/");
+      } else {
+        expect(url.endsWith("/")).toBe(false);
+      }
+    }
   });
 });
 

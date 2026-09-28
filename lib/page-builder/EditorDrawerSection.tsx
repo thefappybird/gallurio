@@ -2,7 +2,7 @@
 
 import { Children, cloneElement, Fragment, isValidElement, useContext, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from "@/components/ui/collapsible";
 import { BlockIdContext, getDrawerOpen, setDrawerOpen } from "./drawerOpenStore";
 
 /**
@@ -49,27 +49,26 @@ export function EditorDrawerSection({
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() =>
-          setOpen((o) => {
-            const next = !o;
-            if (persistKey) setDrawerOpen(persistKey, next);
-            return next;
-          })
-        }
+    <Collapsible
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (persistKey) setDrawerOpen(persistKey, next);
+      }}
+    >
+      <CollapsibleTrigger
         className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-medium uppercase tracking-wide text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <span>{title}</span>
         <ChevronDown
-          className={cn("size-3.5 transition-transform", open && "rotate-180")}
+          className="size-3.5 shrink-0 transition-transform group-data-panel-open:rotate-180 motion-reduce:transition-none"
           aria-hidden
         />
-      </button>
-      {open && <div className="flex flex-col gap-3 p-3">{children}</div>}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsiblePanel>
+        <div className="flex flex-col gap-3 p-3">{children}</div>
+      </CollapsiblePanel>
+    </Collapsible>
   );
 }
 

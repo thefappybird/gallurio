@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PopupLayout, ImageModalLayout } from "@/lib/page-builder/types";
 import type { PickerItem } from "@/lib/page-builder/galleryPicker/types";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { computeAnchoredPanelPosition } from "@/lib/page-builder/anchoredPanelPosition";
+import { galleryKeys } from "@/lib/page-builder/galleryPicker/queryKeys";
+import { useGalleryWorkspaceId } from "@/lib/page-builder/galleryPicker/GalleryQueryProvider";
 import {
   closeLayoutPreview,
   getActiveLayoutPreviewAnchor,
@@ -189,32 +192,30 @@ type PreviewImagesState =
 export function LayoutPreviewCard() {
   const activeKey = useActiveLayoutPreview();
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const [previewImages, setPreviewImages] = useState<PreviewImagesState>({ status: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/portfolio/gallery/collections/all?limit=${PREVIEW_IMAGE_LIMIT}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as { items: PickerItem[] };
-        if (cancelled) return;
-        if (!data.items || data.items.length === 0) {
-          setPreviewImages({ status: "empty" });
-          return;
-        }
-        setPreviewImages({
-          status: "ready",
-          urls: data.items.map((item) => imageDeliveryUrl(item.publicId, { width: 240, fit: "cover" })),
-        });
-      } catch {
-        if (!cancelled) setPreviewImages({ status: "error" });
-      }
-    })();
-    return () => {
-      cancelled = true;
+  const workspaceId = useGalleryWorkspaceId();
+  const previewQuery = useQuery({
+    queryKey: galleryKeys.layoutPreview(workspaceId),
+    queryFn: async () => {
+      const res = await fetch(`/api/portfolio/gallery/collections/all?limit=${PREVIEW_IMAGE_LIMIT}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as { items: PickerItem[] };
+    },
+  });
+  // Loading/empty/error all fall back to the flat abstract schematic (no
+  // gradient/spinner/broken-image icon) — only "ready" carries real urls.
+  let previewImages: PreviewImagesState;
+  if (previewQuery.isError) {
+    previewImages = { status: "error" };
+  } else if (!previewQuery.data) {
+    previewImages = { status: "loading" };
+  } else if (previewQuery.data.items.length === 0) {
+    previewImages = { status: "empty" };
+  } else {
+    previewImages = {
+      status: "ready",
+      urls: previewQuery.data.items.map((item) => imageDeliveryUrl(item.publicId, { width: 240, fit: "cover" })),
     };
-  }, []);
+  }
 
   // Derived during render, not in an effect — see `anchoredPanelPosition.ts`.
   // Prefers the start side (left in LTR): this panel is a right-hand

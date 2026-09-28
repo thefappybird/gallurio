@@ -19,7 +19,9 @@ import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/l
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import { ImageMetaWizard, useImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
-import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { galleryKeys } from "./queryKeys";
+import { useGalleryWorkspaceId } from "./GalleryQueryProvider";
 import type { PickerCollection, PickerItem } from "./types";
 
 const PAGE = 48;
@@ -40,7 +42,8 @@ export function EditCollectionDialog({
 }) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
-  const cache = useGalleryPickerCache();
+  const workspaceId = useGalleryWorkspaceId();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -76,7 +79,7 @@ export function EditCollectionDialog({
 
   function handleMetaSaved(updated: PickerItem) {
     setItems((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
-    if (colId) cache?.bust(colId);
+    if (colId) void queryClient.invalidateQueries({ queryKey: galleryKeys.feed(workspaceId, colId) });
   }
 
   const loadAll = useCallback(async (id: string) => {

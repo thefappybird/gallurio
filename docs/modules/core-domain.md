@@ -22,3 +22,12 @@ Bookings, clients, calendar, teams, notifications, and audit trail — the day-t
 ## Public-facing legal/marketing pages
 
 `app/[locale]/(marketing)/{terms,privacy,refunds,...}` render from `messages/<locale>.json` under the `marketing.*` namespace (`marketing.terms`, `marketing.privacy`, `marketing.refunds`) — that JSON is the live source of truth for legal copy, not a standalone doc. Paid Pro subscriptions are enabled only when the separate `PAID_BILLING_ENABLED` launch gate is true (see `docs/modules/billing.md`); formal legal sign-off on wording remains required before production activation.
+
+## Known gaps (as of 1.5.0)
+
+Open items from the 1.5.0 performance audit. They were outside that release's scope; none of them is a defect today.
+
+- `bookings/_components/calendar-view.tsx` range fetches and `dashboard/_components/mini-booking-calendar.tsx` still use `useEffect` + `fetch` + `useState`, with no dedupe and no cache. `@tanstack/react-query` exists but is scoped to the portfolio editor, so adopting it here needs its own provider at the bookings/dashboard boundary.
+- `react-big-calendar` (`booking-calendar.tsx`) and the dashboard's `recharts` charts are imported statically. They are candidates for `next/dynamic`.
+- `booking-calendar.tsx`'s `MonthBookingEvent` / `TimeBookingEvent` are not wrapped in `memo()`, so they re-render on every calendar render.
+- `inquiries/_components/inquiry-table.tsx` maps rows without a ceiling of its own. It is safe only while the server pages it.

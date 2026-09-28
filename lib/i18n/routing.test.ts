@@ -7,6 +7,14 @@ describe("i18n routing", () => {
     expect(routing.locales).toEqual(["en", "fil", "id", "ar", "th"]);
   });
 
+  it("does not emit hreflang Link response headers from the intl middleware", () => {
+    // Editorial pages are English-only and 308-redirect any prefixed alternate
+    // (see proxy.ts); a Link header advertising those alternates contradicts
+    // the HTML <head> (lib/seo/metadata.ts), which is the GSC "Page with
+    // redirect" signal this setting clears.
+    expect(routing.alternateLinks).toBe(false);
+  });
+
   it("falls back to English for unsupported countries", () => {
     expect(localeForCountry("VN")).toBe("en");
   });

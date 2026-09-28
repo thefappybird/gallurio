@@ -18,6 +18,13 @@ export const routing = defineRouting({
   // (e.g. /fil/dashboard). Keeps SEO clean for the primary market while
   // still letting other-locale users share locale-bound URLs.
   localePrefix: "as-needed",
+  // Default (true) makes the intl middleware add a `Link: rel="alternate"`
+  // header advertising every locale variant on every response it handles —
+  // including English-only editorial pages, whose prefixed alternates 308
+  // redirect (proxy.ts). Google reads hreflang from headers, contradicting
+  // the HTML <head> (lib/seo/metadata.ts already emits correct hreflang for
+  // marketing pages) and causing a GSC "Page with redirect" indexing issue.
+  alternateLinks: false,
 });
 
 export type Locale = (typeof routing.locales)[number];

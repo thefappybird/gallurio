@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -28,10 +29,39 @@ import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from 
 import { usePickerData } from "./usePickerData";
 import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
-import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
+import { galleryKeys } from "./queryKeys";
+import { useGalleryWorkspaceId } from "./GalleryQueryProvider";
 import { ImageMetaWizard, useImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerCollection, PickerItem } from "./types";
+
+type FeedPage = { items: PickerItem[]; nextCursor: string | null };
+
+/** Appends a synthetic page (from a one-off bulk fetch) into the same cache
+ * shape `useInfiniteQuery` reads, so opening the collection afterward serves
+ * it instead of re-fetching, and the tile checkmark's tri-state derivation
+ * (`collectionCheckState`) can see the fetched ids immediately. Dedupes
+ * against ids already present in an earlier page — bulk-selecting a
+ * collection that's ALSO the one currently open (its natural pages already
+ * hold the same items) would otherwise render every affected photo twice. */
+function appendFeedPage(
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceId: string,
+  collectionId: string,
+  page: FeedPage
+) {
+  queryClient.setQueryData<InfiniteData<FeedPage, string | null>>(
+    galleryKeys.feed(workspaceId, collectionId),
+    (old) => {
+      const existingIds = new Set((old?.pages ?? []).flatMap((p) => p.items.map((it) => it.id)));
+      const newItems = page.items.filter((it) => !existingIds.has(it.id));
+      return {
+        pages: [...(old?.pages ?? []), { ...page, items: newItems }],
+        pageParams: [...(old?.pageParams ?? []), old?.pageParams.at(-1) ?? null],
+      };
+    }
+  );
+}
 
 // Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
 // app tree, no separate createRoot), so this is English by choice, not constraint.
@@ -138,8 +168,6 @@ type FeedState = {
   error: boolean;
 };
 
-const EMPTY_FEED: FeedState = { items: [], nextCursor: null, loading: false, error: false };
-
 function asPhotoSelection(value: MediaPickerSelection[] | string): MediaPickerSelection[] {
   return Array.isArray(value) ? (value as MediaPickerSelection[]) : [];
 }
@@ -151,9 +179,9 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, onOpenChange }: Props) {
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const { state, retry } = usePickerData();
-  const cache = useGalleryPickerCache();
+  const workspaceId = useGalleryWorkspaceId();
+  const queryClient = useQueryClient();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
-  const [feed, setFeed] = useState<FeedState>(EMPTY_FEED);
   const [createOpen, setCreateOpen] = useState(false);
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
   // The pencil button that opened the alt-text dialog — restores focus there on close.
@@ -177,10 +205,6 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
   const [bulkLoadingId, setBulkLoadingId] = useState<string | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
 
-  // Monotonic token invalidating in-flight feed fetches when the view changes,
-  // so a slow response from a prior collection cannot bleed into the current one.
-  const fetchToken = useRef(0);
-
   // Accumulated id->item map so the multi reorder strip can resolve thumbnails
   // for selections regardless of which page/collection they came from.
   const seen = useRef<Map<string, PickerItem>>(new Map());
@@ -190,8 +214,19 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
 
   function handleMetaSaved(updated: PickerItem) {
     remember([updated]);
-    setFeed((f) => ({ ...f, items: f.items.map((it) => (it.id === updated.id ? updated : it)) }));
-    if (nav.kind === "photos") cache?.bust(nav.id);
+    if (nav.kind === "photos") {
+      queryClient.setQueryData<InfiniteData<FeedPage, string | null>>(
+        galleryKeys.feed(workspaceId, nav.id),
+        (old) =>
+          old && {
+            ...old,
+            pages: old.pages.map((p) => ({
+              ...p,
+              items: p.items.map((it) => (it.id === updated.id ? updated : it)),
+            })),
+          }
+      );
+    }
   }
 
   // Derive typed selections based on mode.
@@ -212,12 +247,10 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the `open` prop (external state) back to a fresh collections view on each open
       setNav({ kind: "collections" });
-      setFeed(EMPTY_FEED);
       setFileErrors([]);
       setBulkError(null);
       setUploadedBatch(null);
       setWizardOpen(false);
-      fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
 
@@ -226,59 +259,52 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
     if (state.status === "ok") remember(state.data.items);
   }, [state, remember]);
 
-  const fetchFeed = useCallback(
-    async (id: string, cursor: string | null) => {
-      // First page: serve from session cache if available (avoids a redundant
-      // network round-trip when the user re-opens a collection they already browsed).
-      if (cursor === null) {
-        const cached = cache?.getPages(id);
-        if (cached && cached.length > 0) {
-          const allItems = cached.flatMap((p) => p.items);
-          const lastCursor = cached[cached.length - 1].nextCursor;
-          remember(allItems);
-          setFeed({ items: allItems, nextCursor: lastCursor, loading: false, error: false });
-          return;
-        }
-      }
-
-      const token = ++fetchToken.current;
-      setFeed((f) => ({ ...f, loading: true, error: false }));
-      try {
-        const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
-        if (cursor) qs.set("cursor", cursor);
-        const res = await fetch(`/api/portfolio/gallery/collections/${id}?${qs.toString()}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null };
-        remember(data.items);
-        cache?.addPage(id, { items: data.items, nextCursor: data.nextCursor });
-        if (token !== fetchToken.current) return; // stale: a newer view superseded this fetch
-        setFeed((f) => ({
-          items: cursor ? [...f.items, ...data.items] : data.items,
-          nextCursor: data.nextCursor,
-          loading: false,
-          error: false,
-        }));
-      } catch {
-        if (token !== fetchToken.current) return; // stale: do not flag the current view as errored
-        setFeed((f) => ({ ...f, loading: false, error: true }));
-      }
+  // Per-collection feed, cursor-paginated via React Query. The query key
+  // (scoped by workspaceId + collection id) is what gives "switching
+  // collections ignores a stale slow response" for free: a slow fetch for a
+  // collection the owner has since navigated away from resolves into ITS OWN
+  // cache entry, never the one currently rendered. Disabled while browsing
+  // the collections grid (`nav.kind !== "photos"`).
+  const feedQuery = useInfiniteQuery({
+    queryKey: galleryKeys.feed(workspaceId, nav.kind === "photos" ? nav.id : "__none__"),
+    queryFn: async ({ pageParam }) => {
+      const id = nav.kind === "photos" ? nav.id : "";
+      const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
+      if (pageParam) qs.set("cursor", pageParam);
+      const res = await fetch(`/api/portfolio/gallery/collections/${id}?${qs.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as FeedPage;
     },
-    [cache, remember]
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: nav.kind === "photos",
+  });
+
+  const feedItems = useMemo(
+    () => feedQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [feedQuery.data]
   );
+  const feed: FeedState = {
+    items: feedItems,
+    nextCursor: feedQuery.data?.pages.at(-1)?.nextCursor ?? null,
+    loading: nav.kind === "photos" && feedQuery.isFetching,
+    error: nav.kind === "photos" && feedQuery.isError,
+  };
+
+  // Remember every item the feed surfaces so thumbnails resolve regardless
+  // of which page/collection they were paginated in from.
+  useEffect(() => {
+    if (feedItems.length > 0) remember(feedItems);
+  }, [feedItems, remember]);
 
   function openCollection(id: string, name: string) {
-    fetchToken.current++; // invalidate any in-flight fetch from the prior view
     setNav({ kind: "photos", id, name });
-    setFeed(EMPTY_FEED);
     setFileErrors([]);
     setUploadedBatch(null);
-    void fetchFeed(id, null);
   }
 
   function goBack() {
-    fetchToken.current++; // invalidate any in-flight fetch from the collection we left
     setNav({ kind: "collections" });
-    setFeed(EMPTY_FEED);
     setUploadedBatch(null);
   }
 
@@ -357,7 +383,7 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
       remember(data.items);
       // Cache this collection's fetched ids so the tile checkbox can derive
       // its checked/mixed/unchecked state without a dedicated request.
-      cache?.addPage(colId, { items: data.items, nextCursor: null });
+      appendFeedPage(queryClient, workspaceId, colId, { items: data.items, nextCursor: null });
       const next = [...selection];
       for (const it of data.items) {
         if (next.length >= cap) break;
@@ -394,7 +420,10 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
   // unchecked (the same default as a collection never fetched at all).
   const collectionCheckState = useCallback(
     (col: PickerCollection): "checked" | "mixed" | "unchecked" => {
-      const pages = cache?.getPages(col.id);
+      const cached = queryClient.getQueryData<InfiniteData<FeedPage, string | null>>(
+        galleryKeys.feed(workspaceId, col.id)
+      );
+      const pages = cached?.pages;
       if (!pages || pages.length === 0) return "unchecked";
       const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
       if (ids.size !== col.itemCount) return "unchecked";
@@ -404,12 +433,15 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
       if (selectedInCol === 0) return "unchecked";
       return selectedInCol === ids.size ? "checked" : "mixed";
     },
-    [cache, selection]
+    [queryClient, workspaceId, selection]
   );
 
   function deselectAllFromCollection(colId: string) {
     if (mode !== "multi") return;
-    const pages = cache?.getPages(colId);
+    const cached = queryClient.getQueryData<InfiniteData<FeedPage, string | null>>(
+      galleryKeys.feed(workspaceId, colId)
+    );
+    const pages = cached?.pages;
     if (!pages) return;
     const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
     onChange(selection.filter((s) => !ids.has(s.id)));
@@ -502,9 +534,6 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
       return;
     }
 
-    // Capture the current view's token so a slow upload that finishes after the
-    // owner navigates away does not prepend the new item into the wrong feed.
-    const token = fetchToken.current;
     setUploading(true);
     const newErrors: { fileName: string; message: string }[] = [];
     const targetCollection = nav.id === ALL_PHOTOS_ID ? undefined : nav.id;
@@ -534,9 +563,6 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
             : {}),
         };
         remember([item]);
-        if (token === fetchToken.current) {
-          setFeed((f) => ({ ...f, items: [item, ...f.items] }));
-        }
         // Start metadata immediately; ImageMetaWizard safely accepts the
         // later arrivals without resetting the first image's edits.
         setUploadedBatch((previous) => [...(previous ?? []), item]);
@@ -552,12 +578,11 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
     setUploading(false);
     setFileErrors((prev) => [...prev, ...newErrors]);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    // Bust the cache for the affected collection so re-opening it fetches fresh data.
-    if (targetCollection) {
-      cache?.bust(targetCollection);
-    } else {
-      cache?.bust(ALL_PHOTOS_ID);
-    }
+    // Invalidate the affected collection's feed so re-opening it (or the
+    // still-mounted grid) fetches fresh data instead of serving the pre-upload page.
+    void queryClient.invalidateQueries({
+      queryKey: galleryKeys.feed(workspaceId, targetCollection ?? ALL_PHOTOS_ID),
+    });
     retry(); // refresh collection covers/counts
 
     // Auto-select successfully uploaded item(s), then offer the metadata
@@ -756,8 +781,8 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
               }}
               editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
               incompleteWarningLabel={tMeta("incompleteWarning")}
-              onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
-              onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
+              onLoadMore={() => void feedQuery.fetchNextPage()}
+              onRetry={() => void feedQuery.refetch()}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
               uploadSlot={
                 <UploadZone
@@ -812,7 +837,8 @@ export function MediaPicker({ mode, value, onChange, onItemPicked, max, open, on
         onOpenChange={setCreateOpen}
         onCreated={() => {
           setCreateOpen(false);
-          cache?.bust(); // invalidate all cached pages so the new collection appears
+          // Invalidate every cached feed page so the new collection appears.
+          void queryClient.invalidateQueries({ queryKey: galleryKeys.all(workspaceId) });
           retry();
         }}
       />

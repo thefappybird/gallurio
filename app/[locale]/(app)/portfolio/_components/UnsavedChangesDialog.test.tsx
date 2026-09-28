@@ -40,7 +40,7 @@ describe("UnsavedChangesDialog", () => {
     expect(onNameChange).toHaveBeenCalledWith("Renamed");
   });
 
-  it("renders a role=alert error above Save and disables Save when nameError is set", () => {
+  it("keeps all three actions on one row and renders the error below that row", () => {
     renderWithProviders(
       <UnsavedChangesDialog
         open
@@ -55,8 +55,19 @@ describe("UnsavedChangesDialog", () => {
       />
     );
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("A draft with this name already exists");
     const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    const keepEditing = screen.getByRole("button", { name: /keep editing/i });
+
+    // Every action is a direct sibling in the one footer row, so the row's
+    // flex sizing applies to all of them...
+    expect(saveBtn.parentElement).toBe(keepEditing.parentElement);
+    // ...and the error text sits AFTER that row rather than inside it, where
+    // its width used to squeeze the buttons and push Save onto its own line.
+    expect(alert.parentElement).not.toBe(saveBtn.parentElement);
+    expect(
+      saveBtn.parentElement!.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(alert).toHaveTextContent("A draft with this name already exists");
     expect(saveBtn).toBeDisabled();
   });
 });

@@ -5,7 +5,9 @@
  * now serves FeaturedWork only, but stays block-agnostic so it can be reused.
  */
 
+import Image from "next/image";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
 import type { GalleryImage } from "./GalleryGridBlock";
 import type { ContainerHeight } from "./manualBlocks";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
@@ -60,12 +62,15 @@ export function GalleryBannerLayers({
         />
       )}
       {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={layers[0].src}
           alt=""
           aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          loader={cfImageLoader}
+          fill
+          sizes="100vw"
+          priority
+          style={{ objectFit: "cover" }}
         />
       )}
       {layers.length >= 2 && (

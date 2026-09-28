@@ -1,6 +1,6 @@
 /**
  * Normalizes persisted Puck page data before it is handed to the public
- * `@measured/puck` RSC `<Render>`.
+ * `@puckeditor/core` RSC `<Render>`.
  *
  * Why this exists: Puck's RSC `Render` does `"props" in data.root` with NO
  * defaulting of `data` or `data.root` (the CSR build defaults both). So any
@@ -15,10 +15,11 @@
  * upstream producer of bad data is observable in logs.
  */
 
-import type { Data } from "@measured/puck";
+import type { Data } from "@puckeditor/core";
 import type { PuckData } from "./types";
 import { normalizePageBody } from "./pageBody";
 import { normalizePresetLayouts } from "./templates/normalizePresetLayouts";
+import { ensureBlockIds } from "./ensureBlockIds";
 
 export type NormalizedBlock = { type: string; props: Record<string, unknown> } & Record<
   string,
@@ -101,5 +102,7 @@ export function normalizePublicPageData(
 
   const result: NormalizedPuckData = { root, content };
   if (zones) result.zones = zones;
-  return normalizePresetLayouts(normalizePageBody(result as unknown as Data) as unknown as PuckData) as unknown as NormalizedPuckData;
+  const normalized = normalizePresetLayouts(normalizePageBody(result as unknown as Data) as unknown as PuckData);
+  // Guarantees a stable key for Puck's RSC slot renderer (unique-key warning fix).
+  return ensureBlockIds(normalized) as unknown as NormalizedPuckData;
 }

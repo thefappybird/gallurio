@@ -2,10 +2,29 @@
 
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import { CollectionPopup } from "./CollectionPopup";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { gridColsVar } from "@/lib/page-builder/responsive";
+import { cfImageLoader } from "@/lib/storage/cfImageLoader";
+import { galleryImageSizes } from "./gallerySizes";
+
+// CollectionPopup is a modal-only chunk (closed by default, opened by a
+// click) that never renders during SSR/hydration — `ssr: false`, no markup
+// to preserve. Declared here rather than in lazy.ts: lazy.ts already wraps
+// THIS file as an island, so importing lazy.ts from here would make the two
+// modules mutually dependent (see lazy.ts's header comment).
+// `preloadCollectionPopup` lets a tile warm the fetch on hover/focus, ahead
+// of the click. CollectionPopup's own internal import of Lightbox stays a
+// plain static import — it's already inside this lazy chunk.
+const LazyCollectionPopup = dynamic(
+  () => import("./CollectionPopup").then((m) => m.CollectionPopup),
+  { ssr: false, loading: () => null },
+);
+function preloadCollectionPopup() {
+  void import("./CollectionPopup");
+}
 
 // ---------------------------------------------------------------------------
 // Types (exported so the parent block can import and adapt to this shape)
@@ -123,6 +142,8 @@ export function FeaturedCollectionsClient({
             data-featured-tile=""
             aria-label={`${tile.name} — ${formatCount(tile.count)}`}
             onClick={() => setActive(tile)}
+            onPointerEnter={preloadCollectionPopup}
+            onFocus={preloadCollectionPopup}
             style={{
               display: "block",
               width: "100%",
@@ -164,13 +185,15 @@ export function FeaturedCollectionsClient({
               // it's crawlable in server HTML. aria-hidden keeps it out of the
               // a11y tree so it isn't announced twice: the wrapping <button>
               // already carries the collection name as its accessible name.
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
+              <Image
                 src={tile.coverUrl}
                 alt={tile.name}
                 aria-hidden="true"
+                loader={cfImageLoader}
                 loading="lazy"
-                decoding="async"
+                width={700}
+                height={900}
+                sizes={columns === 1 ? "100vw" : galleryImageSizes(columns as 2 | 3 | 4)}
                 style={{
                   width: "100%",
                   aspectRatio,
@@ -222,7 +245,7 @@ export function FeaturedCollectionsClient({
 
       {/* Active-collection popup — only one rendered at a time */}
       {active && (
-        <CollectionPopup
+        <LazyCollectionPopup
           open
           collectionId={active.id}
           collectionName={active.name}

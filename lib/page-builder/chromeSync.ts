@@ -6,7 +6,7 @@
  * function returns new objects and never mutates its inputs; a genuine
  * no-op returns the same input reference.
  */
-import type { ComponentData, Data } from "@measured/puck";
+import type { ComponentData, Data } from "@puckeditor/core";
 
 export type ChromeKind = "nav" | "footer";
 
