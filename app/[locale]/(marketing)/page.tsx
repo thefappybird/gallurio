@@ -4,18 +4,17 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { marketingMetadata, baseUrl } from "@/lib/seo/metadata";
 import { buildOrganizationLd, buildWebSiteLd } from "@/lib/seo/marketingJsonLd";
 import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { redirect } from "next/navigation";
 import NextLink from "next/link";
 import { Link } from "@/lib/i18n/navigation";
-import { getAuthUser } from "@/lib/auth/session";
-import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
-import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/db/models";
-import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { staticFallback } from "@/lib/lemonsqueezy/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
 import { ThemedShot } from "./_components/themed-shot";
+
+// Static page: no session/DB/headers reads, so Next can serve it from cache.
+// Hourly so the SSR beta flag (env var, not per-visitor) tracks deploys.
+export const revalidate = 3600;
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -34,23 +33,14 @@ export default async function Home({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Authenticated visitors never see the landing page — send them to their
-  // first accessible surface (owner -> dashboard, staff/team member -> bookings,
-  // no workspace yet -> onboarding). Mirrors the post-sign-in redirect.
-  const authUser = await getAuthUser();
-  if (authUser) {
-    await connectDB();
-    const user = await User.findOne({ workosUserId: authUser.workosUserId })
-      .select("memberships onboardingCompletedAt")
-      .lean();
-    // A missing User doc is effectively "no memberships" -> onboarding.
-    redirect(defaultPostAuthPath(user ?? { memberships: [] }, locale));
-  }
-
+  // Authenticated visitors never see this static page — proxy.ts redirects
+  // them to GET /api/auth/landing before this component ever runs.
   const t = await getTranslations("marketing");
   const tTerms = await getTranslations("marketing.terms");
   const tPrivacy = await getTranslations("marketing.privacy");
-  const proPricing = await getDisplayPricing();
+  // Server-rendered initial price: static base-tier catalog, no network/DB.
+  // The real per-visitor price resolves client-side in PricingTeaser.
+  const proPricing = staticFallback("base");
 
   const trustItems = [t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")];
 

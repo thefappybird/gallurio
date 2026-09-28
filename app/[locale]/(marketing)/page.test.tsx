@@ -7,12 +7,6 @@ import idMessages from "@/messages/id.json";
 import arMessages from "@/messages/ar.json";
 import thMessages from "@/messages/th.json";
 
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn(() => {
-    throw new Error("redirect called");
-  }),
-}));
-
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async (arg?: string | { locale?: string; namespace?: string }) => {
@@ -21,24 +15,14 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
-vi.mock("@/lib/pricing/localPricing", () => ({
-  getDisplayPricing: vi.fn(async () => ({ currency: "PHP", monthly: 250, yearly: 2500 })),
-}));
-
-const getAuthUserMock = vi.fn();
-vi.mock("@/lib/auth/session", () => ({
-  getAuthUser: () => getAuthUserMock(),
-}));
-
 import Home from "./page";
 
 describe("Marketing Home page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAuthUserMock.mockResolvedValue(null);
   });
 
-  it("renders the landing page with the hero headline for an unauthenticated visitor", async () => {
+  it("renders the landing page with the hero headline with no session/DB mocks", async () => {
     const page = await Home({ params: Promise.resolve({ locale: "en" }) });
     render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
 
@@ -49,7 +33,10 @@ describe("Marketing Home page", () => {
     expect(screen.getByRole("link", { name: "marketing.privacy:title" })).toHaveAttribute("href", "/privacy");
     expect(screen.getByRole("link", { name: "marketing:footer.refundPolicy" })).toHaveAttribute("href", "/refunds");
     expect(screen.getByRole("link", { name: "marketing:features.portfolioBuilder.cta" })).toHaveClass("bg-brand");
-    expect(getAuthUserMock).toHaveBeenCalled();
+    // Base-tier static fallback price (USD $5/mo, from staticFallback("base"))
+    // renders without any per-visitor resolution -- confirms the page has no
+    // request-time reads.
+    expect(screen.getByText(/\$5/)).toBeInTheDocument();
   });
 
   it("renders a teams panel alongside the other feature panels", async () => {
