@@ -17,7 +17,11 @@ const cache = new Map<PricingTier, { value: ProPricing; expiresAt: number }>();
 
 const STORE_CURRENCY = PLAN_CATALOG.find((p) => p.id === "pro")!.currency;
 
-function staticFallback(tier: PricingTier): ProPricing {
+// Exported for app/api/public/pricing/route.ts: the public pricing endpoint's
+// own last-resort fallback when getDisplayPricing() itself throws (e.g. the
+// headers()/getFxRate() calls it layers on top, not just this module's own
+// try/catch below).
+export function staticFallback(tier: PricingTier): ProPricing {
   const variants = getProVariantsForTier(tier);
   return {
     currency: STORE_CURRENCY,

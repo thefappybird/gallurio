@@ -99,7 +99,8 @@ const UNAUTHENTICATED_PATHS = [
   "/api/webhooks/(.*)",
   // Public inquiry submission (portfolio contact form)
   "/api/inquiries(.*)",
-  // Public portfolio data + analytics endpoints resolve tenancy by org slug.
+  // Public portfolio data + analytics endpoints resolve tenancy by org slug;
+  // /api/public/pricing carries no tenant data at all (global display pricing).
   "/api/public/(.*)",
   // External liveness/readiness probe; returns non-sensitive status only.
   "/api/health",
