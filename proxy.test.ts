@@ -183,6 +183,27 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
 
+  it("serves an unprefixed editorial route in English without running next-intl's locale detection, regardless of the visitor's stored locale", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/compare", {
+      headers: {
+        cookie: "NEXT_LOCALE=fil",
+        "accept-language": "th",
+      },
+    });
+
+    const response = (await proxy(req)) as Response;
+
+    expect(response.status).not.toBe(308);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("set-cookie")).toBeNull();
+    const rewriteTarget = response.headers.get("x-middleware-rewrite");
+    expect(rewriteTarget).not.toBeNull();
+    expect(new URL(rewriteTarget!).pathname).toBe("/en/compare");
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+    expect(intlMiddlewareMock).not.toHaveBeenCalled();
+  });
+
   it("preserves original path+query as returnTo when redirecting unauthenticated users to sign-in (local /sign-in redirect)", async () => {
     // Simulate authkitMiddleware signalling an unauthenticated request by
     // returning a redirect to /sign-in (mock/test environments).

@@ -367,6 +367,22 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
+  // An UNprefixed editorial request must never reach next-intl's own locale
+  // detection below (branch 4): next-intl resolves NEXT_LOCALE cookie / then
+  // accept-language, and for any non-default locale it redirects the browser
+  // to the prefixed URL (e.g. /compare -> /fil/compare) — which the branch
+  // above immediately 308s back to /compare, an infinite redirect loop for
+  // anyone who ever visited a non-English locale root or sends a non-English
+  // accept-language. Rewrite straight to the internal /[locale] route instead
+  // (as-needed prefix keeps the browser URL unprefixed for the default
+  // locale) and touch no cookie/header, so the visitor's stored language
+  // preference survives reading an English-only article.
+  if (isEditorialPath) {
+    const rewriteUrl = req.nextUrl.clone();
+    rewriteUrl.pathname = `/en${editorialPath}`;
+    return NextResponse.rewrite(rewriteUrl);
+  }
+
   // -------------------------------------------------------------------------
   // 4. Public routes — skip auth check, run intl for locale routing.
   //
