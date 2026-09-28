@@ -204,7 +204,7 @@ export type BlockStyle = {
   masonryEvenColumnEvenHeight?: number;
   /** @deprecated GalleryMasonry now always uses independent CSS columns. Existing values are ignored. */
   galleryStagger?: boolean;
-  // CollectionCard â€” independent caption typography. The card shell still uses
+  // CollectionCard — independent caption typography. The card shell still uses
   // the shared frame/background controls above; these target its two visible
   // text nodes rather than applying an opaque, section-wide typography style.
   collectionTitleBold?: boolean;

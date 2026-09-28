@@ -24,6 +24,7 @@ import {
 import { DEMO_IMPORT_COOKIE } from "@/lib/auth/demoImportMarker";
 import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
+import { publicOrigin } from "@/lib/http/publicOrigin";
 
 const CSRF_COOKIE = "oauth_csrf";
 // Matches @workos-inc/authkit-nextjs's session cookie name (WORKOS_COOKIE_NAME
@@ -42,19 +43,6 @@ function debug(...args: unknown[]): void {
 
 function localizedSignIn(locale: string): string {
   return locale === routing.defaultLocale ? "/sign-in" : `/${locale}/sign-in`;
-}
-
-function publicOrigin(request: NextRequest): string {
-  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  if (configuredAppUrl) {
-    try {
-      return new URL(configuredAppUrl).origin;
-    } catch {
-      // Fall through to the request origin in development when configuration
-      // is intentionally incomplete.
-    }
-  }
-  return request.nextUrl.origin;
 }
 
 /**

@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe("GalleryLightboxTrigger", () => {
-  it("opens the Lightbox with the given image when the trigger is clicked", () => {
+  it("opens the Lightbox with the given image when the trigger is clicked", async () => {
     render(
       <GalleryLightboxTrigger image={{ id: "img1", publicId: "workspace/photo1", alt: "Photo One" }}>
         <img src="thumb.jpg" alt="Photo One" />
@@ -22,7 +22,13 @@ describe("GalleryLightboxTrigger", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Photo One" }));
 
-    const dialog = screen.getByRole("dialog");
+    // Lightbox is a first-open-only chunk (loaded on demand) — it is not in
+    // the same synchronous commit as the click.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // Longer-than-default timeout: this chunk resolves cold when the shared
+    // vitest worker is also transforming a sibling test file's dependencies.
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 5000 });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByAltText("Photo One")).toHaveAttribute("src", expect.stringContaining("photo1"));
   });

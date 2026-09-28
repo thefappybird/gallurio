@@ -10,8 +10,27 @@ const authMiddlewareMock = vi.fn(async () => NextResponse.next());
 const authkitMiddlewareMock = vi.fn(() => authMiddlewareMock);
 const intlMiddlewareMock = vi.fn(() => NextResponse.next());
 
+// Mirrors @workos-inc/authkit-nextjs's real AUTHKIT_REQUEST_HEADERS /
+// isAuthkitRequestHeader (both publicly exported from the package root) —
+// duplicated here rather than importOriginal()'d because the real module's
+// index pulls in authkit's auth.js, which imports "next/cache" in a way this
+// package's own dist resolves incorrectly under vitest's module resolution.
+const AUTHKIT_REQUEST_HEADERS = [
+  "x-workos-middleware",
+  "x-url",
+  "x-redirect-uri",
+  "x-sign-up-paths",
+  "x-workos-session",
+];
+function isAuthkitRequestHeaderMock(name: string): boolean {
+  const lower = name.toLowerCase();
+  return AUTHKIT_REQUEST_HEADERS.includes(lower) || lower.startsWith("x-workos-");
+}
+
 vi.mock("@workos-inc/authkit-nextjs", () => ({
   authkitMiddleware: authkitMiddlewareMock,
+  isAuthkitRequestHeader: isAuthkitRequestHeaderMock,
+  AUTHKIT_REQUEST_HEADERS,
 }));
 
 vi.mock("next-intl/middleware", () => ({
@@ -73,6 +92,18 @@ describe("proxy", () => {
     );
   });
 
+  it("configures /api/auth/landing as unauthenticated so it can localize an expired session itself", async () => {
+    await import("./proxy");
+
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.arrayContaining(["/api/auth/landing"]),
+        }),
+      }),
+    );
+  });
+
   it("leaves the crawler-facing files and article routes unauthenticated", async () => {
     await import("./proxy");
 
@@ -115,36 +146,103 @@ describe("proxy", () => {
     await expect(response.json()).resolves.toEqual({ error: "not_authenticated" });
   });
 
-  it("routes the marketing root (any locale) through AuthKit so the landing page can read the session", async () => {
+  it("skips AuthKit entirely for the public pricing endpoint (reads no session)", async () => {
     const { proxy } = await import("./proxy");
-    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar"]) {
+    const req = new NextRequest("http://localhost/api/public/pricing");
+
+    await proxy(req);
+
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+  });
+
+  it("skips AuthKit for an anonymous marketing root visit (no WorkOS session cookie) and runs only intl", async () => {
+    const { proxy } = await import("./proxy");
+    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar", "http://localhost/fil"]) {
       authMiddlewareMock.mockClear();
       intlMiddlewareMock.mockClear();
       await proxy(new NextRequest(url));
-      // AuthKit must run so withAuth() works in the page; intl runs after for
-      // locale routing. The mock returns next() (not a redirect), so anonymous
-      // visitors are NOT bounced to sign-in — the root stays public.
-      expect(authMiddlewareMock, `authkit on ${url}`).toHaveBeenCalledTimes(1);
+      // No session cookie -> same as any other public route: skip AuthKit
+      // entirely (avoids building a fresh authorization URL/PKCE cookie per
+      // anonymous hit), run intl for locale routing.
+      expect(authMiddlewareMock, `authkit on ${url}`).not.toHaveBeenCalled();
       expect(intlMiddlewareMock, `intl on ${url}`).toHaveBeenCalledTimes(1);
     }
   });
 
-  it("passes AuthKit's request context into next-intl for the marketing root", async () => {
+  it("redirects a signed-in root visit (valid session cookie) to /api/auth/landing, preserving Set-Cookie", async () => {
+    for (const [url, expectedLocale] of [
+      ["http://localhost/", "en"],
+      ["http://localhost/fil", "fil"],
+    ] as const) {
+      authMiddlewareMock.mockClear();
+      intlMiddlewareMock.mockClear();
+      authMiddlewareMock.mockResolvedValueOnce(
+        (() => {
+          const res = NextResponse.next();
+          res.headers.set("x-middleware-override-headers", "x-workos-session");
+          res.headers.set("x-middleware-request-x-workos-session", "tok");
+          res.headers.set("set-cookie", "wos-session=refreshed; Path=/");
+          return res;
+        })(),
+      );
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest(url, { headers: { cookie: "wos-session=abc" } });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.status, `status on ${url}`).toBe(307);
+      const location = new URL(response.headers.get("location")!);
+      expect(location.pathname, `pathname on ${url}`).toBe("/api/auth/landing");
+      expect(location.searchParams.get("locale"), `locale on ${url}`).toBe(expectedLocale);
+      expect(response.headers.get("set-cookie"), `set-cookie on ${url}`).toContain("wos-session=refreshed");
+      expect(intlMiddlewareMock, `intl on ${url}`).not.toHaveBeenCalled();
+    }
+  });
+
+  it("never lets the signed-in root redirect be cached (cookie-dependent)", async () => {
+    authMiddlewareMock.mockResolvedValueOnce(
+      (() => {
+        const res = NextResponse.next();
+        res.headers.set("x-middleware-override-headers", "x-workos-session");
+        res.headers.set("x-middleware-request-x-workos-session", "tok");
+        return res;
+      })(),
+    );
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/", { headers: { cookie: "wos-session=abc" } });
+
+    const response = (await proxy(req)) as Response;
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("falls through to normal handling when the root's session cookie is invalid/expired", async () => {
+    // No x-workos-session header in AuthKit's response -> session invalid or
+    // expired; AuthKit's own cookie-cleanup Set-Cookie still reaches the
+    // browser, and intl runs with AuthKit's enriched request context.
     const authHeaders = new Headers({
       "x-workos-middleware": "true",
       "x-url": "http://localhost/",
     });
     authMiddlewareMock.mockResolvedValueOnce(
-      NextResponse.next({ request: { headers: authHeaders } }),
+      (() => {
+        const res = NextResponse.next({ request: { headers: authHeaders } });
+        res.headers.set("set-cookie", "wos-session=; Max-Age=0; Path=/");
+        return res;
+      })(),
     );
 
     const { proxy } = await import("./proxy");
-    await proxy(new NextRequest("http://localhost/"));
+    const req = new NextRequest("http://localhost/", { headers: { cookie: "wos-session=expired" } });
+    const response = (await proxy(req)) as Response;
 
+    expect(authMiddlewareMock).toHaveBeenCalledTimes(1);
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
     const intlRequest = (intlMiddlewareMock.mock.calls as unknown as [[NextRequest]])[0][0];
     expect(intlRequest.headers.get("x-workos-middleware")).toBe("true");
     expect(intlRequest.headers.get("x-url")).toBe("http://localhost/");
+    expect(response.headers.get("set-cookie")).toContain("wos-session=; Max-Age=0");
   });
 
   it("bypasses AuthKit and intl for /opengraph-image (root metadata route, not locale-prefixed)", async () => {
@@ -179,6 +277,27 @@ describe("proxy", () => {
 
     expect(response.status).toBe(308);
     expect(response.headers.get("location")).toBe(`http://localhost${expected}`);
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+    expect(intlMiddlewareMock).not.toHaveBeenCalled();
+  });
+
+  it("serves an unprefixed editorial route in English without running next-intl's locale detection, regardless of the visitor's stored locale", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/compare", {
+      headers: {
+        cookie: "NEXT_LOCALE=fil",
+        "accept-language": "th",
+      },
+    });
+
+    const response = (await proxy(req)) as Response;
+
+    expect(response.status).not.toBe(308);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("set-cookie")).toBeNull();
+    const rewriteTarget = response.headers.get("x-middleware-rewrite");
+    expect(rewriteTarget).not.toBeNull();
+    expect(new URL(rewriteTarget!).pathname).toBe("/en/compare");
     expect(authMiddlewareMock).not.toHaveBeenCalled();
     expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
@@ -629,6 +748,56 @@ describe("proxy", () => {
 
       const calledReq = (intlMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
       expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
+    });
+  });
+
+  describe("AuthKit header trust boundary — client-supplied x-workos-* stripped at proxy() entry", () => {
+    it("strips forged inbound AuthKit request headers before AuthKit runs on the /api branch", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/api/health", {
+        headers: { "x-workos-session": "forged", "x-workos-middleware": "true" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+      expect(calledReq.headers.get("x-workos-middleware")).toBeNull();
+    });
+
+    it("strips forged inbound AuthKit request headers before AuthKit runs on the root branch", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/", {
+        headers: { cookie: "wos-session=abc", "x-workos-session": "forged" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+    });
+
+    it("strips forged inbound AuthKit request headers before AuthKit runs on a protected route", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/bookings", {
+        headers: { "x-workos-session": "forged" },
+      });
+
+      await proxy(req);
+
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
+      expect(calledReq.headers.get("x-workos-session")).toBeNull();
+    });
+
+    it("does not redirect a forged x-workos-session header with a junk session cookie on the root", async () => {
+      const { proxy } = await import("./proxy");
+      const req = new NextRequest("http://localhost/", {
+        headers: { cookie: "wos-session=junk", "x-workos-session": "forged" },
+      });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.status).not.toBe(307);
     });
   });
 

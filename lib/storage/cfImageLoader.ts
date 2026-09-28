@@ -4,7 +4,7 @@
  * public account hash env var, same as imageDelivery.client.ts).
  *
  * Same loader used on canvas/preview/public so all three surfaces request
- * the same bytes (parity — see docs/portfolio/puck-023-followups.md item 3).
+ * the same bytes (parity — 1.5.0 perf wave).
  */
 
 import { imageDeliveryUrl } from "./imageDelivery.client";

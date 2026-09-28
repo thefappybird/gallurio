@@ -5,8 +5,8 @@ import ar from "../messages/ar.json";
 import { measureFirstLoadJs, openEditorWithDraft, publishCurrent } from "./helpers";
 
 /**
- * Batched browser checks for the Puck 0.23 follow-ups wave (see
- * docs/portfolio/puck-023-followups.md). One session per test, 1280px, editor
+ * Batched browser checks for the Puck 0.23 follow-ups wave (1.5.0, see
+ * `CHANGELOG.md`). One session per test, 1280px, editor
  * chrome only; the public-page measurements ride on plain navigations.
  *
  * Ordered so the first test absorbs Turbopack's cold compile of the editor

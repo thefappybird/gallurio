@@ -1,4 +1,4 @@
-import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import { authkitMiddleware, isAuthkitRequestHeader } from "@workos-inc/authkit-nextjs";
 import type { NextMiddleware } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -11,6 +11,7 @@ import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
+import { publicOrigin } from "@/lib/http/publicOrigin";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -48,12 +49,14 @@ const UNAUTHENTICATED_PATHS = [
   "/",
   // Platform social card. Scrapers do not have an AuthKit session.
   "/opengraph-image",
-  // Locale-prefixed roots ("/en", "/ar", "/fil", ...). The root is routed
-  // through authkit (so the landing page can read the session and redirect
-  // signed-in visitors), so authkit must see these as public — otherwise it
-  // would force anonymous visitors on a locale root to sign in. Every locale is
-  // listed, including the default: stripLocale() treats "/en" as a root too, and
-  // next-intl normalizes the redundant default-locale prefix to "/".
+  // Locale-prefixed roots ("/en", "/ar", "/fil", ...). A root request carrying
+  // a WorkOS session cookie is still routed through authkit (proxy.ts's root
+  // branch, to resolve/refresh that session before deciding whether to send
+  // the visitor into the app via /api/auth/landing), so authkit must see these
+  // as public — otherwise it would force anonymous visitors on a locale root
+  // to sign in. Every locale is listed, including the default: stripLocale()
+  // treats "/en" as a root too, and next-intl normalizes the redundant
+  // default-locale prefix to "/".
   ...routing.locales.map((l) => `/${l}`),
   "/pricing",
   // Crawler-facing files. The matcher below does not exclude .txt or .xml, so
@@ -89,6 +92,13 @@ const UNAUTHENTICATED_PATHS = [
   "/verify-email",
   // WorkOS OAuth code-exchange callback — must be public
   "/api/auth/callback",
+  // Signed-in landing redirect (branch 4.5 below). Must stay public: AuthKit
+  // still sets its session headers on a public path, and the handler
+  // re-checks getAuthUser() itself — if the session expired between the root
+  // hit and this follow-up request, AuthKit would otherwise turn this into a
+  // raw redirect-to-hosted-auth that the /api branch below converts into a
+  // JSON 401 instead of letting the handler send the visitor to /sign-in.
+  "/api/auth/landing",
   // Invite acceptance landing (auth resolved inside the page/action)
   "/invite",
   "/invite/(.*)",
@@ -97,7 +107,8 @@ const UNAUTHENTICATED_PATHS = [
   "/api/webhooks/(.*)",
   // Public inquiry submission (portfolio contact form)
   "/api/inquiries(.*)",
-  // Public portfolio data + analytics endpoints resolve tenancy by org slug.
+  // Public portfolio data + analytics endpoints resolve tenancy by org slug;
+  // /api/public/pricing carries no tenant data at all (global display pricing).
   "/api/public/(.*)",
   // External liveness/readiness probe; returns non-sensitive status only.
   "/api/health",
@@ -140,23 +151,6 @@ function isPublicRoute(req: NextRequest): boolean {
   const stripped = stripLocale(original);
   if (stripped === original) return false;
   return matchesPublicBase(stripped);
-}
-
-/**
- * The server can receive an internal origin (for example localhost behind a
- * tunnel or reverse proxy). Browser-facing redirects must use the configured
- * public application origin instead.
- */
-function publicOrigin(req: NextRequest): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  if (appUrl) {
-    try {
-      return new URL(appUrl).origin;
-    } catch {
-      // Keep local development usable when the optional value is malformed.
-    }
-  }
-  return req.nextUrl.origin;
 }
 
 /**
@@ -224,6 +218,29 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // stamp their own value. Those two branches (tenant-subdomain rewrite,
   // /w/ bypass) set their own trusted value further down.
   req.headers.delete(PORTFOLIO_SLUG_HEADER);
+
+  // Trust boundary: strip every inbound header AuthKit treats as its own
+  // (x-workos-session, x-workos-middleware, x-url, x-redirect-uri,
+  // x-sign-up-paths, any other x-workos-*) before anything downstream reads
+  // req.headers. AuthKit's own session header is a SEALED-but-unverified
+  // blob at read time (withAuth only unseals it — no JWT check, no TTL), so
+  // a client-sent copy would otherwise be trusted as identity on any branch
+  // that skips AuthKit, and on branches that DO run AuthKit it would leak
+  // into `requestWithAuthkitHeaders`'s base copy before AuthKit's own
+  // override manifest is applied on top.
+  for (const name of Array.from(req.headers.keys())) {
+    if (isAuthkitRequestHeader(name)) req.headers.delete(name);
+  }
+
+  // Public pricing reads no session (getDisplayPricing takes only
+  // CF-IPCountry) and the anonymous marketing root now fetches it on every
+  // view — running AuthKit here (fresh authorization URL + PKCE seal per
+  // request) is exactly the per-anonymous-hit cost branch 4.5 below exists to
+  // avoid. Kept narrow to this one path rather than every /api/public/*
+  // route, since not every one of those is provably session-free.
+  if (pathname === "/api/public/pricing") {
+    return NextResponse.next();
+  }
 
   // -------------------------------------------------------------------------
   // 1. API routes — auth-gate non-public ones, no intl middleware.
@@ -367,16 +384,29 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
+  // An UNprefixed editorial request must never reach next-intl's own locale
+  // detection below (branch 4): next-intl resolves NEXT_LOCALE cookie / then
+  // accept-language, and for any non-default locale it redirects the browser
+  // to the prefixed URL (e.g. /compare -> /fil/compare) — which the branch
+  // above immediately 308s back to /compare, an infinite redirect loop for
+  // anyone who ever visited a non-English locale root or sends a non-English
+  // accept-language. Rewrite straight to the internal /[locale] route instead
+  // (as-needed prefix keeps the browser URL unprefixed for the default
+  // locale) and touch no cookie/header, so the visitor's stored language
+  // preference survives reading an English-only article.
+  if (isEditorialPath) {
+    const rewriteUrl = req.nextUrl.clone();
+    rewriteUrl.pathname = `/en${editorialPath}`;
+    return NextResponse.rewrite(rewriteUrl);
+  }
+
   // -------------------------------------------------------------------------
   // 4. Public routes — skip auth check, run intl for locale routing.
   //
-  //    EXCEPTION: the marketing root ("/" for any locale) needs authkit session
-  //    context so the page can read the session and redirect an already-signed-in
-  //    visitor to their app landing (owner -> /dashboard, member -> /bookings).
-  //    It stays in UNAUTHENTICATED_PATHS, so authkit refreshes the session for
-  //    logged-in users but never forces an anonymous visitor to sign in — they
-  //    fall through to the protected branch, authkit returns no redirect, and the
-  //    landing page renders normally.
+  //    The marketing root ("/" for any locale) is handled separately in
+  //    branch 4.5 below rather than falling through to the general public-
+  //    route shortcut, since whether it needs AuthKit at all now depends on
+  //    whether the visitor carries a WorkOS session cookie.
   // -------------------------------------------------------------------------
   const isRoot = stripLocale(pathname) === "/";
   // These public pages call getAuthUser() in a server action or error state.
@@ -389,16 +419,80 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
+  // 4.5. Marketing root ("/" for any locale) — the landing page is now a
+  //    static shell and no longer reads the session itself, so an anonymous
+  //    visitor (no WorkOS session cookie) skips AuthKit entirely, same as any
+  //    other public route — this also avoids AuthKit building a fresh
+  //    authorization URL + PKCE cookie on every anonymous hit. A visitor who
+  //    does carry the cookie still needs AuthKit to resolve/refresh it: a
+  //    valid session is redirected into the app via GET /api/auth/landing
+  //    (which does the Mongo membership lookup); an invalid/expired one falls
+  //    through to the same handling as any other protected route below, so
+  //    AuthKit's cookie-cleanup headers still reach the browser and the
+  //    (still-public) landing page renders normally.
+  // -------------------------------------------------------------------------
+  if (isRoot) {
+    const cookieName = process.env.WORKOS_COOKIE_NAME || "wos-session";
+    if (!req.cookies.has(cookieName)) {
+      return intlMiddleware(req);
+    }
+
+    const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
+
+    // AuthKit sets this header (via its x-middleware-override-headers /
+    // x-middleware-request-* protocol) only once it has a valid or freshly
+    // refreshed session — see session.js's updateSession(). Its absence means
+    // the cookie was missing/expired/invalid, so fall through unchanged. Read
+    // straight off authResponse's own headers — never off a request object
+    // merged with req.headers, so this can only be true when AuthKit itself
+    // vouched for the session this request, not because a forged inbound
+    // header happened to carry the same name.
+    if ((authResponse as Response)?.headers?.get("x-middleware-request-x-workos-session")) {
+      const localeMatch = pathname.match(LOCALE_PREFIX_RE);
+      const locale = localeMatch ? localeMatch[0].slice(1) : routing.defaultLocale;
+      const redirectUrl = new URL("/api/auth/landing", publicOrigin(req));
+      redirectUrl.searchParams.set("locale", locale);
+      const redirectResponse = NextResponse.redirect(redirectUrl, 307);
+      // Cookie-dependent redirect (same visitor/URL resolves differently by
+      // session state) — a shared cache must never serve this to a different
+      // visitor.
+      redirectResponse.headers.set("cache-control", "no-store");
+      // Carry over any session-refresh Set-Cookie AuthKit issued.
+      if (authResponse) {
+        for (const cookie of (authResponse as Response).headers.getSetCookie()) {
+          redirectResponse.headers.append("set-cookie", cookie);
+        }
+      }
+      return redirectResponse;
+    }
+
+    return finishProtectedRequest(req, pathname, authResponse);
+  }
+
+  // -------------------------------------------------------------------------
   // 5. Protected routes — run authkit for session refresh / unauthn redirect,
   //    then run intl so next-intl locale routing works on authenticated pages.
-  //
-  //    authkitMiddleware may return a redirect (to /sign-in) or a response
-  //    with session-refresh headers set. Redirects to /sign-in are localized
-  //    so they land on /{locale}/sign-in. Non-redirect responses get intl
-  //    applied on top with authkit headers merged in.
   // -------------------------------------------------------------------------
   const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
+  return finishProtectedRequest(req, pathname, authResponse);
+}
 
+/**
+ * Shared tail of the protected-route flow, used by branch 5 (any protected
+ * page) and by branch 4.5 (the root, once its session cookie turns out to be
+ * invalid/expired) — the latter reuses an already-computed authResponse
+ * instead of invoking authMiddleware a second time.
+ *
+ * authkitMiddleware may return a redirect (to /sign-in) or a response with
+ * session-refresh headers set. Redirects to /sign-in are localized so they
+ * land on /{locale}/sign-in. Non-redirect responses get intl applied on top
+ * with authkit headers merged in.
+ */
+async function finishProtectedRequest(
+  req: NextRequest,
+  pathname: string,
+  authResponse: Response | NextMiddlewareResult,
+): Promise<NextMiddlewareResult> {
   if (authResponse && (authResponse as Response).status >= 300 && (authResponse as Response).status < 400) {
     const location = (authResponse as Response).headers.get("location");
     if (location) {

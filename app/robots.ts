@@ -37,9 +37,12 @@ const PATH_PREFIXES = ["", ...routing.locales.map((locale) => `/${locale}`)];
 const ALLOW = ["/", "/w/"];
 
 // robots.txt matching is prefix-based, so disallowing "/portfolio" also matches
-// "/portfolio-maker-demo". Conflicts resolve by longest match, so naming the
-// longer path here re-opens the public demo without weakening the rule above.
-const ALLOW_OVERRIDES = ["/portfolio-maker-demo"];
+// "/portfolio-maker-demo" — and every locale-prefixed variant, e.g.
+// "/fil/portfolio" also shadows "/fil/portfolio-maker-demo". Conflicts resolve
+// by longest match, so naming the longer path at every PATH_PREFIXES entry
+// re-opens the public demo (linked from every localized marketing page)
+// without weakening the rule above.
+const ALLOW_OVERRIDES = PATH_PREFIXES.map((prefix) => `${prefix}/portfolio-maker-demo`);
 
 // AI crawlers are named individually and given exactly the access "*" gets:
 // public surfaces yes, app routes and /api/ no. Several of them treat an

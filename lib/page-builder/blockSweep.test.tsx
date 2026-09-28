@@ -20,7 +20,7 @@ import { Render, type Config, type Data } from "@puckeditor/core";
 import React from "react";
 
 // GalleryGrid/GalleryMasonry/FeaturedWork/CollectionCard/MasonryClone wrap
-// lazy-loaded client islands (item 2b, docs/portfolio/puck-023-followups.md)
+// lazy-loaded client islands (1.5.0 perf wave)
 // behind the real (unmocked) next/dynamic. Every assertion below reads either
 // the block's OWN outer element (data-block, _style, inline style — painted
 // synchronously by the isomorphic block itself, not the island) or only

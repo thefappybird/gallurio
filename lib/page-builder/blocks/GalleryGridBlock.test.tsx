@@ -220,18 +220,19 @@ describe("GalleryGridBlock — banner/container props", () => {
 });
 
 describe("GalleryGridBlock — lightbox", () => {
-  it("clicking an image opens the shared Lightbox with that image's data", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", async () => {
     render(GalleryGridBlock({ ...base, images: imgs(2) }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    // Lightbox is a first-open-only chunk (loaded on demand).
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       GalleryGridBlock({
         ...base,
@@ -250,6 +251,7 @@ describe("GalleryGridBlock — lightbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 });
@@ -272,12 +274,12 @@ describe("GalleryGridBlock — nav across slot-composed Image children (Item 11)
     return ImageSlotStub;
   }
 
-  it("clicking the 2nd of 5 photos opens at index 1 with working prev/next and a 2/5 counter", () => {
+  it("clicking the 2nd of 5 photos opens at index 1 with working prev/next and a 2/5 counter", async () => {
     render(GalleryGridBlock({ ...base, images: [], content: imageSlot(5) }));
 
     fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
     expect(within(dialog).getByRole("button", { name: /previous image/i })).not.toBeDisabled();

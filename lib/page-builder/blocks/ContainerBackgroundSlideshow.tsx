@@ -114,35 +114,48 @@ export function ContainerBackgroundSlideshow({
           }
         `}</style>
       )}
-      {images.map((img, i) => {
-        const isActive = i === showIndex;
-        const style: React.CSSProperties = { ...LAYER_BASE };
-        if (animation === "slide") {
-          style.transform = `translateX(${(i - showIndex) * 100}%)`;
-          style.transition = "transform 800ms ease-in-out";
-        } else {
-          style.opacity = isActive ? 1 : 0;
-          style.transition = "opacity 1000ms ease-in-out";
-          if (animation === "kenburns") {
-            // Subtle continuous zoom; alternate so it never hard-resets.
-            style.animation = "pf-bg-kenburns 8s ease-in-out infinite alternate";
+      {images
+        .map((img, i) => ({ img, i }))
+        .filter(({ i }) => {
+          // Keep prev+active+next mounted for every animation mode (≤3
+          // images): the outgoing slide must stay in the DOM to finish its
+          // fade/slide-out transition instead of popping out the instant the
+          // active index advances (that pop left a visible dip to the
+          // container background on every crossfade/kenburns advance).
+          const n = images.length;
+          const prevIndex = (showIndex - 1 + n) % n;
+          const nextIndex = (showIndex + 1) % n;
+          return i === prevIndex || i === showIndex || i === nextIndex;
+        })
+        .map(({ img, i }) => {
+          const isActive = i === showIndex;
+          const style: React.CSSProperties = { ...LAYER_BASE };
+          if (animation === "slide") {
+            style.transform = `translateX(${(i - showIndex) * 100}%)`;
+            style.transition = "transform 800ms ease-in-out";
+          } else {
+            style.opacity = isActive ? 1 : 0;
+            style.transition = "opacity 1000ms ease-in-out";
+            if (animation === "kenburns") {
+              // Subtle continuous zoom; alternate so it never hard-resets.
+              style.animation = "pf-bg-kenburns 8s ease-in-out infinite alternate";
+            }
           }
-        }
-        return (
-          <Image
-            key={img.id}
-            data-bg-layer={i}
-            data-active={isActive}
-            src={img.src}
-            alt=""
-            loader={cfImageLoader}
-            fill
-            sizes="100vw"
-            loading={isActive ? "eager" : "lazy"}
-            style={style}
-          />
-        );
-      })}
+          return (
+            <Image
+              key={img.id}
+              data-bg-layer={i}
+              data-active={isActive}
+              src={img.src}
+              alt=""
+              loader={cfImageLoader}
+              fill
+              sizes="100vw"
+              loading={isActive ? "eager" : "lazy"}
+              style={style}
+            />
+          );
+        })}
     </div>
   );
 }
