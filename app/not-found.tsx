@@ -23,7 +23,7 @@ export function NotFoundContent() {
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- root catch-all has no app CSS/Image loader guaranteed */}
-      <img src="/brand/gallurio-sq.svg" alt="Gallurio" width={48} height={48} />
+      <img src="/brand/gallurio-sq-128.png" alt="Gallurio" width={48} height={48} />
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Page not found</h1>
       <Link
         href="/"

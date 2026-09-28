@@ -31,7 +31,7 @@ export function MarketingFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2">
           <Image
-            src="/brand/gallurio-sq.svg"
+            src="/brand/gallurio-sq-128.png"
             alt=""
             width={20}
             height={20}

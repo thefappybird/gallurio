@@ -35,7 +35,7 @@ export default function AuthLayout({
             the two halves read as one undivided screen. */}
         <div className="relative flex shrink-0 flex-col gap-6 overflow-hidden border-b border-border bg-primary px-4 py-4 text-primary-foreground md:w-[42%] md:min-w-[22rem] md:border-b-0 md:border-e md:px-12 md:py-14">
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+            <Image src="/brand/gallurio-sq-128.png" alt="" width={28} height={28} className="h-7 w-7" />
             <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
           </Link>
           <AuthBrandPane />

@@ -38,7 +38,7 @@ export function MarketingHeader() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <Image
-            src="/brand/gallurio-sq.svg"
+            src="/brand/gallurio-sq-128.png"
             alt=""
             width={24}
             height={24}
