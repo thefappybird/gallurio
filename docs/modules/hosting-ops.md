@@ -46,6 +46,7 @@ Acceptance criteria for every Server Action, Route Handler, and public/server-co
 - **Auth on every page/route**: every authenticated page calls `requireOrg()`, every server action `ownerContext()`/`requireRole()`, every route handler an explicit identity or signature check. Never rely on middleware alone. See `docs/modules/auth-tenancy.md`.
 - **Secret exposure**: never log tokens/sessions/cookies/headers, never return session state to the client or serialize it into props, never put a secret in a `NEXT_PUBLIC_` var.
 - **Tenant isolation**: Mongo has no row-level security — application code is the only enforcement. See the Multi-tenant rules in CLAUDE.md and `docs/modules/auth-tenancy.md`.
+- **Caching cookie-dependent responses**: `/` and `/<locale>` must never get an edge/CDN cache rule that ignores the session cookie — a signed-in visitor would be served the anonymous shell and skip the `/api/auth/landing` redirect. `/api/public/pricing` is `private` (per-visitor, country-dependent) — never make it shared/public cache.
 
 ## Beta operations
 

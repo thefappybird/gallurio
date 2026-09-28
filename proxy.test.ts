@@ -190,6 +190,24 @@ describe("proxy", () => {
     }
   });
 
+  it("never lets the signed-in root redirect be cached (cookie-dependent)", async () => {
+    authMiddlewareMock.mockResolvedValueOnce(
+      (() => {
+        const res = NextResponse.next();
+        res.headers.set("x-middleware-override-headers", "x-workos-session");
+        res.headers.set("x-middleware-request-x-workos-session", "tok");
+        return res;
+      })(),
+    );
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/", { headers: { cookie: "wos-session=abc" } });
+
+    const response = (await proxy(req)) as Response;
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("falls through to normal handling when the root's session cookie is invalid/expired", async () => {
     // No x-workos-session header in AuthKit's response -> session invalid or
     // expired; AuthKit's own cookie-cleanup Set-Cookie still reaches the

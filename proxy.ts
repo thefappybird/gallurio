@@ -459,6 +459,10 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
       const redirectUrl = new URL("/api/auth/landing", publicOrigin(req));
       redirectUrl.searchParams.set("locale", locale);
       const redirectResponse = NextResponse.redirect(redirectUrl, 307);
+      // Cookie-dependent redirect (same visitor/URL resolves differently by
+      // session state) — a shared cache must never serve this to a different
+      // visitor.
+      redirectResponse.headers.set("cache-control", "no-store");
       // Carry over any session-refresh Set-Cookie AuthKit issued.
       if (authResponse) {
         for (const cookie of (authResponse as Response).headers.getSetCookie()) {
