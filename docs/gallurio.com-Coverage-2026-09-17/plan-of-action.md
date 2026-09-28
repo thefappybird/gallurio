@@ -94,6 +94,31 @@ with each other. Probes: `e2e/public-perf-probes.spec.ts` (anonymous, 375 px).
    confirm the causes above.
 3. Re-check coverage and impressions in 2–4 weeks.
 
-Follow-up, not in this branch: the home page renders per request (auth
-redirect + `cf-ipcountry` geo pricing in `app/[locale]/(marketing)/page.tsx`);
-moving the redirect into `proxy.ts` and streaming the pricing would cut TTFB.
+## Home page: static shell + per-visitor price (in progress, owner-approved 2026-09-28)
+
+The home page rendered per request for two reasons: the signed-in redirect
+(`getAuthUser()` + a `User` lookup) and the geo pricing (`cf-ipcountry` in
+`getDisplayPricing()`). True per-component rendering (PPR) needs Next 16's
+app-wide `cacheComponents` flag — 44 route-config migrations, Suspense around
+every request-time read, and a navigation behaviour change — so it is out of
+scope. Instead:
+
+1. **Proxy (backend).** Anonymous `/` and `/<locale>` (no `wos-session`
+   cookie) skip AuthKit and go straight to next-intl — no PKCE cookie, no
+   authorization-URL work. With a cookie, AuthKit runs; a valid session is
+   redirected (307, AuthKit's Set-Cookie carried over) to
+   `GET /api/auth/landing?locale=<l>`, which resolves `defaultPostAuthPath`
+   (unchanged rules) and redirects; an invalid one falls through to the page.
+2. **`GET /api/public/pricing` (backend).** `{ pricing: ProPricing,
+   betaEnabled: boolean }` from `getDisplayPricing()` + `BETA_TESTER_ENABLED`;
+   `Cache-Control: private, max-age=300` (country-dependent, so never shared
+   caches); never 500s (falls back to the static base-tier catalog).
+3. **Page (frontend).** No session, DB or `headers()` reads;
+   `export const revalidate = 3600`. `PricingTeaser` server-renders the static
+   base-tier catalog price, then replaces pricing + beta flag from the endpoint
+   on mount (the section is far below the fold).
+
+Verify: CI build route table shows `/[locale]` as static/ISR; signed-in
+visitors still land on dashboard/bookings/onboarding; PH visitor sees PHP;
+unit tests for proxy branches, both handlers, the teaser swap.
+`/pricing` and the MDX `<GallurioPrice />` stay dynamic.
