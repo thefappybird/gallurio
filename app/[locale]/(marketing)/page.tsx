@@ -192,7 +192,7 @@ export default async function Home({ params }: Props) {
               </div>
               <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
                 {trustItems.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span key={item} className="inline-flex items-center gap-2 text-start sm:whitespace-nowrap">
                     <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
                     {item}
                   </span>

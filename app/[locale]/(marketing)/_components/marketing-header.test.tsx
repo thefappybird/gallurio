@@ -91,4 +91,18 @@ describe("MarketingHeader", () => {
       screen.getAllByRole("link", { name: "marketing.nav:compare" }).some((link) => link.getAttribute("href") === "/compare")
     ).toBe(true);
   });
+
+  it("collapses the desktop nav into the hamburger below xl (1280px)", () => {
+    route.pathname = "/";
+    const { container } = render(<MarketingHeader />);
+
+    const row = container.querySelector("header > div");
+    const desktopNav = row?.children[1];
+    const mobileNav = row?.children[2];
+
+    expect(desktopNav?.className).toContain("xl:flex");
+    expect(desktopNav?.className).not.toContain("sm:flex");
+    expect(mobileNav?.className).toContain("xl:hidden");
+    expect(mobileNav?.className).not.toContain("sm:hidden");
+  });
 });

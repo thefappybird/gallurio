@@ -63,7 +63,6 @@ test("landing page renders all sections with no horizontal overflow at 768px", a
 
   await expectCoreSectionsVisible(page);
   await expect(page.getByRole("link", { name: "Pricing" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -71,6 +70,12 @@ test("landing page renders all sections with no horizontal overflow at 768px", a
     scrollWidth,
     `documentElement.scrollWidth (${scrollWidth}) exceeds viewport (768)`
   ).toBeLessThanOrEqual(773);
+
+  // Below the xl: breakpoint (1280px), "Sign in" lives inside the collapsed
+  // hamburger menu — open it to reach it. Checked after the overflow
+  // measurement so the open sheet doesn't skew it.
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 });
 
 test("landing page renders all sections with no horizontal overflow at 375px", async ({ page }) => {

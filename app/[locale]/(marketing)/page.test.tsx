@@ -92,6 +92,15 @@ describe("Marketing Home page", () => {
     }
   });
 
+  it("lets hero trust items wrap below sm instead of forcing nowrap", async () => {
+    const page = await Home({ params: Promise.resolve({ locale: "en" }) });
+    render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
+
+    const trustItem = screen.getByText("marketing:trust.item1");
+    expect(trustItem.closest("span")).toHaveClass("sm:whitespace-nowrap");
+    expect(trustItem.closest("span")).not.toHaveClass("whitespace-nowrap");
+  });
+
   it("identifies Gallurio in the hero across every launch locale", () => {
     for (const messages of [enMessages, filMessages, idMessages, arMessages, thMessages]) {
       expect(messages.marketing.hero.headlineShow).toMatch(/^Gallurio:\s+\S/);

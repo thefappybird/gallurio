@@ -51,7 +51,7 @@ export function MarketingHeader() {
           </span>
         </Link>
 
-        <div className="hidden flex-1 items-center justify-end gap-x-4 gap-y-2 sm:flex">
+        <div className="hidden flex-1 items-center justify-end gap-x-4 gap-y-2 xl:flex">
           <nav aria-label="Marketing" className="flex items-center gap-4 text-sm font-medium">
             <Link
               href="/portfolio-maker-demo"
@@ -107,7 +107,7 @@ export function MarketingHeader() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:hidden">
+        <div className="flex shrink-0 items-center gap-2 xl:hidden">
           <Link
             href="/sign-up"
             className={buttonVariants({ variant: "brand", size: "sm", className: "whitespace-nowrap" })}
