@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
@@ -188,6 +188,9 @@ export function CollectionPopup({
   const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // The scrollable body div below — contact-sheet/justified/split-index mount
+  // directly inside it, so it's the correct useVirtualizer scroll element.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const layout = resolvePopupLayout(popupConfig.popupLayout);
   const isImmersive = layout === "immersive";
@@ -346,6 +349,7 @@ export function CollectionPopup({
     onLoadMore: handleLoadMore,
     onOpen: (index) => setOpenIndex(index),
     labels: L,
+    scrollContainerRef,
   };
 
   // ---------------------------------------------------------------------------
@@ -441,6 +445,7 @@ export function CollectionPopup({
               >
               {/* Scrollable body */}
               <div
+                ref={scrollContainerRef}
                 style={{
                   overflowY: "auto",
                   flex: 1,

@@ -17,7 +17,10 @@ import { createAnchoredPreviewStore } from "./anchoredPreviewStore";
  *   - clicking a row opens it too;
  *   - hovering or clicking a DIFFERENT row swaps the preview over;
  *   - clicking outside, or acting on the canvas, closes it;
- *   - merely moving the pointer off a row does NOT close it.
+ *   - moving the pointer off the row closes it, UNLESS it lands on the card.
+ *     The card is anchored beside the row rather than nested inside it, so the
+ *     pointer has a gap to cross; `schedulePresetPreviewClose` arms the close
+ *     and re-entering either element calls it off.
  *
  * Built on the generic `createAnchoredPreviewStore` factory (see that module
  * for the "single active item + anchor" mechanics this wraps).
@@ -42,6 +45,16 @@ export function openPresetPreview(name: string, row: HTMLElement): void {
 /** Close whatever is open. No-op when nothing is. */
 export function closePresetPreview(): void {
   store.close();
+}
+
+/** Arm a close after the pointer leaves the row or the card. */
+export function schedulePresetPreviewClose(): void {
+  store.scheduleClose();
+}
+
+/** Call off a pending close because the pointer re-entered the row or card. */
+export function cancelPresetPreviewClose(): void {
+  store.cancelClose();
 }
 
 /** Subscribe to changes; returns an unsubscribe. */

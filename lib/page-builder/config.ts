@@ -15,7 +15,7 @@
  */
 
 import React from "react";
-import type { Config, ComponentConfig } from "@measured/puck";
+import type { Config, ComponentConfig } from "@puckeditor/core";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_PAGE_CONTAINER, PF_RESPONSIVE_CSS } from "./responsive";
 import { MANUAL_BLOCK_KEYS } from "./blockCategories";

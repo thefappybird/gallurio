@@ -4,17 +4,21 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { marketingMetadata, baseUrl } from "@/lib/seo/metadata";
 import { buildOrganizationLd, buildWebSiteLd } from "@/lib/seo/marketingJsonLd";
 import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { redirect } from "next/navigation";
+import NextLink from "next/link";
 import { Link } from "@/lib/i18n/navigation";
-import { getAuthUser } from "@/lib/auth/session";
-import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
-import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/db/models";
-import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { staticFallback } from "@/lib/lemonsqueezy/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
 import { ThemedShot } from "./_components/themed-shot";
+
+// Static page: no session/DB/headers reads, so Next can serve it from cache.
+// Prerendered at build time with the CI env (BETA_TESTER_ENABLED unset there),
+// so the first request more than 60s after a deploy regenerates it with the
+// runtime env and picks up the flag. The render is cheap (static catalog
+// price, no DB/network), so a short window is fine. Meanwhile the client
+// fetch of /api/public/pricing corrects the flag and price per visitor.
+export const revalidate = 60;
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -33,23 +37,14 @@ export default async function Home({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Authenticated visitors never see the landing page — send them to their
-  // first accessible surface (owner -> dashboard, staff/team member -> bookings,
-  // no workspace yet -> onboarding). Mirrors the post-sign-in redirect.
-  const authUser = await getAuthUser();
-  if (authUser) {
-    await connectDB();
-    const user = await User.findOne({ workosUserId: authUser.workosUserId })
-      .select("memberships onboardingCompletedAt")
-      .lean();
-    // A missing User doc is effectively "no memberships" -> onboarding.
-    redirect(defaultPostAuthPath(user ?? { memberships: [] }, locale));
-  }
-
+  // Authenticated visitors never see this static page — proxy.ts redirects
+  // them to GET /api/auth/landing before this component ever runs.
   const t = await getTranslations("marketing");
   const tTerms = await getTranslations("marketing.terms");
   const tPrivacy = await getTranslations("marketing.privacy");
-  const proPricing = await getDisplayPricing();
+  // Server-rendered initial price: static base-tier catalog, no network/DB.
+  // The real per-visitor price resolves client-side in PricingTeaser.
+  const proPricing = staticFallback("base");
 
   const trustItems = [t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")];
 
@@ -189,9 +184,9 @@ export default async function Home({ params }: Props) {
                   {t("hero.ctaSecondary")}
                 </Link>
               </div>
-              <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
+              <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:px-6">
                 {trustItems.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span key={item} className="inline-flex items-center gap-2 text-start sm:whitespace-nowrap">
                     <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
                     {item}
                   </span>
@@ -204,8 +199,9 @@ export default async function Home({ params }: Props) {
         {/* Sits below the ambient-art wrapper (which fades out via mask
             before reaching here), so the checklist is always read against
             the plain background — never fighting the line art for
-            contrast. flex-nowrap + a wide max-width keeps it one row from
-            sm+ up; only true mobile widths wrap it. */}                                                              
+            contrast. Row wraps whenever a locale's translated items don't
+            fit the max-width; items themselves stay whitespace-nowrap from
+            sm+ up so individual phrases never split mid-word. */}
 
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">
@@ -330,9 +326,9 @@ export default async function Home({ params }: Props) {
 
       <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
         {t("compareTeaser.intro")}{" "}
-        <Link href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
+        <NextLink href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
           {t("compareTeaser.linkLabel")}
-        </Link>
+        </NextLink>
       </p>
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}

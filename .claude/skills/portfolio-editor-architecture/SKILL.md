@@ -80,3 +80,18 @@ load the focused sub-skill for your actual task.
 - The contact form is fixed; inquiry submit creates `Inquiry` + `Client` + inquiry `Booking`
   in one transaction.
 - Reuse before rebuild — check `REUSABLE_CODE.md`.
+
+## Puck 0.23 constraints (shipped in 1.5.0)
+- The editor runs on `@puckeditor/core` 0.23. Dark theme works because 0.22's semantic color
+  aliases are re-declared inside `.gallurio-editor` (`editor.css`); don't move them back to `:root`.
+- The left sidebar (Components / Outline tabs) replaces Puck's plugin rail through a plugin that
+  MUST be named exactly `"legacy-side-bar"` — Puck hard-codes that literal. Any other name leaves
+  the rail up and adds a third tab; omitting `label`/`icon` does not hide it.
+- `ContainerAnchor` is not upgrade cruft. 0.23's insertion-line DnD still drops blocks *inside*
+  nested containers instead of beside them without it (owner manual test, 2026-09-26). The
+  predicate (`isAnchorHost` / `CONTAINER_PRESET_KEYS`) also covers section presets.
+- `@tanstack/react-query` is scoped to the editor boundary only (gallery-picker fetches, keys
+  under `["gallery", workspaceId, …]`). `CollectionPopup` stays on plain `fetch` because it also
+  renders on the public page, which has no query provider — don't add an app-wide provider for it.
+- Wrapping block renderers in `memo()` is a no-op: Puck 0.23 memoizes internally. Keep the Puck
+  `metadata` object memoized instead.

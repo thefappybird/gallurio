@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 
 const route = vi.hoisted(() => ({ pathname: "/" }));
 
-vi.mock("next-intl", () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
-}));
+vi.mock("next-intl", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next-intl")>();
+  return {
+    ...actual,
+    useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
+  };
+});
 
 vi.mock("next/image", () => ({
   default: () => <span data-testid="brand-image" />,
@@ -66,5 +71,38 @@ describe("MarketingHeader", () => {
     expect(screen.getAllByRole("link", { name: "Resources" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio Builder" }).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("locale-switcher")).not.toBeInTheDocument();
+  });
+
+  it("links the English-only Resources/Compare pages without a locale prefix under locale fil", () => {
+    route.pathname = "/fil";
+    render(
+      <NextIntlClientProvider locale="fil">
+        <MarketingHeader />
+      </NextIntlClientProvider>
+    );
+
+    // Resources/Compare use plain next/link (not the locale-aware intl Link),
+    // so their href is always the bare, unprefixed path -- these pages have
+    // no /fil catalog and a locale-prefixed URL would 308-redirect.
+    expect(
+      screen.getAllByRole("link", { name: "marketing.nav:resources" }).some((link) => link.getAttribute("href") === "/resources")
+    ).toBe(true);
+    expect(
+      screen.getAllByRole("link", { name: "marketing.nav:compare" }).some((link) => link.getAttribute("href") === "/compare")
+    ).toBe(true);
+  });
+
+  it("collapses the desktop nav into the hamburger below xl (1280px)", () => {
+    route.pathname = "/";
+    const { container } = render(<MarketingHeader />);
+
+    const row = container.querySelector("header > div");
+    const desktopNav = row?.children[1];
+    const mobileNav = row?.children[2];
+
+    expect(desktopNav?.className).toContain("xl:flex");
+    expect(desktopNav?.className).not.toContain("sm:flex");
+    expect(mobileNav?.className).toContain("xl:hidden");
+    expect(mobileNav?.className).not.toContain("sm:hidden");
   });
 });

@@ -2,6 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
+
+// ImageBlock wraps its clickable tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// THIS module (manualBlocks.tsx), which imports THIS SAME "./lazy"
+// specifier, deadlocking the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import {
   HeadingBlock,
   TextBlock,
@@ -27,9 +39,17 @@ import {
 } from "./presets/footer";
 import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
-import { Render } from "@measured/puck";
+import { Render } from "@puckeditor/core";
 import { puckConfig } from "../config";
-import type { SlotComponent, Permissions } from "@measured/puck";
+// Puck 0.23 narrows `resolvePermissions`'s `changed` param to `never` on the
+// DEFAULT config type, so our precisely-typed config no longer satisfies the
+// base `Config` a bare <Render> expects. Production call sites already cast the
+// same way (EditorShell, the public page renderers); this mirrors them once per
+// file rather than at every usage.
+const renderConfig = puckConfig as unknown as Config;
+
+import type { Config } from "@puckeditor/core";
+import type { SlotComponent, Permissions } from "@puckeditor/core";
 
 // ---------------------------------------------------------------------------
 // HeadingBlock
@@ -322,6 +342,22 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect(img.src).toContain("photo.jpg");
   });
 
+  it("renders via next/image with a srcset and sizes (parity loader)", () => {
+    const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("100vw");
+  });
+
+  it("uses an explicit pixel width as sizes when _style.width is a px length", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg", width: "320px" }} />
+    );
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("sizes")).toBe("320px");
+  });
+
   it("does NOT show the placeholder when a background image is set", () => {
     render(<ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
@@ -364,14 +400,15 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect((container.querySelector("img") as HTMLImageElement).style.objectFit).toBe("contain");
   });
 
-  it("opens the view-image modal when clicked outside the editor", () => {
+  it("opens the view-image modal when clicked outside the editor", async () => {
     render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    // Lightbox is a first-open-only chunk (loaded on demand).
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       <ImageBlock
         alt="A photo"
@@ -388,19 +425,20 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 
   // Item 12, hypothesis 1: does puck.metadata reach an ImageBlock nested
   // inside a Container's slot? Rendered through the REAL Puck pipeline (not
-  // a hand-built puck prop) — @measured/puck's SlotRender explicitly forwards
+  // a hand-built puck prop) — @puckeditor/core's SlotRender explicitly forwards
   // the same top-level `metadata` to every slot-nested item, so this is
   // expected to already pass; the sidebar leaf's panel (SidebarLayout.tsx)
   // renders unconditionally, making it a reliable non-caption probe.
-  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
+  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", async () => {
     render(
       <Render
-        config={puckConfig}
+        config={renderConfig}
         data={{
           root: {},
           content: [
@@ -428,10 +466,11 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 
-  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", () => {
+  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", async () => {
     render(
       <ImageBlock
         alt=""
@@ -447,7 +486,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Reception at dusk" }));
-    expect(screen.getByText("Golden Hour")).toBeInTheDocument();
+    expect(await screen.findByText("Golden Hour")).toBeInTheDocument();
     expect(screen.getByText("Reception at dusk")).toBeInTheDocument();
   });
 

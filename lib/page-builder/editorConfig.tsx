@@ -30,7 +30,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
+import type { Config, ComponentConfig, Field, Fields } from "@puckeditor/core";
 import { MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { ContactDetailsDefaultsContext, RadiusButtons, StyleToolkitField, type NavDetachContext } from "./StyleToolkitField";
@@ -782,6 +782,11 @@ export function createEditorConfig(
         resolveFields: resolveContainerFieldsTyped,
         defaultProps: presetEntry.defaultProps as ContainerBlockProps,
         resolvePermissions: containerResolvePermissions,
+        // Container-rendering presets are anchor hosts too (isAnchorHost) — they
+        // need the same resolveData the base Container carries so the anchor
+        // resolver and the live reconciler agree on every preset, not just the
+        // manual Container.
+        resolveData: resolveContainerDataTyped,
         render: ContainerBlock,
         ...(presetEntry.metadata ? { metadata: presetEntry.metadata } : {}),
       };
@@ -1327,9 +1332,7 @@ export function createEditorConfig(
       ContainerAnchor: {
         label: "ContainerAnchor",
         defaultProps: containerAnchorDefaultProps,
-        fields: {
-          height: { type: "number", label: t("puckConfig.fields.spacerHeight") } as unknown as Field<number>,
-        },
+        fields: {},
         permissions: {
           drag: false,
           delete: false,

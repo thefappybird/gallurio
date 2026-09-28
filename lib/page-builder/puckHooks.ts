@@ -1,6 +1,6 @@
 "use client";
 
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 
 /**
  * Shared createUsePuck instance for all page-builder components.

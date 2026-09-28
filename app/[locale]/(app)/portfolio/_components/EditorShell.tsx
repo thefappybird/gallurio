@@ -1,14 +1,15 @@
 "use client";
 
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
-import { Puck, Drawer, type Config, type Data } from "@measured/puck";
+import { Puck, Drawer, type Config, type Data, type Plugin } from "@puckeditor/core";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
 import { useEditorCanvasHotkeys } from "@/lib/page-builder/useEditorCanvasHotkeys";
+import { buildPuckDictionary } from "@/lib/page-builder/puckDictionary";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
 import { ManualDrawerItem, PresetDrawerItem, PresetPreviewPanel } from "./PresetPreviewCard";
+import { EditorSideBar } from "./EditorSideBar";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -85,6 +87,7 @@ import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import { getPageBodyContent, normalizePageBody } from "@/lib/page-builder/pageBody";
 import { normalizePresetLayouts } from "@/lib/page-builder/templates/normalizePresetLayouts";
+import { ensureBlockIds } from "@/lib/page-builder/ensureBlockIds";
 import { applyPageBodyContainerDefaults } from "@/lib/page-builder/pageBodyContainerDefaults";
 import {
   dismissPortfolioGuideAction,
@@ -117,7 +120,7 @@ import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
-import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
+import { GalleryQueryProvider } from "@/lib/page-builder/galleryPicker/GalleryQueryProvider";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import {
   resolveAddSessionAppearance,
@@ -216,6 +219,10 @@ export type EditorTemplateSummary = {
 
 type Props = {
   slug: string;
+  /** Tenant scope for the editor's gallery-picker React Query cache — every
+   * query key must be scoped by this so a workspace switch never serves
+   * another tenant's cached collections/feed data. */
+  workspaceId: string;
   workspaceName: string;
   initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
@@ -289,6 +296,9 @@ type Props = {
   demoMode?: boolean;
 };
 
+/** Type-only export for EditorShellLoader's dynamic-import wrapper — no runtime change. */
+export type EditorShellProps = Props;
+
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const SCRATCH_TEMPLATE_ID = "scratch";
 // Demo caps — locked copy references "10" and "20" directly; keep in sync.
@@ -297,6 +307,23 @@ const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectio
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
 const LOCAL_DRAFT_VERSION = 2;
+
+// Module-level so the array identity never changes between renders — Puck
+// treats a new `plugins` reference the same way it treats a new `overrides`
+// one, and would remount the sidebar subtree on every keystroke.
+//
+// The name is load-bearing and must stay exactly `legacy-side-bar`. It is the
+// ONLY way to opt out of Puck 0.21's icon rail: the rail hard-codes that
+// literal, flipping every other plugin to `mobileOnly` and this one to
+// `desktopOnly` so a single render owns the whole desktop sidebar. Any other
+// name (including no `label`/`icon`, which only changes the tab's caption)
+// leaves the rail up and adds a third tab beside Blocks and Outline.
+const puckPlugins: Plugin[] = [
+  {
+    name: "legacy-side-bar",
+    render: () => <EditorSideBar />,
+  },
+];
 
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
@@ -806,7 +833,9 @@ function prepareForEditorWithMeta(
 ): { data: Data; repaired: boolean } {
   const seeded = ensureNavigation(data, headerFallback, workspaceName);
   const navInjected = seeded !== data;
-  const withBody = normalizePresetLayouts(normalizePageBody(seeded as unknown as Data) as unknown as PuckData);
+  const withBody = ensureBlockIds(
+    normalizePresetLayouts(normalizePageBody(seeded as unknown as Data) as unknown as PuckData),
+  );
   const withDefaults = fillBlockDefaults(withBody as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
@@ -821,7 +850,7 @@ function prepareForEditorWithMeta(
     prepared = next;
   }
   const chromeNormalized = normalizeChrome(prepared);
-  const normalized = normalizePageBody(chromeNormalized);
+  const normalized = ensureBlockIds(normalizePageBody(chromeNormalized) as unknown as PuckData) as unknown as Data;
   const reordered = normalized !== prepared;
   return { data: normalized, repaired: navInjected || rescued || reordered };
 }
@@ -892,7 +921,7 @@ export function resolveDrawerItemPreset(name: string): SectionPresetEntry | unde
 
 /**
  * Renders `overrides.drawerItem` (or `overrides.componentItem`) for a raw
- * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@measured/puck` are
+ * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@puckeditor/core` are
  * unwired primitives — only Puck's own default `ComponentList.Item` (internal,
  * not exported) applies the `drawerItem` override automatically. Since
  * PresetBlocksDrawer builds every `Drawer.Item` itself, it passes this render
@@ -940,42 +969,48 @@ function PresetBlocksDrawer({
 
   return (
     <Drawer>
-      <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
-        <div className="flex flex-col gap-2">
-          {PRESET_GROUPS.map((group) => {
-            const keys = group.keys.filter((key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key));
-            if (keys.length === 0) return null;
-            return (
-              <CollapsibleDrawer key={group.id} title={t(group.labelKey)} defaultOpen={group.id === "nav"}>
-                <div className="flex flex-col gap-1">
-                  {keys.map((key) => (
-                    <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
-                      {drawerItem}
-                    </Drawer.Item>
-                  ))}
-                </div>
-              </CollapsibleDrawer>
-            );
-          })}
-        </div>
-      </CollapsibleDrawer>
-      {!hideManualBlocks && manualKeys.length > 0 && (
-        <CollapsibleDrawer title={t("puckConfig.categories.manual")}>
-          <div className="flex flex-col gap-1">
-            {manualKeys.map((key) => (
-              <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
-                {drawerItem}
-              </Drawer.Item>
-            ))}
+      {/* Puck's <Drawer> root applies `gap` between its direct children — a
+       *  single wrapper keeps Presets + Manual touching as one flex child
+       *  instead of two gapped siblings. */}
+      <div data-testid="drawer-root" className="flex flex-col">
+        <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
+          <div className="flex flex-col gap-2">
+            {PRESET_GROUPS.map((group) => {
+              const keys = group.keys.filter((key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key));
+              if (keys.length === 0) return null;
+              return (
+                <CollapsibleDrawer key={group.id} title={t(group.labelKey)}>
+                  <div className="flex flex-col gap-1">
+                    {keys.map((key) => (
+                      <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                        {drawerItem}
+                      </Drawer.Item>
+                    ))}
+                  </div>
+                </CollapsibleDrawer>
+              );
+            })}
           </div>
         </CollapsibleDrawer>
-      )}
+        {!hideManualBlocks && manualKeys.length > 0 && (
+          <CollapsibleDrawer title={t("puckConfig.categories.manual")}>
+            <div className="flex flex-col gap-1">
+              {manualKeys.map((key) => (
+                <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                  {drawerItem}
+                </Drawer.Item>
+              ))}
+            </div>
+          </CollapsibleDrawer>
+        )}
+      </div>
     </Drawer>
   );
 }
 
 export function EditorShell({
   slug,
+  workspaceId,
   workspaceName,
   initialData,
   initialBrandKit,
@@ -1010,6 +1045,14 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
   const tNav = useTranslations("publicPage.nav");
+  const tChrome = useTranslations("puck.chrome");
+  // Editor-facing FeaturedWork canvas hints follow the CRM locale, not the
+  // portfolio's own formLocale (owner decision 2026-09-26) — same rationale
+  // as tNav above.
+  const tPublicChrome = useTranslations("publicPage.chrome");
+  // .raw, not t(): Puck's own {placeholder} syntax must pass through untouched,
+  // not get parsed as an ICU argument.
+  const puckDictionary = useMemo(() => buildPuckDictionary((k) => tChrome.raw(k)), [tChrome]);
   const errMsg = useActionError();
   // Declared ahead of editorConfig below (normally further down with the rest
   // of this component's state) because the Navigation field panel's detach
@@ -1767,7 +1810,7 @@ export function EditorShell({
       // does. Canvas selection is lost on that remount, same as every other
       // reseed path here.
       const preNormalize = zones[activeZone];
-      const normalizedActive = normalizePageBody(normalizeChrome(preNormalize));
+      const normalizedActive = ensureBlockIds(normalizePageBody(normalizeChrome(preNormalize)));
       const chromeOrderCorrected = normalizedActive !== preNormalize || rescued || pageBodyDefaultsApplied;
       // Only meaningful when normalizeChrome itself is what changed the order —
       // null for a rescued/pageBodyDefaults-only reseed, correctly skipping the nudge.
@@ -2657,6 +2700,42 @@ export function EditorShell({
   // every render. Feeds the wrapper div's inline style below, the cssVars prop
   // threaded into PresetPreviewPanel, and Puck's metadata.workspace.brandVars.
   const { cssVars, className } = useMemo(() => resolveBrandKit(brandKit), [brandKit]);
+  // Puck 0.23 memoizes every block's render (MemoizeComponent, deepEqual on
+  // `puck`), but `metadata` itself is read by that same deepEqual — a fresh
+  // object literal here defeats the memo for every block on every
+  // EditorShell render. Hoisted so the reference is stable across renders
+  // that don't change any of these values.
+  const puckMetadata = useMemo(
+    () => ({
+      workspace: {
+        _id: workspaceId,
+        name: workspaceName,
+        slug,
+        editorPreview: true,
+        publicPage: { collectionsPopup },
+        brandVars: cssVars,
+        dir: canvasContactDir,
+        // Without this, getNavChromeLabelsFrom falls back to English — the
+        // public page and the preview route both pass chrome.nav already;
+        // the canvas was the one surface missing it.
+        chrome: {
+          nav: {
+            navLandmark: tNav("navLandmark"),
+            home: tNav("home"),
+            gallery: tNav("gallery"),
+            contact: tNav("contact"),
+            openMenu: tNav("openMenu"),
+            closeMenu: tNav("closeMenu"),
+          },
+          gallery: {
+            featuredEmpty: tPublicChrome("gallery.featuredEmpty"),
+            featuredSelect: tPublicChrome("gallery.featuredSelect"),
+          },
+        },
+      },
+    }),
+    [workspaceId, workspaceName, slug, collectionsPopup, cssVars, canvasContactDir, tNav, tPublicChrome],
+  );
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
   // Use resolveEffectiveFonts so legacy-kit portfolios (only `fontPair` set, no
@@ -2749,7 +2828,7 @@ export function EditorShell({
       // Puck context so createUsePuck selectors are available), and
       // EditorCanvasHotkeys (undo/redo + delete key handling, same reason).
       puck: ({ children }: { children: ReactNode }) => (
-        <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
+        <div data-tour-id="canvas" className="flex min-h-0 flex-col">
           {children}
           <RootCanvasStyle />
           <BlockActionsToolbar />
@@ -3068,7 +3147,7 @@ export function EditorShell({
   );
 
   return (
-    <GalleryPickerCacheProvider>
+    <GalleryQueryProvider workspaceId={workspaceId}>
       <MobileBanner publicUrl={portfolioPublicUrl(currentSlug)} />
 
       <BrandColorsContext.Provider value={brandColors}>
@@ -3135,37 +3214,25 @@ export function EditorShell({
             onChange={handleChange}
             onPublish={() => void handlePublish()}
             iframe={{ enabled: false }}
+            // Puck 0.21 replaced the single left sidebar with an icon "plugin
+            // rail" (Blocks / Outline as separate tabs). EditorSideBar replaces
+            // the rail with our own two-tab column; `Puck.Components` inside it
+            // still routes through the `drawer` override below.
+            plugins={puckPlugins}
+            dictionary={puckDictionary}
             headerTitle={headerTitle}
-            metadata={{
-              workspace: {
-                _id: "",
-                name: workspaceName,
-                slug,
-                editorPreview: true,
-                publicPage: { collectionsPopup },
-                brandVars: cssVars,
-                dir: canvasContactDir,
-                // Without this, getNavChromeLabelsFrom falls back to English —
-                // the public page and the preview route both pass chrome.nav
-                // already; the canvas was the one surface missing it.
-                chrome: {
-                  nav: {
-                    navLandmark: tNav("navLandmark"),
-                    home: tNav("home"),
-                    gallery: tNav("gallery"),
-                    contact: tNav("contact"),
-                    openMenu: tNav("openMenu"),
-                    closeMenu: tNav("closeMenu"),
-                  },
-                },
-              },
-            }}
+            metadata={puckMetadata}
             viewports={[
               { width: 1280, label: t("devices.desktop"), icon: "Monitor" },
               { width: 768, label: t("devices.tablet"), icon: "Tablet" },
               { width: 390, label: t("devices.mobile"), icon: "Smartphone" },
             ]}
             overrides={{
+              // Anchors (id ends with "--anchor") are invisible structural
+              // spacers — skip Puck's hover/selection chrome for them instead
+              // of the editor.css hashed-class substring hack this replaces.
+              componentOverlay: ({ children, componentId }) =>
+                componentId.endsWith("--anchor") ? <></> : <>{children}</>,
               // Full custom header: nav left · canvas controls center · tools +
               // Puck's Publish action (`actions`) right. The center cluster also
               // carries the sidebar-panel toggles the default header would own.
@@ -3433,6 +3500,7 @@ export function EditorShell({
         ) : (
           guideOpen && (
             <SandboxEditorGuide
+              workspaceId={workspaceId}
               templates={templates}
               onFinished={handleGuideFinish}
               onSkipped={handleGuideSkip}
@@ -3599,7 +3667,7 @@ export function EditorShell({
         </AlertDialogContent>
       </AlertDialog>
 
-    </GalleryPickerCacheProvider>
+    </GalleryQueryProvider>
   );
 }
 

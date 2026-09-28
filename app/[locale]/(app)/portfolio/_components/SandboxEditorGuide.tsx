@@ -22,6 +22,10 @@ const SANDBOX_CONTACT: PortfolioContactConfig = {};
 const SANDBOX_COLLECTIONS_POPUP: PortfolioCollectionsPopupConfig = {};
 
 type Props = {
+  /** The real owner's workspace id — the sandbox never reads/writes real
+   * workspace data, but its gallery-picker components still need a valid
+   * tenant scope for their React Query cache keys. */
+  workspaceId: string;
   templates: EditorTemplateSummary[];
   /** Called when the sandbox guide closes for any reason (finish or skip). */
   onFinished: (dontShowAgain: boolean) => void;
@@ -45,7 +49,7 @@ type Props = {
  * the outer editor shell's element first (it renders earlier in DOM order),
  * causing the cutout to misplace and gated steps to never satisfy.
  */
-export function SandboxEditorGuide({ templates, onFinished, onSkipped }: Props) {
+export function SandboxEditorGuide({ workspaceId, templates, onFinished, onSkipped }: Props) {
   // Store the container element in state (not a ref) so we can safely pass it
   // to EditorShell during render without triggering react-hooks/refs.
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -67,6 +71,7 @@ export function SandboxEditorGuide({ templates, onFinished, onSkipped }: Props) 
         onGuideFinish={onFinished}
         onGuideSkipClose={onSkipped}
         slug="__sandbox__"
+        workspaceId={workspaceId}
         workspaceName="My Portfolio"
         initialData={{ home: EMPTY_ZONE, gallery: EMPTY_ZONE }}
         initialBrandKit={SANDBOX_BRAND_KIT}

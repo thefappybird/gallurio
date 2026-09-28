@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Render } from "@measured/puck";
+import { Render } from "@puckeditor/core";
 import { puckConfig } from "../config";
 import {
   FEATURED_WORK_PRESET,

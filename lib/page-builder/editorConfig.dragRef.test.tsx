@@ -10,7 +10,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import React from "react";
 import { editorPuckConfig } from "./editorConfig";
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig } from "@puckeditor/core";
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
 
 describe("ContactDetails editor render — dragRef forwarding", () => {

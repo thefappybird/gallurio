@@ -1,67 +1,70 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { CollapsibleDrawer } from "./collapsible-drawer";
 
 describe("CollapsibleDrawer", () => {
-  it("toggles its body from the header button", () => {
+  it("expands to reveal body content on trigger click", () => {
     renderWithProviders(
-      <CollapsibleDrawer title="Session 1">
-        <div>Drawer body</div>
+      <CollapsibleDrawer title="Section title">
+        <div>Body content</div>
       </CollapsibleDrawer>
     );
 
-    expect(screen.queryByText("Drawer body")).toBeNull();
+    const trigger = screen.getByRole("button", { name: "Section title" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Body content")).not.toBeInTheDocument();
 
-    const header = screen.getByRole("button", { name: /session 1/i });
-    expect(header.className).toContain("cursor-pointer");
-    fireEvent.click(header);
-    expect(screen.getByText("Drawer body")).toBeInTheDocument();
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Body content")).toBeInTheDocument();
   });
 
-  it("calls onOpenChange when toggled", () => {
-    const onOpenChange = vi.fn();
-
+  it("drives the chevron rotation off the trigger's data-panel-open state", () => {
     renderWithProviders(
-      <CollapsibleDrawer title="Session 2" onOpenChange={onOpenChange}>
-        <div>Drawer body</div>
+      <CollapsibleDrawer title="Section title">
+        <div>Body content</div>
       </CollapsibleDrawer>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /session 2/i }));
-    expect(onOpenChange).toHaveBeenCalledWith(true);
+    const trigger = screen.getByRole("button", { name: "Section title" });
+    const chevron = trigger.querySelector("svg");
+    expect(chevron).toHaveClass("group-data-panel-open:rotate-180");
   });
 
-  it("toggles from Enter and Space on the header", () => {
-    const onOpenChange = vi.fn();
-
-    renderWithProviders(
-      <CollapsibleDrawer title="Session 3" onOpenChange={onOpenChange}>
-        <div>Drawer body</div>
-      </CollapsibleDrawer>
-    );
-
-    const header = screen.getByRole("button", { name: /session 3/i });
-    fireEvent.keyDown(header, { key: "Enter" });
-    fireEvent.keyDown(header, { key: " " });
-    expect(onOpenChange).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not toggle when Space is pressed inside a nested input", () => {
-    const onOpenChange = vi.fn();
-
+  it("does not toggle when clicking a nested control in the title", () => {
     renderWithProviders(
       <CollapsibleDrawer
-        title={<input aria-label="drawer title" defaultValue="Session 4" />}
-        onOpenChange={onOpenChange}
+        title={
+          <span>
+            Section title
+            <button type="button">Nested action</button>
+          </span>
+        }
       >
-        <div>Drawer body</div>
+        <div>Body content</div>
       </CollapsibleDrawer>
     );
 
-    const input = screen.getByLabelText("drawer title");
-    fireEvent.keyDown(input, { key: " " });
-    fireEvent.click(input);
-    expect(onOpenChange).not.toHaveBeenCalled();
+    const trigger = screen.getByRole("button", { name: /Section title/ });
+    fireEvent.click(screen.getByRole("button", { name: "Nested action" }));
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("hides body content again after collapsing", async () => {
+    renderWithProviders(
+      <CollapsibleDrawer title="Section title">
+        <div>Body content</div>
+      </CollapsibleDrawer>
+    );
+
+    const trigger = screen.getByRole("button", { name: "Section title" });
+    fireEvent.click(trigger);
+    expect(screen.getByText("Body content")).toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await waitFor(() => expect(screen.queryByText("Body content")).not.toBeInTheDocument());
   });
 });

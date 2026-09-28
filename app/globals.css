@@ -798,6 +798,32 @@ html[data-radius="rounded"] {
   .animate-marquee-scroll { animation: none; }
 }
 
+/* Ambient background drift -- slow scale/pan on the onboarding/auth/marketing
+   hero backdrop. Combines the old motion/react scale+x+y keyframes into one
+   ~30s alternating loop (was 3 separate infinite tweens). */
+@keyframes ambient-drift {
+  0% { transform: scale(1.03) translate(0%, 0%); }
+  50% { transform: scale(1.08) translate(-1.5%, 1.25%); }
+  100% { transform: scale(1.03) translate(1%, -1%); }
+}
+@keyframes ambient-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-ambient-drift {
+  opacity: 0;
+  animation:
+    ambient-fade-in 0.5s ease-out both,
+    ambient-drift 30s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-ambient-drift {
+    opacity: 1;
+    transform: scale(1.03);
+    animation: none;
+  }
+}
+
 /* Recharts anchors axis-tick text with SVG `text-anchor`, whose start/end
    resolve against the inherited direction — under `dir="rtl"` every tick flips
    to the wrong side of its axis and lands on top of the plot. RTL charts are
@@ -812,7 +838,7 @@ html[data-radius="rounded"] {
  *
  * Compact, theme-following scrollbars for the whole CRM — including Puck's own
  * editor panels, which ship no scrollbar rules of their own (verified against
- * @measured/puck/dist/index.css) and so inherit these.
+ * @puckeditor/core/dist/index.css) and so inherit these.
  *
  * Scoped to `html[data-app-shell]`, set only by app/[locale]/layout.tsx. The
  * public portfolio root layout (app/(public)/layout.tsx) imports this same

@@ -2646,6 +2646,8 @@ describe("Payments section", () => {
     fireEvent.pointerMove(paidOption);
     fireEvent.mouseOver(paidOption);
     fireEvent.mouseMove(paidOption);
+    // Base UI >= 1.8 commits a mouse click only when the press started on the item.
+    fireEvent.pointerDown(paidOption);
     fireEvent.click(paidOption);
     fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
 
@@ -2698,6 +2700,7 @@ describe("Payments section", () => {
     fireEvent.pointerMove(paidOption);
     fireEvent.mouseOver(paidOption);
     fireEvent.mouseMove(paidOption);
+    fireEvent.pointerDown(paidOption);
     fireEvent.click(paidOption);
 
     fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));

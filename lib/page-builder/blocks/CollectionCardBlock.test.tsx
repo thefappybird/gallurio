@@ -1,5 +1,17 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// CollectionCardBlock renders through the lazy-loaded FeaturedCollectionsClient
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { FeaturedCollectionsClient } = await import("./FeaturedCollectionsClient");
+  return { LazyFeaturedCollectionsClient: FeaturedCollectionsClient };
+});
+
 import {
   CollectionCardBlock,
   collectionCardDefaultProps,

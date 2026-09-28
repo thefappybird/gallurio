@@ -7,12 +7,6 @@ import idMessages from "@/messages/id.json";
 import arMessages from "@/messages/ar.json";
 import thMessages from "@/messages/th.json";
 
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn(() => {
-    throw new Error("redirect called");
-  }),
-}));
-
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async (arg?: string | { locale?: string; namespace?: string }) => {
@@ -21,24 +15,14 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
-vi.mock("@/lib/pricing/localPricing", () => ({
-  getDisplayPricing: vi.fn(async () => ({ currency: "PHP", monthly: 250, yearly: 2500 })),
-}));
-
-const getAuthUserMock = vi.fn();
-vi.mock("@/lib/auth/session", () => ({
-  getAuthUser: () => getAuthUserMock(),
-}));
-
-import Home from "./page";
+import Home, { revalidate } from "./page";
 
 describe("Marketing Home page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAuthUserMock.mockResolvedValue(null);
   });
 
-  it("renders the landing page with the hero headline for an unauthenticated visitor", async () => {
+  it("renders the landing page with the hero headline with no session/DB mocks", async () => {
     const page = await Home({ params: Promise.resolve({ locale: "en" }) });
     render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
 
@@ -49,7 +33,10 @@ describe("Marketing Home page", () => {
     expect(screen.getByRole("link", { name: "marketing.privacy:title" })).toHaveAttribute("href", "/privacy");
     expect(screen.getByRole("link", { name: "marketing:footer.refundPolicy" })).toHaveAttribute("href", "/refunds");
     expect(screen.getByRole("link", { name: "marketing:features.portfolioBuilder.cta" })).toHaveClass("bg-brand");
-    expect(getAuthUserMock).toHaveBeenCalled();
+    // Base-tier static fallback price (USD $5/mo, from staticFallback("base"))
+    // renders without any per-visitor resolution -- confirms the page has no
+    // request-time reads.
+    expect(screen.getByText(/\$5/)).toBeInTheDocument();
   });
 
   it("renders a teams panel alongside the other feature panels", async () => {
@@ -81,8 +68,28 @@ describe("Marketing Home page", () => {
     for (const frame of screen.getAllByTestId("marketing-feature-image-frame")) {
       expect(frame).toHaveClass("group-hover:scale-[1.025]");
     }
-    expect(screen.getByAltText("marketing:split.showImageAlt")).not.toHaveClass("group-hover:scale-[1.025]");
-    expect(screen.getByAltText("marketing:features.portfolioBuilder.title")).not.toHaveClass("group-hover:scale-[1.025]");
+    // ThemedShot now renders both light/dark variants (CSS-toggled, not a
+    // client swap), so each alt matches two <img>s; both share the same
+    // className, so checking either is equivalent.
+    for (const img of screen.getAllByAltText("marketing:split.showImageAlt")) {
+      expect(img).not.toHaveClass("group-hover:scale-[1.025]");
+    }
+    for (const img of screen.getAllByAltText("marketing:features.portfolioBuilder.title")) {
+      expect(img).not.toHaveClass("group-hover:scale-[1.025]");
+    }
+  });
+
+  it("lets hero trust items wrap below sm instead of forcing nowrap", async () => {
+    const page = await Home({ params: Promise.resolve({ locale: "en" }) });
+    render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
+
+    const trustItem = screen.getByText("marketing:trust.item1");
+    expect(trustItem.closest("span")).toHaveClass("sm:whitespace-nowrap");
+    expect(trustItem.closest("span")).not.toHaveClass("whitespace-nowrap");
+
+    const trustRow = trustItem.closest("span")?.parentElement;
+    expect(trustRow).toHaveClass("flex-wrap");
+    expect(trustRow).not.toHaveClass("sm:flex-nowrap");
   });
 
   it("identifies Gallurio in the hero across every launch locale", () => {
@@ -96,5 +103,9 @@ describe("Marketing Home page", () => {
   it("uses a category-led English title and useful search description", () => {
     expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Event Creatives | Gallurio");
     expect(enMessages.marketing.metadata.description).toContain("no-code portfolio website");
+  });
+
+  it("revalidates within a minute so the beta flag converges quickly after deploy", () => {
+    expect(revalidate).toBe(60);
   });
 });

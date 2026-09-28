@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
@@ -17,9 +17,27 @@ import { cn } from "@/lib/utils";
 // while the beta is open, a free Beta tab leads; otherwise a paid Pro
 // subscription (monthly/yearly) priced live from Lemon Squeezy. No free
 // tier, no Studio/Business — those aren't sold.
+// Well-formed shape check for the /api/public/pricing response -- anything
+// short of this keeps the server-rendered initial values.
+function isValidPricingResponse(
+  data: unknown
+): data is { pricing: ProPricing; betaEnabled: boolean } {
+  if (!data || typeof data !== "object") return false;
+  const d = data as Record<string, unknown>;
+  if (typeof d.betaEnabled !== "boolean") return false;
+  const p = d.pricing as Record<string, unknown> | undefined;
+  return (
+    !!p &&
+    typeof p === "object" &&
+    typeof p.currency === "string" &&
+    typeof p.monthly === "number" &&
+    typeof p.yearly === "number"
+  );
+}
+
 export function PricingTeaser({
-  proPricing,
-  betaEnabled,
+  proPricing: initialProPricing,
+  betaEnabled: initialBetaEnabled,
 }: {
   proPricing: ProPricing;
   betaEnabled: boolean;
@@ -27,9 +45,44 @@ export function PricingTeaser({
   const t = useTranslations("marketing.pricingTeaser");
   const tPlans = useTranslations("plans");
   const locale = useLocale();
+  const [proPricing, setProPricing] = useState(initialProPricing);
+  const [betaEnabled, setBetaEnabled] = useState(initialBetaEnabled);
   const [selection, setSelection] = useState<"beta" | "monthly" | "yearly">(
-    betaEnabled ? "beta" : "monthly"
+    initialBetaEnabled ? "beta" : "monthly"
   );
+  // Tracks whether the visitor has clicked a tab -- once touched, a later
+  // beta-flag swap from the fetch no longer overrides their choice (except
+  // forcing off a now-disabled beta selection).
+  const touchedRef = useRef(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/public/pricing", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`pricing fetch failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data: unknown) => {
+        if (!isValidPricingResponse(data)) throw new Error("malformed pricing response");
+        setProPricing(data.pricing);
+        setBetaEnabled(data.betaEnabled);
+        setSelection((prev) => {
+          if (!touchedRef.current) return data.betaEnabled ? "beta" : "monthly";
+          return prev === "beta" && !data.betaEnabled ? "monthly" : prev;
+        });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.warn("[pricing-teaser] failed to load live pricing, keeping server-rendered price:", err);
+      });
+    return () => controller.abort();
+  }, []);
+
+  function selectTab(value: "beta" | "monthly" | "yearly") {
+    touchedRef.current = true;
+    setSelection(value);
+  }
+
   const cadence = selection === "yearly" ? "yearly" : "monthly";
 
   const headline = headlinePrice(proPricing, cadence);
@@ -56,7 +109,7 @@ export function PricingTeaser({
               <button
                 type="button"
                 data-testid="plan-tab-beta"
-                onClick={() => setSelection("beta")}
+                onClick={() => selectTab("beta")}
                 aria-pressed={selection === "beta"}
                 className={cn(
                   "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",
@@ -69,7 +122,7 @@ export function PricingTeaser({
             <button
               type="button"
               data-testid="plan-tab-monthly"
-              onClick={() => setSelection("monthly")}
+              onClick={() => selectTab("monthly")}
               aria-pressed={selection === "monthly"}
               className={cn(
                 "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",
@@ -81,7 +134,7 @@ export function PricingTeaser({
             <button
               type="button"
               data-testid="plan-tab-yearly"
-              onClick={() => setSelection("yearly")}
+              onClick={() => selectTab("yearly")}
               aria-pressed={selection === "yearly"}
               className={cn(
                 "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",

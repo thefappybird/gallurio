@@ -67,8 +67,13 @@ describe("POST /api/images/direct-upload", () => {
     expect(res.status).toBe(400);
   });
 
-  it("propagates CF errors as thrown exceptions", async () => {
+  it("returns 502 upload_unavailable when Cloudflare fails, and logs it", async () => {
     mockDirectUpload = null;
-    await expect(POST(makeReq({}))).rejects.toThrow("CF error");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = (await POST(makeReq({}))) as unknown as MockResp;
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "upload_unavailable" });
+    expect(errSpy).toHaveBeenCalledWith("[direct-upload]", expect.any(Error));
+    errSpy.mockRestore();
   });
 });

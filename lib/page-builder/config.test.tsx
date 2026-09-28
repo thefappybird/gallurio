@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import React from "react";
-import type { Permissions } from "@measured/puck";
+import type { Permissions } from "@puckeditor/core";
 import { puckConfig } from "./config";
 import { PRESET_GROUP_IDS } from "./blocks/sectionPresets";
 import {

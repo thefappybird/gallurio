@@ -5,7 +5,7 @@
  *
  * GalleryGridBlock / GalleryMasonryBlock's new composition path renders its
  * Image children through a Puck Slot (a bare render function — see the type
- * `SlotComponent` in @measured/puck), so the parent block has no way to read
+ * `SlotComponent` in @puckeditor/core), so the parent block has no way to read
  * each child's picked photo ahead of render. Instead, GalleryGridBlock and
  * GalleryMasonryBlock wrap their slot output in <GallerySlotLightboxProvider>;
  * every ImageBlock inside self-registers via GalleryLightboxTrigger (which

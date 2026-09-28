@@ -44,7 +44,7 @@ import { resolveBrandKit } from "./resolveBrandKit";
 import { resolveEffectiveFonts, fontFamilyValue } from "./fonts";
 import { BrandColorsContext, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import { DEFAULT_BRAND_KIT, type BrandKitRadius } from "./types";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 
 /** Minimal SlotComponent test double — real content isn't rendered; only the
  *  props Puck would pass through (style/className) are captured. */

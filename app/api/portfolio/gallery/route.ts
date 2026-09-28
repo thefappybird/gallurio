@@ -22,10 +22,14 @@ export async function GET() {
 
   const workspaceId = ctx.workspace._id.toString();
 
-  const [collections, items] = await Promise.all([
-    listCollectionsForPicker(workspaceId),
-    listItemsForPicker(workspaceId),
-  ]);
-
-  return NextResponse.json({ collections, items });
+  try {
+    const [collections, items] = await Promise.all([
+      listCollectionsForPicker(workspaceId),
+      listItemsForPicker(workspaceId),
+    ]);
+    return NextResponse.json({ collections, items });
+  } catch (err) {
+    console.error("[portfolio-gallery]", err);
+    return NextResponse.json({ error: "gallery_unavailable" }, { status: 500 });
+  }
 }

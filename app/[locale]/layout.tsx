@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getMessages } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { DisableNumberInputSteppers } from "@/components/app/disable-number-input-steppers";
+import { pickMessages, ROOT_CLIENT_MESSAGE_KEYS } from "@/lib/i18n/clientMessages";
 import { routing } from "@/lib/i18n/routing";
 import { isRtl } from "@/lib/i18n/rtl";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
@@ -55,6 +56,13 @@ export default async function RootLayout({
   // Opts every route into static rendering for translated content — without
   // this, any getTranslations() call flips the page to dynamic.
   setRequestLocale(locale);
+  // This provider wraps EVERY route including public marketing pages, so it
+  // stays scoped to the near-empty ROOT_CLIENT_MESSAGE_KEYS — omitting
+  // `messages` here would serialize the whole 195 KB catalog into every
+  // page's RSC payload. Non-marketing branches ((app)/(auth)/(onboarding)
+  // and friends) restore the full catalog via their own bare
+  // NextIntlClientProvider — see lib/i18n/clientMessages.ts.
+  const messages = await getMessages();
 
   return (
     <html
@@ -73,7 +81,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <NextIntlClientProvider>
+          <NextIntlClientProvider messages={pickMessages(messages, ROOT_CLIENT_MESSAGE_KEYS)}>
             <DisableNumberInputSteppers />
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster />

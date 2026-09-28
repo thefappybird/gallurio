@@ -30,8 +30,17 @@ test("reordering nav items in the Content panel updates the live canvas", async 
   if (!navBox) throw new Error("nav row has no bounding box");
   await page.mouse.click(navBox.x + navBox.width / 2, navBox.y + navBox.height / 2);
 
-  // Move "Contact" up twice so it becomes the first collapsible item.
-  const contactUp = page.getByRole("button", { name: "Move Contact up" });
+  // Ensure the Content tab (not Design) is active before looking for the
+  // Order control.
+  const contentTab = page.getByRole("button", { name: "Content", exact: true });
+  if ((await contentTab.getAttribute("aria-pressed")) !== "true") {
+    await contentTab.click();
+  }
+
+  // Move "Contact" up twice so it becomes the first collapsible item. Puck
+  // 0.23 mounts a hidden fields-panel twin alongside the visible one, so
+  // scope to the visible button only.
+  const contactUp = page.getByRole("button", { name: "Move Contact up" }).and(page.locator(":visible"));
   await expect(contactUp).toBeVisible();
   await contactUp.click();
   await contactUp.click();

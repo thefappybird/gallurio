@@ -80,6 +80,28 @@ describe("createAnchoredPreviewStore", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it("a scheduled close can be cancelled before it lands", () => {
+    vi.useFakeTimers();
+    try {
+      const store = createAnchoredPreviewStore();
+      store.open("x", fakeAnchor());
+
+      // Leaving the row arms the close; moving onto the card cancels it, which
+      // is what lets the pointer cross the gap between the two.
+      store.scheduleClose();
+      store.cancelClose();
+      vi.advanceTimersByTime(1000);
+      expect(store.getActiveKey()).toBe("x");
+
+      // Leaving without re-entering anything does close it.
+      store.scheduleClose();
+      vi.advanceTimersByTime(1000);
+      expect(store.getActiveKey()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reset clears state and listeners (test-only)", () => {
     const store = createAnchoredPreviewStore();
     store.open("x", fakeAnchor());

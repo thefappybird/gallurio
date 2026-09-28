@@ -10,6 +10,9 @@ export function baseUrl(): string {
 // match what actually serves, or they point at redirects.
 export function localeUrl(locale: string, path: string): string {
   const prefix = locale === routing.defaultLocale ? "" : `/${locale}`;
+  // A prefixed locale's home path ("/") must not append the slash: proxy.ts
+  // serves that URL at "/fil", not "/fil/", and the latter 308-redirects.
+  if (path === "/" && prefix) return `${baseUrl()}${prefix}`;
   return `${baseUrl()}${prefix}${path}`;
 }
 

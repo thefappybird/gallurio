@@ -18,7 +18,10 @@ const DRAFT_NAME = E2E_FIXTURE_DRAFT_NAME;
 async function readColumnsGap(page: Page): Promise<string> {
   await openEditorWithDraft(page, DRAFT_NAME);
 
-  await page.getByRole("button", { name: "Columns" }).first().click();
+  // Puck 0.23's canvas wrappers carry no accessible name, so select the
+  // fixture's Columns by its Puck id. dispatchEvent targets the Columns
+  // element itself; a pointer click at its centre would select a child card.
+  await page.locator('[data-puck-preview] [data-puck-component="e2e-columns"]').dispatchEvent("click");
   // Switch to the Layout tab (the tab button has no aria-expanded).
   await page.getByRole("button", { name: "Layout", exact: true }).first().click();
 

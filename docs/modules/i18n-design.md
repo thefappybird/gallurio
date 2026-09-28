@@ -27,3 +27,8 @@ Source of truth: root `PRODUCT.md` (register, users, brand personality, anti-ref
 - One type family for the whole app shell hierarchy: Plus Jakarta Sans (`--font-jakarta`/`--font-sans`). Merriweather is a portfolio brand-kit font *option*, not an app font.
 - Public portfolios may override brand styling only inside the public-page wrapper — the app shell's own theme never leaks into or out of that boundary. See `docs/modules/portfolio-and-media.md` and the `portfolio-theme-brand-kit` skill for the brand-kit/token pipeline.
 - Reject: SaaS-cream dashboards, sterile enterprise chrome, clutter.
+
+## Known gaps (as of 1.5.0)
+
+- `components/ui/sidebar.tsx`'s root is a plain `<div>`, so the app's primary nav has no navigation landmark. Add `<nav>` or `role="navigation"`.
+- Puck's editor chrome is translated in all five locales (`puck.chrome`), but Puck ships no `[dir=rtl]` CSS, so the Arabic editor chrome is not mirrored. The public page's own RTL scoping is unaffected.

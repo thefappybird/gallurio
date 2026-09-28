@@ -35,9 +35,16 @@ import {
   completeStoryPromptAction,
   saveThemeAction,
   updateThemeAction,
+  deleteThemeAction,
   updatePortfolioSlugAction,
   updateFormLocaleAction,
 } from "./_actions";
+import { reseedPortfolioFromTemplate } from "@/lib/page-builder/seedPortfolio";
+
+vi.mock("@/lib/page-builder/seedPortfolio", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/page-builder/seedPortfolio")>();
+  return { ...actual, reseedPortfolioFromTemplate: vi.fn(actual.reseedPortfolioFromTemplate) };
+});
 
 let workspaceId: Types.ObjectId;
 
@@ -753,5 +760,106 @@ describe("updateFormLocaleAction", () => {
     expect(result).toEqual({ error: "owner_only" });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws?.publicPage?.formLocale).toBe("");
+  });
+});
+
+describe("DB errors are caught and surfaced as typed results", () => {
+  let errSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("savePortfolioDraftAction -> save_draft_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await savePortfolioDraftAction({ zone: "home", data: samplePuck });
+    expect(res).toEqual({ error: "save_draft_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] savePortfolioDraftAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("publishPortfolioAction -> publish_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await publishPortfolioAction();
+    expect(res).toEqual({ error: "publish_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] publishPortfolioAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("updateBrandKitAction -> update_brand_kit_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await updateBrandKitAction(DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "update_brand_kit_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] updateBrandKitAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("updateContactConfigAction -> update_contact_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await updateContactConfigAction({ title: "Say hi" });
+    expect(res).toEqual({ error: "update_contact_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] updateContactConfigAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("updateCollectionsPopupConfigAction -> update_collections_popup_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await updateCollectionsPopupConfigAction({ borderWidth: 2 });
+    expect(res).toEqual({ error: "update_collections_popup_failed" });
+    expect(errSpy).toHaveBeenCalledWith(
+      "[portfolio-actions] updateCollectionsPopupConfigAction",
+      expect.any(Error)
+    );
+    spy.mockRestore();
+  });
+
+  it("switchTemplateAction -> switch_template_failed", async () => {
+    vi.mocked(reseedPortfolioFromTemplate).mockRejectedValueOnce(new Error("boom"));
+    const res = await switchTemplateAction({ templateId: "minimal" });
+    expect(res).toEqual({ error: "switch_template_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] switchTemplateAction", expect.any(Error));
+  });
+
+  it("dismissPortfolioGuideAction -> dismiss_guide_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await dismissPortfolioGuideAction();
+    expect(res).toEqual({ error: "dismiss_guide_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] dismissPortfolioGuideAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("updateFormLocaleAction -> update_form_locale_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await updateFormLocaleAction("ar");
+    expect(res).toEqual({ error: "update_form_locale_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] updateFormLocaleAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("saveThemeAction -> save_theme_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await saveThemeAction("Spring 26", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "save_theme_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] saveThemeAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("updateThemeAction -> update_theme_failed", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { "publicPage.savedThemes": [{ id: "a", name: "Sunset", brandKit: DEFAULT_BRAND_KIT }] } }
+    );
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await updateThemeAction("a", "Sunset Bright", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "update_theme_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] updateThemeAction", expect.any(Error));
+    spy.mockRestore();
+  });
+
+  it("deleteThemeAction -> delete_theme_failed", async () => {
+    const spy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(new Error("boom"));
+    const res = await deleteThemeAction("a");
+    expect(res).toEqual({ error: "delete_theme_failed" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-actions] deleteThemeAction", expect.any(Error));
+    spy.mockRestore();
   });
 });

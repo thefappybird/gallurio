@@ -156,4 +156,18 @@ describe("GET /api/portfolio/gallery", () => {
     const body = res.body as { collections: { itemCount: number }[] };
     expect(body.collections[0].itemCount).toBe(2);
   });
+
+  it("returns 500 gallery_unavailable on a query failure, and logs it", async () => {
+    const queries = await import("@/lib/db/queries/gallery");
+    const spy = vi
+      .spyOn(queries, "listItemsForPicker")
+      .mockRejectedValueOnce(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = (await GET()) as unknown as MockResp;
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "gallery_unavailable" });
+    expect(errSpy).toHaveBeenCalledWith("[portfolio-gallery]", expect.any(Error));
+    spy.mockRestore();
+    errSpy.mockRestore();
+  });
 });

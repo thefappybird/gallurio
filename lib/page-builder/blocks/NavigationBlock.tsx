@@ -19,7 +19,7 @@
  * renders in the editor canvas AND on the public page.
  */
 
-import type { ComponentConfig, Slot, SlotComponent } from "@measured/puck";
+import type { ComponentConfig, Slot, SlotComponent } from "@puckeditor/core";
 import { PortfolioHeader } from "@/app/(public)/w/[orgSlug]/_components/PortfolioHeader";
 import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
 import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";

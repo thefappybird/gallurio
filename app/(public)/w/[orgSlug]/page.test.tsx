@@ -114,7 +114,7 @@ vi.mock("@/lib/page-builder/normalizePublicPageData", () => ({
 // only the contact form + featured-work popup read `dir`). vi.hoisted keeps
 // the mock instance reachable from the (hoisted) vi.mock factory below.
 const { renderMock } = vi.hoisted(() => ({ renderMock: vi.fn() }));
-vi.mock("@measured/puck/rsc", () => ({
+vi.mock("@puckeditor/core/rsc", () => ({
   Render: (props: unknown) => {
     renderMock(props);
     return null;

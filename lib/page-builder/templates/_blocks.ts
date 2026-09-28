@@ -2,7 +2,10 @@
  * Block factories used by template seeds.
  *
  * Each top-level content item carries a stable `id` (required by PuckData shape).
- * Nested slot children inside preset containers do NOT need ids.
+ * Nested slot children inside preset containers do NOT need ids — any missing
+ * id is filled in deterministically by `ensureBlockIds` at load time (see
+ * `lib/page-builder/ensureBlockIds.ts`), which is also what keys Puck's RSC
+ * slot renderer, so these template files never need edits for that.
  *
  * Preset factories return a complete `{ type, props }` entry whose props are the
  * ContainerBlockProps from `sectionPresets.ts`, so presets render fully without
@@ -14,6 +17,7 @@ import type { PuckBlockEntry, PuckData } from "@/lib/page-builder/types";
 import { SECTION_PRESETS } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
+import { featuredWorkDefaultProps } from "@/lib/page-builder/blocks/FeaturedWorkBlock";
 import {
   navigationDefaultProps,
   type NavigationBlockProps,
@@ -99,6 +103,22 @@ export function galleryMasonry(
 
 export function galleryLandingPreset(id: string): PuckBlockEntry {
   return { type: "GalleryLandingPreset", props: { id, ...SECTION_PRESETS.GalleryLandingPreset.defaultProps } };
+}
+
+/**
+ * FeaturedWork factory — seeds a minimal `{ id, name }` collection ref.
+ * `reconcileFeaturedCollections` rebuilds `coverPublicId`/`itemCount` from the
+ * live GalleryCollection/GalleryItem docs at load time, so the seed only
+ * needs the id + a display name.
+ */
+export function featuredWork(
+  id: string,
+  collections: Array<{ id: string; name: string }>
+): PuckBlockEntry {
+  return {
+    type: "FeaturedWork",
+    props: { id, ...featuredWorkDefaultProps, collections },
+  };
 }
 
 // ---------------------------------------------------------------------------

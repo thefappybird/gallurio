@@ -1,10 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+
+// GalleryMasonryBlock wraps each tile in the lazy-loaded GalleryLightboxTrigger
+// island (item 2b) — bypass to the real component for synchronous assertions.
+// Imported directly (not via the shared test-utils/mockLazyBlocks helper) —
+// that helper also statically imports MasonryCloneClient, which imports
+// manualBlocks.tsx, which imports THIS SAME "./lazy" specifier, deadlocking
+// the async mock factory on the circular re-entry.
+vi.mock("@/lib/page-builder/blocks/lazy", async () => {
+  const { GalleryLightboxTrigger } = await import("./GalleryLightboxTrigger");
+  return { LazyGalleryLightboxTrigger: GalleryLightboxTrigger };
+});
+
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { ImageBlock } from "./manualBlocks";
-import type { SlotComponent } from "@measured/puck";
+import type { SlotComponent } from "@puckeditor/core";
 import { puckConfig } from "@/lib/page-builder/config";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
@@ -154,6 +166,17 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
     expect(img.style.height).toBe("");
   });
 
+  it("renders via next/image with a srcset, sizes, and a CF Images src when dimensions are known", () => {
+    const withDims: GalleryImage[] = [{ id: "d1", publicId: "pid-d1", width: 1200, height: 800 }];
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: withDims, _style: { galleryColumns: 3 } })
+    );
+    const img = container.querySelector("figure img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toContain("imagedelivery.net/test-hash/");
+    expect(img.getAttribute("srcset")).toBeTruthy();
+    expect(img.getAttribute("sizes")).toBe("(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw");
+  });
+
   it("omits width/height attrs and aspect-ratio for legacy images without dimensions", () => {
     const noDims: GalleryImage[] = [{ id: "d2", publicId: "pid-d2" }];
     const { container } = render(GalleryMasonryBlock({ ...base, images: noDims }));
@@ -192,10 +215,10 @@ describe("GalleryMasonryBlock — true masonry flow", () => {
     expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it("keeps the lightbox working when legacy galleryStagger data is present", () => {
+  it("keeps the lightbox working when legacy galleryStagger data is present", async () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } }));
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
@@ -254,18 +277,18 @@ describe("GalleryMasonryBlock — true masonry flow", () => {
 });
 
 describe("GalleryMasonryBlock — lightbox", () => {
-  it("clicking an image opens the shared Lightbox with that image's data", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", async () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 
-  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", async () => {
     render(
       GalleryMasonryBlock({
         ...base,
@@ -284,6 +307,7 @@ describe("GalleryMasonryBlock — lightbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
+    await screen.findByRole("dialog");
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
   });
 });
@@ -300,12 +324,12 @@ describe("GalleryMasonryBlock — nav across slot-composed Image children (Item 
     </>
   );
 
-  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", () => {
+  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", async () => {
     render(GalleryMasonryBlock({ ...base, images: [], content: imageSlot }));
 
     fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
 

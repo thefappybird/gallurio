@@ -1,4 +1,4 @@
-import { shouldKeepAnchor } from "./containerAnchorPredicate";
+import { isAnchorHost, shouldKeepAnchor } from "./containerAnchorPredicate";
 
 type SlotItem = {
   type: string;
@@ -30,7 +30,7 @@ export function reconcileContainerSlot(id: unknown, content: SlotItem[]): SlotIt
     && content.at(-1)?.props.id === anchorId;
   if (alreadyCanonical) return content;
 
-  return [...realChildren, { type: "ContainerAnchor", props: { id: anchorId, height: 0 } }];
+  return [...realChildren, { type: "ContainerAnchor", props: { id: anchorId } }];
 }
 
 function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolean } {
@@ -45,7 +45,7 @@ function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolea
       changed = true;
     }
 
-    if (nextItem.type !== "Container") return nextItem;
+    if (!isAnchorHost(nextItem.type)) return nextItem;
 
     const content = Array.isArray(nextItem.props.content) ? nextItem.props.content as SlotItem[] : [];
     const desiredContent = reconcileContainerSlot(nextItem.props.id, content);

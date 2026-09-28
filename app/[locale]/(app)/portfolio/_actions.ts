@@ -57,16 +57,21 @@ export async function savePortfolioDraftAction(
     return { error: "payload_too_large" };
   }
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    {
-      $set: { [`publicPage.data.${parsed.data.zone}`]: parsed.data.data },
-      // Monotonic write counter (bumps on every autosave, not per "published
-      // version") — a cheap marker a future history/version UI can build on.
-      $inc: { "publicPage.latestVersion": 1 },
-    }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      {
+        $set: { [`publicPage.data.${parsed.data.zone}`]: parsed.data.data },
+        // Monotonic write counter (bumps on every autosave, not per "published
+        // version") — a cheap marker a future history/version UI can build on.
+        $inc: { "publicPage.latestVersion": 1 },
+      }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] savePortfolioDraftAction", err);
+    return { error: "save_draft_failed" };
+  }
 
   return { ok: true, savedAt: new Date().toISOString() };
 }
@@ -81,27 +86,33 @@ export async function publishPortfolioAction(): Promise<EditorActionResult> {
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return { error: "owner_only" };
 
-  await connectDB();
   const workspaceId = String(ctx.workspace._id);
 
-  // Read current draft zones, reconcile their gallery images against live
-  // GalleryItems, and persist the refreshed data so the live page renders fresh,
-  // fetch-free images. Reconcile runs BEFORE publishedAt is set.
-  const ws = await Workspace.findById(ctx.workspace._id)
-    .select({ "publicPage.data.home": 1, "publicPage.data.gallery": 1 })
-    .lean();
+  try {
+    await connectDB();
 
-  const set: Record<string, unknown> = {};
-  const home = ws?.publicPage?.data?.home as PuckData | null | undefined;
-  const gallery = ws?.publicPage?.data?.gallery as PuckData | null | undefined;
-  if (home) set["publicPage.data.home"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, home));
-  if (gallery) set["publicPage.data.gallery"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, gallery));
+    // Read current draft zones, reconcile their gallery images against live
+    // GalleryItems, and persist the refreshed data so the live page renders fresh,
+    // fetch-free images. Reconcile runs BEFORE publishedAt is set.
+    const ws = await Workspace.findById(ctx.workspace._id)
+      .select({ "publicPage.data.home": 1, "publicPage.data.gallery": 1 })
+      .lean();
 
-  const now = new Date();
-  set["publicPage.publishedAt"] = now;
-  set["publicPage.lastPublishedAt"] = now;
+    const set: Record<string, unknown> = {};
+    const home = ws?.publicPage?.data?.home as PuckData | null | undefined;
+    const gallery = ws?.publicPage?.data?.gallery as PuckData | null | undefined;
+    if (home) set["publicPage.data.home"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, home));
+    if (gallery) set["publicPage.data.gallery"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, gallery));
 
-  await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
+    const now = new Date();
+    set["publicPage.publishedAt"] = now;
+    set["publicPage.lastPublishedAt"] = now;
+
+    await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
+  } catch (err) {
+    console.error("[portfolio-actions] publishPortfolioAction", err);
+    return { error: "publish_failed" };
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
@@ -121,11 +132,16 @@ export async function updateBrandKitAction(
     return { error: parsed.error.errors[0]?.message ?? "invalid_brand_kit" };
   }
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.brandKit": parsed.data } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.brandKit": parsed.data } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] updateBrandKitAction", err);
+    return { error: "update_brand_kit_failed" };
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
@@ -144,11 +160,16 @@ export async function updateContactConfigAction(
     return { error: parsed.error.errors[0]?.message ?? "invalid_contact" };
   }
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.contact": parsed.data } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.contact": parsed.data } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] updateContactConfigAction", err);
+    return { error: "update_contact_failed" };
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   return { ok: true };
@@ -166,11 +187,16 @@ export async function updateCollectionsPopupConfigAction(
     return { error: parsed.error.errors[0]?.message ?? "invalid_collections_popup" };
   }
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.collectionsPopup": parsed.data } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.collectionsPopup": parsed.data } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] updateCollectionsPopupConfigAction", err);
+    return { error: "update_collections_popup_failed" };
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   return { ok: true };
@@ -193,7 +219,13 @@ export async function switchTemplateAction(input: unknown): Promise<SwitchTempla
   const parsed = switchTemplateSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_template" };
 
-  const seed = await reseedPortfolioFromTemplate(ctx.workspace._id, parsed.data.templateId);
+  let seed: PortfolioSeed | null;
+  try {
+    seed = await reseedPortfolioFromTemplate(ctx.workspace._id, parsed.data.templateId);
+  } catch (err) {
+    console.error("[portfolio-actions] switchTemplateAction", err);
+    return { error: "switch_template_failed" };
+  }
   if (!seed) return { error: "unknown_template" };
 
   revalidatePath("/portfolio");
@@ -210,11 +242,16 @@ export async function dismissPortfolioGuideAction(): Promise<EditorActionResult>
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return { error: "owner_only" };
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.guideDismissedAt": new Date() } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.guideDismissedAt": new Date() } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] dismissPortfolioGuideAction", err);
+    return { error: "dismiss_guide_failed" };
+  }
   return { ok: true };
 }
 
@@ -376,11 +413,16 @@ export async function updateFormLocaleAction(input: unknown): Promise<EditorActi
   const parsed = formLocaleSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_locale" };
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.formLocale": parsed.data } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.formLocale": parsed.data } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] updateFormLocaleAction", err);
+    return { error: "update_form_locale_failed" };
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
@@ -420,36 +462,41 @@ export async function saveThemeAction(
     return { error: kitParsed.error.errors[0]?.message ?? "invalid_brand_kit" };
   }
 
-  await connectDB();
+  try {
+    await connectDB();
 
-  const current = await Workspace.findOne({ _id: ctx.workspace._id })
-    .select({ "publicPage.savedThemes": 1 })
-    .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
-  if (isThemeNameTaken(nameParsed.data, current?.publicPage?.savedThemes ?? [])) {
-    return { error: "theme_name_exists" };
+    const current = await Workspace.findOne({ _id: ctx.workspace._id })
+      .select({ "publicPage.savedThemes": 1 })
+      .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
+    if (isThemeNameTaken(nameParsed.data, current?.publicPage?.savedThemes ?? [])) {
+      return { error: "theme_name_exists" };
+    }
+
+    const newTheme: PortfolioSavedTheme = {
+      id: crypto.randomUUID(),
+      name: nameParsed.data,
+      brandKit: kitParsed.data,
+    };
+
+    // Enforce the cap atomically: only push when the array isn't already at the
+    // limit. A read-then-write check races against concurrent saves (two tabs /
+    // double-submit) and a raw $push bypasses the schema's array validator.
+    const res = await Workspace.updateOne(
+      {
+        _id: ctx.workspace._id,
+        [`publicPage.savedThemes.${SAVED_THEMES_MAX - 1}`]: { $exists: false },
+      },
+      { $push: { "publicPage.savedThemes": newTheme } }
+    );
+    if (res.matchedCount === 0) {
+      return { error: `max_themes_reached:${SAVED_THEMES_MAX}` };
+    }
+
+    return { ok: true, theme: newTheme };
+  } catch (err) {
+    console.error("[portfolio-actions] saveThemeAction", err);
+    return { error: "save_theme_failed" };
   }
-
-  const newTheme: PortfolioSavedTheme = {
-    id: crypto.randomUUID(),
-    name: nameParsed.data,
-    brandKit: kitParsed.data,
-  };
-
-  // Enforce the cap atomically: only push when the array isn't already at the
-  // limit. A read-then-write check races against concurrent saves (two tabs /
-  // double-submit) and a raw $push bypasses the schema's array validator.
-  const res = await Workspace.updateOne(
-    {
-      _id: ctx.workspace._id,
-      [`publicPage.savedThemes.${SAVED_THEMES_MAX - 1}`]: { $exists: false },
-    },
-    { $push: { "publicPage.savedThemes": newTheme } }
-  );
-  if (res.matchedCount === 0) {
-    return { error: `max_themes_reached:${SAVED_THEMES_MAX}` };
-  }
-
-  return { ok: true, theme: newTheme };
 }
 
 /**
@@ -477,36 +524,41 @@ export async function updateThemeAction(
     return { error: kitParsed.error.errors[0]?.message ?? "invalid_brand_kit" };
   }
 
-  await connectDB();
+  try {
+    await connectDB();
 
-  const current = await Workspace.findOne({ _id: ctx.workspace._id })
-    .select({ "publicPage.savedThemes": 1 })
-    .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
-  const savedThemes = current?.publicPage?.savedThemes ?? [];
-  if (!savedThemes.some((t) => t.id === idParsed.data)) {
-    return { error: "theme_not_found" };
-  }
-  if (isThemeNameTaken(nameParsed.data, savedThemes, idParsed.data)) {
-    return { error: "theme_name_exists" };
-  }
-
-  const updated: PortfolioSavedTheme = {
-    id: idParsed.data,
-    name: nameParsed.data,
-    brandKit: kitParsed.data,
-  };
-  // Positional update keeps the element's id and array position intact, and is
-  // scoped to this workspace's _id so it can never touch another tenant.
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id, "publicPage.savedThemes.id": idParsed.data },
-    {
-      $set: {
-        "publicPage.savedThemes.$.name": updated.name,
-        "publicPage.savedThemes.$.brandKit": updated.brandKit,
-      },
+    const current = await Workspace.findOne({ _id: ctx.workspace._id })
+      .select({ "publicPage.savedThemes": 1 })
+      .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
+    const savedThemes = current?.publicPage?.savedThemes ?? [];
+    if (!savedThemes.some((t) => t.id === idParsed.data)) {
+      return { error: "theme_not_found" };
     }
-  );
-  return { ok: true, theme: updated };
+    if (isThemeNameTaken(nameParsed.data, savedThemes, idParsed.data)) {
+      return { error: "theme_name_exists" };
+    }
+
+    const updated: PortfolioSavedTheme = {
+      id: idParsed.data,
+      name: nameParsed.data,
+      brandKit: kitParsed.data,
+    };
+    // Positional update keeps the element's id and array position intact, and is
+    // scoped to this workspace's _id so it can never touch another tenant.
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id, "publicPage.savedThemes.id": idParsed.data },
+      {
+        $set: {
+          "publicPage.savedThemes.$.name": updated.name,
+          "publicPage.savedThemes.$.brandKit": updated.brandKit,
+        },
+      }
+    );
+    return { ok: true, theme: updated };
+  } catch (err) {
+    console.error("[portfolio-actions] updateThemeAction", err);
+    return { error: "update_theme_failed" };
+  }
 }
 
 /**
@@ -558,11 +610,16 @@ export async function deleteThemeAction(id: unknown): Promise<EditorActionResult
   const idParsed = z.string().min(1).max(64).safeParse(id);
   if (!idParsed.success) return { error: "invalid_id" };
 
-  await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $pull: { "publicPage.savedThemes": { id: idParsed.data } } }
-  );
+  try {
+    await connectDB();
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $pull: { "publicPage.savedThemes": { id: idParsed.data } } }
+    );
+  } catch (err) {
+    console.error("[portfolio-actions] deleteThemeAction", err);
+    return { error: "delete_theme_failed" };
+  }
 
   return { ok: true };
 }

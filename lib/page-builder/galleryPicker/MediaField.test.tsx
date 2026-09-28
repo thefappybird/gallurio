@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { SingleImageControl, MultiImageControl } from "./MediaField";
-import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -13,7 +12,6 @@ const items = [
 ];
 
 beforeEach(() => {
-  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation((u: string) =>
     u === "/api/portfolio/gallery"

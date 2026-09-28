@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import NextLink from "next/link";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { isEditorialRoute } from "./editorial-route";
 
@@ -31,7 +32,7 @@ export function MarketingFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2">
           <Image
-            src="/brand/gallurio-sq.svg"
+            src="/brand/gallurio-sq-128.png"
             alt=""
             width={20}
             height={20}
@@ -52,12 +53,12 @@ export function MarketingFooter() {
           <Link href="/pricing" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.pricing : tFooter("pricing")}
           </Link>
-          <Link href="/resources" className="hover:text-foreground">
+          <NextLink href="/resources" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.resources : tFooter("resources")}
-          </Link>
-          <Link href="/compare" className="hover:text-foreground">
+          </NextLink>
+          <NextLink href="/compare" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.compare : tFooter("compare")}
-          </Link>
+          </NextLink>
           <Link href="/book-demo" className="hover:text-foreground">
             {englishOnly ? ENGLISH_FOOTER.bookDemo : tFooter("bookDemo")}
           </Link>

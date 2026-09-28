@@ -7,7 +7,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig } from "@puckeditor/core";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,

@@ -14,7 +14,7 @@ describe("NotFoundContent", () => {
     expect(screen.getByText("Page not found")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Gallurio" })).toHaveAttribute(
       "src",
-      "/brand/gallurio-sq.svg"
+      "/brand/gallurio-sq-128.png"
     );
   });
 });

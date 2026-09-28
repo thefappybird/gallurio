@@ -10,4 +10,13 @@ describe("AmbientBackground", () => {
     expect(root).toHaveClass("pointer-events-none");
     expect(root).toHaveClass("overflow-hidden");
   });
+
+  it("does not mark either background image as a priority fetch", () => {
+    const { container } = render(<AmbientBackground />);
+    const images = container.querySelectorAll("img");
+    expect(images.length).toBe(2);
+    images.forEach((img) => {
+      expect(img.getAttribute("loading")).toBe("lazy");
+    });
+  });
 });

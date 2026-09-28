@@ -82,7 +82,7 @@ vi.mock("@/lib/page-builder/seo/publishedImages.server", () => ({
 // only the contact form + featured-work popup read `dir`). vi.hoisted keeps
 // the mock instance reachable from the (hoisted) vi.mock factory below.
 const { galleryRenderMock } = vi.hoisted(() => ({ galleryRenderMock: vi.fn() }));
-vi.mock("@measured/puck/rsc", () => ({
+vi.mock("@puckeditor/core/rsc", () => ({
   Render: (props: unknown) => {
     galleryRenderMock(props);
     return null;

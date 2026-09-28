@@ -10,7 +10,7 @@
  * canvas and the public renderer.
  */
 
-import type { Slot } from "@measured/puck";
+import type { Slot } from "@puckeditor/core";
 
 /** A child block in a preset's slot. Props are intentionally loose here — each
  *  child's real prop type is enforced where the block is defined. */

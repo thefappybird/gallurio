@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
+import { GalleryQueryProvider } from "./galleryPicker/GalleryQueryProvider";
+
+// This file replaces the ENTIRE "next-intl" module (see vi.mock below), so
+// the shared renderWithProviders() (which always renders a real
+// NextIntlClientProvider) can't be used here — it would crash on a provider
+// this mock doesn't export. Wrap directly with just the one provider this
+// file's gallery-picker-touching components (ImageBlockMetaSection's
+// by-asset fetch, SingleImagePicker) actually need.
+function render(ui: React.ReactElement) {
+  return rtlRender(<GalleryQueryProvider workspaceId="ws-test">{ui}</GalleryQueryProvider>);
+}
 import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, ContentTabBody, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
@@ -17,7 +28,6 @@ function openDrawer(title: string) {
 }
 import { SingleCollectionControl } from "./galleryPicker/MediaField";
 import { DemoPickerContext } from "./demoPickerContext";
-import { __clearPickerDataCache } from "./galleryPicker/usePickerData";
 
 vi.mock("next-intl", () => ({
   useTranslations: () =>
@@ -703,6 +713,13 @@ describe("Navigation direction (Navigation Content panel)", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Right-to-left layout" }));
     expect(setProp).toHaveBeenCalledWith("navDirection", "rtl");
   });
+
+  it("reorders per-item nav order with the Move up/down control (default order: logo, home, gallery, contact)", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: "Move Contact up" }));
+    expect(setProp).toHaveBeenCalledWith("navOrder", ["logo", "home", "contact", "gallery"]);
+  });
 });
 
 describe("Navigation Design panel", () => {
@@ -1274,10 +1291,6 @@ describe("StyleToolkitField — synchronous meta bake on background-image pick (
     meta: [{ label: "Camera", value: "GFX100" }],
   };
 
-  beforeEach(() => {
-    __clearPickerDataCache();
-  });
-
   it("bakes props.meta synchronously from the already-loaded picker item, with no /by-asset fetch", async () => {
     mockFetch.mockImplementation((url: string) =>
       url === "/api/portfolio/gallery"
@@ -1411,7 +1424,9 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    await waitFor(() => expect(screen.getByText("loadError")).toBeTruthy());
+    // The shared QueryClient retries once (~1s backoff) before settling into
+    // the error state — the default 1000ms waitFor is too tight for that.
+    await waitFor(() => expect(screen.getByText("loadError")).toBeTruthy(), { timeout: 3000 });
     const callsBeforeRetry = mockFetch.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "retry" }));
     await waitFor(() => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBeforeRetry));
