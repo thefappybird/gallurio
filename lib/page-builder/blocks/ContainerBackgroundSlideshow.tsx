@@ -117,18 +117,15 @@ export function ContainerBackgroundSlideshow({
       {images
         .map((img, i) => ({ img, i }))
         .filter(({ i }) => {
-          // Mount only what can plausibly be visible next: the active slide,
-          // the incoming one (crossfade/kenburns/slide all advance forward),
-          // and — for "slide" only — the outgoing one, so it can still
-          // translate off-screen instead of popping out mid-transition.
+          // Keep prev+active+next mounted for every animation mode (≤3
+          // images): the outgoing slide must stay in the DOM to finish its
+          // fade/slide-out transition instead of popping out the instant the
+          // active index advances (that pop left a visible dip to the
+          // container background on every crossfade/kenburns advance).
           const n = images.length;
+          const prevIndex = (showIndex - 1 + n) % n;
           const nextIndex = (showIndex + 1) % n;
-          if (i === showIndex || i === nextIndex) return true;
-          if (animation === "slide") {
-            const prevIndex = (showIndex - 1 + n) % n;
-            return i === prevIndex;
-          }
-          return false;
+          return i === prevIndex || i === showIndex || i === nextIndex;
         })
         .map(({ img, i }) => {
           const isActive = i === showIndex;
