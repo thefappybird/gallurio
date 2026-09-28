@@ -13,8 +13,12 @@ import { PricingTeaser } from "./_components/pricing-teaser";
 import { ThemedShot } from "./_components/themed-shot";
 
 // Static page: no session/DB/headers reads, so Next can serve it from cache.
-// Hourly so the SSR beta flag (env var, not per-visitor) tracks deploys.
-export const revalidate = 3600;
+// Prerendered at build time with the CI env (BETA_TESTER_ENABLED unset there),
+// so the first request more than 60s after a deploy regenerates it with the
+// runtime env and picks up the flag. The render is cheap (static catalog
+// price, no DB/network), so a short window is fine. Meanwhile the client
+// fetch of /api/public/pricing corrects the flag and price per visitor.
+export const revalidate = 60;
 
 type Props = { params: Promise<{ locale: string }> };
 

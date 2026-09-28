@@ -15,7 +15,7 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
-import Home from "./page";
+import Home, { revalidate } from "./page";
 
 describe("Marketing Home page", () => {
   beforeEach(() => {
@@ -103,5 +103,9 @@ describe("Marketing Home page", () => {
   it("uses a category-led English title and useful search description", () => {
     expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Event Creatives | Gallurio");
     expect(enMessages.marketing.metadata.description).toContain("no-code portfolio website");
+  });
+
+  it("revalidates within a minute so the beta flag converges quickly after deploy", () => {
+    expect(revalidate).toBe(60);
   });
 });

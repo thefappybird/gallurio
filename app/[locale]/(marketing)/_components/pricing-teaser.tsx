@@ -146,9 +146,7 @@ export function PricingTeaser({
           </div>
         </div>
 
-        {/* aria-live: the price swaps in client-side after the per-visitor
-            fetch resolves (currency/amount), so announce that change. */}
-        <div className="mt-8 flex justify-center" aria-live="polite" aria-atomic="true">
+        <div className="mt-8 flex justify-center">
           <div className="w-full max-w-sm">
             {selection === "beta" ? (
               <BetaPlanCard

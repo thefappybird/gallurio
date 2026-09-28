@@ -167,6 +167,12 @@ describe("PricingTeaser", () => {
     warnSpy.mockRestore();
   });
 
+  it("does not wrap the plan card in aria-live so tab clicks don't re-announce the whole card", () => {
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={false} />, { wrapper });
+
+    expect(document.querySelector("[aria-live]")).not.toBeInTheDocument();
+  });
+
   it("aborts the in-flight fetch on unmount", () => {
     const abort = vi.fn();
     const fetchMock = vi.fn(() => new Promise(() => {}));
