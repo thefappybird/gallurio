@@ -248,6 +248,16 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     if (isAuthkitRequestHeader(name)) req.headers.delete(name);
   }
 
+  // Public pricing reads no session (getDisplayPricing takes only
+  // CF-IPCountry) and the anonymous marketing root now fetches it on every
+  // view — running AuthKit here (fresh authorization URL + PKCE seal per
+  // request) is exactly the per-anonymous-hit cost branch 4.5 below exists to
+  // avoid. Kept narrow to this one path rather than every /api/public/*
+  // route, since not every one of those is provably session-free.
+  if (pathname === "/api/public/pricing") {
+    return NextResponse.next();
+  }
+
   // -------------------------------------------------------------------------
   // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------

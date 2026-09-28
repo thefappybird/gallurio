@@ -146,6 +146,15 @@ describe("proxy", () => {
     await expect(response.json()).resolves.toEqual({ error: "not_authenticated" });
   });
 
+  it("skips AuthKit entirely for the public pricing endpoint (reads no session)", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/api/public/pricing");
+
+    await proxy(req);
+
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+  });
+
   it("skips AuthKit for an anonymous marketing root visit (no WorkOS session cookie) and runs only intl", async () => {
     const { proxy } = await import("./proxy");
     for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar", "http://localhost/fil"]) {
