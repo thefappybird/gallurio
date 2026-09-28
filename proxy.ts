@@ -11,6 +11,7 @@ import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
+import { publicOrigin } from "@/lib/http/publicOrigin";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -150,23 +151,6 @@ function isPublicRoute(req: NextRequest): boolean {
   const stripped = stripLocale(original);
   if (stripped === original) return false;
   return matchesPublicBase(stripped);
-}
-
-/**
- * The server can receive an internal origin (for example localhost behind a
- * tunnel or reverse proxy). Browser-facing redirects must use the configured
- * public application origin instead.
- */
-function publicOrigin(req: NextRequest): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  if (appUrl) {
-    try {
-      return new URL(appUrl).origin;
-    } catch {
-      // Keep local development usable when the optional value is malformed.
-    }
-  }
-  return req.nextUrl.origin;
 }
 
 /**
