@@ -190,7 +190,7 @@ export default async function Home({ params }: Props) {
                   {t("hero.ctaSecondary")}
                 </Link>
               </div>
-              <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
+              <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:px-6">
                 {trustItems.map((item) => (
                   <span key={item} className="inline-flex items-center gap-2 text-start sm:whitespace-nowrap">
                     <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
@@ -205,8 +205,9 @@ export default async function Home({ params }: Props) {
         {/* Sits below the ambient-art wrapper (which fades out via mask
             before reaching here), so the checklist is always read against
             the plain background — never fighting the line art for
-            contrast. flex-nowrap + a wide max-width keeps it one row from
-            sm+ up; only true mobile widths wrap it. */}                                                              
+            contrast. Row wraps whenever a locale's translated items don't
+            fit the max-width; items themselves stay whitespace-nowrap from
+            sm+ up so individual phrases never split mid-word. */}
 
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">

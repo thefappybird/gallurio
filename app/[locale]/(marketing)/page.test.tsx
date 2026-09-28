@@ -99,6 +99,10 @@ describe("Marketing Home page", () => {
     const trustItem = screen.getByText("marketing:trust.item1");
     expect(trustItem.closest("span")).toHaveClass("sm:whitespace-nowrap");
     expect(trustItem.closest("span")).not.toHaveClass("whitespace-nowrap");
+
+    const trustRow = trustItem.closest("span")?.parentElement;
+    expect(trustRow).toHaveClass("flex-wrap");
+    expect(trustRow).not.toHaveClass("sm:flex-nowrap");
   });
 
   it("identifies Gallurio in the hero across every launch locale", () => {
