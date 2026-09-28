@@ -1,5 +1,11 @@
 # Perf audit: error handling — score 6/10
 
+> **Status as of 1.5.0 (2026-09-28) — closed for this release.**
+> - **Fixed (`c39be3e9`, PR #108):** `app/[locale]/(app)/portfolio/error.tsx` and `app/(public)/w/[orgSlug]/error.tsx` exist. 16 Server Actions and 5 route handlers now return typed failures. `app/[locale]/(app)/portfolio/_actions.ts` wraps 11 of 13 actions. `app/api/images/direct-upload/route.ts` catches a Cloudflare failure and returns `502 upload_unavailable`.
+> - **Fixed (SEO side, `b5480814`, PR #108):** the public error boundary renders `<meta name="robots" content="noindex">` itself, so a crashed tenant page is never indexed with the metadata `generateMetadata` produced before the throw.
+> - **Known limitation:** `listDraftsAction` still returns `[]` on failure because its result type has no error channel. It was flagged and not widened.
+> - **Still open (outside this release's scope):** there is no `error.tsx` under `settings/billing/`, and `lib/actions/billing.ts` still has no try/catch. Carried into `docs/modules/billing.md` → "Known deferrals".
+
 ## What's working
 - Three-tier `error.tsx` coverage: `app/global-error.tsx` (root), `app/(public)/error.tsx` (all public/marketing routes), `app/[locale]/(app)/error.tsx` (whole authenticated app shell via inheritance).
 - Server Actions mostly follow a consistent `try { … } catch { return { error: "..." } }` typed-result convention: `app/[locale]/(app)/settings/_actions.ts` (14 try/catch blocks), `app/[locale]/(app)/inquiries/_actions.ts` (10).

@@ -1,5 +1,7 @@
 # Public surfaces — GSC indexing fixes + first-load perf (2026-09-28)
 
+> **Released in 1.5.0 (2026-09-28), PR #110.** All three GSC reasons are fixed in code: page with redirect (8), blocked by robots.txt (1), and crawled – currently not indexed (4). Google must still confirm them: after deploy, run "Validate fix" in GSC and re-check coverage in 2–4 weeks.
+
 Branch `fix/seo-indexing-issues`. Source: the GSC coverage export in this
 folder (`Chart.csv`, `Critical issues.csv`, `Metadata.csv`,
 `Non-critical issues.csv`; snapshot 2026-07-18 → 2026-09-14). The export has

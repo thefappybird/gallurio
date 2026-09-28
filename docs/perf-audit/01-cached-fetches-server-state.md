@@ -1,5 +1,10 @@
 # Perf audit: cached fetches / server state — score 5/10
 
+> **Status as of 1.5.0 (2026-09-28) — closed for this release.**
+> - **Fixed:** the gallery picker (`lib/page-builder/galleryPicker/usePickerData.ts`) moved to `@tanstack/react-query`, with one provider at the editor boundary and keys under `["gallery", workspaceId, …]`. The hand-rolled `GalleryPickerCacheContext` cache is gone. Duplicate `/api/portfolio/gallery` feed requests in the picker script dropped from 4 (3 duplicates) to 2 (0 duplicates). (`585edaf2`, PR #109)
+> - **Kept by design:** the Server-Component-first list pages (bookings, clients, inquiries). react-query is deliberately editor-only, not app-wide.
+> - **Still open (outside this release's scope):** `calendar-view.tsx` range fetches and `dashboard/_components/mini-booking-calendar.tsx`. Both are still `useEffect` + `fetch` + `useState`. Moving them onto react-query needs its own provider decision for the bookings/dashboard boundary. Carried into `docs/modules/core-domain.md` → "Known gaps".
+
 No `@tanstack/react-query`, no SWR, no zustand/jotai in the codebase. Server state is handled ad hoc.
 
 ## What's working

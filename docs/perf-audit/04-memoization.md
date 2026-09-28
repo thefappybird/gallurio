@@ -1,5 +1,11 @@
 # Perf audit: memoization — score 5/10
 
+> **Status as of 1.5.0 (2026-09-28) — closed for this release.**
+> - **Declined (measured, not assumed):** `memo()` on the Puck block renderers in `manualBlocks.tsx` would be a no-op, because Puck 0.23's `MemoizeComponent` already wraps every canvas block.
+> - **Fixed instead:** the editor config and the Puck `metadata` object are memoized in `EditorShell`, so the props Puck compares stay stable across renders (`db2eeadf`, PR #109).
+> - **Not measured:** the React Profiler count of commits per unedited block needs DevTools and was never captured.
+> - **Still open (outside this release's scope):** `booking-calendar.tsx`'s `MonthBookingEvent` / `TimeBookingEvent` are still unmemoized. Carried into `docs/modules/core-domain.md` → "Known gaps".
+
 ## What's working
 - `useMemo`/`useCallback` are used and placed sensibly, not neglected at the hook level: 65 `useMemo(` and 93 `useCallback(` calls across `app/`, `components/`, `lib/page-builder/`.
 - Concentrated in the right places: `booking-calendar.tsx` (`displayEvents`, `calendarComponents`), `calendar-view.tsx` (`visibleEvents`, `eventsWithConflicts`), `bookings-table.tsx`/`clients-table.tsx` (`columns`), `EditorShell.tsx` (`editorConfig`, `puckStableOverrides`, `chromeSyncCtxValue`), `MediaPicker.tsx` (`selection`, `byPickerId`).

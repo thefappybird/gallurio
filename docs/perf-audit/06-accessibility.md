@@ -1,5 +1,12 @@
 # Perf audit: accessibility — score 8/10
 
+> **Status as of 1.5.0 (2026-09-28) — closed for this release.**
+> - **Re-assessed and confirmed, portfolio module (PR #108):** labelled contact form, a keyboard path for block moves (Move Up/Down/Duplicate), RTL scoped to the contact form and featured-work popup, and `focus-visible` rings on every `outline-none`. The slot-`as` audit found every slot already inside its semantic root (`<main>`, `<section>`, `<nav>`); zero changes were warranted.
+> - **Fixed:** Puck's own editor chrome is translated into all five locales, 45 strings (`74bacaab`, PR #108), along with the sidebar tab labels (PR #106). Editor panel animations respect `prefers-reduced-motion` (`254bd02b`). The 375 px editor toolbar is no longer covered by the canvas (PR #109).
+> - **Fixed, marketing (PR #110):** the desktop header needs up to ~1,108 px in `fil`, so it now shows from 1280 px with the menu button below that. The hero trust row wraps instead of overflowing.
+> - **Verified in the browser:** the public-surfaces sweep (5 locales × light/dark × 375/768/1280) checks for no overflow and no raw message keys, and that the collection popup and lightbox open from the keyboard.
+> - **Still open (outside this release's scope):** the `components/ui/sidebar.tsx` root is still a `<div>` with no navigation landmark. Puck ships no `[dir=rtl]` CSS, so Arabic editor chrome is translated but not mirrored. Carried into `docs/modules/i18n-design.md` → "Known gaps".
+
 Stronger than the other four areas — deliberate accessibility engineering is visible in several places, not incidental.
 
 ## What's working

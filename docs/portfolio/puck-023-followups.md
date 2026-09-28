@@ -1,5 +1,7 @@
 # Puck 0.23 follow-ups — scope for the next branch
 
+> **Released in 1.5.0 (2026-09-28), PRs #108 and #109.** Items 1, 2a, 2b, 3, 5, 6, 8, 9, 11, 13 and 14 are done. Item 4 closed with the anchor kept on purpose. Item 10 was dropped as a no-op, since Puck memoizes blocks itself. Item 12 is closed; its only gap is app-shell. Item 7 is partial, and its open drag-recipe caveat moved to the `portfolio-testing` skill. What remains open, which is the per-layout `imageModal`/`popupLayouts` split, mobile gallery CLS 0.016 and the React Profiler row, is in `docs/modules/portfolio-and-media.md` → "Known gaps".
+
 The 0.23 upgrade (`action/portfolio-puck-upgrade`) was deliberately kept
 behaviour-preserving: it changed the package, fixed the editor theming, replaced
 the plugin rail, and proved the blocks and published data survive. Everything

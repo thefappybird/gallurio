@@ -1,5 +1,12 @@
 # Perf audit: virtualization — score 4/10
 
+> **Status as of 1.5.0 (2026-09-28) — closed for this release.**
+> - **Fixed (the headline gap):** `next/image` with `lib/storage/cfImageLoader.ts` now serves every portfolio image surface (Gallery Grid, Masonry, lightbox, popups), identically on canvas, preview and published page (`866314fe`, `711f4e3b`, PR #109). Masonry keeps a documented `<img>` fallback only for legacy images with no stored dimensions. Dev-mode results for `/w/seed-owner-demo/gallery`: mobile LCP 3,471 ms → 2,785 ms (−20%); DOM nodes 421 → 229.
+> - **Fixed:** the immersive filmstrip, `CollectionPopup`, and the Split Index / Justified / Contact Sheet popup layouts are windowed with `@tanstack/react-virtual` (PR #109). `ContainerBackgroundSlideshow` mounts only the previous, active and next slides instead of every slide (`97f70cbf`, `05791232`, PR #110).
+> - **Declined:** windowing the public gallery grid itself. The DOM is already ~229 nodes, and windowing would hide photos from crawlers.
+> - **Regression to watch:** mobile gallery CLS went 0 → 0.016 after `next/image` tile sizing.
+> - **Still open (outside this release's scope):** `inquiry-table.tsx` has no row ceiling of its own. It is safe today because the server pages it. Carried into `docs/modules/core-domain.md` → "Known gaps".
+
 No `react-window`, no `react-virtual`/`@tanstack/react-virtual` anywhere in `package.json` or the codebase — no list in the app is windowed.
 
 ## What's working (mitigated by pagination, not virtualization)

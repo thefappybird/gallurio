@@ -5,6 +5,8 @@
 > Every section below has been revised in place to state its **outcome**, not its prediction. Where a desk estimate or a spike finding turned out wrong, the section says so rather than leaving the wrong text standing. `## Spike findings` is kept as a dated record of how we got here — it is history, not instructions.
 >
 > Work this upgrade deliberately did **not** do is scoped in `docs/portfolio/puck-023-followups.md`. Nothing on that list is a defect; the upgrade was kept behaviour-preserving on purpose.
+>
+> **Released in 1.5.0 (2026-09-28).** The upgrade shipped in PR #106 and its follow-ups in PRs #108 and #109; all 14 follow-up items are done or closed. One remains partial: item 7, re-validating the Playwright drag recipe against `@dnd-kit` 0.4. That warning, the `legacy-side-bar` plugin name, the kept `ContainerAnchor`, and the duplicate `display: none` panels now live in the `portfolio-editor-architecture` and `portfolio-testing` skills.
 
 
 We ship `@measured/puck@0.20.2`. Latest stable is `@puckeditor/core@0.23.0` — three minors ahead, and the package changed npm scope along the way. This audit answers: do we upgrade, and what work keeps every block, every personalization control, and every already-published page intact.
