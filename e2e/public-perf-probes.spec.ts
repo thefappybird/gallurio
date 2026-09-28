@@ -21,7 +21,14 @@ function record(name: string, data: unknown) {
 }
 
 async function probe(browser: Browser, path: string, colorScheme: "light" | "dark") {
-  const context = await browser.newContext({ colorScheme, viewport: { width: 375, height: 812 } });
+  // Explicitly anonymous: contexts created from the `browser` fixture inherit
+  // the project's owner storageState, and a signed-in owner is redirected
+  // from the landing page to the dashboard.
+  const context = await browser.newContext({
+    colorScheme,
+    viewport: { width: 375, height: 812 },
+    storageState: { cookies: [], origins: [] },
+  });
   const page = await context.newPage();
   const js = { count: 0, bytes: 0 };
   const images: Array<{ url: string; bytes: number }> = [];
@@ -49,6 +56,7 @@ async function probe(browser: Browser, path: string, colorScheme: "light" | "dar
   const response = await page.goto(path, { waitUntil: "networkidle" });
   await page.waitForTimeout(1000);
   await Promise.all(pending);
+  const finalUrl = page.url();
   const html = (await response?.text()) ?? "";
   const rscPayloadBytes = await page.evaluate(() =>
     Array.from(document.querySelectorAll("script:not([src])"))
@@ -59,6 +67,7 @@ async function probe(browser: Browser, path: string, colorScheme: "light" | "dar
   await context.close();
   return {
     path,
+    finalUrl,
     colorScheme,
     htmlBytes: html.length,
     rscPayloadBytes,

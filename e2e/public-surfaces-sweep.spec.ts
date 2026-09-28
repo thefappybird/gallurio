@@ -140,36 +140,31 @@ test.describe("tenant modals", () => {
     test.setTimeout(240_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     await openEditorWithDraft(page, E2E_FIXTURE_DRAFT_NAME);
-    // The Preview tab mounts the preview route in an iframe whose src carries
-    // the active draft id.
-    await page.getByRole("button", { name: "Preview", exact: true }).first().click();
-    const frame = page.locator('iframe[src*="portfolio-preview"]').first();
-    await expect(frame).toBeAttached({ timeout: 30_000 });
-    const draftId = new URL((await frame.getAttribute("src"))!, "http://x").searchParams.get("draftId");
-    expect(draftId).toBeTruthy();
-
+    // The Preview tab mounts the preview route (same client Render + lazy
+    // chunks as the published page) in an iframe carrying the active draft.
     const chunks: string[] = [];
     page.on("request", (r) => {
       if (/\/_next\/static\/.*\.js/.test(r.url())) chunks.push(r.url());
     });
-    await page.goto(`/en/portfolio-preview?zone=home&draftId=${encodeURIComponent(draftId!)}`, {
-      waitUntil: "networkidle",
-    });
+    await page.getByRole("button", { name: "Preview", exact: true }).first().click();
+    await expect(page.locator('iframe[src*="portfolio-preview"]').first()).toBeAttached({ timeout: 30_000 });
+    const preview = page.frameLocator('iframe[src*="portfolio-preview"]').first();
+
+    const tile = preview.locator("[data-featured-tile]").filter({ hasText: "Weddings" }).first();
+    await expect(tile, "fixture FeaturedWork tile renders").toBeVisible({ timeout: 30_000 });
+    await page.waitForLoadState("networkidle");
     const atIdle = chunks.length;
-
-    const tile = page.locator("[data-featured-tile]").filter({ hasText: "Weddings" }).first();
-    await expect(tile, "fixture FeaturedWork tile renders").toBeVisible({ timeout: 20_000 });
     await tile.click();
-    await expect(page.locator("[data-popup-shell]"), "collection popup opens").toBeVisible({ timeout: 15_000 });
+    await expect(preview.locator("[data-popup-shell]"), "collection popup opens").toBeVisible({ timeout: 15_000 });
     const afterPopup = chunks.length;
-    await page.keyboard.press("Escape");
-    await expect(page.locator("[data-popup-shell]")).toBeHidden({ timeout: 10_000 });
+    await preview.locator("body").press("Escape");
+    await expect(preview.locator("[data-popup-shell]")).toBeHidden({ timeout: 10_000 });
 
-    const photo = page.locator("[data-block] button:has(img)").first();
+    const photo = preview.locator("[data-block] button:has(img)").first();
     await expect(photo, "gallery tile renders").toBeVisible({ timeout: 20_000 });
     await photo.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("dialog").first(), "lightbox opens from the keyboard").toBeVisible({
+    await photo.press("Enter");
+    await expect(preview.getByRole("dialog").first(), "lightbox opens from the keyboard").toBeVisible({
       timeout: 15_000,
     });
     test.info().annotations.push({
