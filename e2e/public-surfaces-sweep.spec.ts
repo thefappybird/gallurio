@@ -143,9 +143,10 @@ test("static home: the price island resolves the visitor's local currency", asyn
   const body = (await res.json()) as { pricing: { local?: { currency: string } | null } };
   // The island swaps the server-rendered base price for the visitor's
   // currency; PHP renders with the peso sign.
-  if (body.pricing.local?.currency === "PHP") {
-    await expect(page.locator("#pricing")).toContainText("₱", { timeout: 10_000 });
-  }
+  expect(body.pricing.local?.currency, "a PH visitor gets a PHP display price").toBe("PHP");
+  // Beta may be the default tab; the Pro price lives under Monthly.
+  await page.getByTestId("plan-tab-monthly").click();
+  await expect(page.locator("#pricing")).toContainText("₱", { timeout: 10_000 });
   await context.close();
 });
 

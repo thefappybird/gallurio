@@ -94,7 +94,7 @@ with each other. Probes: `e2e/public-perf-probes.spec.ts` (anonymous, 375 px).
    confirm the causes above.
 3. Re-check coverage and impressions in 2–4 weeks.
 
-## Home page: static shell + per-visitor price (in progress, owner-approved 2026-09-28)
+## Home page: static shell + per-visitor price (owner-approved 2026-09-28)
 
 The home page rendered per request for two reasons: the signed-in redirect
 (`getAuthUser()` + a `User` lookup) and the geo pricing (`cf-ipcountry` in
@@ -112,13 +112,27 @@ scope. Instead:
 2. **`GET /api/public/pricing` (backend).** `{ pricing: ProPricing,
    betaEnabled: boolean }` from `getDisplayPricing()` + `BETA_TESTER_ENABLED`;
    `Cache-Control: private, max-age=300` (country-dependent, so never shared
-   caches); never 500s (falls back to the static base-tier catalog).
+   caches). Rate-limited (30/min/IP) → `429` + `no-store`; an upstream error
+   → the static catalog for the visitor's *tier* with `no-store`, so a wrong
+   fallback is never pinned in the browser. The proxy skips AuthKit for it.
 3. **Page (frontend).** No session, DB or `headers()` reads;
-   `export const revalidate = 3600`. `PricingTeaser` server-renders the static
+   `export const revalidate = 60`. `PricingTeaser` server-renders the static
    base-tier catalog price, then replaces pricing + beta flag from the endpoint
-   on mount (the section is far below the fold).
+   on mount (the section is far below the fold). 60 s because the page is
+   prerendered in CI, where `BETA_TESTER_ENABLED` is unset: the first request
+   a minute after deploy regenerates it with the runtime value.
 
-Verify: CI build route table shows `/[locale]` as static/ISR; signed-in
-visitors still land on dashboard/bookings/onboarding; PH visitor sees PHP;
-unit tests for proxy branches, both handlers, the teaser swap.
-`/pricing` and the MDX `<GallurioPrice />` stay dynamic.
+Review hardening on the same branch: every inbound AuthKit request header
+(`x-workos-*`, `x-url`, …) is now stripped at the proxy's trust boundary —
+before this, a client-sent sealed session header reached `getAuthUser()` on
+routes that skip AuthKit (latent; no current consumer). The root 307 is
+`no-store` (docs/modules/hosting-ops.md: never edge-cache `/` ignoring
+cookies). `publicOrigin` is shared from `lib/http/publicOrigin.ts`.
+
+Verified in the browser (dev): a PH visitor's island returns PHP and the
+Monthly card shows ₱; a signed-in owner on `/` and `/fil` lands on
+`/dashboard` / `/fil/dashboard`, and the marketing logo does the same with no
+page errors; the full marketing sweep still passes. Static rendering itself
+shows only in a production build — check the CI build's route table for
+`/[locale]` (ISR, 1m). `/pricing` and the MDX `<GallurioPrice />` stay
+dynamic.
