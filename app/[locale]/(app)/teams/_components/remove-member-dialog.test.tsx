@@ -39,4 +39,13 @@ describe("RemoveMemberDialog", () => {
     expect(screen.getByRole("button", { name: "Remove from team" })).toBeDisabled();
     expect(removeMemberFromTeamAction).not.toHaveBeenCalled();
   });
+
+  it("does not point aria-describedby at a help paragraph that isn't rendered (lead with no other teams)", () => {
+    renderWithProviders(<RemoveMemberDialog {...props} member={{ ...MEMBER, teams: [{ teamId: "t1", role: "lead" }] }} />);
+    const combinedButton = screen.getByRole("button", { name: "Remove from team + workspace" });
+    const describedBy = combinedButton.getAttribute("aria-describedby");
+    if (describedBy) {
+      expect(document.getElementById(describedBy)).not.toBeNull();
+    }
+  });
 });
