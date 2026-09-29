@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
@@ -47,26 +47,42 @@ export function MiniBookingCalendar({
   const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
   const isInitial = monthKey === initialKey;
 
+  // Component-scoped cache: `${year}-${mon}-${teamId}` -> already-fetched rows,
+  // so navigating back to a month/team combo we've seen serves cache instead
+  // of re-fetching.
+  const cacheRef = useRef<Map<string, CalendarDayCount[]>>(new Map());
+
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     // The server first-paint covers only the initial month with all teams.
     const useServerPaint = isInitial && teamId === "";
     const days0 = initialDays;
     const year = month.getFullYear();
     const mon = month.getMonth();
+    const cacheKey = `${year}-${mon}-${teamId}`;
     Promise.resolve().then(() => {
       if (cancelled) return;
       if (useServerPaint) {
         setDays(days0);
         return;
       }
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached) {
+        setDays(cached);
+        return;
+      }
       setLoading(true);
       const teamParam = teamId ? `&team=${encodeURIComponent(teamId)}` : "";
-      fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`)
+      fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`, {
+        signal: controller.signal,
+      })
         .then((r) => (r.ok ? r.json() : []))
         .then((rows: CalendarDayCount[]) => {
           if (cancelled) return;
-          setDays(rows ?? []);
+          const resolved = rows ?? [];
+          cacheRef.current.set(cacheKey, resolved);
+          setDays(resolved);
           setLoading(false);
         })
         .catch(() => {
@@ -76,35 +92,43 @@ export function MiniBookingCalendar({
     });
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [monthKey, isInitial, initialDays, month, teamId]);
 
-  const counts = new Map(days.map((d) => [d.date, d.count]));
-  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-  const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  const startWeekday = monthStart.getDay();
-  const totalDays = monthEnd.getDate();
+  const counts = useMemo(() => new Map(days.map((d) => [d.date, d.count])), [days]);
   const today = isoDate(new Date());
 
-  const cells: Array<{
-    key: string;
-    iso: string | null;
-    day: number | null;
-    count: number;
-  }> = [];
-  for (let i = 0; i < startWeekday; i += 1) {
-    cells.push({ key: `pad-${i}`, iso: null, day: null, count: 0 });
-  }
-  for (let d = 1; d <= totalDays; d += 1) {
-    const date = new Date(month.getFullYear(), month.getMonth(), d);
-    const iso = isoDate(date);
-    cells.push({ key: iso, iso, day: d, count: counts.get(iso) ?? 0 });
-  }
+  const cells = useMemo(() => {
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const startWeekday = monthStart.getDay();
+    const totalDays = monthEnd.getDate();
+    const built: Array<{
+      key: string;
+      iso: string | null;
+      day: number | null;
+      count: number;
+    }> = [];
+    for (let i = 0; i < startWeekday; i += 1) {
+      built.push({ key: `pad-${i}`, iso: null, day: null, count: 0 });
+    }
+    for (let d = 1; d <= totalDays; d += 1) {
+      const date = new Date(month.getFullYear(), month.getMonth(), d);
+      const iso = isoDate(date);
+      built.push({ key: iso, iso, day: d, count: counts.get(iso) ?? 0 });
+    }
+    return built;
+  }, [month, counts]);
 
-  const weekdayLabels = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(2024, 5, 2 + i); // 2024-06-02 was a Sunday
-    return d.toLocaleDateString(locale, { weekday: "narrow" });
-  });
+  const weekdayLabels = useMemo(
+    () =>
+      Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(2024, 5, 2 + i); // 2024-06-02 was a Sunday
+        return d.toLocaleDateString(locale, { weekday: "narrow" });
+      }),
+    [locale]
+  );
 
   const totalBookings = days.reduce((s, d) => s + d.count, 0);
 
@@ -131,7 +155,7 @@ export function MiniBookingCalendar({
             size="icon-xs"
             onClick={() => shiftMonth(-1)}
             disabled={loading}
-            aria-label="Previous month"
+            aria-label={t("miniCalendar.prevMonth")}
           >
             <ChevronLeftIcon className="size-3.5" />
           </Button>
@@ -140,7 +164,7 @@ export function MiniBookingCalendar({
             onClick={goToToday}
             disabled={loading}
             className="min-w-20 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Jump to current month"
+            aria-label={t("miniCalendar.jumpToToday")}
           >
             {month.toLocaleDateString(locale, { month: "short", year: "numeric" })}
           </button>
@@ -150,7 +174,7 @@ export function MiniBookingCalendar({
             size="icon-xs"
             onClick={() => shiftMonth(1)}
             disabled={loading}
-            aria-label="Next month"
+            aria-label={t("miniCalendar.nextMonth")}
           >
             <ChevronRightIcon className="size-3.5" />
           </Button>
@@ -208,7 +232,7 @@ export function MiniBookingCalendar({
                         ? "bg-brand-foreground text-brand"
                         : "bg-brand text-brand-foreground group-hover/cell:bg-background group-hover/cell:text-foreground"
                     }`}
-                    aria-label={`${cell.count} ${cell.count === 1 ? "booking" : "bookings"}`}
+                    aria-label={t("miniCalendar.dayBookingCount", { count: cell.count })}
                   >
                     {cell.count > 9 ? "9+" : cell.count}
                   </span>

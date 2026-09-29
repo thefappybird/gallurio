@@ -885,7 +885,11 @@
       "totalLabel": "Kabuuan",
       "miniCalendar": {
         "today": "Ngayon",
-        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}"
+        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}",
+        "prevMonth": "Nakaraang buwan",
+        "nextMonth": "Susunod na buwan",
+        "jumpToToday": "Pumunta sa kasalukuyang buwan",
+        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}"
       },
       "calendarTeam": {
         "label": "I-filter ayon sa team",

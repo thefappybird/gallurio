@@ -1,7 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { renderWithProviders } from "@/test-utils/render";
+import { renderWithProviders, enMessages } from "@/test-utils/render";
 import { MiniBookingCalendar } from "./mini-booking-calendar";
+
+const overriddenMessages = {
+  ...enMessages,
+  app: {
+    ...enMessages.app,
+    dashboard: {
+      ...enMessages.app.dashboard,
+      miniCalendar: {
+        ...enMessages.app.dashboard.miniCalendar,
+        prevMonth: "GO BACK A MONTH",
+        nextMonth: "GO FORWARD A MONTH",
+        jumpToToday: "JUMP TO TODAY MONTH",
+        dayBookingCount: "{count, plural, other {# CUSTOM BOOKINGS}}",
+      },
+    },
+  },
+};
 
 describe("MiniBookingCalendar", () => {
   it("renders the month name and year", () => {
@@ -67,5 +84,63 @@ describe("MiniBookingCalendar", () => {
     });
     expect(screen.getByRole("button", { name: /previous month/i })).toBeDisabled();
     expect(screen.getByRole("combobox", { name: /filter by team/i })).toBeDisabled();
+  });
+
+  it("routes nav aria-labels and day-count labels through translations", () => {
+    const month = new Date(2026, 4, 1);
+    renderWithProviders(
+      <MiniBookingCalendar
+        month={month}
+        days={[{ date: "2026-05-05", count: 1 }]}
+        locale="en"
+        title="Calendar"
+        teams={[]}
+      />,
+      { messages: overriddenMessages }
+    );
+    expect(screen.getByRole("button", { name: "GO BACK A MONTH" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "GO FORWARD A MONTH" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "JUMP TO TODAY MONTH" })).toBeInTheDocument();
+    expect(screen.getByLabelText("1 CUSTOM BOOKINGS")).toBeInTheDocument();
+  });
+
+  it("aborts the in-flight fetch when the component unmounts before it resolves", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    global.fetch = vi.fn((_url: string, init?: RequestInit) => {
+      capturedSignal = init?.signal ?? undefined;
+      return new Promise(() => {});
+    }) as unknown as typeof fetch;
+    const month = new Date(2026, 4, 15);
+    const { unmount } = renderWithProviders(
+      <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" teams={[]} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+
+    unmount();
+    expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it("serves cached rows for a month/team combo already fetched, without re-fetching", async () => {
+    const rows = [{ date: "2026-06-05", count: 2 }];
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(rows) })
+    ) as unknown as typeof fetch;
+    global.fetch = fetchMock;
+    const month = new Date(2026, 4, 15);
+    renderWithProviders(
+      <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" teams={[]} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+
+    await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

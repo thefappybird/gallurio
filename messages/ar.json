@@ -885,7 +885,11 @@
       "totalLabel": "الإجمالي",
       "miniCalendar": {
         "today": "اليوم",
-        "monthTotal": "{count, plural, zero {# حجز هذا الشهر} one {حجز واحد هذا الشهر} two {حجزان هذا الشهر} few {# حجوزات هذا الشهر} many {# حجزًا هذا الشهر} other {# حجز هذا الشهر}}"
+        "monthTotal": "{count, plural, zero {# حجز هذا الشهر} one {حجز واحد هذا الشهر} two {حجزان هذا الشهر} few {# حجوزات هذا الشهر} many {# حجزًا هذا الشهر} other {# حجز هذا الشهر}}",
+        "prevMonth": "الشهر السابق",
+        "nextMonth": "الشهر التالي",
+        "jumpToToday": "الانتقال إلى الشهر الحالي",
+        "dayBookingCount": "{count, plural, zero {# حجز} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}"
       },
       "calendarTeam": {
         "label": "تصفية حسب الفريق",

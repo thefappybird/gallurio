@@ -885,7 +885,11 @@
       "totalLabel": "Total",
       "miniCalendar": {
         "today": "Today",
-        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}"
+        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}",
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "jumpToToday": "Jump to current month",
+        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}"
       },
       "calendarTeam": {
         "label": "Filter by team",

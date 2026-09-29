@@ -885,7 +885,11 @@
       "totalLabel": "รวม",
       "miniCalendar": {
         "today": "วันนี้",
-        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}"
+        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}",
+        "prevMonth": "เดือนก่อนหน้า",
+        "nextMonth": "เดือนถัดไป",
+        "jumpToToday": "ไปที่เดือนปัจจุบัน",
+        "dayBookingCount": "{count, plural, other {# การจอง}}"
       },
       "calendarTeam": {
         "label": "กรองตามทีม",
