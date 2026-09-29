@@ -72,12 +72,12 @@ export default function DashboardLoading() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-48" />
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-48" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-64" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-64" />
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-48" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-56" />
         <CardSkeleton className="rounded-[var(--radius)]" contentClassName="min-h-56" />
       </div>
 

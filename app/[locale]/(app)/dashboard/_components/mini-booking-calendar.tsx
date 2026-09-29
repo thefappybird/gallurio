@@ -88,8 +88,11 @@ export function MiniBookingCalendar({
           setDays(resolved);
           setLoading(false);
         })
-        .catch(() => {
+        .catch((err: unknown) => {
           if (cancelled) return;
+          if (!(err instanceof DOMException && err.name === "AbortError")) {
+            console.error(err);
+          }
           setLoading(false);
         });
     });
