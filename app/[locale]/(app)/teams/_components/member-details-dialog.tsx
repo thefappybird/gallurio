@@ -35,7 +35,7 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
   const [action, setAction] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function load(reset: boolean) {
+  async function load(reset: boolean, isStale?: () => boolean) {
     if (!member) return;
     setLoading(true);
     const result = await getMemberActivityAction({
@@ -45,6 +45,9 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
       to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
       action: action || undefined,
     });
+    // A newer request (filter/tab change) may have started while this one was
+    // in flight — don't let its late response overwrite the current state.
+    if (isStale?.()) return;
     if (!("error" in result)) {
       setItems((previous) => (reset ? result.items : [...previous, ...result.items]));
       setCursor(result.nextCursor);
@@ -54,7 +57,15 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
 
   // Filters deliberately start a new cursor-paginated result set.
   useEffect(() => {
-    if (open && member && tab === "history") void Promise.resolve().then(() => load(true));
+    if (!(open && member && tab === "history")) return;
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      void load(true, () => cancelled);
+    });
+    return () => {
+      cancelled = true;
+    };
     // `load` is intentionally omitted: including it would re-fetch the first
     // page after `cursor` changes and defeat cursor pagination.
     // eslint-disable-next-line react-hooks/exhaustive-deps
