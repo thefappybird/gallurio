@@ -184,7 +184,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
 
         <Card className="rounded-[var(--radius)]">
           <CardHeader className="pb-3 flex justify-between">
-            <span className="flex items-center gap-1.5"><CardTitle as="h2" className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle><DashboardInfoHint hint="portfolioPublishStatus" /></span>
+            <div className="flex items-center gap-1.5"><CardTitle as="h2" className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle><DashboardInfoHint hint="portfolioPublishStatus" /></div>
             <span
               className={`inline-flex w-fit items-center rounded-[var(--radius)] px-2 py-0.5 text-[11px] font-medium ${
                 publishedAt ? "bg-[var(--event-completed)] text-white" : "bg-muted text-muted-foreground"
