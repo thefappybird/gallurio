@@ -3592,6 +3592,7 @@
     },
     "clearFilters": "Tanggalin ang filter",
     "loading": "Naglo-load…",
+    "close": "Isara",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "close": "Isara ang promo code",

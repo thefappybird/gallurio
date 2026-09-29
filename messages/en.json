@@ -3592,6 +3592,7 @@
     },
     "clearFilters": "Clear filters",
     "loading": "Loading…",
+    "close": "Close",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "close": "Close promo code",

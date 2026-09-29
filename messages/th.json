@@ -3592,6 +3592,7 @@
     },
     "clearFilters": "ล้างตัวกรอง",
     "loading": "กำลังโหลด…",
+    "close": "ปิด",
     "promoCode": {
       "disclosureLabel": "มีโค้ดโปรโมชันหรือไม่?",
       "close": "ปิดโค้ดโปรโมชัน",
