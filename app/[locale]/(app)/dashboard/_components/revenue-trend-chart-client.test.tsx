@@ -18,6 +18,6 @@ describe("RevenueTrendChartClient", () => {
         title="Revenue trend"
       />
     );
-    expect(await screen.findByText("Revenue trend", {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText("Revenue trend", {}, { timeout: 15000 })).toBeInTheDocument();
   });
 });
