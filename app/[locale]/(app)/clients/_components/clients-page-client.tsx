@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
+import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -50,7 +51,6 @@ export function ClientsPageClient({
   initialDetailClient = null,
 }: Props) {
   const t = useTranslations("app.clients");
-  const tc = useTranslations("common.pagination");
   const errMsg = useActionError();
   const router = useRouter();
   const pathname = usePathname();
@@ -255,32 +255,16 @@ export function ClientsPageClient({
 
       {/* Pagination */}
       {total > 0 && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-muted-foreground">
-            {tc("showing", { from, to, total })}
-          </span>
-          <div className="flex items-center gap-2 flex-wrap">
-            <PageSizeSelect value={limit} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => goToPage(page - 1)}
-              disabled={page <= 1}
-              className="min-h-11 sm:min-h-0"
-            >
-              {tc("previous")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => goToPage(page + 1)}
-              disabled={page >= totalPages}
-              className="min-h-11 sm:min-h-0"
-            >
-              {tc("next")}
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          from={from}
+          to={to}
+          total={total}
+          onPageChange={goToPage}
+        >
+          <PageSizeSelect value={limit} />
+        </Pagination>
       )}
 
       {/* Modals */}

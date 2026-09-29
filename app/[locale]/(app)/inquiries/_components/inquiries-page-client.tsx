@@ -4,8 +4,8 @@ import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useLiveRefresh } from "@/hooks/use-live-refresh";
-import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
+import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,6 @@ export function InquiriesPageClient({
   workspaceTz,
 }: Props) {
   const t = useTranslations("app.inquiries");
-  const tc = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -382,32 +381,18 @@ export function InquiriesPageClient({
           )}
 
           {total > 0 && (
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm text-muted-foreground">
-                {tc("showing", { from: fromRow, to: toRow, total })}
-              </span>
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <PageSizeSelect value={limit} />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(page - 1)}
-                  disabled={page <= 1}
-                  className="min-h-11 sm:min-h-0"
-                >
-                  {tc("previous")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(page + 1)}
-                  disabled={page >= totalPages}
-                  className="min-h-11 sm:min-h-0"
-                >
-                  {tc("next")}
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              from={fromRow}
+              to={toRow}
+              total={total}
+              onPageChange={goToPage}
+              className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              actionsClassName="flex min-w-0 flex-wrap items-center gap-2"
+            >
+              <PageSizeSelect value={limit} />
+            </Pagination>
           )}
         </>
       )}
