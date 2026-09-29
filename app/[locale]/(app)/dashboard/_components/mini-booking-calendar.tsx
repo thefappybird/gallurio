@@ -77,7 +77,10 @@ export function MiniBookingCalendar({
       fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`, {
         signal: controller.signal,
       })
-        .then((r) => (r.ok ? r.json() : []))
+        .then((r) => {
+          if (!r.ok) throw new Error(`bookings-by-day request failed: ${r.status}`);
+          return r.json();
+        })
         .then((rows: CalendarDayCount[]) => {
           if (cancelled) return;
           const resolved = rows ?? [];

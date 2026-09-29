@@ -143,4 +143,30 @@ describe("MiniBookingCalendar", () => {
     await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("does not cache a failed month fetch as empty, so revisiting it re-fetches", async () => {
+    const rows = [{ date: "2026-06-05", count: 2 }];
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve([]) })
+    ) as unknown as typeof fetch;
+    global.fetch = fetchMock;
+    const month = new Date(2026, 4, 15);
+    renderWithProviders(
+      <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" teams={[]} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    // The first fetch for June failed; a second visit to June must re-fetch
+    // rather than serve a poisoned "[]" cache entry.
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(rows) })
+    );
+    fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
+  });
 });
