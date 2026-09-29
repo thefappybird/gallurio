@@ -121,7 +121,7 @@ export function MiniBookingCalendar({
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <span className="flex items-center gap-1.5">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">{title}</CardTitle>
           <DashboardInfoHint hint="calendar" />
         </span>
         <div className="flex items-center gap-0.5">

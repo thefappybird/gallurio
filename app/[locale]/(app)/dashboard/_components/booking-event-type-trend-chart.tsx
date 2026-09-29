@@ -35,7 +35,7 @@ export function BookingEventTypeTrendChart({ trend, currency, locale, labels }: 
   const isRtl = useIsRtl();
   const header = labels.title ? (
     <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
-      <CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="eventTypeTrend" />
+      <CardTitle as="h2" className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="eventTypeTrend" />
     </CardHeader>
   ) : null;
 

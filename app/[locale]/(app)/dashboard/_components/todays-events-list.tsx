@@ -18,7 +18,7 @@ export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h2" className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="todaysEvents" />
       </CardHeader>
       <CardContent>

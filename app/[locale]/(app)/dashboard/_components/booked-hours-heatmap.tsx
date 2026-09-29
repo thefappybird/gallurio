@@ -120,7 +120,7 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-        <span className="flex items-center gap-1.5"><CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="bookedHoursHeatmap" /></span>
+        <span className="flex items-center gap-1.5"><CardTitle as="h2" className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="bookedHoursHeatmap" /></span>
         <HeatmapControls
           labels={labels}
           disabled={isPending}
