@@ -146,10 +146,15 @@ describe("MiniBookingCalendar", () => {
 
   it("does not cache a failed month fetch as empty, so revisiting it re-fetches", async () => {
     const rows = [{ date: "2026-06-05", count: 2 }];
-    const fetchMock = vi.fn(() =>
+    type MonthFetchResponse = {
+      ok: boolean;
+      status: number;
+      json: () => Promise<{ date: string; count: number }[]>;
+    };
+    const fetchMock = vi.fn<() => Promise<MonthFetchResponse>>(() =>
       Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve([]) })
-    ) as unknown as typeof fetch;
-    global.fetch = fetchMock;
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
     const month = new Date(2026, 4, 15);
     renderWithProviders(
       <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" teams={[]} />
@@ -161,7 +166,7 @@ describe("MiniBookingCalendar", () => {
     // The first fetch for June failed; a second visit to June must re-fetch
     // rather than serve a poisoned "[]" cache entry.
     fetchMock.mockImplementation(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(rows) })
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rows) })
     );
     fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
