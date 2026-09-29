@@ -1707,12 +1707,12 @@
           "monthly": "شهري",
           "yearly": "سنوي",
           "savePill": "وفّر شهرين"
-        },
-        "errorBoundary": {
-          "title": "حدث خطأ ما",
-          "retry": "أعد المحاولة",
-          "reload": "أعد تحميل الصفحة"
         }
+      },
+      "errorBoundary": {
+        "title": "حدث خطأ ما",
+        "retry": "أعد المحاولة",
+        "reload": "أعد تحميل الصفحة"
       },
       "devPlan": {
         "title": "مبدِّل خطة المطوِّر",

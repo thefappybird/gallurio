@@ -5,17 +5,17 @@ import { useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
 
-export default function BillingSettingsError({
+export default function SettingsError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = useTranslations("app.settings.billing.errorBoundary");
+  const t = useTranslations("app.settings.errorBoundary");
 
   useEffect(() => {
-    console.error("[billing-settings-error-boundary]", error);
+    console.error("[settings-error-boundary]", error);
   }, [error]);
 
   return (
@@ -26,7 +26,7 @@ export default function BillingSettingsError({
           <Button variant="brand" onClick={reset}>
             {t("retry")}
           </Button>
-          <Link href="/settings/billing" className={buttonVariants({ variant: "outline" })}>
+          <Link href="/settings" className={buttonVariants({ variant: "outline" })}>
             {t("reload")}
           </Link>
         </div>

@@ -1707,12 +1707,12 @@
           "monthly": "Buwanan",
           "yearly": "Taunan",
           "savePill": "Makatipid ng 2 buwan"
-        },
-        "errorBoundary": {
-          "title": "May naganap na error",
-          "retry": "Subukan ulit",
-          "reload": "I-reload ang page"
         }
+      },
+      "errorBoundary": {
+        "title": "May naganap na error",
+        "retry": "Subukan ulit",
+        "reload": "I-reload ang page"
       },
       "devPlan": {
         "title": "Dev plan switcher",

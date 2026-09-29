@@ -1707,12 +1707,12 @@
           "monthly": "Monthly",
           "yearly": "Yearly",
           "savePill": "Save 2 months"
-        },
-        "errorBoundary": {
-          "title": "Something went wrong",
-          "retry": "Try again",
-          "reload": "Reload page"
         }
+      },
+      "errorBoundary": {
+        "title": "Something went wrong",
+        "retry": "Try again",
+        "reload": "Reload page"
       },
       "devPlan": {
         "title": "Dev plan switcher",

@@ -1707,12 +1707,12 @@
           "monthly": "Bulanan",
           "yearly": "Tahunan",
           "savePill": "Hemat 2 bulan"
-        },
-        "errorBoundary": {
-          "title": "Terjadi kesalahan",
-          "retry": "Coba lagi",
-          "reload": "Muat ulang halaman"
         }
+      },
+      "errorBoundary": {
+        "title": "Terjadi kesalahan",
+        "retry": "Coba lagi",
+        "reload": "Muat ulang halaman"
       },
       "devPlan": {
         "title": "Dev plan switcher",
