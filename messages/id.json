@@ -1585,7 +1585,8 @@
       "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
       "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akun"
+      "accountMenu": "Menu akun",
+      "navigationLabel": "Navigasi utama"
     },
     "theme": {
       "label": "Tema",

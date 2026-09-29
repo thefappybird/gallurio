@@ -1585,7 +1585,8 @@
       "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
       "logOutConfirmCancel": "Cancel",
       "portfolio": "Portfolio",
-      "accountMenu": "Account menu"
+      "accountMenu": "Account menu",
+      "navigationLabel": "Main navigation"
     },
     "theme": {
       "label": "Theme",

@@ -1585,7 +1585,8 @@
       "logOutConfirmBody": "ستحتاج إلى تسجيل الدخول مرة أخرى للعودة إلى مساحة عملك.",
       "logOutConfirmCancel": "إلغاء",
       "portfolio": "معرض الأعمال",
-      "accountMenu": "قائمة الحساب"
+      "accountMenu": "قائمة الحساب",
+      "navigationLabel": "التنقل الرئيسي"
     },
     "theme": {
       "label": "السمة",

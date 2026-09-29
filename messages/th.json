@@ -1585,7 +1585,8 @@
       "logOutConfirmBody": "คุณจะต้องเข้าสู่ระบบอีกครั้งเพื่อกลับเข้าเวิร์กสเปซของคุณ",
       "logOutConfirmCancel": "ยกเลิก",
       "portfolio": "พอร์ตโฟลิโอ",
-      "accountMenu": "เมนูบัญชี"
+      "accountMenu": "เมนูบัญชี",
+      "navigationLabel": "การนำทางหลัก"
     },
     "theme": {
       "label": "ธีม",
