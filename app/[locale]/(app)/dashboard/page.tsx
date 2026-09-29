@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import dynamic from "next/dynamic";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
@@ -41,43 +40,11 @@ import { CollectionCoverageCard } from "./_components/collection-coverage-card";
 import { BookedHoursHeatmapClient } from "./_components/booked-hours-heatmap-client";
 import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
-import { ChartLoadingFallback } from "./_components/chart-loading-fallback";
+import { RevenueTrendChartClient as RevenueTrendChart } from "./_components/revenue-trend-chart-client";
+import { BookingValueCollectionChartClient as BookingValueCollectionChart } from "./_components/booking-value-collection-chart-client";
+import { BookingEventTypeTrendChartClient as BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart-client";
+import { TeamPerformanceCardsClient as TeamPerformanceCards } from "./_components/team-performance-cards-client";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
-
-// Code-split the recharts-backed cards: they're the heaviest client bundles
-// on this route but only ever render below the fold, so lazy-loading their
-// JS chunk shrinks the initial dashboard bundle without changing what's
-// server-rendered (ssr stays true — this is a Server Component boundary).
-const RevenueTrendChart = dynamic(
-  () => import("./_components/revenue-trend-chart").then((m) => m.RevenueTrendChart),
-  { ssr: true, loading: () => <ChartLoadingFallback className="h-full rounded-[var(--radius)]" /> }
-);
-const BookingValueCollectionChart = dynamic(
-  () =>
-    import("./_components/booking-value-collection-chart").then(
-      (m) => m.BookingValueCollectionChart
-    ),
-  { ssr: true, loading: () => <ChartLoadingFallback className="rounded-[var(--radius)]" /> }
-);
-const BookingEventTypeTrendChart = dynamic(
-  () =>
-    import("./_components/booking-event-type-trend-chart").then(
-      (m) => m.BookingEventTypeTrendChart
-    ),
-  { ssr: true, loading: () => <ChartLoadingFallback className="rounded-[var(--radius)]" /> }
-);
-const TeamPerformanceCards = dynamic(
-  () => import("./_components/team-performance-cards").then((m) => m.TeamPerformanceCards),
-  {
-    ssr: true,
-    loading: () => (
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
-        <ChartLoadingFallback className="rounded-[var(--radius)] lg:col-span-2" />
-        <ChartLoadingFallback className="rounded-[var(--radius)] lg:col-span-2" />
-      </div>
-    ),
-  }
-);
 
 export async function generateMetadata({
   params,

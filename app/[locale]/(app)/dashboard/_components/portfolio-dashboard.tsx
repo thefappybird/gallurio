@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-import dynamic from "next/dynamic";
 import {
   UsersIcon,
   MessageSquareIcon,
@@ -10,7 +9,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/lib/i18n/navigation";
 import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
 import type { InquiryDoc, WorkspaceDoc } from "@/lib/db/models";
@@ -29,14 +27,7 @@ import { PortfolioLeadPipelineCard } from "./portfolio-lead-pipeline-card";
 import { PortfolioDemandProfileCard } from "./portfolio-demand-profile-card";
 import { DashboardInfoHint } from "./dashboard-info-hint";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
-
-const PortfolioVisitorsInquiriesChart = dynamic(
-  () =>
-    import("./portfolio-visitors-inquiries-chart").then(
-      (m) => m.PortfolioVisitorsInquiriesChart
-    ),
-  { ssr: true, loading: () => <Skeleton className="h-full w-full" /> }
-);
+import { PortfolioVisitorsInquiriesChartClient as PortfolioVisitorsInquiriesChart } from "./portfolio-visitors-inquiries-chart-client";
 
 type Props = {
   workspace: WorkspaceDoc;
