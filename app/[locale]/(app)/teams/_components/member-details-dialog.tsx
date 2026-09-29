@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,9 +34,16 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
   const [to, setTo] = useState("");
   const [action, setAction] = useState("");
   const [loading, setLoading] = useState(false);
+  // Every load() call (both the filter-driven effect and the Load More
+  // button) claims the next generation number; a response only applies if
+  // its generation is still the latest one requested. This guards against
+  // Load More's page-2 response landing after a filter change has already
+  // reset the list with a newer request.
+  const requestGenRef = useRef(0);
 
-  async function load(reset: boolean, isStale?: () => boolean) {
+  async function load(reset: boolean) {
     if (!member) return;
+    const myGen = ++requestGenRef.current;
     setLoading(true);
     const result = await getMemberActivityAction({
       workosUserId: member.workosUserId,
@@ -45,9 +52,7 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
       to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
       action: action || undefined,
     });
-    // A newer request (filter/tab change) may have started while this one was
-    // in flight — don't let its late response overwrite the current state.
-    if (isStale?.()) return;
+    if (myGen !== requestGenRef.current) return;
     if (!("error" in result)) {
       setItems((previous) => (reset ? result.items : [...previous, ...result.items]));
       setCursor(result.nextCursor);
@@ -58,14 +63,10 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
   // Filters deliberately start a new cursor-paginated result set.
   useEffect(() => {
     if (!(open && member && tab === "history")) return;
-    let cancelled = false;
-    void Promise.resolve().then(() => {
-      if (cancelled) return;
-      void load(true, () => cancelled);
-    });
-    return () => {
-      cancelled = true;
-    };
+    // Deferred a tick so `load`'s setState calls don't run synchronously
+    // inside the effect body. The generation ref (not a cancel flag) is what
+    // guards a superseded request's response from landing.
+    void Promise.resolve().then(() => void load(true));
     // `load` is intentionally omitted: including it would re-fetch the first
     // page after `cursor` changes and defeat cursor pagination.
     // eslint-disable-next-line react-hooks/exhaustive-deps
