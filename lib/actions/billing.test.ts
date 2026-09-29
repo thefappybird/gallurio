@@ -176,4 +176,11 @@ describe("verifyCheckoutReturnAction", () => {
 
     await expect(verifyCheckoutReturnAction()).resolves.toEqual({ ok: false });
   });
+
+  it("returns ok: false when ownerContext itself throws (transient DB blip)", async () => {
+    process.env.PAID_BILLING_ENABLED = "true";
+    mockOwnerContext.mockRejectedValue(new Error("db blip"));
+
+    await expect(verifyCheckoutReturnAction()).resolves.toEqual({ ok: false });
+  });
 });

@@ -43,10 +43,10 @@ export async function getSubscriptionManageUrlAction(): Promise<
 export async function verifyCheckoutReturnAction(): Promise<{ ok: boolean }> {
   if (!isPaidBillingAvailable()) return { ok: false };
 
-  const ctx = await ownerContext({ allowDuringOnboarding: true, allowWhenGated: true });
-  if ("error" in ctx) return { ok: false };
-
   try {
+    const ctx = await ownerContext({ allowDuringOnboarding: true, allowWhenGated: true });
+    if ("error" in ctx) return { ok: false };
+
     await reconcileLemonSqueezySubscription(ctx.workspaceId);
     const workspace = await Workspace.findById(ctx.workspaceId).lean();
     return { ok: !!workspace && isEntitled(workspace) };
