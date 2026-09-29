@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useIsRtl } from "@/lib/i18n/rtl";
@@ -33,6 +34,15 @@ function formatWeek(bucket: string, locale: string) {
 
 export function BookingEventTypeTrendChart({ trend, currency, locale, labels }: Props) {
   const isRtl = useIsRtl();
+  const data = useMemo(
+    () =>
+      trend.points.map((p) => {
+        const row: Record<string, number | string> = { bucket: p.bucket };
+        for (const type of trend.eventTypes) row[type] = p.values[type] ?? 0;
+        return row;
+      }),
+    [trend.points, trend.eventTypes]
+  );
   const header = labels.title ? (
     <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
       <CardTitle as="h2" className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="eventTypeTrend" />
@@ -49,12 +59,6 @@ export function BookingEventTypeTrendChart({ trend, currency, locale, labels }: 
       </Card>
     );
   }
-
-  const data = trend.points.map((p) => {
-    const row: Record<string, number | string> = { bucket: p.bucket };
-    for (const type of trend.eventTypes) row[type] = p.values[type] ?? 0;
-    return row;
-  });
 
   return (
     <Card className="h-full rounded-[var(--radius)]">
