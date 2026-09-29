@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 // ClientsTable columns: name, contact, source, totalSpent, actions = 5
 const CLIENTS_TABLE_COLUMNS = 5;
@@ -14,7 +15,7 @@ export default async function ClientsLoading() {
         <Skeleton className="h-9 w-full sm:w-72" />
         <Skeleton className="h-9 w-28" />
       </div>
-      <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={8} cardRows={4} />
+      <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} />
     </div>
   );
 }
