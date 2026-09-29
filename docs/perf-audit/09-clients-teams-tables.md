@@ -2,6 +2,15 @@
 
 Scope: `app/[locale]/(app)/clients/`, `app/[locale]/(app)/teams/`, `components/app/table-skeleton.tsx`.
 
+> **Status: closed on `fix/shared-performance-fixes`.** Teams stays client-side/unpaginated
+> (re-checked against the user mid-session — see "Reviewed and declined" below; this doc's
+> original "Fix direction" recommending a pagination migration is superseded by that decision).
+> Fixed: `teams-table.tsx` a11y parity with `clients-table.tsx` (`scope`/`aria-sort`/keyboard
+> rows), `clients/loading.tsx`'s skeleton row count now derives from `lib/pagination.ts`'s
+> `DEFAULT_PAGE_SIZE` instead of a drifted hardcoded `8`, the shared `Pagination` component
+> (`components/app/pagination.tsx`), `member-details-dialog.tsx`'s stale-response guard, and
+> `remove-member-dialog.tsx`'s dangling `aria-describedby`.
+
 ## What's working
 - `clients-table.tsx` is the reference implementation: `@tanstack/react-table` headless,
   `columns` in `useMemo`, server-paginated via `page`/`limit` searchParams, `<th scope="col"
@@ -45,11 +54,19 @@ Scope: `app/[locale]/(app)/clients/`, `app/[locale]/(app)/teams/`, `components/a
 - Teams' fully-client-side, uncapped team/member filtering: not actioned — team and member
   counts are already entitlement-capped (`lib/plans/entitlements.ts`,
   `assertCanAddTeam`/`assertCanAddTeamMember`), so "unbounded" is bounded in practice.
+- **Migrating Teams onto real server pagination** (originally this doc's top fix-direction
+  item): declined after implementation-detail review. `optimisticTeams` (the full list) is
+  independently required by `invitableTeams` (invite picker), `atCap`/`overCap` checks, and
+  `DowngradeBlockModal`'s full team review — all on the same page regardless of table
+  pagination. Server-paginating just the table would mean fetching the list twice per load for
+  no real reduction, since team counts are already entitlement-capped (small N). Kept the
+  load-everything-then-filter model; `teams/loading.tsx`'s `TableSkeleton rows={6}` stays an
+  accepted approximation (nothing to derive it from).
 
-## Fix direction
-Migrate Teams onto real server pagination (`page`/`limit` searchParams, `PAGE_SIZE_OPTIONS`),
-matching Clients exactly; extract one shared `<Pagination>` (URL-driven + controlled mode) and
-repoint all four call sites; bring `teams-table.tsx`'s header/row markup up to
-`clients-table.tsx`'s a11y bar; fix both route-level skeletons to derive row count from the
-real page size instead of a hardcoded guess; add the missing cancellation guard and fix the
-dangling `aria-describedby`; localize the shared dialog's default close-button label.
+## Fix direction (resolved — see status callout)
+Bring `teams-table.tsx`'s header/row markup up to `clients-table.tsx`'s a11y bar (done); extract
+one shared `<Pagination>` (URL-driven + controlled mode) and repoint clients/bookings/inquiries/
+teams-sidebar (done); fix `clients/loading.tsx`'s skeleton row count via a shared
+`DEFAULT_PAGE_SIZE` constant (done; `teams/loading.tsx` intentionally left alone, see declined
+item above); add the missing cancellation guard and fix the dangling `aria-describedby` (done);
+localize the shared dialog's default close-button label (done, `common.close`).

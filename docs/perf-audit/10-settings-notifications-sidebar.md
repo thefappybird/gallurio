@@ -8,6 +8,11 @@ elsewhere. It isn't — dashboard/clients/teams already follow the good pattern 
 Settings and notifications are the two real offenders: one generic, dimensionless skeleton
 shape reused across structurally unrelated real content.
 
+> **Status: closed on `fix/shared-performance-fixes`.** Fixed: settings tab-rail chip
+> structure (direction/border/label-visibility) and the panel-body skeleton reshaped after the
+> `account` tab; notifications' 2-line body + meta column + header line-height; sidebar's
+> `role="navigation"` + `aria-label` landmark on all 3 render branches.
+
 ## What's working
 - `components/ui/skeleton.tsx` (`Skeleton`) is a bare, dimensionless primitive by design —
   consumers own their own dimensions. That discipline is what's missing in the two gaps below,

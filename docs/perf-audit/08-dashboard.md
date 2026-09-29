@@ -2,6 +2,15 @@
 
 Scope: `app/[locale]/(app)/dashboard/` — `page.tsx`, `loading.tsx`, `_components/*`, `_data/dashboard-metrics.ts`.
 
+> **Status: closed on `fix/shared-performance-fixes`.** Fixed: skeleton breakpoint mismatches
+> (KPI icon, tabs control), `min-h-*` parity for data-driven cards, `CardTitle`'s new
+> polymorphic `as` prop applied at ~20 dashboard call sites, mini-calendar `AbortController` +
+> per-month/team cache + localized `aria-label`s, `useMemo` on the heatmap/mini-calendar/trend-
+> chart render-heavy computations. **Not actually fixed despite an earlier claim:** the
+> recharts `next/dynamic(...)` wrapping in `page.tsx`/`portfolio-dashboard.tsx` does not
+> code-split, because both call sites are Server Components — Next only splits a dynamic import
+> made from a Client Component boundary. Re-flagged below as still open.
+
 ## What's working
 - No `<table>` anywhere in the module — every list surface (today's events, activity feed,
   upcoming week, recent inquiries, top clients) is a plain `<ul>`, bounded server-side via
@@ -46,11 +55,31 @@ Scope: `app/[locale]/(app)/dashboard/` — `page.tsx`, `loading.tsx`, `_componen
   (`components/ui/card.tsx:36`), so a screen-reader heading-jump skips straight from the greeting
   to the bottom divider.
 
+## Still open (found during this branch's own review)
+- **recharts code-splitting is unresolved.** `next/dynamic(...)` was added around the 5 chart
+  components in `page.tsx`/`portfolio-dashboard.tsx`, but both call sites are Server Components,
+  and Next only code-splits a dynamic import made from a Client Component boundary (bundled
+  Next docs: "When a Server Component dynamically imports a Client Component, automatic code
+  splitting is currently not supported"). The wrapper is a no-op — the chart chunks still ship
+  in the same client bundle as before. Real fix needs the `dynamic()` call moved into a
+  `"use client"` wrapper module per chart, following the existing
+  `booked-hours-heatmap-client.tsx` pattern, with the `loading:` fallback sized to match each
+  real card (the current shared fallback defaults to `min-h-48`, shorter than some real cards —
+  would itself reopen a small CLS gap if the split ever did take effect through a client
+  boundary, so size it per-card when this gets redone).
+- **Heading hierarchy fix over-corrected in one place**: the 5 cards inside the "Operations"
+  section (`mini-booking-calendar.tsx`, `quick-add.tsx`, `todays-events-list.tsx`,
+  `upcoming-week-list.tsx`, `activity-feed.tsx`) got `as="h2"`, making them heading-level peers
+  of the "Operations" `<h2>` divider itself rather than its children — should be `as="h3"`.
+  Separately, `booked-hours-heatmap.tsx`, `collection-coverage-card.tsx`, and
+  `portfolio-dashboard.tsx` wrap their `CardTitle` in a `<span>`, which isn't valid (a heading
+  isn't phrasing content) — wrapper should be a `<div>`.
+
 ## Fix direction
 Match the fixable skeleton dimensions (breakpoint-driven icon/tabs, min-height parity for
-variable cards); add `AbortController` cancellation + de-dupe to the mini-calendar fetch (stay
-off react-query — deliberately editor-only per `01-cached-fetches-server-state.md`); wrap the
-recharts imports in `next/dynamic(..., { ssr: true })` (must stay `ssr:true` — `page.tsx` is a
-Server Component, and `ssr:false` isn't legal from that boundary, would also reopen a CLS gap);
-add an `as?` prop to `CardTitle` and use it at dashboard's ~15 call sites; wrap the identified
-render-heavy computations in `useMemo`; localize the 4 stray `aria-label`s.
+variable cards) — done; add `AbortController` cancellation + de-dupe to the mini-calendar fetch
+(stay off react-query — deliberately editor-only per `01-cached-fetches-server-state.md`) —
+done; add an `as?` prop to `CardTitle` and use it at dashboard's ~20 call sites — done, with the
+"Still open" heading-level fix above still pending; wrap the identified render-heavy
+computations in `useMemo` — done; localize the 4 stray `aria-label`s — done. recharts
+code-splitting needs redoing per "Still open" above.
