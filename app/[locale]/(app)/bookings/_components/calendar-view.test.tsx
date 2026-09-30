@@ -3,6 +3,7 @@ import { render, screen, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import { calendarWindow } from "@/lib/bookings/calendar-window";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 import type { CalendarEvent } from "./booking-calendar";
 import { CalendarView } from "./calendar-view";
 
@@ -132,6 +133,16 @@ describe("CalendarView window navigation", () => {
     expect(window.location.search).toBe("?team=a&date=2027-01-10");
   });
 
+  // Workspace tz far from the runner tz: one of the two is >12h away from any runner offset.
+  it.each(["Pacific/Kiritimati", "Pacific/Pago_Pago"])(
+    "shows the requested wall date (Jan 10) when defaultDate is the workspace-tz noon instant (%s)",
+    (tz) => {
+      const noon = dayBoundInTz("2027-01-10", tz, 12, 0, 0, 0);
+      renderView({ defaultDate: noon, workspaceTimezone: tz });
+      expect([cal.date.getFullYear(), cal.date.getMonth(), cal.date.getDate()]).toEqual([2027, 0, 10]);
+    }
+  );
+
   it("follows a ?date that moves outside the visible grid (back button), ignores one inside it", () => {
     const first = new Date("2026-09-15T00:00:00Z");
     const view = renderView({ defaultDate: first });
@@ -146,7 +157,7 @@ describe("CalendarView window navigation", () => {
     expect(cal.date).toBe(shownBefore);
     const far = new Date("2027-01-10T00:00:00Z");
     rerender(far);
-    expect(cal.date).toBe(far);
+    expect([cal.date.getFullYear(), cal.date.getMonth(), cal.date.getDate()]).toEqual([2027, 0, 10]);
   });
 });
 

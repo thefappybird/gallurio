@@ -70,6 +70,12 @@ type Props = {
   onWindowPendingChange?: (pending: boolean) => void;
 };
 
+/** Local-noon Date carrying the wall Y/M/D that `d` has in `tz` (what RBC and visibleGridRange read). */
+function wallDateAsLocal(d: Date, tz: string): Date {
+  const [y, m, day] = isoDateInTz(d, tz).split("-").map(Number);
+  return new Date(y, m - 1, day, 12);
+}
+
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -224,7 +230,10 @@ export function CalendarView({
   const inFlightRef = useRef<Set<string>>(new Set());
 
   const [view, setView] = useState<View>("month");
-  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
+  // `defaultDate` is the noon instant of the requested wall date in the WORKSPACE tz;
+  // react-big-calendar reads local Y/M/D, so re-anchor the wall date to local noon.
+  const anchorDate = defaultDate ? wallDateAsLocal(defaultDate, workspaceTimezone || FALLBACK_TZ) : undefined;
+  const [date, setDate] = useState<Date>(anchorDate ?? new Date());
 
   // Candles exist only inside the server window; leaving it refetches via ?date.
   const { onVisibleChange, isPending: windowPending } = useCalendarWindowNav({
@@ -238,17 +247,15 @@ export function CalendarView({
   // Follow ?date when it moves the calendar somewhere the user isn't looking
   // (browser back/forward). Our own replace / slot clicks land inside the
   // visible grid, so they never yank the view.
-  const urlDateKey = defaultDate
-    ? `${defaultDate.getFullYear()}-${defaultDate.getMonth()}-${defaultDate.getDate()}`
-    : null;
+  const urlDateKey = anchorDate ? isoDate(anchorDate) : null;
   const [syncedUrlDateKey, setSyncedUrlDateKey] = useState(urlDateKey);
   if (urlDateKey !== syncedUrlDateKey) {
     setSyncedUrlDateKey(urlDateKey);
-    if (defaultDate) {
+    if (anchorDate) {
       const tzForRange = workspaceTimezone || FALLBACK_TZ;
       const shown = visibleGridRange(date, view, tzForRange);
-      const target = visibleGridRange(defaultDate, "day", tzForRange);
-      if (!isRangeInsideWindow(target, shown)) setDate(defaultDate);
+      const target = visibleGridRange(anchorDate, "day", tzForRange);
+      if (!isRangeInsideWindow(target, shown)) setDate(anchorDate);
     }
   }
   // Opt-out convention (see parseBookingsToggleFilters): absent -> ON.
