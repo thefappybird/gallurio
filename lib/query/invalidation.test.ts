@@ -120,7 +120,7 @@ const table: Array<{
     name: "workspace.updated",
     event: { type: "workspace.updated" },
     keys: [["ws", W]],
-    routes: ["/"],
+    routes: ["/dashboard", "/bookings", "/inquiries", "/clients", "/teams", "/notifications"],
   },
 ];
 

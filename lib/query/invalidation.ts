@@ -67,7 +67,9 @@ export function routesForEvent(event: DataEvent): string[] {
     case "team.updated":
       return ["/teams", "/bookings", "/inquiries", "/dashboard"];
     case "workspace.updated":
-      return ["/"];
+      // CRM routes with workspace-derived server data. Not /portfolio (editor) or /settings
+      // (actor's action already revalidates; teammate's form must not refresh mid-edit).
+      return ["/dashboard", "/bookings", "/inquiries", "/clients", "/teams", "/notifications"];
   }
 }
 
