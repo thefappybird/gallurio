@@ -163,7 +163,7 @@ export function NotificationsListPage({
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                       {formatRelativeTime(item.createdAt, locale)}
                     </span>
                     {!item.read && (

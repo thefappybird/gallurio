@@ -86,7 +86,7 @@ function NotificationRow({
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
           {formatRelativeTime(notification.createdAt, locale)}
         </span>
         {!notification.read && (
