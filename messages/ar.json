@@ -889,7 +889,9 @@
         "prevMonth": "الشهر السابق",
         "nextMonth": "الشهر التالي",
         "jumpToToday": "الانتقال إلى الشهر الحالي",
-        "dayBookingCount": "{count, plural, zero {# حجز} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}"
+        "dayBookingCount": "{count, plural, zero {# حجز} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}",
+        "loadError": "تعذّر تحميل هذا الشهر.",
+        "retry": "إعادة المحاولة"
       },
       "calendarTeam": {
         "label": "تصفية حسب الفريق",

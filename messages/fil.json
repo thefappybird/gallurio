@@ -889,7 +889,9 @@
         "prevMonth": "Nakaraang buwan",
         "nextMonth": "Susunod na buwan",
         "jumpToToday": "Pumunta sa kasalukuyang buwan",
-        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}"
+        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}",
+        "loadError": "Hindi ma-load ang buwang ito.",
+        "retry": "Subukan muli"
       },
       "calendarTeam": {
         "label": "I-filter ayon sa team",

@@ -889,7 +889,9 @@
         "prevMonth": "Bulan sebelumnya",
         "nextMonth": "Bulan berikutnya",
         "jumpToToday": "Lompat ke bulan ini",
-        "dayBookingCount": "{count, plural, other {# pemesanan}}"
+        "dayBookingCount": "{count, plural, other {# pemesanan}}",
+        "loadError": "Gagal memuat bulan ini.",
+        "retry": "Coba lagi"
       },
       "calendarTeam": {
         "label": "Filter berdasarkan tim",

@@ -889,7 +889,9 @@
         "prevMonth": "Previous month",
         "nextMonth": "Next month",
         "jumpToToday": "Jump to current month",
-        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}"
+        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}",
+        "loadError": "Couldn't load this month.",
+        "retry": "Retry"
       },
       "calendarTeam": {
         "label": "Filter by team",

@@ -889,7 +889,9 @@
         "prevMonth": "เดือนก่อนหน้า",
         "nextMonth": "เดือนถัดไป",
         "jumpToToday": "ไปที่เดือนปัจจุบัน",
-        "dayBookingCount": "{count, plural, other {# การจอง}}"
+        "dayBookingCount": "{count, plural, other {# การจอง}}",
+        "loadError": "โหลดเดือนนี้ไม่สำเร็จ",
+        "retry": "ลองอีกครั้ง"
       },
       "calendarTeam": {
         "label": "กรองตามทีม",
