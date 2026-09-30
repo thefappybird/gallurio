@@ -32,6 +32,6 @@ export function queryKeys(workspaceId: string) {
     teams: (...rest: unknown[]) => k("teams", ...rest),
     memberActivity: (userId?: string, filters?: unknown) =>
       userId === undefined ? k("memberActivity") : filters === undefined ? k("memberActivity", userId) : k("memberActivity", userId, filters),
-    shifts: (dates: string[]) => k("shifts", dates),
+    shifts: (dates?: string[]) => (dates === undefined ? k("shifts") : k("shifts", dates)),
   };
 }

@@ -13,11 +13,17 @@ export function keysForEvent(workspaceId: string, event: DataEvent): QueryKey[] 
       const inquiryId = event.type === "booking.updated" ? event.inquiryId : undefined;
       return [
         ...(id ? [q.booking(id), q.bookingActivity(id)] : []),
+        // Import can update existing bookings, so their whole detail domains are stale.
+        ...(event.type === "bookings.imported" ? [q.booking(), q.bookingActivity()] : []),
         q.bookings(),
         q.calendar(),
         q.dashboard(),
         // Whole domain: a reassignment sends only the new clientId; old client is stale too.
         q.clients(),
+        // Client-detail modal queries (bookings/payments), incl. the OLD client on reassignment.
+        q.client(),
+        // Conflict previews: a just-created/moved booking must show up in them.
+        q.shifts(),
         ...(inquiryId ? [q.inquiries(), q.inquiry(inquiryId)] : []),
       ];
     }
@@ -29,7 +35,7 @@ export function keysForEvent(workspaceId: string, event: DataEvent): QueryKey[] 
         q.inquiry(event.inquiryId),
         q.calendar(),
         q.dashboard(),
-        ...(event.bookingId ? [q.booking(event.bookingId), q.bookings()] : []),
+        ...(event.bookingId ? [q.booking(event.bookingId), q.bookings(), q.client(), q.shifts()] : []),
       ];
     case "client.created":
     case "client.updated":

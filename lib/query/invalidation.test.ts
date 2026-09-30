@@ -27,7 +27,16 @@ const table: Array<{
   {
     name: "booking.created (no inquiry)",
     event: { type: "booking.created", bookingId: "b1", clientId: "c1" },
-    keys: [p("booking", "b1"), p("bookingActivity", "b1"), p("bookings"), p("calendar"), p("dashboard"), p("clients")],
+    keys: [
+      p("booking", "b1"),
+      p("bookingActivity", "b1"),
+      p("bookings"),
+      p("calendar"),
+      p("dashboard"),
+      p("clients"),
+      p("client"),
+      p("shifts"),
+    ],
     routes: ["/bookings", "/dashboard", "/clients"],
   },
   {
@@ -40,6 +49,8 @@ const table: Array<{
       p("calendar"),
       p("dashboard"),
       p("clients"),
+      p("client"),
+      p("shifts"),
       p("inquiries"),
       p("inquiry", "i1"),
     ],
@@ -48,7 +59,16 @@ const table: Array<{
   {
     name: "bookings.imported",
     event: { type: "bookings.imported" },
-    keys: [p("bookings"), p("calendar"), p("dashboard"), p("clients")],
+    keys: [
+      p("booking"),
+      p("bookingActivity"),
+      p("bookings"),
+      p("calendar"),
+      p("dashboard"),
+      p("clients"),
+      p("client"),
+      p("shifts"),
+    ],
     routes: ["/bookings", "/dashboard", "/clients"],
   },
   {
@@ -66,7 +86,16 @@ const table: Array<{
   {
     name: "inquiry.updated with booking",
     event: { type: "inquiry.updated", inquiryId: "i1", bookingId: "b1" },
-    keys: [p("inquiries"), p("inquiry", "i1"), p("calendar"), p("dashboard"), p("booking", "b1"), p("bookings")],
+    keys: [
+      p("inquiries"),
+      p("inquiry", "i1"),
+      p("calendar"),
+      p("dashboard"),
+      p("booking", "b1"),
+      p("bookings"),
+      p("client"),
+      p("shifts"),
+    ],
     routes: ["/inquiries", "/dashboard", "/bookings"],
   },
   {
