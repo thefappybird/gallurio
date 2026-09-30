@@ -18,9 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
-import { ImportSheet } from "./import-sheet";
-import { BookingsExportDialog } from "./bookings-export-dialog";
-import { InvoiceThemeDialog } from "./invoice-theme-dialog";
+import {
+  BookingsExportDialogLazy,
+  ImportSheetLazy,
+  InvoiceThemeDialogLazy,
+  preloadExportDialog,
+  preloadImportSheet,
+  preloadInvoiceThemeDialog,
+} from "./bookings-toolbar-dynamic";
 import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -254,6 +259,8 @@ export function BookingsToolbar({
             variant="outline"
             size="sm"
             className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onPointerEnter={preloadImportSheet}
+            onFocus={preloadImportSheet}
             onClick={() => setImportOpen(true)}
           >
             <UploadIcon className="size-4" />
@@ -267,6 +274,8 @@ export function BookingsToolbar({
           size="sm"
           className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
           title={tBookings("export.tooltip")}
+          onPointerEnter={preloadExportDialog}
+          onFocus={preloadExportDialog}
           onClick={() => setExportOpen(true)}
         >
           <DownloadIcon className="size-4" />
@@ -277,27 +286,33 @@ export function BookingsToolbar({
             variant="outline"
             size="sm"
             className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onPointerEnter={preloadInvoiceThemeDialog}
+            onFocus={preloadInvoiceThemeDialog}
             onClick={() => setInvoiceThemeOpen(true)}
           >
             {t("invoiceTheme")}
           </Button>
         ) : null}
-        <BookingsExportDialog
-          open={exportOpen}
-          onClose={() => setExportOpen(false)}
-          baseParams={exportParams}
-          teams={teams}
-        />
-        <ImportSheet
-          open={importOpen}
-          onClose={() => setImportOpen(false)}
-          defaultCurrency={defaultCurrency}
-          workspaceTimezone={workspaceTimezone}
-          teams={teams}
-        />
-        {initialInvoiceTheme ? (
-          <InvoiceThemeDialog
-            open={invoiceThemeOpen}
+        {exportOpen ? (
+          <BookingsExportDialogLazy
+            open
+            onClose={() => setExportOpen(false)}
+            baseParams={exportParams}
+            teams={teams}
+          />
+        ) : null}
+        {importOpen ? (
+          <ImportSheetLazy
+            open
+            onClose={() => setImportOpen(false)}
+            defaultCurrency={defaultCurrency}
+            workspaceTimezone={workspaceTimezone}
+            teams={teams}
+          />
+        ) : null}
+        {initialInvoiceTheme && invoiceThemeOpen ? (
+          <InvoiceThemeDialogLazy
+            open
             onClose={() => setInvoiceThemeOpen(false)}
             initialTheme={initialInvoiceTheme}
             business={invoiceThemeBusiness}
