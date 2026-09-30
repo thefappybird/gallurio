@@ -337,7 +337,9 @@ export function CalendarView({
       newCandleStart: Date,
       newCandleEnd: Date
     ) => {
-      const prev = optimisticEvents;
+      // Roll back only this booking's candles: restoring the whole array would
+      // clobber server events that arrived while the PATCH was in flight.
+      const prevCandles = optimisticEvents.filter((e) => e.bookingId === event.bookingId);
 
       const newSession: Session = { startAt: newCandleStart, endAt: newCandleEnd };
       const newSessions = bookingSessions.map((s, idx) =>
@@ -368,7 +370,7 @@ export function CalendarView({
         loading: t("updating"),
         success: t("updated"),
         error: (err: unknown) => {
-          setOptimisticEvents(prev);
+          setOptimisticEvents((cur) => [...cur.filter((e) => e.bookingId !== event.bookingId), ...prevCandles]);
           const failure = err as PatchResult;
           if (failure?.kind === "conflict" && failure.conflicts.length > 0) {
             const first = failure.conflicts[0];

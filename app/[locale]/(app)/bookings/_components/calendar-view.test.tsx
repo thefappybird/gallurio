@@ -193,6 +193,28 @@ describe("CalendarView drag-to-reschedule (single PATCH)", () => {
     expect(screen.getByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeInTheDocument();
   });
 
+  it("409 rollback restores only the dragged booking, keeping server events that arrived mid-PATCH", async () => {
+    let resolveFetch!: (v: unknown) => void;
+    mockFetch.mockReturnValue(new Promise((r) => (resolveFetch = r)));
+    const other = makeEvent({ id: "b3_s0_2090-01-10", bookingId: "b3", title: "Arrived Later" });
+    const view = renderView({ events: [futureEvent()] });
+    let drop!: Promise<void>;
+    await act(async () => {
+      drop = cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <CalendarView events={[futureEvent(), other]} messages={calMessages} workspaceTimezone={TZ} window={windowIso} />
+      </NextIntlClientProvider>
+    );
+    await act(async () => {
+      resolveFetch(jsonRes(409, { error: "conflict", conflicts: [shift("o1", "Other")] }));
+      await drop;
+    });
+    expect(screen.getByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeInTheDocument();
+    expect(screen.getByText(/^Arrived Later@/)).toBeInTheDocument();
+  });
+
   it("409 completed_booking_read_only: reverts and shows the generic update error", async () => {
     mockFetch.mockResolvedValue(jsonRes(409, { error: "completed_booking_read_only" }));
     renderView({ events: [futureEvent()] });
