@@ -91,20 +91,7 @@ export function TeamsPageClient({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // A create/edit/deactivate/reactivate dialog's onDone triggers this after
-  // its own optimistic update has already landed, so the table is already
-  // showing the correct row — this just reconciles server data silently in
-  // the background (no skeleton; that would just flash over data that's
-  // already right).
-  const [, startRefreshTransition] = useTransition();
-
   const [optimisticTeams, dispatch] = useOptimistic(initialTeams, applyOptimistic);
-
-  function refreshTeams() {
-    startRefreshTransition(() => {
-      router.refresh();
-    });
-  }
 
   // Search — URL-driven (?q=) with a debounced input, mirroring the clients
   // toolbar so back/forward and shared links restore the filter.
@@ -350,7 +337,6 @@ export function TeamsPageClient({
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         defaultTeamIds={inviteTeamIds}
-        onDone={refreshTeams}
       />
 
       {/* Create / Rename / Color / Delete dialogs */}
@@ -359,7 +345,6 @@ export function TeamsPageClient({
         onOpenChange={setCreateOpen}
         onCreated={(team) => dispatch({ type: "add", team })}
         onCapExceeded={() => setUpsellOpen(true)}
-        onDone={refreshTeams}
       />
       {editTeam && (
         <EditDialog
@@ -368,8 +353,7 @@ export function TeamsPageClient({
           onOpenChange={(open) => !open && setEditTeam(null)}
           onRenamed={(name) => dispatch({ type: "rename", id: editTeam.id, name })}
           onColorChanged={(color) => dispatch({ type: "color", id: editTeam.id, color })}
-          onDone={refreshTeams}
-        />
+          />
       )}
       {deactivateTeam && (
         <DeactivateDialog
@@ -380,8 +364,7 @@ export function TeamsPageClient({
           onFailed={(restored) =>
             dispatch({ type: "reactivate", id: restored.id })
           }
-          onDone={refreshTeams}
-        />
+          />
       )}
       {reactivateTeam && (
         <ReactivateDialog
@@ -392,8 +375,7 @@ export function TeamsPageClient({
           onFailed={(restored) =>
             dispatch({ type: "deactivate", id: restored.id })
           }
-          onDone={refreshTeams}
-        />
+          />
       )}
 
       <UpsellDialog

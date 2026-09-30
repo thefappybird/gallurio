@@ -62,6 +62,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/use-data-events")>()),
+  useInvalidateFor: () => invalidateFor,
+}));
+
 const createTeamMock = vi.fn();
 vi.mock("../_actions", () => ({
   createTeamAction: (...args: unknown[]) => createTeamMock(...args),
@@ -120,6 +126,7 @@ describe("TeamsPageClient", () => {
   beforeEach(() => {
     routerPush.mockClear();
     routerRefresh.mockClear();
+    invalidateFor.mockClear();
     createTeamMock.mockReset();
   });
 
@@ -129,7 +136,7 @@ describe("TeamsPageClient", () => {
     expect(screen.getAllByText("Wedding crew")).toHaveLength(2);
   });
 
-  it("creating a team refreshes the page after the server action succeeds", async () => {
+  it("creating a team invalidates team.updated after the server action succeeds", async () => {
     createTeamMock.mockResolvedValue({
       team: { id: "t3", name: "New crew", color: "#000000", isDefault: false, isActive: true, memberCount: 0 },
     });
@@ -143,8 +150,9 @@ describe("TeamsPageClient", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: /^create team$/i }));
 
     await waitFor(() => expect(createTeamMock).toHaveBeenCalledWith({ name: "New crew", color: expect.any(String) }));
-    // Refresh is now owned by the page (onDone), not the dialog itself.
-    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    // Refresh is owned by the data-event invalidation, not a direct router.refresh.
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t3" }));
+    expect(routerRefresh).not.toHaveBeenCalled();
   });
 
   it("does not flash a full-table skeleton after create, since the optimistic row is already correct", async () => {
@@ -160,7 +168,7 @@ describe("TeamsPageClient", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: /^create team$/i }));
 
-    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledTimes(1));
     expect(screen.getAllByText("New crew").length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Loading table data")).not.toBeInTheDocument();
   });
@@ -177,7 +185,7 @@ describe("TeamsPageClient", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: /^create team$/i }));
 
     await waitFor(() => expect(createTeamMock).toHaveBeenCalled());
-    expect(routerRefresh).not.toHaveBeenCalled();
+    expect(invalidateFor).not.toHaveBeenCalled();
   });
 
   it("hides Invite member and Create team for non-owners, but keeps View members visible", () => {

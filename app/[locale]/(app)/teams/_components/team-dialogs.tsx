@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,9 +83,10 @@ export function CreateDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: (team: TeamRow) => void;
   onCapExceeded: () => void;
-  onDone: () => void;
+  onDone?: () => void;
 }) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(TEAM_COLOR_PALETTE[0]);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -129,10 +131,14 @@ export function CreateDialog({
         onCreated(result.team);
         toast.success(t("toasts.created"));
         handleOpenChange(false);
-        // Defer so the optimistic row commits/paints before the refresh
-        // transition flips on the table skeleton (mirrors the microtask
-        // defer used for search sync in teams-page-client.tsx).
-        Promise.resolve().then(() => onDone());
+        // Defer so the optimistic row commits/paints before the invalidation
+        // refresh lands (mirrors the microtask defer used for search sync in
+        // teams-page-client.tsx).
+        const teamId = result.team.id;
+        Promise.resolve().then(() => {
+          invalidateFor({ type: "team.updated", teamId });
+          onDone?.();
+        });
       }
     });
   }
@@ -212,9 +218,10 @@ export function EditDialog({
   onOpenChange: (open: boolean) => void;
   onRenamed: (name: string) => void;
   onColorChanged: (color: string) => void;
-  onDone: () => void;
+  onDone?: () => void;
 }) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [name, setName] = useState(team.name);
   const [color, setColor] = useState(team.color);
   const [error, setError] = useState<string | null>(null);
@@ -280,7 +287,8 @@ export function EditDialog({
 
       toast.success(t("toasts.saved"));
       onOpenChange(false);
-      onDone();
+      invalidateFor({ type: "team.updated", teamId: team.id });
+      onDone?.();
     });
   }
 
@@ -357,9 +365,10 @@ export function DeactivateDialog({
   onOpenChange: (open: boolean) => void;
   onDeactivated: () => void;
   onFailed: (team: TeamRow) => void;
-  onDone: () => void;
+  onDone?: () => void;
 }) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [pending, startTransition] = useTransition();
 
   function handleOpenChange(next: boolean) {
@@ -378,7 +387,8 @@ export function DeactivateDialog({
       }
       toast.success(t("toasts.deactivated"));
       onOpenChange(false);
-      onDone();
+      invalidateFor({ type: "team.updated", teamId: team.id });
+      onDone?.();
     });
   }
 
@@ -426,9 +436,10 @@ export function ReactivateDialog({
   onOpenChange: (open: boolean) => void;
   onReactivated: () => void;
   onFailed: (team: TeamRow) => void;
-  onDone: () => void;
+  onDone?: () => void;
 }) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [pending, startTransition] = useTransition();
 
   function handleOpenChange(next: boolean) {
@@ -447,7 +458,8 @@ export function ReactivateDialog({
       }
       toast.success(t("toasts.reactivated"));
       onOpenChange(false);
-      onDone();
+      invalidateFor({ type: "team.updated", teamId: team.id });
+      onDone?.();
     });
   }
 

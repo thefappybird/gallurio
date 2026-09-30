@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { inviteMemberAction, checkInviteEligibilityAction } from "../_invite-action";
 import type { InvitableTeam } from "../_types";
@@ -42,6 +43,7 @@ export function InviteForm({
   onDone,
 }: InviteFormProps) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [email, setEmail] = useState("");
   const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
   const [leadOnTeamIds, setLeadOnTeamIds] = useState<Set<string>>(new Set());
@@ -152,6 +154,7 @@ export function InviteForm({
       toast.success(t("invite.toasts.sent"));
       onInvited?.(email.trim().toLowerCase());
       onOpenChange(false);
+      invalidateFor({ type: "team.updated", teamId: null });
       onDone?.();
     });
   }
