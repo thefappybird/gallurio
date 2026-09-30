@@ -21,7 +21,6 @@ vi.mock("@/lib/i18n/navigation", () => ({
 vi.mock("@/hooks/use-data-events", () => ({
   useInvalidateFor: () => mockInvalidateFor,
 }));
-vi.mock("react-big-calendar", () => ({ Views: { MONTH: "month", WEEK: "week", DAY: "day" } }));
 vi.mock("./booking-wizard-modal", () => ({ BookingWizardModal: () => null }));
 vi.mock("./team-filter-control", () => ({ TeamFilterControl: () => null }));
 const toastErrors: string[] = [];
@@ -45,8 +44,8 @@ type CalProps = {
   date: Date;
 };
 let cal: CalProps;
-vi.mock("./booking-calendar", () => ({
-  BookingCalendar: (props: CalProps) => {
+vi.mock("./booking-calendar-dynamic", () => ({
+  BookingCalendarLazy: (props: CalProps) => {
     cal = props;
     return (
       <ul>

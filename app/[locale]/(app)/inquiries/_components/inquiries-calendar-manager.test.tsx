@@ -38,8 +38,8 @@ type CalProps = {
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
 };
 let cal: CalProps;
-vi.mock("../../bookings/_components/booking-calendar", () => ({
-  BookingCalendar: (props: CalProps) => {
+vi.mock("../../bookings/_components/booking-calendar-dynamic", () => ({
+  BookingCalendarLazy: (props: CalProps) => {
     cal = props;
     return (
       <ul>

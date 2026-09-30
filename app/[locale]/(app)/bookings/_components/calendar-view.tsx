@@ -5,16 +5,17 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import {
+import type {
   BookingCalendar,
-  type CalendarEvent,
-  type AnyCalendarEvent,
+  CalendarEvent,
+  AnyCalendarEvent,
 } from "./booking-calendar";
+import { BookingCalendarLazy } from "./booking-calendar-dynamic";
 import { TeamFilterControl } from "./team-filter-control";
 import type { BookingTeamOption } from "../_data/team-options";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
-import { Views, type View } from "react-big-calendar";
+import type { View } from "react-big-calendar";
 import {
   type Session,
 } from "@/lib/bookings/session-edits";
@@ -246,7 +247,7 @@ export function CalendarView({
   // that gap. pendingIds remains the source of truth for the visual dim.
   const inFlightRef = useRef<Set<string>>(new Set());
 
-  const [view, setView] = useState<View>(Views.MONTH);
+  const [view, setView] = useState<View>("month");
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
 
   // Candles exist only inside the server window; leaving it refetches via ?date.
@@ -671,7 +672,7 @@ export function CalendarView({
 
   return (
     <>
-      <BookingCalendar
+      <BookingCalendarLazy
         events={eventsWithConflicts}
         defaultDate={defaultDate}
         view={view}
