@@ -291,6 +291,44 @@ describe("BookingsTable", () => {
     expect(totalValue.className).toMatch(/tabular-nums/);
   });
 
+  it("sets scope=col on every header and aria-sort only on sortable columns", () => {
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const ths = Array.from(container.querySelectorAll("thead th"));
+    expect(ths.every((th) => th.getAttribute("scope") === "col")).toBe(true);
+    expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
+      "none",
+      "none",
+      "ascending",
+      "none",
+      "none",
+      null,
+    ]);
+  });
+
+  it("makes the sort trigger a button that toggles aria-sort", () => {
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const dateTh = within(table).getByRole("columnheader", { name: /date/i });
+    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
+    expect(dateTh).toHaveAttribute("aria-sort", "none");
+    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
+    expect(dateTh).toHaveAttribute("aria-sort", "descending");
+  });
+
   it("renders a row action trigger", () => {
     renderWithProviders(
       <BookingsTable

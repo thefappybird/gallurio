@@ -409,33 +409,46 @@ export function BookingsTable({
                 {hg.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
+                  const ariaSort: "ascending" | "descending" | "none" | undefined =
+                    canSort
+                      ? sorted === "asc"
+                        ? "ascending"
+                        : sorted === "desc"
+                          ? "descending"
+                          : "none"
+                      : undefined;
+                  const label = flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  );
                   return (
                     <th
                       key={header.id}
-                      className={cn(
-                        "px-3 py-2 font-medium text-start",
-                        canSort && "cursor-pointer select-none"
-                      )}
-                      onClick={
-                        canSort
-                          ? header.column.getToggleSortingHandler()
-                          : undefined
-                      }
+                      scope="col"
+                      aria-sort={ariaSort}
+                      className="px-3 py-2 font-medium text-start"
                     >
-                      <span className="inline-flex items-center gap-1">
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {canSort &&
-                          (sorted === "asc" ? (
-                            <ArrowUpIcon className="size-3" />
+                      {canSort ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                          {label}
+                          {sorted === "asc" ? (
+                            <ArrowUpIcon className="size-3" aria-hidden="true" />
                           ) : sorted === "desc" ? (
-                            <ArrowDownIcon className="size-3" />
+                            <ArrowDownIcon className="size-3" aria-hidden="true" />
                           ) : (
-                            <ArrowUpDownIcon className="size-3 opacity-40" />
-                          ))}
-                      </span>
+                            <ArrowUpDownIcon
+                              className="size-3 opacity-40"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </button>
+                      ) : (
+                        label
+                      )}
                     </th>
                   );
                 })}
