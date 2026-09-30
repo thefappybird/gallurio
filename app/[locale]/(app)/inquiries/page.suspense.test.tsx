@@ -15,7 +15,6 @@ vi.mock("@/lib/db/queries/inquiries", () => ({
   listInquiries: vi.fn(), getInquiryStatusCounts: vi.fn(), getInquiryWithDraft: vi.fn(),
 }));
 vi.mock("@/lib/db/queries/inquiry-conflicts", () => ({ computeInquiryConflicts: vi.fn() }));
-vi.mock("../bookings/_data/bookings-queries", () => ({ getBookingById: vi.fn() }));
 vi.mock("../bookings/_data/calendar-events", () => ({ parseCalendarDate: vi.fn() }));
 vi.mock("../bookings/_data/team-options", () => ({ getBookingTeamOptions: vi.fn() }));
 vi.mock("./_data/calendar-data", () => ({ loadInquiriesCalendarData: vi.fn() }));

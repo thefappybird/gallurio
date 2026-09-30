@@ -134,22 +134,6 @@ export async function listBookings(
   return { rows, total: rows.length };
 }
 
-export async function getBookingById(
-  workspaceId: WorkspaceId,
-  id: string | Types.ObjectId,
-  // When provided (non-owner callers), the booking's teamId must be in this set
-  // or the lookup returns null — a member cannot fetch another team's booking by
-  // id. `undefined` (owner) applies no team restriction.
-  allowedTeamIds?: readonly string[]
-): Promise<BookingDoc | null> {
-  const query: Record<string, unknown> = { _id: id, workspaceId };
-  if (allowedTeamIds !== undefined) {
-    query.teamId = { $in: toTeamObjectIds(allowedTeamIds) };
-  }
-  query.status = { $ne: "draft" };
-  return Booking.findOne(query).lean();
-}
-
 export async function getBookingActivity(
   workspaceId: WorkspaceId,
   id: string | Types.ObjectId,

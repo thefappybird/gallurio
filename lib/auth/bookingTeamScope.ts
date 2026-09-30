@@ -14,8 +14,7 @@ type ScopeContext = {
 // still a member of, so their historical work stays visible. An empty array is
 // returned (not undefined) when a non-owner has no memberships, so the caller's
 // `$in` filter matches nothing (fail-closed). Pass the result straight to
-// `listBookings({ teamIds })` / `getBookingById(..., allowedTeamIds)` or build a
-// `{ teamId: { $in } }` filter from it.
+// `listBookings({ teamIds })` or build a `{ teamId: { $in } }` filter from it.
 export async function resolveBookingTeamScope(
   ctx: ScopeContext,
 ): Promise<string[] | undefined> {

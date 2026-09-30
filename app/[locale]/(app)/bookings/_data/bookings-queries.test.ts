@@ -9,7 +9,6 @@ import { countQueries } from "@/test-utils/query-counter";
 import { Booking, ActivityLog } from "@/lib/db/models";
 import {
   listBookings,
-  getBookingById,
   getBookingActivity,
 } from "./bookings-queries";
 
@@ -340,49 +339,6 @@ expect(queries.map((q) => `${q.collection}.${q.method}`).sort()).toEqual([
       const { rows } = await listBookings(workspaceId, { teamIds: [String(teamA)] });
       expect(rows).toHaveLength(1);
     });
-  });
-});
-
-describe("getBookingById", () => {
-  it("returns the doc when the workspace matches", async () => {
-    const b = await seedBooking(workspaceId, { title: "T" });
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found?.title).toBe("T");
-  });
-
-  it("returns null for a doc belonging to another workspace (tenant isolation)", async () => {
-    const b = await seedBooking(otherWorkspaceId);
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found).toBeNull();
-  });
-
-  it("returns null for a non-existent id", async () => {
-    const found = await getBookingById(workspaceId, new Types.ObjectId());
-    expect(found).toBeNull();
-  });
-
-  it("returns the doc when its team is in allowedTeamIds", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamA, title: "Mine" });
-    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
-    expect(found?.title).toBe("Mine");
-  });
-
-  it("returns null when the booking's team is NOT in allowedTeamIds (member cannot fetch another team's booking)", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamB });
-    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
-    expect(found).toBeNull();
-  });
-
-  it("returns null for an empty allowedTeamIds array (member with no teams)", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamA });
-    const found = await getBookingById(workspaceId, b._id, []);
-    expect(found).toBeNull();
-  });
-
-  it("owner (allowedTeamIds undefined) fetches regardless of team", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamB });
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found).not.toBeNull();
   });
 });
 
