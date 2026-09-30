@@ -12,6 +12,7 @@ import { bookingRowAmount } from "./_data/booking-rows";
 import { getWorkspaceRateMap, NO_CONVERSION } from "@/lib/pricing/workspaceRates";
 import { parseBookingsToggleFilters } from "./_data/booking-filters";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { calendarWindow } from "@/lib/bookings/calendar-window";
 import { type BookingsView } from "./_components/view-toggle";
 import { BookingsPendingShell } from "./_components/bookings-pending-shell";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
@@ -171,6 +172,7 @@ export default async function BookingsPage({
   //    Limit 1000 covers all realistic workspace sizes and avoids per-keystroke
   //    API calls in the modal.
   const defaultDate = parseCalendarDate(sp.date);
+  const eventsWindow = calendarWindow(defaultDate, filters.workspaceTimezone);
   const [{ rows: bookings, total: bookingsTotal }, allClients, events] = await Promise.all([
     view === "calendar"
       ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
@@ -330,6 +332,7 @@ export default async function BookingsPage({
               invoiceThemeBusiness={invoiceThemeBusiness}
               colorMode={colorMode}
               teamColorMap={teamColorMap}
+              window={{ start: eventsWindow.start.toISOString(), end: eventsWindow.end.toISOString() }}
               messages={{
                 today: tCal("today"),
                 previous: tCal("previous"),

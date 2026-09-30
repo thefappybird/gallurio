@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/queries/inquiries";
 import { getBookingById } from "../bookings/_data/bookings-queries";
 import { parseCalendarDate } from "../bookings/_data/calendar-events";
+import { calendarWindow } from "@/lib/bookings/calendar-window";
 import { loadInquiriesCalendarData } from "./_data/calendar-data";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
@@ -134,6 +135,8 @@ export default async function InquiriesPage({
   const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
 
   // Calendar data: windowed inquiries + bookings (1 query each).
+  const calendarDate = parseCalendarDate(sp.date);
+  const eventsWindow = calendarWindow(calendarDate, tz);
   let events: CalendarEvent[] = [];
   let calendarTeams: Awaited<ReturnType<typeof getBookingTeamOptions>> = [];
   if (isCalendar) {
@@ -141,7 +144,7 @@ export default async function InquiriesPage({
       loadInquiriesCalendarData({
         workspaceId: workspace._id,
         tz,
-        date: parseCalendarDate(sp.date),
+        date: calendarDate,
         allowedTeamIds,
       }),
       getBookingTeamOptions({ role, userId, workspace }),
@@ -313,6 +316,8 @@ export default async function InquiriesPage({
         teams={calendarTeams}
         isOwner={role === "owner"}
         workspaceTz={tz}
+        calendarWindow={{ start: eventsWindow.start.toISOString(), end: eventsWindow.end.toISOString() }}
+        calendarDate={calendarDate}
       />
       {sp.detail ? (
         <BookingDetailModal

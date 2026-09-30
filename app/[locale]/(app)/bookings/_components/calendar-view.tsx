@@ -28,6 +28,8 @@ import {
   detectConflictIds,
 } from "./_helpers/calendar-helpers";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
+import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-window";
+import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
 export type ClientHit = {
@@ -69,6 +71,10 @@ type Props = {
   selectedTeams?: string[];
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window: { start: string; end: string };
+  /** Reports "window refetch in flight" so the shell can dim the grid. */
+  onWindowPendingChange?: (pending: boolean) => void;
 };
 
 /**
@@ -144,6 +150,8 @@ export function CalendarView({
   writableTeams,
   selectedTeams = [],
   isOwner = true,
+  window: eventsWindow,
+  onWindowPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -246,6 +254,32 @@ export function CalendarView({
 
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
+
+  // Candles exist only inside the server window; leaving it refetches via ?date.
+  const { onVisibleChange, isPending: windowPending } = useCalendarWindowNav({
+    window: eventsWindow,
+    tz: workspaceTimezone || FALLBACK_TZ,
+  });
+  useEffect(() => {
+    onWindowPendingChange?.(windowPending);
+  }, [windowPending, onWindowPendingChange]);
+
+  // Follow ?date when it moves the calendar somewhere the user isn't looking
+  // (browser back/forward). Our own replace / slot clicks land inside the
+  // visible grid, so they never yank the view.
+  const urlDateKey = defaultDate
+    ? `${defaultDate.getFullYear()}-${defaultDate.getMonth()}-${defaultDate.getDate()}`
+    : null;
+  const [syncedUrlDateKey, setSyncedUrlDateKey] = useState(urlDateKey);
+  if (urlDateKey !== syncedUrlDateKey) {
+    setSyncedUrlDateKey(urlDateKey);
+    if (defaultDate) {
+      const tzForRange = workspaceTimezone || FALLBACK_TZ;
+      const shown = visibleGridRange(date, view, tzForRange);
+      const target = visibleGridRange(defaultDate, "day", tzForRange);
+      if (!isRangeInsideWindow(target, shown)) setDate(defaultDate);
+    }
+  }
   // Opt-out convention (see parseBookingsToggleFilters): absent -> ON.
   const showPast = searchParams.get("showPast") !== "0";
 
@@ -652,6 +686,7 @@ export function CalendarView({
         onViewChange={setView}
         date={date}
         onDateChange={setDate}
+        onVisibleChange={onVisibleChange}
         onSelectEvent={openDetail}
         onSelectSlot={(d, time) => openAddForDate(d, time)}
         onEventDrop={handleEventDrop}

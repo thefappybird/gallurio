@@ -813,3 +813,22 @@ describe("BookingCalendar mobile view constraints", () => {
     });
   });
 });
+
+describe("BookingCalendar visible-range reporting", () => {
+  it("reports the new date + view to onVisibleChange when rbc navigates", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const onVisibleChange = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={[makeEvent()]} messages={calendarMessages} onVisibleChange={onVisibleChange} />
+      </NextIntlClientProvider>
+    );
+    const next = new Date(2027, 0, 10, 12);
+    (capturedDnDProps!.onNavigate as (d: Date, v: string) => void)(next, "month");
+    expect(onVisibleChange).toHaveBeenCalledWith({ date: next, view: "month" });
+  });
+});

@@ -49,3 +49,35 @@ export function isRangeInsideWindow(
 ): boolean {
   return range.start.getTime() >= window.start.getTime() && range.end.getTime() <= window.end.getTime();
 }
+
+export type CalendarGridView = "month" | "week" | "day" | "agenda" | (string & {});
+
+/**
+ * Day range react-big-calendar shows for `date` (its local Y/M/D) in `view`:
+ * month = Sunday-aligned grid incl. spill-over days, week = Sun..Sat, day = the
+ * day. Bounds are workspace-tz day bounds, matching how candles are placed.
+ */
+export function visibleGridRange(
+  date: Date,
+  view: CalendarGridView,
+  tz: string
+): { start: Date; end: Date } {
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  const d = date.getDate();
+  let first = Date.UTC(y, m, d);
+  let last = first;
+  if (view === "month") {
+    first = Date.UTC(y, m, 1);
+    last = Date.UTC(y, m + 1, 0);
+  }
+  if (view === "month" || view === "week") {
+    first -= new Date(first).getUTCDay() * DAY_MS;
+    last += (6 - new Date(last).getUTCDay()) * DAY_MS;
+  }
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  return {
+    start: dayBoundInTz(iso(first), tz, 0, 0, 0, 0),
+    end: dayBoundInTz(iso(last), tz, 23, 59, 59, 999),
+  };
+}

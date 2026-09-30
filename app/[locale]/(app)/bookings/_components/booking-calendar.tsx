@@ -158,6 +158,9 @@ type Props = {
    *  candles), and as the timezone used to translate react-big-calendar's
    *  drag/resize grid positions back to a real UTC instant. */
   workspaceTimezone?: string;
+  /** Fired whenever navigation / a view switch changes which days are shown, so
+   *  the consumer can load data outside its server window. */
+  onVisibleChange?: (visible: { date: Date; view: View }) => void;
 };
 
 /**
@@ -881,6 +884,7 @@ export function BookingCalendar({
   toolbarTrailing,
   draggableAccessor,
   workspaceTimezone,
+  onVisibleChange,
 }: Props) {
   const isRtl = useIsRtl();
   const [isCompactCalendar, setIsCompactCalendar] = useState(false);
@@ -943,14 +947,28 @@ export function BookingCalendar({
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
+  const dateRef = useRef(date);
+  useEffect(() => {
+    dateRef.current = date;
+  });
   const handleViewChange = useCallback(
     (newView: View) => {
       setView(newView);
+      let nextDate = dateRef.current;
       if (newView === Views.WEEK || newView === Views.DAY) {
-        setDate(new Date());
+        nextDate = new Date();
+        setDate(nextDate);
       }
+      onVisibleChange?.({ date: nextDate, view: newView });
     },
-    [setView, setDate]
+    [setView, setDate, onVisibleChange]
+  );
+  const handleNavigate = useCallback(
+    (d: Date) => {
+      setDate(d);
+      onVisibleChange?.({ date: d, view: effectiveView });
+    },
+    [setDate, onVisibleChange, effectiveView]
   );
 
   // Keep the latest view in a ref so the matchMedia effect below can read it
@@ -1122,7 +1140,7 @@ export function BookingCalendar({
           view={effectiveView}
           onView={handleViewChange}
           date={date}
-          onNavigate={setDate}
+          onNavigate={handleNavigate}
           views={availableViews}
           scrollToTime={scrollToTime}
           step={30}

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { BookingsPendingShell, useBookingsToolbarPending } from "./bookings-pending-shell";
+import { BookingsPendingShell, useBookingsToolbarPending, useBookingsWindowPending } from "./bookings-pending-shell";
 
 // BookingsPendingShell's own job is just OR-combining the view-toggle's
 // pending state with the exposed toolbar-pending setter — ViewToggle's own
@@ -79,5 +79,28 @@ describe("BookingsPendingShell", () => {
     const wrapperElAfter = childrenWrapper();
     expect(wrapperElAfter).toHaveAttribute("aria-busy", "false");
     expect(wrapperElAfter.className).not.toContain("opacity-60");
+  });
+
+  it("dims + marks aria-busy while a calendar window refetch is pending, independent of the toolbar flag", () => {
+    function WindowHarness() {
+      const setWindowPending = useBookingsWindowPending();
+      const setToolbarPending = useBookingsToolbarPending();
+      return (
+        <div>
+          <button onClick={() => setWindowPending(true)}>window-on</button>
+          <button onClick={() => setToolbarPending(false)}>toolbar-off</button>
+          <div>widget content</div>
+        </div>
+      );
+    }
+    render(
+      <BookingsPendingShell title={<span>Bookings</span>} view="calendar">
+        <WindowHarness />
+      </BookingsPendingShell>
+    );
+    act(() => fireEvent.click(screen.getByText("window-on")));
+    act(() => fireEvent.click(screen.getByText("toolbar-off")));
+    expect(childrenWrapper()).toHaveAttribute("aria-busy", "true");
+    expect(childrenWrapper().className).toContain("opacity-60");
   });
 });

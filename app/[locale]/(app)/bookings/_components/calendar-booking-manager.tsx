@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
-import { useBookingsToolbarPending } from "./bookings-pending-shell";
+import { useBookingsToolbarPending, useBookingsWindowPending } from "./bookings-pending-shell";
 import { CalendarView, type ClientHit } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
@@ -38,6 +38,8 @@ type Props = {
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window: { start: string; end: string };
 };
 
 /**
@@ -63,11 +65,13 @@ export function CalendarBookingManager({
   teamColorMap,
   initialInvoiceTheme,
   invoiceThemeBusiness,
+  window,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const onPendingChange = useBookingsToolbarPending();
+  const onWindowPendingChange = useBookingsWindowPending();
 
   // Incrementing nonce signals CalendarView to open a fresh add modal.
   const nonceRef = useRef(0);
@@ -118,6 +122,8 @@ export function CalendarBookingManager({
         teams={teams}
         selectedTeams={selectedTeams}
         isOwner={isOwner}
+        window={window}
+        onWindowPendingChange={onWindowPendingChange}
       />
     </>
   );

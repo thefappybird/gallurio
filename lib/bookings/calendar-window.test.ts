@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarWindow, isRangeInsideWindow } from "./calendar-window";
+import { calendarWindow, isRangeInsideWindow, visibleGridRange } from "./calendar-window";
 
 describe("isRangeInsideWindow", () => {
   it("accepts contained ranges and rejects ones poking out either side", () => {
@@ -47,5 +47,20 @@ describe("calendarWindow", () => {
     expect(w.endDate).toBe("2026-05-05");
     expect(w.start.toISOString()).toBe("2026-01-29T05:00:00.000Z");
     expect(w.end.toISOString()).toBe("2026-05-06T03:59:59.999Z");
+  });
+});
+
+describe("visibleGridRange", () => {
+  it("month view spans the Sunday-aligned grid incl. spill-over days, tz day bounds", () => {
+    const r = visibleGridRange(new Date(2026, 8, 15, 12), "month", "Asia/Manila");
+    expect(r.start.toISOString()).toBe("2026-08-29T16:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-10-03T15:59:59.999Z");
+  });
+
+  it("week = Sun..Sat, day = the single day", () => {
+    const w = visibleGridRange(new Date(2026, 8, 16, 9), "week", "UTC");
+    expect([w.start.toISOString(), w.end.toISOString()]).toEqual(["2026-09-13T00:00:00.000Z", "2026-09-19T23:59:59.999Z"]);
+    const d = visibleGridRange(new Date(2026, 8, 16, 9), "day", "UTC");
+    expect([d.start.toISOString(), d.end.toISOString()]).toEqual(["2026-09-16T00:00:00.000Z", "2026-09-16T23:59:59.999Z"]);
   });
 });

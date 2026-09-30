@@ -20,6 +20,7 @@ import {
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
 
 type Props = {
   events: CalendarEvent[];
@@ -28,6 +29,10 @@ type Props = {
   isOwner?: boolean;
   /** IANA workspace timezone -- used to convert dropped Date back to wall-clock parts. */
   workspaceTz?: string;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window?: { start: string; end: string };
+  /** Calendar's initial date (the `?date` the server windowed around). */
+  defaultDate?: Date;
 };
 
 /**
@@ -85,12 +90,19 @@ export function InquiriesCalendarManager({
   teams = [],
   isOwner = false,
   workspaceTz,
+  window,
+  defaultDate,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tCal = useTranslations("app.calendar");
   const t = useTranslations("app.inquiries.calendar");
+
+  const { onVisibleChange, isPending: windowPending } = useCalendarWindowNav({
+    window,
+    tz: workspaceTz ?? FALLBACK_TZ,
+  });
 
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const showTeamFilter = teams.length > 1;
@@ -318,8 +330,15 @@ export function InquiriesCalendarManager({
   );
 
   return (
+    // Keep the old candles up (dimmed) while a window refetch is in flight.
+    <div
+      aria-busy={windowPending}
+      className={cn("transition-opacity", windowPending && "pointer-events-none opacity-60")}
+    >
     <BookingCalendar
       events={eventsWithConflicts}
+      defaultDate={defaultDate}
+      onVisibleChange={onVisibleChange}
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
@@ -344,5 +363,6 @@ export function InquiriesCalendarManager({
         go: tCal("go"),
       }}
     />
+    </div>
   );
 }
