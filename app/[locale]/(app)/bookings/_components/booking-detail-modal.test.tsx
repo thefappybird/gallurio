@@ -26,6 +26,7 @@ import {
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import type { TimeMode } from "@/lib/utils/time-format";
+import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { BookingDetailModal } from "./booking-detail-modal";
 import { formatMoney } from "@/lib/utils/format-currency";
 
@@ -191,7 +192,9 @@ function makeFetch({
 function renderModal(props: { businessComplete?: boolean; workspaceId?: string } = {}) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
+      <AppQueryProvider workspaceId="ws-test">
+        <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
+      </AppQueryProvider>
     </NextIntlClientProvider>
   );
 }
@@ -200,7 +203,9 @@ function renderReadOnlyModal(booking = MOCK_BOOKING) {
   vi.stubGlobal("fetch", makeFetch({ booking }));
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
+      <AppQueryProvider workspaceId="ws-test">
+        <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
+      </AppQueryProvider>
     </NextIntlClientProvider>
   );
 }
