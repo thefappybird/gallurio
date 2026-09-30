@@ -6,8 +6,7 @@ import { NotificationProvider } from "@/components/notifications/NotificationPro
 import { TeamsPageClient } from "./teams-page-client";
 import type { TeamRow } from "../_types";
 
-// useLiveRefresh (wired into TeamsPageClient) needs a socket + a real
-// next/navigation router in the tree; neither is under test here.
+// NotificationProvider (wrapped around the page below) opens a socket; not under test here.
 vi.mock("socket.io-client", () => ({
   io: () => ({ on: vi.fn(), disconnect: vi.fn() }),
 }));
@@ -128,6 +127,11 @@ describe("TeamsPageClient", () => {
     routerRefresh.mockClear();
     invalidateFor.mockClear();
     createTeamMock.mockReset();
+  });
+
+  it("does not depend on the notification socket for live refresh (data:changed covers it)", () => {
+    renderWithProviders(<TeamsPageClient {...build()} />);
+    expect(screen.getAllByText("Wedding crew").length).toBeGreaterThan(0);
   });
 
   it("renders the table with the seeded teams", () => {

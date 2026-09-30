@@ -11,7 +11,6 @@ import {
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { PlusIcon, SearchIcon, MailPlusIcon, UsersRoundIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,9 +82,6 @@ export function TeamsPageClient({
   canManage,
 }: Props) {
   const t = useTranslations("app.teams");
-  // Covers team.invitation/removed/deleted; member-add and lead-toggle aren't
-  // covered since no notification type exists for them yet.
-  useLiveRefresh(["team"]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

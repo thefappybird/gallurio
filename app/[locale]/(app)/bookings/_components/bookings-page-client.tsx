@@ -3,7 +3,6 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
@@ -34,7 +33,6 @@ export function BookingsPageClient({
   emptyHint,
   workspaceTimezone,
 }: Props) {
-  useLiveRefresh(["booking"]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

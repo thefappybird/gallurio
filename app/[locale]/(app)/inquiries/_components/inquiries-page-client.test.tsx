@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: liveRefresh }),
 }));
 
-// useLiveRefresh (wired into InquiriesPageClient) needs a socket in the tree.
+// NotificationProvider (wrapped around the page below) opens a socket.
 vi.mock("socket.io-client", () => ({
   io: () => ({ on: vi.fn(), disconnect: vi.fn() }),
 }));

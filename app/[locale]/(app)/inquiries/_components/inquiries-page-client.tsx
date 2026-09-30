@@ -3,7 +3,6 @@
 import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -104,7 +103,6 @@ export function InquiriesPageClient({
   const detail = selectedId !== null ? (detailQuery.data ?? null) : null;
   const detailOpen = selectedId !== null;
   const detailLoadState = detail ? undefined : detailQuery.isError ? "error" : "loading";
-  useLiveRefresh(["inquiry", "booking"], detailOpen);
 
   function readCurrentParams() {
     return new URLSearchParams(window.location.search);
