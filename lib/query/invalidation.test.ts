@@ -13,6 +13,12 @@ describe("echo suppression", () => {
     vi.advanceTimersByTime(2_100);
     expect(isLocalEcho({ type: "booking.updated", bookingId: "b1" })).toBe(false);
   });
+
+  it("consumes the mark: 1st matching event suppressed, 2nd identical one is not", () => {
+    markLocalEvent({ type: "booking.updated", bookingId: "b9" });
+    expect(isLocalEcho({ type: "booking.updated", bookingId: "b9" })).toBe(true);
+    expect(isLocalEcho({ type: "booking.updated", bookingId: "b9" })).toBe(false);
+  });
 });
 
 const W = "w1";

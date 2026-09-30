@@ -91,10 +91,16 @@ export function markLocalEvent(event: DataEvent): void {
   recentLocal.set(fingerprint(event), now);
 }
 
-/** True when `event` matches a locally-marked event from the last ~2 s. */
+/**
+ * True when `event` matches a locally-marked event from the last ~2 s. One-shot:
+ * the first match consumes the mark so a teammate's identical event still invalidates.
+ */
 export function isLocalEcho(event: DataEvent): boolean {
-  const at = recentLocal.get(fingerprint(event));
-  return at !== undefined && Date.now() - at <= ECHO_WINDOW_MS;
+  const fp = fingerprint(event);
+  const at = recentLocal.get(fp);
+  if (at === undefined) return false;
+  recentLocal.delete(fp);
+  return Date.now() - at <= ECHO_WINDOW_MS;
 }
 
 /** Invalidate (and refetch active) queries made stale by `event`. */
