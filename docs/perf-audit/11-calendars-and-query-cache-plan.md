@@ -135,7 +135,7 @@ Work:
   - Verify whether the ~14 metric queries run for tabs that aren't shown. If so, gate each one on the resolved active tab.
   - Merge the heatmap earliest/latest `findOne`s (`booking-analytics.ts:138-145`) into one `$facet`, if `explain` agrees.
   - **Bundle:** `/dashboard` ships 4 chunks of identical size (158.7 KB gzip each). This is likely recharts duplicated once per `dynamic()` chart island. Confirm in the analyzer, then give the charts one shared dynamic boundary or chunk so recharts ships once. Target: −~475 KB gzip.
-- **Socket token.** `NotificationProvider` refetches `/api/socket-token` on every reconnect; reuse the token until the server rejects it.
+- **Socket token: withdrawn.** The token is a 60 s HMAC (`lib/sockets/auth.ts:14`), so fetching it on each reconnect is deliberate short-lived auth, and reconnects are rare.
 - **Replace full refreshes.** Wherever a mutation does a full `router.refresh()` only to update one row (for example, clients deactivate/reactivate at `clients-page-client.tsx:191,314`), apply the action result locally and invalidate through T3.
 - Tests: query-count assertions per render for the changed pages.
 
@@ -175,7 +175,8 @@ Work:
 - **Optimistic updates.** Use `onMutate` snapshot → `setQueryData` → rollback in `onError` → `invalidateFor` in `onSettled`. When the mutation returns the entity (PATCH 200), `setQueryData` it before invalidating, so there's no flash back to stale data.
 - **Cross-user/tab freshness via Socket.IO.**
   - **Server:** after a successful mutation, `emitDataChanged(workspaceId, event, ids)` sends to room `ws:<workspaceId>`. The payload is only the event name and opaque ids, never entity data. Hook it into the same code paths as the mutations: API routes, Server Actions, import.
-  - **Room join:** on socket connect, the server joins the socket to `ws:<id>` only after checking the signed socket-token's workspace against the DB membership. When the active workspace changes, the socket leaves the old room.
+  - **Room join: already in place.** `server.ts:77` joins `workspace:<id>` from the verified 60 s token. `/api/socket-token` signs only the membership-validated active workspace. Emit to that existing room; don't add a new one. The client must reconnect when the layout's `workspaceId` changes.
+  - **Split:** T3a (backend) adds `lib/data-events.ts` (the isomorphic event union), `emitDataChanged`, and wires it into every mutation path. T3b (frontend) adds the provider, keys, the `invalidateFor` map and the socket listener. The client ignores echoes of its own mutations within ~2 s, since it has already invalidated locally.
   - **Client:** `NotificationProvider`'s socket listens for `data:changed` and calls the same `invalidateFor`. Events are ignored when their `workspaceId` isn't the active one, and bursts are debounced (~250 ms).
   - Staff team scope is preserved: other clients refetch through the scoped endpoints, so a broadcast never exposes data.
   - Security pass: re-enable the trailofbits plugins and run `security-auditor` over the room-join + emit paths; this change touches tenancy/realtime.
