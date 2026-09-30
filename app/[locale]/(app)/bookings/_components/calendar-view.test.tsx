@@ -219,9 +219,11 @@ describe("CalendarView drag-to-reschedule (single PATCH)", () => {
     expect(screen.getByText(`Carter Wedding@${droppedStart.toISOString()}`)).toBeInTheDocument();
     expect(screen.queryByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeNull();
     expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
-    expect(mockInvalidateFor).toHaveBeenCalledWith({
-      type: "booking.updated", bookingId: "b1", clientId: "c9", inquiryId: "i7",
-    });
+    // Local candles are already rebuilt: no page refresh for the actor (other tabs get the socket).
+    expect(mockInvalidateFor).toHaveBeenCalledWith(
+      { type: "booking.updated", bookingId: "b1", clientId: "c9", inquiryId: "i7" },
+      { refresh: false },
+    );
     expect(mockRefresh).not.toHaveBeenCalled();
     expect(cal.pendingIds.has("b1")).toBe(false);
   });

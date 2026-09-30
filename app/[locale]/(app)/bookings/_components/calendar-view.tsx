@@ -398,13 +398,17 @@ export function CalendarView({
           ...cur.filter((e) => e.bookingId !== event.bookingId),
           ...rebuilt,
         ]);
-        // Ids mirror the server broadcast so the socket echo is suppressed.
-        invalidateFor({
-          type: "booking.updated",
-          bookingId: event.bookingId,
-          clientId: booking.clientId ?? null,
-          inquiryId: booking.createdFromInquiryId ?? null,
-        });
+        // Ids mirror the server broadcast so the socket echo is suppressed. Candles
+        // are already rebuilt above, so no page refresh (other tabs refresh via socket).
+        invalidateFor(
+          {
+            type: "booking.updated",
+            bookingId: event.bookingId,
+            clientId: booking.clientId ?? null,
+            inquiryId: booking.createdFromInquiryId ?? null,
+          },
+          { refresh: false },
+        );
       } catch {
         // Reverted + toasted in the toast.promise error callback.
       } finally {
