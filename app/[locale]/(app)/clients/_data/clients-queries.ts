@@ -162,6 +162,21 @@ export async function getClientById(
   };
 }
 
+/**
+ * Deep-link (?client=) resolver. A client already on the listed page carries
+ * the same stats + converted totals, so reuse the row instead of re-running
+ * findOne + booking aggregate + totals lookup.
+ */
+export async function resolveDetailClient(
+  workspaceId: WorkspaceId,
+  clientId: string,
+  listed: ClientListItem[],
+  fx: WorkspaceRates | Promise<WorkspaceRates> = NO_CONVERSION
+): Promise<ClientListItem | null> {
+  const onPage = listed.find((c) => String(c._id) === clientId);
+  return onPage ?? getClientById(workspaceId, clientId, fx);
+}
+
 export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string[]> {
   // Mirror listClients' default-active rule: pre-`isActive` documents should
   // still contribute their tags to the filter dropdown.

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Booking, Transaction } from "@/lib/db/models";
-import { listClients, getWorkspaceTags, getClientBookings, getClientById } from "./clients-queries";
+import { countQueries } from "@/test-utils/query-counter";
+import { listClients, getWorkspaceTags, getClientBookings, getClientById, resolveDetailClient } from "./clients-queries";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -493,5 +494,19 @@ describe("listClients — multi-currency totalSpent", () => {
     const found = await getClientById(workspaceId, String(client._id), { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(found?.totalSpent).toBe(100 * 58);
+  });
+
+  describe("resolveDetailClient", () => {
+    it("reuses the listed row and issues no queries when the deep-linked client is on the page", async () => {
+      const client = await seedClient(workspaceId, { name: "On Page" });
+      const { items } = await listClients({ workspaceId });
+
+      const { result, queries } = await countQueries(() =>
+        resolveDetailClient(workspaceId, String(client._id), items)
+      );
+
+      expect(result?.name).toBe("On Page");
+      expect(queries).toHaveLength(0);
+    });
   });
 });
