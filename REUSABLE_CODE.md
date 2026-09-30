@@ -147,6 +147,8 @@ Composed, app-specific shared components.
 ### `lib/bookings/`
 | Import | Export | Purpose |
 |--------|--------|---------|
+| `lib/bookings/calendar-window.ts` | `calendarWindow`, `isRangeInsideWindow`, `CALENDAR_WINDOW_PAD_DAYS` | Visible month grid +/-31d window in workspace tz; drives server-windowed calendar loaders (`bookings/_data/calendar-events.ts`, `inquiries/_data/calendar-data.ts`) |
+| `test-utils/query-counter.ts` | `countQueries` | Record Mongoose ops during a callback to assert query budgets |
 | `lib/bookings/candle-split.ts` | `splitSessionIntoCandles` | Split multi-day session into per-day candles; overnight + past-day handling |
 | `lib/bookings/session-edits.ts` | `startOfDay`, `endOfDay`, `countDays`, `countPastDays`, `splitDayOut`, `shiftSession`, `shiftSessionTimes` | Session date math + edit operations (past/future split) |
 | `lib/bookings/session-validation.ts` | `sessionsAreSameDayInTz` | Verify session start/end same calendar day in workspace tz |
