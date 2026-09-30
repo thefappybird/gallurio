@@ -23,6 +23,7 @@ import type { CalendarEvent } from "../bookings/_components/booking-calendar";
 import type { InquiryDoc } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { buildInquiryDetail } from "@/lib/inquiries/detail-data";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -259,58 +260,15 @@ async function InquiriesContent({
         locale,
       });
     }
-    const detail = detailResult!;
-
-    initialDetail = {
-      inquiryId: String(detail.inquiry._id),
+    initialDetail = await buildInquiryDetail({
+      workspace,
+      tz,
+      role,
       locale,
-      name: detail.inquiry.name,
-      email: detail.inquiry.email,
-      phone: detail.inquiry.phone ?? null,
-      preferredContact: detail.inquiry.preferredContact ?? "email",
-      status: detail.inquiry.status,
-      eventType: detail.inquiry.eventType ?? "other",
-      guestCount: detail.inquiry.guestCount ?? null,
-      location: detail.inquiry.location ?? null,
-      message: detail.inquiry.message ?? "",
-      sessions: detail.inquiry.sessions ?? [],
-      submittedAt: detail.inquiry.createdAt.toISOString(),
-      updatedAt: detail.inquiry.updatedAt.toISOString(),
-      bookingMissing: detail.booking === null,
-      booking: detail.booking
-        ? {
-            id: String(detail.booking._id),
-            currency: detail.booking.amount?.currency ?? workspace.currency ?? "PHP",
-            total: detail.booking.amount?.total ?? 0,
-            deposit: detail.booking.amount?.deposit ?? 0,
-            notes: detail.booking.notes ?? "",
-          }
-        : null,
-      isOwner: role === "owner",
-      hasConflict: await (async () => {
-        const detailId = String(detail.inquiry._id);
-        // If this inquiry was already included in the page-level conflict query, use that result.
-        if (detailInPageConflicts) return conflictSet.has(detailId);
-        // If it's booked/converted, conflicts are irrelevant.
-        if (isBookedInquiryStatus(detail.inquiry.status)) return false;
-        // Compute conflict for this single inquiry separately.
-        const detailConflictSet = await computeInquiryConflicts(
-          workspace._id,
-          [
-            {
-              _id: detailId,
-              sessions: (detail.inquiry.sessions ?? []).map((s) => ({
-                startDate: (s as { startDate: string }).startDate,
-                startTime: (s as { startTime: string }).startTime,
-                endTime: (s as { endTime: string }).endTime,
-              })),
-            },
-          ],
-          tz
-        );
-        return detailConflictSet.has(detailId);
-      })(),
-    };
+      data: detailResult!,
+      // Reuse the page-level conflict result when this inquiry was already in it.
+      knownConflict: detailInPageConflicts ? conflictSet.has(sp.inquiryId) : undefined,
+    });
   }
 
   return (

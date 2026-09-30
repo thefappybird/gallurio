@@ -25,6 +25,11 @@ import { resolveTeamRecipients } from "@/lib/notifications/recipients";
 import { sendNotification } from "@/lib/notifications/send";
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { getInquiryWithDraft } from "@/lib/db/queries/inquiries";
+import {
+  buildInquiryDetail,
+  findClientMatchesForInquiry,
+  type InquiryClientMatch as InquiryClientMatchShape,
+} from "@/lib/inquiries/detail-data";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 
 // The status a draft is promoted to on approval. Approval skips the old
@@ -77,75 +82,19 @@ export async function getInquiryDetailAction(
   const result = await getInquiryWithDraft(ctx.workspace._id, inquiryId);
   if (!result) return { error: "not_found" };
 
-  const { inquiry, booking } = result;
-  const detailId = String(inquiry._id);
-  const timezone = ctx.workspace.timezone ?? FALLBACK_TZ;
-  const hasConflict = isBookedInquiryStatus(inquiry.status)
-    ? false
-    : (
-        await computeInquiryConflicts(
-          ctx.workspace._id,
-          [
-            {
-              _id: detailId,
-              sessions: (inquiry.sessions ?? []).map((session) => ({
-                startDate: (session as { startDate: string }).startDate,
-                startTime: (session as { startTime: string }).startTime,
-                endTime: (session as { endTime: string }).endTime,
-              })),
-            },
-          ],
-          timezone
-        )
-      ).has(detailId);
-
   return {
     ok: true,
-    detail: {
-      inquiryId: detailId,
+    detail: await buildInquiryDetail({
+      workspace: ctx.workspace,
+      tz: ctx.workspace.timezone ?? FALLBACK_TZ,
+      role: ctx.role,
       locale,
-      name: inquiry.name,
-      email: inquiry.email,
-      phone: inquiry.phone ?? null,
-      preferredContact: inquiry.preferredContact ?? "email",
-      status: inquiry.status,
-      eventType: inquiry.eventType ?? "other",
-      guestCount: inquiry.guestCount ?? null,
-      location: inquiry.location ?? null,
-      message: inquiry.message ?? "",
-      sessions: inquiry.sessions ?? [],
-      submittedAt: inquiry.createdAt.toISOString(),
-      updatedAt: inquiry.updatedAt.toISOString(),
-      bookingMissing: booking === null,
-      booking: booking
-        ? {
-            id: String(booking._id),
-            currency: booking.amount?.currency ?? ctx.workspace.currency ?? "PHP",
-            total: booking.amount?.total ?? 0,
-            deposit: booking.amount?.deposit ?? 0,
-            notes: booking.notes ?? "",
-            teamId: booking.teamId ? String(booking.teamId) : null,
-          }
-        : null,
-      isOwner: ctx.role === "owner",
-      hasConflict,
-    },
+      data: result,
+    }),
   };
 }
 
-export type InquiryClientMatch = {
-  _id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  /** Carried so the resolve dialog can surface a notes conflict, not just email/phone. */
-  notes: string | null;
-  tags: string[];
-  source: "form" | "manual" | "referral" | "import";
-  bookingsCount: number;
-  totalSpent: number;
-  createdAt: string;
-};
+export type InquiryClientMatch = InquiryClientMatchShape;
 
 /**
  * Clients that plausibly describe the same person as the inquiry's typed
@@ -169,37 +118,7 @@ export async function findInquiryClientMatchesAction(
   ).lean();
   if (!inquiry) return { error: "not_found" };
 
-  // The reversed-name ordering isn't expressible as a Mongo query — fetch
-  // active clients and filter in memory.
-  const candidates = await Client.find(
-    { workspaceId, isActive: true },
-    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, source: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
-  )
-    .limit(5000)
-    .lean();
-
-  const matches: InquiryClientMatch[] = candidates
-    .filter((c) => String(c._id) !== String(inquiry.clientId ?? ""))
-    .filter((c) =>
-      isClientMatch(
-        { name: inquiry.name, email: inquiry.email, phone: inquiry.phone },
-        { name: c.name, email: c.email, phone: c.phone }
-      )
-    )
-    .map((c) => ({
-      _id: String(c._id),
-      name: c.name,
-      email: c.email ?? null,
-      phone: c.phone ?? null,
-      notes: c.notes ?? null,
-      tags: c.tags ?? [],
-      source: c.source ?? "manual",
-      bookingsCount: c.bookingsCount ?? 0,
-      totalSpent: c.totalSpent ?? 0,
-      createdAt: c.createdAt.toISOString(),
-    }));
-
-  return { ok: true, matches };
+  return { ok: true, matches: await findClientMatchesForInquiry(workspaceId, inquiry) };
 }
 
 const clientIdSchema = z.string().refine((v) => mongoose.isValidObjectId(v), {

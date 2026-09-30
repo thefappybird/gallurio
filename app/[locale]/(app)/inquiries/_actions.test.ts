@@ -219,6 +219,60 @@ describe("getInquiryDetailAction", () => {
   });
 });
 
+describe("getInquiryDetailAction clientMatches", () => {
+  it("folds matching clients into the detail for an owner on an open inquiry", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    const match = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com",
+      source: "form",
+    });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail.clientMatches?.map((m) => m._id)).toEqual([String(match._id)]);
+  });
+
+  it("omits clientMatches for a non-owner", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({ workspaceId, name: "Someone Else", email: "emma@example.com", source: "form" });
+    mockCtx = { ...mockCtx, role: "staff" };
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail).not.toHaveProperty("clientMatches");
+  });
+
+  it("omits clientMatches once the inquiry is booked", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({ workspaceId, name: "Someone Else", email: "emma@example.com", source: "form" });
+    await Inquiry.updateOne({ _id: inquiry._id, workspaceId }, { status: "booked" });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail).not.toHaveProperty("clientMatches");
+  });
+
+  it("never returns a matching client from another workspace", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({
+      workspaceId: otherWorkspaceId,
+      name: "Emma Carter",
+      email: "emma@example.com",
+      source: "form",
+    });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail.clientMatches).toEqual([]);
+  });
+});
+
 describe("approveInquiryBookingAction", () => {
   it("promotes the draft, applies edits, and marks the inquiry booked", async () => {
     const { booking, inquiry, client } = await seedDraft(workspaceId);

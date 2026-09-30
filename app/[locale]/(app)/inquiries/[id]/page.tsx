@@ -12,6 +12,7 @@ import { EventRequestCard, type InquirySessionView } from "./_components/event-r
 import { BookingDraftCard } from "./_components/booking-draft-card";
 import { InquiryActions } from "./_components/inquiry-actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { canResolveClientMatches, findClientMatchesForInquiry } from "@/lib/inquiries/detail-data";
 import { getBookingTeamOptions } from "../../bookings/_data/team-options";
 
 export default async function InquiryDetailPage({
@@ -43,6 +44,9 @@ export default async function InquiryDetailPage({
 
   const sessions = (inquiry.sessions ?? []) as InquirySessionView[];
   const isBooked = isBookedInquiryStatus(inquiry.status);
+  const initialMatches = canResolveClientMatches(role, inquiry.status)
+    ? await findClientMatchesForInquiry(workspace._id, inquiry)
+    : undefined;
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,6 +83,7 @@ export default async function InquiryDetailPage({
             preferredContact={inquiry.preferredContact ?? "email"}
             status={inquiry.status}
             message={inquiry.message ?? ""}
+            initialMatches={initialMatches}
           />
           <EventRequestCard
             eventType={inquiry.eventType ?? "other"}

@@ -161,6 +161,7 @@ Composed, app-specific shared components.
 |--------|--------|---------|
 | `lib/inquiries/session-time.ts` | `formatSessionTimeRange(session, mode, _tz)` | Format inquiry session times (`{ startTime, endTime }` HH:MM wall-clock strings) as a display range; delegates to `formatRangeFromParts` — structurally guaranteed to match `formatTimeRange` output for the same wall-clock time (fixes calendar↔modal mismatch #14). Pass workspace tz for documentation clarity but it is intentionally unused. |
 | `lib/inquiries/optimistic-patch.ts` | `applyOptimisticPatch<T extends {id:string}>(rows, patches)`, `InquiryOptimisticPatch` | Overlay a `Record<id, patch>` map over table rows for instant optimistic UI; reconciles automatically on server re-render. |
+| `lib/inquiries/detail-data.ts` | `buildInquiryDetail`, `findClientMatchesForInquiry`, `canResolveClientMatches`, `InquiryClientMatch` | Single builder for `InquiryDetailModalData` (action + deep-link SSR); folds owner/unlocked-only `clientMatches` into the detail read so the modal needs no second server action. |
 | `app/[locale]/(app)/inquiries/_actions.ts` | `rescheduleInquirySessionAction(input)` | Server action: reschedule a single inquiry session (owner-auth, Zod-validated, idempotent, conflict-checked via `sessionConflictsWithBookings`). |
 
 ### `lib/auth/` (see also CLAUDE.md → Auth & tenancy)

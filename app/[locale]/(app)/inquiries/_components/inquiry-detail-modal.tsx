@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
+import type { InquiryClientMatch } from "@/lib/inquiries/detail-data";
 
 type InquiryBookingSummary = {
   id: string | null;
@@ -48,6 +49,8 @@ export type InquiryDetailModalData = {
   booking: InquiryBookingSummary | null;
   isOwner: boolean;
   hasConflict?: boolean;
+  /** Owner + unlocked inquiries only: same-person clients, saves a separate fetch. */
+  clientMatches?: InquiryClientMatch[];
   /** When true the modal is display-only: actions are hidden and cards are non-editable. */
   readOnly?: boolean;
 };
