@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
@@ -90,5 +90,44 @@ describe("InquiriesCalendarManager window navigation", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper).toHaveAttribute("aria-busy", "true");
     expect(wrapper.className).toContain("opacity-60");
+  });
+});
+
+describe("InquiriesCalendarManager reschedule", () => {
+  const droppedStart = new Date("2027-09-16T02:00:00Z");
+  const droppedEnd = new Date("2027-09-16T04:00:00Z");
+
+  it("success: invalidates via data events (no direct router.refresh) and keeps the moved candle in place", async () => {
+    mockReschedule.mockResolvedValue({ ok: true });
+    render(ui([inquiryEvent()]));
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
+    expect(mockInvalidateFor).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq1", bookingId: null });
+    expect(mockRefresh).not.toHaveBeenCalled();
+    // Server events have not changed yet -> override must still be applied (no snap-back).
+    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("clears the override only when a new events prop lands, then shows the server position", async () => {
+    mockReschedule.mockResolvedValue({ ok: true });
+    const view = render(ui([inquiryEvent()]));
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    const serverStart = new Date("2027-09-17T02:00:00Z");
+    view.rerender(ui([inquiryEvent({ start: serverStart, end: new Date("2027-09-17T04:00:00Z") })]));
+    expect(screen.getByText(`Cruz@${serverStart.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("conflict error: reverts the candle and shows the conflict toast", async () => {
+    mockReschedule.mockResolvedValue({ error: "conflict" });
+    render(ui([inquiryEvent()]));
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(mockInvalidateFor).not.toHaveBeenCalled();
+    expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
   });
 });

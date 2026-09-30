@@ -20,6 +20,7 @@ import {
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
 
 type Props = {
@@ -94,6 +95,7 @@ export function InquiriesCalendarManager({
   defaultDate,
 }: Props) {
   const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tCal = useTranslations("app.calendar");
@@ -236,37 +238,40 @@ export function InquiriesCalendarManager({
         };
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
 
-        await toast.promise(
-          (async () => {
-            const result = await rescheduleInquirySessionAction({
-              inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
-              sessionIndex: ev.sessionIndex,
-              startDate,
-              startTime,
-              endTime,
-            });
-            if ("error" in result) throw result.error;
-            // Success -- trigger a data refresh; the useEffect on `events` clears
-            // the optimistic override once the authoritative position arrives,
-            // preventing any snap-back to the stale server state.
-            router.refresh();
-          })(),
-          {
-            loading: t("updating"),
-            success: t("updated"),
-            error: (err: unknown) => {
-              setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
-              return typeof err === "string" && err === "conflict"
-                ? t("rescheduleConflict")
-                : t("rescheduleFailed");
-            },
-          }
-        );
+        // Own the promise: toast.promise's return value isn't awaitable, and the
+        // in-flight guard must outlive the whole round-trip.
+        const request = (async () => {
+          const result = await rescheduleInquirySessionAction({
+            inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
+            sessionIndex: ev.sessionIndex,
+            startDate,
+            startTime,
+            endTime,
+          });
+          if ("error" in result) throw result.error;
+          // Success -- invalidate via data events (refreshes /inquiries); the
+          // useEffect on `events` clears the optimistic override only once the
+          // authoritative position arrives, preventing any snap-back. The
+          // draft booking id isn't known client-side (server echo may refresh
+          // once more; harmless).
+          invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: null });
+        })();
+        toast.promise(request, {
+          loading: t("updating"),
+          success: t("updated"),
+          error: (err: unknown) => {
+            setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
+            return typeof err === "string" && err === "conflict"
+              ? t("rescheduleConflict")
+              : t("rescheduleFailed");
+          },
+        });
+        await request.catch(() => undefined);
       } finally {
         inFlightRef.current.delete(sessionKey);
       }
     },
-    [workspaceTz, t, router]
+    [workspaceTz, t, invalidateFor]
   );
 
   const chipClass = (active: boolean) =>
