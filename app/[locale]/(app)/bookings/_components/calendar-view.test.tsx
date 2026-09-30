@@ -11,11 +11,17 @@ const mockRefresh = vi.fn();
 const mockInvalidateFor = vi.fn();
 let search = "";
 
+// Like Next, hand back the same object until the query string changes.
+let cachedParams: { key: string; value: URLSearchParams } | null = null;
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(search),
+  useSearchParams: () => {
+    if (cachedParams?.key !== search) cachedParams = { key: search, value: new URLSearchParams(search) };
+    return cachedParams.value;
+  },
 }));
+const mockRouter = { replace: mockReplace, push: vi.fn(), refresh: mockRefresh };
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ replace: mockReplace, push: vi.fn(), refresh: mockRefresh }),
+  useRouter: () => mockRouter,
   usePathname: () => "/bookings",
 }));
 vi.mock("@/hooks/use-data-events", () => ({
@@ -42,6 +48,8 @@ type CalProps = {
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
   pendingIds: Set<string>;
   date: Date;
+  toolbarTrailing: unknown;
+  onSelectSlot: unknown;
 };
 let cal: CalProps;
 vi.mock("./booking-calendar-dynamic", () => ({
@@ -189,5 +197,23 @@ describe("CalendarView drag-to-reschedule (single PATCH)", () => {
     });
     expect(mockRefresh).not.toHaveBeenCalled();
     expect(cal.pendingIds.has("b1")).toBe(false);
+  });
+});
+
+describe("CalendarView stable props", () => {
+  it("passes referentially stable toolbarTrailing + onSelectSlot across an unrelated re-render", () => {
+    const teams = [
+      { id: "a", name: "A", color: "#111", isActive: true, isLead: true },
+      { id: "b", name: "B", color: "#222", isActive: true, isLead: true },
+    ] as never;
+    const view = renderView({ teams });
+    const first = { trailing: cal.toolbarTrailing, slot: cal.onSelectSlot };
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <CalendarView events={[makeEvent()]} messages={calMessages} initialClients={[]} workspaceTimezone={TZ} window={windowIso} teams={teams} />
+      </NextIntlClientProvider>
+    );
+    expect(cal.toolbarTrailing).toBe(first.trailing);
+    expect(cal.onSelectSlot).toBe(first.slot);
   });
 });

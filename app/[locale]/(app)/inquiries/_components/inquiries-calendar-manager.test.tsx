@@ -12,9 +12,11 @@ const mockVisible = vi.fn();
 let mockPending = false;
 const mockReschedule = vi.fn();
 
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams("view=calendar") }));
+const stableParams = new URLSearchParams("view=calendar");
+const stableRouter = { push: mockPush, refresh: mockRefresh, replace: vi.fn() };
+vi.mock("next/navigation", () => ({ useSearchParams: () => stableParams }));
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ push: mockPush, refresh: mockRefresh, replace: vi.fn() }),
+  useRouter: () => stableRouter,
   usePathname: () => "/inquiries",
 }));
 vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => mockInvalidateFor }));
@@ -35,6 +37,10 @@ vi.mock("../../bookings/_components/team-filter-control", () => ({ TeamFilterCon
 type CalProps = {
   events: CalendarEvent[];
   onVisibleChange: (v: unknown) => void;
+  messages: unknown;
+  toolbarTrailing: unknown;
+  draggableAccessor: unknown;
+  onSelectEvent: unknown;
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
 };
 let cal: CalProps;
@@ -129,5 +135,21 @@ describe("InquiriesCalendarManager reschedule", () => {
     });
     expect(mockInvalidateFor).not.toHaveBeenCalled();
     expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
+  });
+});
+
+describe("InquiriesCalendarManager stable props", () => {
+  it("hands BookingCalendar referentially stable messages/toolbar/callbacks across an unrelated re-render", () => {
+    const events = [inquiryEvent()];
+    const view = render(ui(events));
+    const first = {
+      messages: cal.messages, trailing: cal.toolbarTrailing,
+      drag: cal.draggableAccessor, select: cal.onSelectEvent,
+    };
+    view.rerender(ui(events));
+    expect(cal.messages).toBe(first.messages);
+    expect(cal.toolbarTrailing).toBe(first.trailing);
+    expect(cal.draggableAccessor).toBe(first.drag);
+    expect(cal.onSelectEvent).toBe(first.select);
   });
 });

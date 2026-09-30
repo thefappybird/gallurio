@@ -80,6 +80,13 @@ export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
   );
 }
 
+// Stable default so the memoized toolbar isn't rebuilt every render.
+const NO_TEAMS: BookingTeamOption[] = [];
+
+function isDraggableEvent(ev: AnyCalendarEvent): boolean {
+  return "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent);
+}
+
 /**
  * Calendar view for the inquiries page. New inquiry candles are draggable;
  * booking candles are not. On drop, persists via rescheduleInquirySessionAction
@@ -88,7 +95,7 @@ export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
 export function InquiriesCalendarManager({
   events,
   locale: _locale,
-  teams = [],
+  teams = NO_TEAMS,
   isOwner = false,
   workspaceTz,
   window,
@@ -155,7 +162,7 @@ export function InquiriesCalendarManager({
     return filteredEvents.map((e) => mergeConflict(e, conflictIds));
   }, [filteredEvents]);
 
-  function handleSelectEvent(ev: CalendarEvent) {
+  const handleSelectEvent = useCallback((ev: CalendarEvent) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", "calendar");
     if (ev.kind === "inquiry" && ev.inquiryId) {
@@ -166,7 +173,7 @@ export function InquiriesCalendarManager({
       params.delete("inquiryId");
     }
     router.push(pathname + "?" + params.toString());
-  }
+  }, [router, pathname, searchParams]);
 
   /**
    * Shared handler for onEventDrop and onEventResize on New inquiry candles.
@@ -282,7 +289,7 @@ export function InquiriesCalendarManager({
         : "border-border bg-card text-muted-foreground opacity-50"
     );
 
-  const toolbarTrailing = (
+  const toolbarTrailing = useMemo(() => (
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
@@ -332,6 +339,25 @@ export function InquiriesCalendarManager({
         />
       )}
     </div>
+  ), [showNew, showBooked, showConflicted, showTeamFilter, teams, selectedTeams, isOwner, t]);
+
+  const calendarMessages = useMemo(
+    () => ({
+      today: tCal("today"),
+      previous: tCal("previous"),
+      next: tCal("next"),
+      day: tCal("views.day"),
+      week: tCal("views.week"),
+      month: tCal("views.month"),
+      date: tCal("date"),
+      time: tCal("time"),
+      event: tCal("event"),
+      noEventsInRange: tCal("noEventsInRange"),
+      goTo: tCal("goTo"),
+      scrollToTime: tCal("scrollToTime"),
+      go: tCal("go"),
+    }),
+    [tCal]
   );
 
   return (
@@ -348,25 +374,9 @@ export function InquiriesCalendarManager({
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
       showPast={true}
-      draggableAccessor={(ev: AnyCalendarEvent) =>
-        "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent)
-      }
+      draggableAccessor={isDraggableEvent}
       toolbarTrailing={toolbarTrailing}
-      messages={{
-        today: tCal("today"),
-        previous: tCal("previous"),
-        next: tCal("next"),
-        day: tCal("views.day"),
-        week: tCal("views.week"),
-        month: tCal("views.month"),
-        date: tCal("date"),
-        time: tCal("time"),
-        event: tCal("event"),
-        noEventsInRange: tCal("noEventsInRange"),
-        goTo: tCal("goTo"),
-        scrollToTime: tCal("scrollToTime"),
-        go: tCal("go"),
-      }}
+      messages={calendarMessages}
     />
     </div>
   );

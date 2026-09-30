@@ -6,6 +6,10 @@ import enMessages from "@/messages/en.json";
 
 // react-big-calendar tries to import CSS in the test environment which fails.
 // Stub out both stylesheet imports before the component loads.
+vi.mock("@/lib/time-format/context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/time-format/context")>();
+  return { ...actual, useTimeFormat: vi.fn(actual.useTimeFormat) };
+});
 vi.mock("react-big-calendar/lib/css/react-big-calendar.css", () => ({}));
 vi.mock("react-big-calendar/lib/addons/dragAndDrop/styles.css", () => ({}));
 
@@ -56,6 +60,7 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 import { groupEventsForMonth, MonthBookingEvent, TimeBookingEvent, BookingCalendar } from "./booking-calendar";
 import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
 import { formatTimeRange } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 
 const calendarMessages = {
   today: "Today",
@@ -830,5 +835,51 @@ describe("BookingCalendar visible-range reporting", () => {
     const next = new Date(2027, 0, 10, 12);
     (capturedDnDProps!.onNavigate as (d: Date, v: string) => void)(next, "month");
     expect(onVisibleChange).toHaveBeenCalledWith({ date: next, view: "month" });
+  });
+});
+
+describe("BookingCalendar candle memoization", () => {
+  it("does not re-render a candle when an unrelated prop changes", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const ev = makeEvent({ start: new Date("2090-01-01T10:00:00"), end: new Date("2090-01-01T12:00:00") });
+    renderedDnDEvent = ev;
+    const events = [ev];
+    const ui = (pendingIds: Set<string>) => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={events} messages={calendarMessages} pendingIds={pendingIds} />
+      </NextIntlClientProvider>
+    );
+    const view = render(ui(new Set()));
+    const spy = vi.mocked(useTimeFormat);
+    const before = spy.mock.calls.length;
+    view.rerender(ui(new Set(["other"])));
+    expect(spy.mock.calls.length).toBe(before);
+    renderedDnDEvent = null;
+  });
+
+  it("does not re-render a candle when the parent passes an equal-but-new messages object", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const ev = makeEvent({ start: new Date("2090-01-01T10:00:00"), end: new Date("2090-01-01T12:00:00") });
+    renderedDnDEvent = ev;
+    const events = [ev];
+    const ui = () => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={events} messages={{ ...calendarMessages }} />
+      </NextIntlClientProvider>
+    );
+    const view = render(ui());
+    const spy = vi.mocked(useTimeFormat);
+    const before = spy.mock.calls.length;
+    view.rerender(ui());
+    expect(spy.mock.calls.length).toBe(before);
+    renderedDnDEvent = null;
   });
 });

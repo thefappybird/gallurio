@@ -127,6 +127,9 @@ async function patchBookingSessions(bookingId: string, sessions: Session[]): Pro
   return { kind: "error" };
 }
 
+// Stable default: a fresh `[]` per render would defeat the memoized toolbar below.
+const NO_TEAMS: string[] = [];
+
 export function CalendarView({
   events,
   defaultDate,
@@ -142,7 +145,7 @@ export function CalendarView({
   teamColorMap,
   teams,
   writableTeams,
-  selectedTeams = [],
+  selectedTeams = NO_TEAMS,
   isOwner = true,
   window: eventsWindow,
   onWindowPendingChange,
@@ -670,6 +673,19 @@ export function CalendarView({
     [router, pathname, searchParams]
   );
 
+  const toolbarTrailing = useMemo(
+    () =>
+      teams && teams.length > 1 ? (
+        <TeamFilterControl
+          teams={teams}
+          selected={selectedTeams}
+          isOwner={isOwner}
+          onChange={setTeamFilter}
+        />
+      ) : undefined,
+    [teams, selectedTeams, isOwner, setTeamFilter]
+  );
+
   return (
     <>
       <BookingCalendarLazy
@@ -681,7 +697,7 @@ export function CalendarView({
         onDateChange={setDate}
         onVisibleChange={onVisibleChange}
         onSelectEvent={openDetail}
-        onSelectSlot={(d, time) => openAddForDate(d, time)}
+        onSelectSlot={openAddForDate}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventResize}
         onExternalDragStart={handleExternalDragStart}
@@ -693,16 +709,7 @@ export function CalendarView({
         showPast={showPast}
         colorMode={colorMode}
         teamColorMap={teamColorMap}
-        toolbarTrailing={
-          teams && teams.length > 1 ? (
-            <TeamFilterControl
-              teams={teams}
-              selected={selectedTeams}
-              isOwner={isOwner}
-              onChange={setTeamFilter}
-            />
-          ) : undefined
-        }
+        toolbarTrailing={toolbarTrailing}
       />
       {addState ? (
         <BookingWizardModal

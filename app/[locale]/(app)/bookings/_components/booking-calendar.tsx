@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import {
@@ -218,7 +218,7 @@ function buildDragGhost(args: {
 /** A single draggable row inside the overflow popover.
  *  Builds a candle-styled ghost on dragstart, points setDragImage at it,
  *  then schedules its removal after the browser has captured the bitmap. */
-function OverflowPopoverRow({
+const OverflowPopoverRow = memo(function OverflowPopoverRow({
   event: e,
   onSelectEvent,
   onExternalDragStart,
@@ -290,7 +290,7 @@ function OverflowPopoverRow({
       </span>
     </button>
   );
-}
+});
 
 /** Small "Past" badge shown at the inline end of a candle's title row. */
 function PastPill({ label }: { label: string }) {
@@ -332,7 +332,7 @@ function StatusPill({
 }
 
 /** Month view: three-line stacked — title / client / time range. */
-export function MonthBookingEvent({
+export const MonthBookingEvent = memo(function MonthBookingEvent({
   event,
   onSelectEvent,
   onExternalDragStart,
@@ -344,6 +344,7 @@ export function MonthBookingEvent({
 }) {
   const ev = event;
   const [open, setOpen] = useState(false);
+  const closePopover = useCallback(() => setOpen(false), []);
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
   const tStatus = useTranslations("app.bookings.statusValues");
@@ -375,7 +376,7 @@ export function MonthBookingEvent({
                 onSelectEvent={onSelectEvent}
                 onExternalDragStart={onExternalDragStart}
                 onExternalDragEnd={onExternalDragEnd}
-                onClose={() => setOpen(false)}
+                onClose={closePopover}
               />
             ))}
           </div>
@@ -436,10 +437,10 @@ export function MonthBookingEvent({
       />
     </span>
   );
-}
+});
 
 /** Week/day view: three-line stacked — title / client / time range. */
-export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+export const TimeBookingEvent = memo(function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
@@ -518,7 +519,7 @@ export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
       )}
     </div>
   );
-}
+});
 
 function slotTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:00`;
@@ -876,7 +877,7 @@ export function BookingCalendar({
   onExternalDragEnd,
   onDropFromOutside,
   dragFromOutsideItem,
-  messages,
+  messages: messagesProp,
   showPast = true,
   pendingIds,
   colorMode = "status",
@@ -887,6 +888,32 @@ export function BookingCalendar({
   onVisibleChange,
 }: Props) {
   const isRtl = useIsRtl();
+  // Server-rendered `messages` is a fresh object on every RSC refresh; rebuild
+  // it only when a string actually changes so the toolbar context (and every
+  // candle reading it) stays referentially stable.
+  const messages = useMemo<Props["messages"]>(
+    () => ({
+      today: messagesProp.today,
+      previous: messagesProp.previous,
+      next: messagesProp.next,
+      day: messagesProp.day,
+      week: messagesProp.week,
+      month: messagesProp.month,
+      date: messagesProp.date,
+      time: messagesProp.time,
+      event: messagesProp.event,
+      noEventsInRange: messagesProp.noEventsInRange,
+      goTo: messagesProp.goTo,
+      scrollToTime: messagesProp.scrollToTime,
+      go: messagesProp.go,
+    }),
+    [
+      messagesProp.today, messagesProp.previous, messagesProp.next, messagesProp.day,
+      messagesProp.week, messagesProp.month, messagesProp.date, messagesProp.time,
+      messagesProp.event, messagesProp.noEventsInRange, messagesProp.goTo,
+      messagesProp.scrollToTime, messagesProp.go,
+    ]
+  );
   const [isCompactCalendar, setIsCompactCalendar] = useState(false);
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
