@@ -222,7 +222,7 @@ Start with an inventory of every `useEffect`+`fetch` read and every action-as-re
   - The inquiries reschedule works the same way.
   - Update the `optimistic-rendering` skill, keeping the override until the new events are in state (the known snap-back bug).
 - **`CalendarSkeleton`.** Build one skeleton for both pages: the toolbar plus the grid at `h-[calc(100dvh-14rem)]`.
-  - `loading.tsx` chooses the calendar or table skeleton from the stored view cookie. Verify in the Next 16 docs that `cookies()` in `loading` is safe for prefetch; if it isn't, use in-page `<Suspense>` keyed by view instead.
+  - **Decided (Next 16.2.6 `loading.md`):** the `loading.tsx` fallback is prefetched, and `cookies()` in it would make it dynamic. So `loading.tsx` stays static and renders only the header and toolbar skeleton, which are identical in both views. `page.tsx` resolves the view first (a cheap searchParam or cookie read), then streams `<Suspense key={view} fallback={CalendarSkeleton | TableSkeleton}>` around an async data child. Content only appears below the toolbar and nothing already rendered moves, so there is no layout shift.
   - Table skeleton rows = `DEFAULT_PAGE_SIZE`.
 - **`react-big-calendar` code split.** Load it via `next/dynamic` (`ssr: false`, with the skeleton as fallback). Keep it only if analyze/TBT shows a gain; otherwise revert and record it as declined.
 - **Candles.**
