@@ -15,6 +15,23 @@ booking-calendar.tsx ............ shared <BookingCalendar> (react-big-calendar w
   └─ inquiries-calendar-manager.tsx  inquiries consumer (events = buildInquiryCalendarEvents)
 ```
 
+## Window model (server loads a padded window, not everything)
+- The server loads the Sunday-aligned visible month grid +/- `CALENDAR_WINDOW_PAD_DAYS = 37`
+  (`lib/bookings/calendar-window.ts`: `calendarWindow`, `visibleGridRange`, `isRangeInsideWindow`).
+  37 = max overshoot of the adjacent month's grid, so month +/-1 never refetches.
+- Loaders: `bookings/_data/calendar-events.ts` (1 windowed query); `inquiries/_data/calendar-data.ts`
+  (1 inquiry find + 1 windowed booking find reused for candles AND conflicts via
+  `computeInquiryConflictsFromBookings`).
+- Leaving the window: `useCalendarWindowNav` (`_helpers/use-calendar-window-nav.ts`) does
+  `router.replace` with a new `?date=` inside a transition; old candles stay rendered, dimmed
+  while `isPending`. Inside the window nothing is requested.
+- "Today" / the today cell use the workspace timezone's now, not the browser's.
+- `BookingCalendar` is loaded through `BookingCalendarLazy` (`booking-calendar-dynamic.tsx`,
+  `ssr:false`, `loading: <CalendarSkeleton />`) so table views never download react-big-calendar.
+  Import the Lazy wrapper from consumers, not `booking-calendar` directly.
+- Detail/edit: `?detail` / `?edit` open via `BookingUrlModals` (client-mounted; changed with
+  `setUrlParams`, History API, no RSC fetch). Don't `router.push` for these.
+
 ## The shared component — `BookingCalendar`
 `app/[locale]/(app)/bookings/_components/booking-calendar.tsx`. A consumer feeds it
 events + callbacks; the component owns month/week/day views, the candle renderers, and
@@ -83,8 +100,9 @@ consumer runs it in an `eventsWithConflicts` useMemo over its visible events and
 2. **Draggable gating.** Bookings: everything draggable. Inquiries: `draggableAccessor` uses
    `isInquiryCandleDraggable` (kind inquiry + `colorOverride` defined + `end >= now`) so booked
    and past candles can't be dragged.
-3. **Reschedule action.** Bookings: `patchBookingSessions` → `PATCH /api/bookings/:id` (client
-   already conflict-checked). Inquiries: `rescheduleInquirySessionAction` (inquiries/_actions.ts)
+3. **Reschedule action.** Bookings: `patchBookingSessions` → ONE `PATCH /api/bookings/:id` with
+   `rejectOnConflict: true` (server checks overlaps and answers 409 with no write; there is no
+   client pre-flight). Inquiries: `rescheduleInquirySessionAction` (inquiries/_actions.ts)
    — does a **server-side** conflict check and atomically syncs the Inquiry + its draft Booking
    in a transaction.
 

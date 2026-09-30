@@ -72,10 +72,18 @@ entityId, entityType, read, readAt, silent?, createdAt }`.
 ## Transport (socket.io)
 
 - Server singleton via `lib/sockets/io.ts` (`getIO()`); rooms are
-  `user:<workosUserId>`.
-- `NotificationProvider` connects on mount and listens for `notification:new`,
-  `notification:read`, `notification:readAll`; falls back to DB fetch when the
-  socket is unavailable.
+  `user:<workosUserId>` and `workspace:<workspaceId>` (joined from the signed handshake
+  token, whose workspace is resolved from DB memberships; removed members are evicted via
+  `evictUserFromWorkspace`).
+- `NotificationProvider` takes a `workspaceId` prop, connects on mount and listens for
+  `notification:new`, `notification:read`, `notification:readAll`; falls back to DB fetch when
+  the socket is unavailable.
+- It also listens for `data:changed` (`lib/data-events.ts`, emitted by
+  `emitDataChanged(workspaceId, event)` after a mutation commits). Payloads for another
+  workspace are ignored; the rest go through `useApplyDataEvent` -> `invalidateFor`
+  (react-query invalidation + debounced `router.refresh()`), skipping the actor's own echo.
+  This replaced the old `useLiveRefresh` hook (removed). Payloads carry only a type and opaque
+  ids, never entity data.
 
 ## Types & triggers
 
