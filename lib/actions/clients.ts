@@ -21,7 +21,9 @@ import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients
 
 type MutationResult = { ok: true } | { error: string };
 
-export async function createClientAction(input: ClientFormInput): Promise<MutationResult> {
+export async function createClientAction(
+  input: ClientFormInput
+): Promise<{ ok: true; clientId: string } | { error: string }> {
   try {
     const ctx = await requireOrg();
     await connectDB();
@@ -38,7 +40,7 @@ export async function createClientAction(input: ClientFormInput): Promise<Mutati
 
     emitDataChanged(String(ctx.workspace._id), { type: "client.created", clientId: String(created._id) });
     revalidatePath("/clients");
-    return { ok: true };
+    return { ok: true, clientId: String(created._id) };
   } catch {
     return { error: "client_create_failed" };
   }

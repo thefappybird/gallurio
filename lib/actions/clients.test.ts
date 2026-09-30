@@ -63,13 +63,13 @@ afterEach(async () => {
 // ─── createClientAction ───────────────────────────────────────────────────────
 
 describe("createClientAction", () => {
-  it("valid input creates client and returns { ok: true }", async () => {
+  it("valid input creates client and returns { ok: true, clientId }", async () => {
     mockOrg();
 
     const result = await createClientAction(validInput);
 
-    expect(result).toEqual({ ok: true });
     const saved = await Client.findOne({ workspaceId, name: "Alice Wonderland" }).lean();
+    expect(result).toEqual({ ok: true, clientId: String(saved?._id) });
     expect(saved).not.toBeNull();
     expect(saved?.email).toBe("alice@example.com");
   });
