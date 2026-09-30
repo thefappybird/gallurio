@@ -38,7 +38,7 @@ describe("InquiryActions", () => {
     renderWithProviders(<InquiryActions inquiryId="inq-1" status="new" />);
     fireEvent.click(screen.getByRole("button", { name: /^archive$/i }));
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" })
+      expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" }, { refresh: false })
     );
     expect(refresh).not.toHaveBeenCalled();
   });

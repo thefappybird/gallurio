@@ -208,9 +208,15 @@ describe("BookingDraftCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /convert to booking/i }));
 
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ type: "booking.updated", bookingId: "bk_1", inquiryId: "abc" })
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        { type: "booking.updated", bookingId: "bk_1", inquiryId: "abc" },
+        { refresh: false },
+      )
     );
-    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" });
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false },
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 

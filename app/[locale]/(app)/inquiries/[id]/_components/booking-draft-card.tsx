@@ -186,7 +186,8 @@ export function BookingDraftCard({
           ? new Date(draftSessions[0].startDate).toISOString()
           : null,
       });
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
+      // editInquirySessionsAction revalidates the inquiry routes.
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined }, { refresh: false });
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -210,7 +211,8 @@ export function BookingDraftCard({
       setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
       // Propagate optimistic patch to the table row.
       onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
+      // saveDraftBookingFieldsAction revalidates the inquiry routes.
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined }, { refresh: false });
     } finally {
       setSaving(false);
     }
@@ -233,8 +235,11 @@ export function BookingDraftCard({
       toast.success(ta("approvedToast"));
       // Also drops the cached inquiry detail so reopening shows the booked state.
       const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId });
-      if (convertedBookingId) invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId });
+      // approveInquiryBookingAction revalidates /inquiries, /bookings and /dashboard.
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId }, { refresh: false });
+      if (convertedBookingId) {
+        invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId }, { refresh: false });
+      }
     } catch {
       toast.error(t("approveError"));
     } finally {

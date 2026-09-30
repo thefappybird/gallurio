@@ -92,7 +92,7 @@ describe("ClientInfoCard", () => {
 
     await waitFor(() => expect(updateInquiryPhoneAction).toHaveBeenCalledOnce());
     expect(onInquiryChanged).toHaveBeenCalledWith("inq-1", { phone: "+63999999999" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" });
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" }, { refresh: false });
   });
 
   it("announces inquiry.updated and client.updated after resolving a duplicate", async () => {

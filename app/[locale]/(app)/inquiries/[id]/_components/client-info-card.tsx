@@ -111,7 +111,8 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     toast.success(t("savedToast"));
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
-    invalidateFor({ type: "inquiry.updated", inquiryId });
+    // updateInquiryPhoneAction revalidates the inquiry routes.
+    invalidateFor({ type: "inquiry.updated", inquiryId }, { refresh: false });
   }
 
   function handleCancelPhone() {

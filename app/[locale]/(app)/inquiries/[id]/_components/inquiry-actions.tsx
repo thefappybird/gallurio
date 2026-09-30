@@ -37,7 +37,8 @@ export function InquiryActions({ inquiryId, status }: Props) {
         return;
       }
       toast.success(successMsg);
-      invalidateFor({ type: "inquiry.updated", inquiryId });
+      // decline/archive actions revalidate the inquiry routes.
+      invalidateFor({ type: "inquiry.updated", inquiryId }, { refresh: false });
     } catch {
       toast.error(t("errorToast"));
     } finally {
