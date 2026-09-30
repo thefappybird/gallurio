@@ -1383,6 +1383,8 @@
         "restoredToast": "Na-restore ang booking.",
         "actionFailed": "May naganap na mali. Subukan muli.",
         "notFound": "Hindi natagpuan ang booking.",
+        "loadFailed": "Hindi ma-load ang booking na ito.",
+        "retry": "Subukan muli",
         "editAll": "I-edit lahat",
         "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
         "unconfirmedDrafts": {

@@ -34,6 +34,7 @@ import { formatMoney } from "@/lib/utils/format-currency";
 // Lets individual tests flip the saved time-format preference (mirrors the
 // pattern used in booking-draft-card.test.tsx).
 let _timeMode: TimeMode = "24h";
+let _search = "";
 vi.mock("@/lib/time-format/context", () => ({
   useTimeFormat: vi.fn(() => _timeMode),
   useTimeFormatContext: vi.fn(() => ({ timeMode: _timeMode, setTimeMode: vi.fn() })),
@@ -42,7 +43,7 @@ vi.mock("@/lib/time-format/context", () => ({
 
 // ── Navigation stubs ─────────────────────────────────────────────────────────
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(_search),
   usePathname: () => "/bookings",
   useRouter: () => ({
     push: vi.fn(),
@@ -75,11 +76,18 @@ vi.mock("@/lib/actions/clients", () => ({
   getClientBookingsAction: vi.fn().mockResolvedValue([]),
 }));
 
+const { pushSpy, refreshSpy, invalidateSpy } = vi.hoisted(() => ({
+  pushSpy: vi.fn(),
+  refreshSpy: vi.fn(),
+  invalidateSpy: vi.fn(),
+}));
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
+
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: pushSpy,
     replace: vi.fn(),
-    refresh: vi.fn(),
+    refresh: refreshSpy,
     back: vi.fn(),
     forward: vi.fn(),
     prefetch: vi.fn(),
@@ -174,11 +182,19 @@ function makeFetch({
       return { ok: true, json: async () => ({ entries: [], total: 0 }) };
     }
     if (url.includes("/api/bookings/shifts-on-date")) {
-      return { ok: true, json: async () => ({ shifts }) };
+      // Batched contract: one key per requested date (same hits for each).
+      const dates = (new URL(url, "http://test").searchParams.get("dates") ?? "").split(",").filter(Boolean);
+      return {
+        ok: true,
+        json: async () => ({ shifts, byDate: Object.fromEntries(dates.map((d) => [d, shifts])) }),
+      };
     }
-    if (url === `/api/bookings/${BOOKING_ID}`) {
+    if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
       if (!init || init.method !== "PATCH") {
-        return { ok: true, json: async () => booking };
+        return {
+          ok: true,
+          json: async () => ({ ...booking, activity: { entries: [], total: 0, page: 1, pageSize: 5, actorNames: {} } }),
+        };
       }
       return { ok: true, json: async () => patchResponse };
     }
@@ -218,6 +234,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   _timeMode = "24h";
+  _search = "";
+  pushSpy.mockClear();
+  refreshSpy.mockClear();
+  invalidateSpy.mockClear();
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -719,9 +739,9 @@ describe("Session remove — scoped busy state", () => {
           return { ok: true, json: async () => ({ entries: [], total: 0 }) };
         }
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => ({ shifts: [], byDate: {} }) };
         }
-        if (url === `/api/bookings/${BOOKING_ID}`) {
+        if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
           if (init?.method === "PATCH") {
             await patchGate;
             return { ok: true, json: async () => TWO_SESSION_BOOKING };
@@ -781,9 +801,9 @@ describe("Session remove — scoped busy state", () => {
           return { ok: true, json: async () => ({ entries: [], total: 0 }) };
         }
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => ({ shifts: [], byDate: {} }) };
         }
-        if (url === `/api/bookings/${BOOKING_ID}`) {
+        if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
           if (init?.method === "PATCH") {
             await patchGate;
             return { ok: true, json: async () => TWO_SESSION_BOOKING };
@@ -2887,5 +2907,152 @@ describe("Frozen FX rate subtitle", () => {
     expect(
       screen.getByText(expectedFxSubtitle(10000, 0.5, "USD"))
     ).toBeInTheDocument();
+  });
+});
+
+// ─── react-query load ─────────────────────────────────────────────────────────
+
+describe("BookingDetailModal — single load request", () => {
+  it("issues exactly one booking request on open (booking + activity + actor names together)", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForHeaderOnly();
+    await new Promise((r) => setTimeout(r, 50));
+    const bookingCalls = (fetchMock as Mock).mock.calls
+      .map((args: unknown[]) => String(args[0]))
+      .filter((u) => !u.includes("shifts-on-date"));
+    expect(bookingCalls).toEqual([`/api/bookings/${BOOKING_ID}?include=activity`]);
+  });
+});
+
+describe("BookingDetailModal — load error", () => {
+  it("shows an error state with Retry that refetches and then renders the booking", async () => {
+    let fail = true;
+    const base = makeFetch();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (fail && String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+          return { ok: false, status: 500, json: async () => ({}) };
+        }
+        return base(url, init);
+      })
+    );
+    renderModal();
+    const retry = await screen.findByRole("button", { name: "Retry" }, { timeout: 4000 });
+    expect(screen.getByText("Couldn't load this booking.")).toBeInTheDocument();
+    fail = false;
+    fireEvent.click(retry);
+    await waitForHeaderOnly();
+  }, 10000);
+});
+
+describe("BookingDetailModal — 404", () => {
+  it("closes the modal and strips ?detail when the booking does not exist", async () => {
+    _search = `detail=${BOOKING_ID}&view=table`;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: "not_found" }) }))
+    );
+    renderModal();
+    await waitFor(() => expect(pushSpy).toHaveBeenCalledWith("/bookings?view=table"));
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+});
+
+describe("BookingDetailModal — background refetch", () => {
+  it("does not overwrite an in-progress edit when the booking query refetches", async () => {
+    const { useQueryClient } = await import("@tanstack/react-query");
+    const { act } = await import("@testing-library/react");
+    let qc!: ReturnType<typeof useQueryClient>;
+    function Grab() {
+      qc = useQueryClient();
+      return null;
+    }
+    const base = makeFetch();
+    let serverTitle = "Test Wedding";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+          const res = await base(url, init);
+          const body = await res.json();
+          return { ok: true, json: async () => ({ ...body, title: serverTitle }) };
+        }
+        return base(url, init);
+      })
+    );
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AppQueryProvider workspaceId="ws-test">
+          <Grab />
+          <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+        </AppQueryProvider>
+      </NextIntlClientProvider>
+    );
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+
+    serverTitle = "Changed Elsewhere";
+    await act(async () => {
+      await qc.invalidateQueries();
+    });
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Changed Elsewhere" })).not.toBeInTheDocument();
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+  });
+});
+
+describe("BookingDetailModal — conflict preview batching", () => {
+  it("issues ONE shifts-on-date request for N session dates", async () => {
+    const s2 = makeFutureSession(5);
+    const s3 = makeFutureSession(7);
+    const booking = { ...MOCK_BOOKING, sessions: [FUTURE_SESSION, s2, s3] };
+    const fetchMock = makeFetch({ booking });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await new Promise((r) => setTimeout(r, 50));
+    const shiftCalls = (fetchMock as Mock).mock.calls
+      .map((a: unknown[]) => String(a[0]))
+      .filter((u) => u.includes("shifts-on-date"));
+    expect(shiftCalls).toHaveLength(1);
+    const dates = new URL(shiftCalls[0], "http://test").searchParams.get("dates")!.split(",");
+    expect(dates).toHaveLength(3);
+  });
+
+  it("marks the session conflict alert as role=alert", async () => {
+    vi.stubGlobal("fetch", makeFetch({ shifts: [CONFLICT_SHIFT] }));
+    renderModal();
+    await waitForLoad();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Other Event/);
+  });
+});
+
+describe("BookingDetailModal — save reconciliation", () => {
+  it("after a successful save broadcasts booking.updated (no direct router.refresh)", async () => {
+    const patchResponse = { ...MOCK_BOOKING, createdFromInquiryId: "inq-1" };
+    vi.stubGlobal("fetch", makeFetch({ patchResponse: patchResponse as unknown as typeof MOCK_BOOKING }));
+    renderModal();
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        type: "booking.updated",
+        bookingId: BOOKING_ID,
+        clientId: CLIENT_ID,
+        inquiryId: "inq-1",
+      })
+    );
+    expect(refreshSpy).not.toHaveBeenCalled();
   });
 });

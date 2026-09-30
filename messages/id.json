@@ -1383,6 +1383,8 @@
         "restoredToast": "Pemesanan dipulihkan.",
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
         "notFound": "Pemesanan tidak ditemukan.",
+        "loadFailed": "Pemesanan ini tidak dapat dimuat.",
+        "retry": "Coba lagi",
         "editAll": "Edit semua",
         "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
         "unconfirmedDrafts": {

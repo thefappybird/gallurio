@@ -1383,6 +1383,8 @@
         "restoredToast": "Booking restored.",
         "actionFailed": "Something went wrong. Try again.",
         "notFound": "Booking not found.",
+        "loadFailed": "Couldn't load this booking.",
+        "retry": "Retry",
         "editAll": "Edit all",
         "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
         "unconfirmedDrafts": {
