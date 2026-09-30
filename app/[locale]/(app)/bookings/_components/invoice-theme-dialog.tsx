@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
 import { Button } from "@/components/ui/button";
@@ -157,7 +157,7 @@ function DocumentPreview({
 
 export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FALLBACK_BUSINESS }: Props) {
   const t = useTranslations("app.bookings.invoiceThemeDialog");
-  const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const errMsg = useActionError();
   const [preset, setPreset] = useState<InvoiceThemePresetId | "custom">(initialTheme.preset);
   const [customMain, setCustomMain] = useState(initialTheme.main);
@@ -179,7 +179,7 @@ export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FAL
       return;
     }
     onClose();
-    router.refresh();
+    invalidateFor({ type: "workspace.updated" });
   }
 
   return (
