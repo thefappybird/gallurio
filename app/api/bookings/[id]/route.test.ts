@@ -1125,3 +1125,116 @@ describe("PATCH /api/bookings/[id] — cancellation emails", () => {
     expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
   });
 });
+
+describe("PATCH /api/bookings/[id] rejectOnConflict", () => {
+  const at = (h: number, m = 0) => new Date(Date.UTC(2030, 7, 15, h, m));
+  const sess = (h1: number, h2: number) => ({ startAt: at(h1), endAt: at(h2) });
+  const iso = (s: { startAt: Date; endAt: Date }) => ({
+    startAt: s.startAt.toISOString(),
+    endAt: s.endAt.toISOString(),
+  });
+
+  async function seedAt(cid: Types.ObjectId, sessions: { startAt: Date; endAt: Date }[], o: Record<string, unknown> = {}) {
+    return seedBooking(workspaceId, cid, {
+      sessions,
+      firstSessionStart: sessions[0].startAt,
+      lastSessionEnd: sessions[sessions.length - 1].endAt,
+      ...o,
+    });
+  }
+
+  it("409s with conflicts and does not write when the moved session overlaps another booking", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const other = await seedAt(c._id, [sess(10, 12)], { title: "Other" });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ sessions: [iso(sess(11, 13))], rejectOnConflict: true }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe("conflict");
+    expect(json.conflicts).toEqual([
+      expect.objectContaining({ bookingId: other._id.toString(), shiftStart: "10:00", shiftEnd: "12:00" }),
+    ]);
+    const stored = await Booking.findById(b._id).lean();
+    expect(stored?.sessions[0].startAt.toISOString()).toBe(at(14).toISOString());
+  });
+
+  async function patchFlag(id: string, sessions: { startAt: Date; endAt: Date }[], flag: unknown = true) {
+    const { PATCH } = await load();
+    return PATCH(
+      makePatch({ sessions: sessions.map(iso), ...(flag === "omit" ? {} : { rejectOnConflict: flag }) }, id),
+      ctx(id)
+    );
+  }
+
+  it("adjacent boundaries do not conflict; 200 returns updated booking with client block", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)]);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(12, 14)]);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(new Date(json.sessions[0].startAt).toISOString()).toBe(at(12).toISOString());
+    expect(json.client).toMatchObject({ name: "Emma Carter" });
+  });
+
+  it("does not conflict with its own stored session (same index excluded)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(10, 12)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("conflicts with a sibling session of the same booking", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(10, 12), sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(10, 12), sess(11, 15)]);
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.conflicts).toEqual([expect.objectContaining({ sessionIndex: 0 })]);
+  });
+
+  it("without the flag an overlapping move is written (soft-confirm flows unchanged)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)]);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)], "omit");
+    expect(res.status).toBe(200);
+  });
+
+  it("ignores other workspaces' bookings (tenant isolation)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const oc = await seedClient(otherWorkspaceId);
+    await seedBooking(otherWorkspaceId, oc._id, { sessions: [sess(10, 12)], firstSessionStart: at(10), lastSessionEnd: at(12) });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("staff conflict check is limited to their team scope", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    auth.role = "staff";
+    auth.memberships = [{ teamId: teamId.toString(), role: "lead" }];
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)], { teamId: new Types.ObjectId() });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("400s on a non-boolean rejectOnConflict", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)], "yes");
+    expect(res.status).toBe(400);
+  });
+});
