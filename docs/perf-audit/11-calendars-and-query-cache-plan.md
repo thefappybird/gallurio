@@ -82,6 +82,7 @@ Target call budget. The executor re-measures the "today" column; the final table
 | Calendar drag/resize | GET `shifts-on-date`, then PATCH, then full `router.refresh()` | 1 PATCH (409 with conflicts, or 200 with the updated booking) |
 | Open booking detail | GET booking + GET activity + GET `/api/users/names` | 1 GET (booking + first activity page with actor names), cached |
 | History dialog page | GET activity + GET names | 1 GET (names inline) |
+| Detail modal / wizard / draft card conflict preview | 1 GET `shifts-on-date` per unique session date | 1 GET (`dates=` batch) |
 | Detail → "Edit all" → wizard | GET booking again | 0 (shared key) |
 | Wizard create | Clients preloaded on every render | 1 lazy GET, cached |
 | Month nav | 0 (everything preloaded, unbounded) | 0 while the visible grid (incl. spill-over days) stays inside grid ± 31 days; 1 RSC fetch otherwise |
@@ -107,10 +108,13 @@ Work:
   - A conflict returns 409 with the conflicting shifts; success returns 200 with the updated booking.
   - Retire `shifts-on-date` if nothing else uses it.
   - `rescheduleInquirySessionAction` also returns the updated data.
+- **Batched conflict lookups (T1b).** Today the detail modal (`booking-detail-modal.tsx:569`), the wizard (`booking-wizard-modal.tsx:371`) and the inquiry draft card (`booking-draft-card.tsx:140`) each fire one `shifts-on-date` request per unique session date. `shifts-on-date` gains `dates=a,b,c` (capped at 31) and returns `{ byDate }` from one booking query spanning the range. The team-scope/exclude semantics stay identical to `getShiftsOnDate`. The callers switch over in T4/T6; the single-`date` form is removed once no caller uses it.
+- **`/api/users/names`** is removed once the detail modal and history dialog read the `actorNames` returned inline by the activity endpoints (T6).
 - **Booking detail GET.** `GET /api/bookings/[id]` returns the booking plus its first activity page with actor names. The activity endpoint returns names inline. Apply the `hosting-ops.md` endpoint-hardening checklist.
 - **Clients picker.**
   - The picker gets a lean `/api/clients` shape: `id, name, email, phone`.
-  - Cap `ClientReassignPicker` results.
+  - `ClientReassignPicker` already caps at `limit: 20`, and `/api/clients` already returns the lean shape: no backend change needed.
+  - The `?detail` pre-check removal moves to after T6, because the modal must handle a 404 first.
 - Set the inquiries default `limit` to `DEFAULT_PAGE_SIZE`; today it is 25, which isn't one of the offered options.
 - Tests use in-memory Mongo:
   - Window overlap, including overnight and multi-day sessions.
