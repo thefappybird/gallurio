@@ -17,6 +17,9 @@ vi.mock("../_member-action", () => ({
   setLeadFlagAction: vi.fn(),
 }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
+
 vi.mock("../_invite-action", () => ({
   revokeInviteAction: vi.fn(),
 }));
@@ -132,6 +135,13 @@ describe("TeamDetailDrawer", () => {
 
     await waitFor(() => expect(toggle).toHaveAttribute("aria-disabled", "true"));
     expect(toggle).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("invalidates team.updated for the team after a lead change succeeds", async () => {
+    vi.mocked(setLeadFlagAction).mockResolvedValue({ ok: true } as never);
+    renderDrawer();
+    fireEvent.click(screen.getByRole("switch"));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t1" }));
   });
 
   it("hides every mutating control for non-owners, but keeps the member list read-only", () => {

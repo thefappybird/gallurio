@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import {
   removeMemberFromTeamAction,
   removeMemberFromTeamAndWorkspaceAction,
@@ -47,6 +48,7 @@ export function RemoveMemberDialog({
   teamName,
 }: Props) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [pending, setPending] = useState<"team" | "team-and-workspace" | "workspace" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +93,8 @@ export function RemoveMemberDialog({
       );
       return;
     }
+    // Server emits the teamId for team-scoped removals, null for workspace-only.
+    invalidateFor({ type: "team.updated", teamId: action === "workspace" ? null : teamId });
     onOpenChange(false);
   }
 

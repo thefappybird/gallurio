@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { Loader2Icon, MailPlusIcon, MailXIcon, UserPlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ export function TeamDetailDrawer({
   onInvite,
 }: Props) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addValue, setAddValue] = useState("");
   const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
@@ -121,7 +121,7 @@ export function TeamDetailDrawer({
         return;
       }
       toast.success(t("assignment.toasts.added"));
-      router.refresh();
+      invalidateFor({ type: "team.updated", teamId });
     });
   }
 
@@ -150,7 +150,7 @@ export function TeamDetailDrawer({
       });
       try {
         await request;
-        router.refresh();
+        invalidateFor({ type: "team.updated", teamId });
       } catch {
         setRoleOverrides(previousRoles);
       } finally {
@@ -169,7 +169,8 @@ export function TeamDetailDrawer({
         return;
       }
       toast.success(t("invite.toasts.revoked"));
-      router.refresh();
+      // revokeInviteAction broadcasts team.updated with a null teamId.
+      invalidateFor({ type: "team.updated", teamId: null });
     });
   }
 
