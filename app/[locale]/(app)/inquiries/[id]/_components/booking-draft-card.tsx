@@ -187,7 +187,7 @@ export function BookingDraftCard({
           : null,
       });
       // editInquirySessionsAction revalidates the inquiry routes.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined }, { refresh: false });
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -212,7 +212,7 @@ export function BookingDraftCard({
       // Propagate optimistic patch to the table row.
       onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
       // saveDraftBookingFieldsAction revalidates the inquiry routes.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined }, { refresh: false });
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
     } finally {
       setSaving(false);
     }
@@ -236,9 +236,9 @@ export function BookingDraftCard({
       // Also drops the cached inquiry detail so reopening shows the booked state.
       const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
       // approveInquiryBookingAction revalidates /inquiries, /bookings and /dashboard.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId }, { refresh: false });
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId });
       if (convertedBookingId) {
-        invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId }, { refresh: false });
+        invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId });
       }
     } catch {
       toast.error(t("approveError"));

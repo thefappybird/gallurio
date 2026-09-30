@@ -138,7 +138,6 @@ describe("InquiriesCalendarManager reschedule", () => {
     expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
     expect(mockInvalidateFor).toHaveBeenCalledWith(
       { type: "inquiry.updated", inquiryId: "inq1", bookingId: "bk9" },
-      { refresh: false },
     );
     expect(mockRefresh).not.toHaveBeenCalled();
     // Server events have not changed yet -> override must still be applied (no snap-back).

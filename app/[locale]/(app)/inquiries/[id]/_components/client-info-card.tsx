@@ -112,7 +112,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
     // updateInquiryPhoneAction revalidates the inquiry routes.
-    invalidateFor({ type: "inquiry.updated", inquiryId }, { refresh: false });
+    invalidateFor({ type: "inquiry.updated", inquiryId });
   }
 
   function handleCancelPhone() {

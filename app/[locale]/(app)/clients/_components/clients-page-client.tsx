@@ -185,7 +185,7 @@ export function ClientsPageClient({
         setDetailOpen(false);
         stripClientParam();
         // reactivateClientAction revalidates /clients.
-        invalidateFor({ type: "client.updated", clientId: client.id }, { refresh: false });
+        invalidateFor({ type: "client.updated", clientId: client.id });
       } finally {
         setReactivatingId(null);
       }

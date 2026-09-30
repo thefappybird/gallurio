@@ -257,14 +257,10 @@ export function InquiriesCalendarManager({
             endTime,
           });
           if ("error" in result) throw result.error;
-          // Success -- rescheduleInquirySessionAction revalidates /inquiries, so the
-          // response carries fresh RSC (no extra router.refresh). The useEffect on
-          // `events` clears the optimistic override only once the authoritative
-          // position arrives, preventing any snap-back.
-          invalidateFor(
-            { type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: result.draftBookingId ?? null },
-            { refresh: false },
-          );
+          // Success -- the action's revalidatePath is locale-less, so refresh via
+          // invalidateFor. The useEffect on `events` clears the optimistic override
+          // only once the authoritative position arrives, preventing any snap-back.
+          invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: result.draftBookingId ?? null });
         })();
         toast.promise(request, {
           loading: t("updating"),

@@ -142,7 +142,7 @@ describe("ClientFormModal", () => {
     renderWithProviders(<ClientFormModal {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "c-new" }, { refresh: false }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "c-new" }));
   });
 
   it("invalidates client.updated on edit, and nothing when the save fails", async () => {
@@ -155,7 +155,7 @@ describe("ClientFormModal", () => {
     expect(invalidateFor).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() =>
-      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" }, { refresh: false })
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" })
     );
   });
 

@@ -157,6 +157,7 @@ describe("BookingDraftCard", () => {
       "abc",
       expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
     );
+    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
   });
 
   it("calls toast.success after a successful sessions save", async () => {
@@ -201,23 +202,21 @@ describe("BookingDraftCard", () => {
     expect(onInquiryChanged).toHaveBeenCalledWith("abc", {
       eventDate: "2099-12-31T00:00:00.000Z",
     });
+    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
   });
 
-  it("announces inquiry.updated and booking.updated after approving, without router.refresh", async () => {
+  it("announces inquiry.updated and booking.updated after approving", async () => {
     renderWithProviders(<BookingDraftCard {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: /convert to booking/i }));
 
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith(
+      expect(invalidateSpy).toHaveBeenLastCalledWith(
         { type: "booking.updated", bookingId: "bk_1", inquiryId: "abc" },
-        { refresh: false },
       )
     );
     expect(invalidateSpy).toHaveBeenCalledWith(
       { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
-      { refresh: false },
     );
-    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("checks every session date with ONE batched request and flags the overlapping session", async () => {

@@ -79,7 +79,7 @@ describe("DeactivateClientDialog", () => {
     renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
     fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
     await waitFor(() =>
-      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c1" }, { refresh: false })
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c1" })
     );
   });
 
