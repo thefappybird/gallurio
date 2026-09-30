@@ -92,7 +92,6 @@ function renderView(props: Partial<React.ComponentProps<typeof CalendarView>> = 
       <CalendarView
         events={[makeEvent()]}
         messages={calMessages}
-        initialClients={[]}
         workspaceTimezone={TZ}
         window={windowIso}
         {...props}
@@ -123,7 +122,7 @@ describe("CalendarView window navigation", () => {
     const rerender = (d: Date) =>
       view.rerender(
         <NextIntlClientProvider locale="en" messages={enMessages}>
-          <CalendarView events={[makeEvent()]} messages={calMessages} initialClients={[]} workspaceTimezone={TZ} window={windowIso} defaultDate={d} />
+          <CalendarView events={[makeEvent()]} messages={calMessages} workspaceTimezone={TZ} window={windowIso} defaultDate={d} />
         </NextIntlClientProvider>
       );
     const shownBefore = cal.date;
@@ -211,7 +210,7 @@ describe("CalendarView stable props", () => {
     const first = { trailing: cal.toolbarTrailing, slot: cal.onSelectSlot };
     view.rerender(
       <NextIntlClientProvider locale="en" messages={enMessages}>
-        <CalendarView events={[makeEvent()]} messages={calMessages} initialClients={[]} workspaceTimezone={TZ} window={windowIso} teams={teams} />
+        <CalendarView events={[makeEvent()]} messages={calMessages} workspaceTimezone={TZ} window={windowIso} teams={teams} />
       </NextIntlClientProvider>
     );
     expect(cal.toolbarTrailing).toBe(first.trailing);
