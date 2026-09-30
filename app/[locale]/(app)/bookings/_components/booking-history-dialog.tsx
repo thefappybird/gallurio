@@ -57,7 +57,7 @@ export function BookingHistoryDialog({
   const query = useQuery({
     queryKey: queryKeys(ws).bookingActivity(bookingId, page),
     queryFn: async (): Promise<ActivityPage> => {
-      const res = await fetch(`/api/bookings/${bookingId}/activity?page=${page}&pageSize=${PAGE_SIZE}`);
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}/activity?page=${page}&pageSize=${PAGE_SIZE}`);
       if (!res.ok) throw new Error(`activity_load_failed_${res.status}`);
       return res.json();
     },

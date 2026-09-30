@@ -906,7 +906,7 @@ export function BookingDetailModal({
           ...draftPayments.map((d) => ({ price: d.price as number, status: d.status, title: d.title, method: d.method })),
         ];
       }
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
@@ -982,7 +982,7 @@ export function BookingDetailModal({
     });
 
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ sessions: newSessions }),
@@ -1266,7 +1266,7 @@ export function BookingDetailModal({
       status: { before: previous.status, after: newStatus },
     });
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -3863,7 +3863,7 @@ function DialogFooterBar({
   const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
   const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
+  const downloadUrl = `/api/bookings/${encodeURIComponent(bookingId)}/${completed ? "receipt" : "invoice"}`;
   const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
 
   function openDownload() {

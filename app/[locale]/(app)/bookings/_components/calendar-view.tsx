@@ -92,7 +92,7 @@ async function patchBookingSessions(bookingId: string, sessions: Session[]): Pro
     endAt: s.endAt.toISOString(),
   }));
   try {
-    const res = await fetch(`/api/bookings/${bookingId}`, {
+    const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessions: body, rejectOnConflict: true }),

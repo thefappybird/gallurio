@@ -150,7 +150,7 @@ export function BookingDraftCard({
     queryKey: [...queryKeys(ws).shifts(sortedDates), bookingId],
     queryFn: async (): Promise<Record<string, ShiftHit[]>> => {
       const resp = await fetch(
-        `/api/bookings/shifts-on-date?dates=${sortedDates.join(",")}${bookingId ? `&excludeId=${bookingId}` : ""}`
+        `/api/bookings/shifts-on-date?dates=${sortedDates.join(",")}${bookingId ? `&excludeId=${encodeURIComponent(bookingId)}` : ""}`
       );
       if (!resp.ok) throw new Error(`shifts_load_failed_${resp.status}`);
       return (await resp.json()).byDate;

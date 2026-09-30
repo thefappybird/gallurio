@@ -215,6 +215,17 @@ describe("CalendarView drag-to-reschedule (single PATCH)", () => {
     expect(screen.getByText(/^Arrived Later@/)).toBeInTheDocument();
   });
 
+  it("encodes the booking id in the PATCH url", async () => {
+    mockFetch.mockResolvedValue(jsonRes(500, {}));
+    const odd = futureEvent();
+    odd.bookingId = "b 1/x";
+    renderView({ events: [odd] });
+    await act(async () => {
+      await cal.onEventDrop({ event: odd, start: droppedStart, end: droppedEnd });
+    });
+    expect(mockFetch.mock.calls[0][0]).toBe("/api/bookings/b%201%2Fx");
+  });
+
   it("409 completed_booking_read_only: reverts and shows the generic update error", async () => {
     mockFetch.mockResolvedValue(jsonRes(409, { error: "completed_booking_read_only" }));
     renderView({ events: [futureEvent()] });

@@ -650,7 +650,7 @@ export function BookingWizardModal({
           close();
           return;
         }
-        const res = await fetch(`/api/bookings/${bookingId}`, {
+        const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(diff),

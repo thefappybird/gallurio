@@ -22,7 +22,7 @@ export class BookingNotFoundError extends Error {
 }
 
 async function fetchBooking<T>(id: string): Promise<T & { activity?: BookingActivityBlock }> {
-  const res = await fetch(`/api/bookings/${id}?include=activity`);
+  const res = await fetch(`/api/bookings/${encodeURIComponent(id)}?include=activity`);
   if (res.status === 404) throw new BookingNotFoundError();
   if (!res.ok) throw new Error(`booking_load_failed_${res.status}`);
   return res.json();
