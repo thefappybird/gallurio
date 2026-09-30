@@ -6,6 +6,7 @@ import { useRouter } from "@/lib/i18n/navigation";
 import { AlertTriangleIcon, EyeIcon, InboxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
+import { preloadInquiryDetailModal } from "./inquiry-detail-dynamic";
 import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
               role="button"
               tabIndex={0}
               aria-label={t("table.open", { name: row.name })}
+              onPointerEnter={preloadInquiryDetailModal}
+              onFocus={preloadInquiryDetailModal}
               onClick={() => openInquiry(row.id)}
               onKeyDown={handleKeyDown}
               className="border border-border bg-card p-4 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -215,6 +218,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
                 tabIndex={0}
                 aria-label={t("table.open", { name: row.name })}
                 className="cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                onPointerEnter={preloadInquiryDetailModal}
+                onFocus={preloadInquiryDetailModal}
                 onClick={() => openInquiry(row.id)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {

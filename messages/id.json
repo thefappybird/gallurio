@@ -2324,6 +2324,10 @@
       "detail": {
         "back": "Kembali ke pertanyaan",
         "conflictBanner": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+        "loadingTitle": "Permintaan",
+        "loading": "Memuat permintaan...",
+        "loadError": "Tidak dapat memuat permintaan ini.",
+        "retry": "Coba lagi",
         "submittedOn": "Dikirim {date}",
         "notFound": "Pertanyaan tidak ditemukan.",
         "clientInfo": {

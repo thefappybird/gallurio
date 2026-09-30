@@ -63,6 +63,21 @@ describe("InquiryDetailModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("shows a loading state, then an error with Retry, while there is no detail", () => {
+    const onRetry = vi.fn();
+    const { rerender } = renderWithProviders(
+      <InquiryDetailModal detail={null} open onClose={vi.fn()} loadState="loading" />
+    );
+    expect(screen.getByText("Loading inquiry...")).toBeInTheDocument();
+
+    rerender(
+      <InquiryDetailModal detail={null} open onClose={vi.fn()} loadState="error" onRetry={onRetry} />
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this inquiry.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+
   it("hides InquiryActions when readOnly is true", () => {
     renderWithProviders(
       <InquiryDetailModal

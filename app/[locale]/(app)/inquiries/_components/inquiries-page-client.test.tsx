@@ -55,8 +55,9 @@ vi.mock("./inquiries-calendar-manager", () => ({
 
 // Capture modal props so tests can call onClose / onInquiryChanged / onConverted directly
 const capturedProps: Record<string, unknown> = {};
-vi.mock("./inquiry-detail-modal", () => ({
-  InquiryDetailModal: (props: {
+vi.mock("./inquiry-detail-dynamic", () => ({
+  preloadInquiryDetailModal: vi.fn(),
+  InquiryDetailModalLazy: (props: {
     onClose: () => void;
     onConverted?: () => void;
     onInquiryChanged?: (id: string, patch: object) => void;
@@ -135,6 +136,7 @@ beforeEach(() => {
   refresh.mockReset();
   replace.mockReset();
   push.mockReset();
+  getInquiryDetailAction.mockReset();
   getInquiryDetailAction.mockResolvedValue({ ok: true, detail });
   liveRefresh.mockReset();
   replace.mockImplementation((href: string) => {
@@ -154,6 +156,19 @@ describe("InquiriesPageClient", () => {
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
     expect(push).not.toHaveBeenCalled();
     expect(window.location.search).toContain("inquiryId=inq-1");
+  });
+
+  it("serves a reopened inquiry from the query cache (one action call for two opens)", async () => {
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+
+    fireEvent.click(screen.getByTestId("inquiry-table"));
+    await screen.findByTestId("inquiry-detail-modal");
+    act(() => (capturedProps.onClose as () => void)());
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("inquiry-table"));
+    await screen.findByTestId("inquiry-detail-modal");
+    expect(getInquiryDetailAction).toHaveBeenCalledTimes(1);
   });
 
   it("opens server-supplied inquiry detail without relying on a second URL sync", () => {

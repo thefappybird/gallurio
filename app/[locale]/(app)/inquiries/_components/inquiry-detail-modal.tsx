@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
 import { ClientInfoCard } from "../[id]/_components/client-info-card";
 import { EventRequestCard, type InquirySessionView } from "../[id]/_components/event-request-card";
@@ -57,10 +59,15 @@ export function InquiryDetailModal({
   teams = [],
   onConverted,
   onInquiryChanged,
+  loadState,
+  onRetry,
 }: {
   detail: InquiryDetailModalData | null;
   open: boolean;
   onClose: () => void;
+  /** Shown instead of the detail while it is being fetched / failed to load. */
+  loadState?: "loading" | "error";
+  onRetry?: () => void;
   teams?: BookingTeamOption[];
   onConverted?: () => void;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
@@ -73,7 +80,31 @@ export function InquiryDetailModal({
     setClientResolutionRequest(0);
   }
 
-  if (!detail) return null;
+  if (!detail) {
+    if (!loadState) return null;
+    return (
+      <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+        <DialogContent className="flex w-full max-w-md flex-col gap-3 p-4 sm:max-w-md">
+          <DialogTitle>{t("loadingTitle")}</DialogTitle>
+          {loadState === "error" ? (
+            <div role="alert" className="flex flex-col items-start gap-3 text-sm text-muted-foreground">
+              <p>{t("loadError")}</p>
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                {t("retry")}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2" aria-busy="true">
+              <span className="sr-only" role="status">{t("loading")}</span>
+              <Skeleton className="h-6 w-2/3" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const readOnly = detail.readOnly ?? false;
   const submittedLabel = new Date(detail.submittedAt).toLocaleDateString(detail.locale, {

@@ -2324,6 +2324,10 @@
       "detail": {
         "back": "Bumalik sa mga katanungan",
         "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
+        "loadingTitle": "Inquiry",
+        "loading": "Nilo-load ang inquiry...",
+        "loadError": "Hindi ma-load ang inquiry na ito.",
+        "retry": "Subukan muli",
         "submittedOn": "Isinumite noong {date}",
         "notFound": "Hindi natagpuan ang katanungan.",
         "clientInfo": {

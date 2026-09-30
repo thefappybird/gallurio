@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
@@ -32,7 +32,19 @@ function renderTable(rows: InquiryRow[] = [baseRow]) {
   );
 }
 
+const preloadSpy = vi.hoisted(() => vi.fn());
+vi.mock("./inquiry-detail-dynamic", () => ({ preloadInquiryDetailModal: preloadSpy }));
+
 describe("InquiryTable", () => {
+  it("warms the detail modal chunk on row pointer-enter and focus", () => {
+    renderTable();
+    const row = screen.getAllByRole("button", { name: /open.*maria santos/i })[0];
+    fireEvent.pointerEnter(row);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    fireEvent.focus(row);
+    expect(preloadSpy).toHaveBeenCalledTimes(2);
+  });
+
   it("renders empty state when rows is empty", () => {
     renderTable([]);
     expect(screen.getByText("No inquiries yet.")).toBeInTheDocument();

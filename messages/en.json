@@ -2324,6 +2324,10 @@
       "detail": {
         "back": "Back to inquiries",
         "conflictBanner": "One or more sessions conflict with existing bookings.",
+        "loadingTitle": "Inquiry",
+        "loading": "Loading inquiry...",
+        "loadError": "Couldn't load this inquiry.",
+        "retry": "Retry",
         "submittedOn": "Submitted {date}",
         "notFound": "Inquiry not found.",
         "clientInfo": {
