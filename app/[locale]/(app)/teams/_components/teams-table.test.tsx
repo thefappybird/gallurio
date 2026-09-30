@@ -167,4 +167,28 @@ describe("TeamsTable", () => {
     fireEvent.click(within(cardList).getByText("Wedding crew"));
     expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
   });
+
+  it("desktop header cells expose scope=col and aria-sort for the sortable name column", () => {
+    const { container } = renderWithProviders(
+      <TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />,
+    );
+    const table = container.querySelector("table")!;
+    const nameHeader = within(table)
+      .getAllByRole("columnheader")
+      .find((th) => th.textContent?.includes("Team"));
+    expect(nameHeader).toHaveAttribute("scope", "col");
+    expect(nameHeader).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  it("desktop row is a keyboard-reachable button with an accessible name, activatable via Enter", () => {
+    const handlers = makeHandlers();
+    const { container } = renderWithProviders(
+      <TeamsTable rows={ROWS} empty="none" {...handlers} />,
+    );
+    const table = container.querySelector("table")!;
+    const row = within(table).getByRole("button", { name: "Open Wedding crew" });
+    expect(row).toHaveAttribute("tabIndex", "0");
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
+  });
 });

@@ -22,7 +22,7 @@ export function TopClientsBar({ clients, currency, locale, title, empty }: Props
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h2" className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="topClients" />
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-between gap-3 p-4 pt-0">

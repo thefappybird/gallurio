@@ -885,7 +885,11 @@
       "totalLabel": "Kabuuan",
       "miniCalendar": {
         "today": "Ngayon",
-        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}"
+        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}",
+        "prevMonth": "Nakaraang buwan",
+        "nextMonth": "Susunod na buwan",
+        "jumpToToday": "Pumunta sa kasalukuyang buwan",
+        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}"
       },
       "calendarTeam": {
         "label": "I-filter ayon sa team",
@@ -1585,7 +1589,8 @@
       "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
       "logOutConfirmCancel": "Kanselahin",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account"
+      "accountMenu": "Menu ng account",
+      "navigationLabel": "Pangunahing nabigasyon"
     },
     "theme": {
       "label": "Tema",
@@ -1707,6 +1712,11 @@
           "yearly": "Taunan",
           "savePill": "Makatipid ng 2 buwan"
         }
+      },
+      "errorBoundary": {
+        "title": "May naganap na error",
+        "retry": "Subukan ulit",
+        "reload": "I-reload ang page"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -3586,6 +3596,7 @@
     },
     "clearFilters": "Tanggalin ang filter",
     "loading": "Naglo-load…",
+    "close": "Isara",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "close": "Isara ang promo code",

@@ -22,12 +22,12 @@ import {
 } from "../_data/portfolio-analytics";
 import { getRecentInquiries } from "../_data/dashboard-metrics";
 import { RecentInquiriesList } from "./recent-inquiries-list";
-import { PortfolioVisitorsInquiriesChart } from "./portfolio-visitors-inquiries-chart";
 import { PortfolioConversionFunnelCard } from "./portfolio-conversion-funnel-card";
 import { PortfolioLeadPipelineCard } from "./portfolio-lead-pipeline-card";
 import { PortfolioDemandProfileCard } from "./portfolio-demand-profile-card";
 import { DashboardInfoHint } from "./dashboard-info-hint";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { PortfolioVisitorsInquiriesChartClient as PortfolioVisitorsInquiriesChart } from "./portfolio-visitors-inquiries-chart-client";
 
 type Props = {
   workspace: WorkspaceDoc;
@@ -105,7 +105,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Card className="rounded-[var(--radius)] lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-sm font-medium">{t("portfolio.visitorsInquiriesTitle")}</CardTitle>
+            <CardTitle as="h2" className="text-sm font-medium">{t("portfolio.visitorsInquiriesTitle")}</CardTitle>
             <DashboardInfoHint hint="portfolioVisitorsInquiries" />
           </CardHeader>
           <CardContent className="h-56 p-0 pr-2">
@@ -184,7 +184,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
 
         <Card className="rounded-[var(--radius)]">
           <CardHeader className="pb-3 flex justify-between">
-            <span className="flex items-center gap-1.5"><CardTitle className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle><DashboardInfoHint hint="portfolioPublishStatus" /></span>
+            <div className="flex items-center gap-1.5"><CardTitle as="h2" className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle><DashboardInfoHint hint="portfolioPublishStatus" /></div>
             <span
               className={`inline-flex w-fit items-center rounded-[var(--radius)] px-2 py-0.5 text-[11px] font-medium ${
                 publishedAt ? "bg-[var(--event-completed)] text-white" : "bg-muted text-muted-foreground"

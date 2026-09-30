@@ -885,7 +885,11 @@
       "totalLabel": "Total",
       "miniCalendar": {
         "today": "Hari ini",
-        "monthTotal": "{count, plural, other {# pemesanan bulan ini}}"
+        "monthTotal": "{count, plural, other {# pemesanan bulan ini}}",
+        "prevMonth": "Bulan sebelumnya",
+        "nextMonth": "Bulan berikutnya",
+        "jumpToToday": "Lompat ke bulan ini",
+        "dayBookingCount": "{count, plural, other {# pemesanan}}"
       },
       "calendarTeam": {
         "label": "Filter berdasarkan tim",
@@ -1585,7 +1589,8 @@
       "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
       "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akun"
+      "accountMenu": "Menu akun",
+      "navigationLabel": "Navigasi utama"
     },
     "theme": {
       "label": "Tema",
@@ -1707,6 +1712,11 @@
           "yearly": "Tahunan",
           "savePill": "Hemat 2 bulan"
         }
+      },
+      "errorBoundary": {
+        "title": "Terjadi kesalahan",
+        "retry": "Coba lagi",
+        "reload": "Muat ulang halaman"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -3586,6 +3596,7 @@
     },
     "clearFilters": "Hapus filter",
     "loading": "Memuat…",
+    "close": "Tutup",
     "promoCode": {
       "disclosureLabel": "Punya kode promo?",
       "close": "Tutup kode promo",

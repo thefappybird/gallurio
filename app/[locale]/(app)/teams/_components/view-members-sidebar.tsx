@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/app/pagination";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { useRouter } from "@/lib/i18n/navigation";
 import { revokeInviteAction } from "../_invite-action";
@@ -78,7 +79,6 @@ export function ViewMembersSidebar({
   onOpenChange,
 }: Props) {
   const t = useTranslations("app.teams");
-  const tp = useTranslations("common.pagination");
   const router = useRouter();
   const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
   const [detailMember, setDetailMember] = useState<MemberSummary | null>(null);
@@ -317,29 +317,18 @@ export function ViewMembersSidebar({
               </ul>
           ))}
         </div>
-        <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-background p-4">
-          <span className="text-xs text-muted-foreground">
-            {tp("showing", { from, to, total: visibleRows.length })}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page - 1)}
-              disabled={page <= 1}
-            >
-              {tp("previous")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages}
-            >
-              {tp("next")}
-            </Button>
-          </div>
-        </footer>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          from={from}
+          to={to}
+          total={visibleRows.length}
+          onPageChange={setPage}
+          className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-background p-4"
+          labelClassName="text-xs text-muted-foreground"
+          actionsClassName="flex items-center gap-2"
+          buttonClassName=""
+        />
       </SheetContent>
 
       <RemoveMemberDialog

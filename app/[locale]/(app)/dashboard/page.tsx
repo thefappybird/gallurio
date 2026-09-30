@@ -34,16 +34,16 @@ import { TodaysEventsList } from "./_components/todays-events-list";
 import { UpcomingWeekList } from "./_components/upcoming-week-list";
 import { ActivityFeed } from "./_components/activity-feed";
 import { QuickAdd } from "./_components/quick-add";
-import { RevenueTrendChart } from "./_components/revenue-trend-chart";
 import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
 import { TopClientsBar } from "./_components/top-clients-bar";
-import { TeamPerformanceCards } from "./_components/team-performance-cards";
-import { BookingValueCollectionChart } from "./_components/booking-value-collection-chart";
 import { CollectionCoverageCard } from "./_components/collection-coverage-card";
 import { BookedHoursHeatmapClient } from "./_components/booked-hours-heatmap-client";
-import { BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart";
 import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
+import { RevenueTrendChartClient as RevenueTrendChart } from "./_components/revenue-trend-chart-client";
+import { BookingValueCollectionChartClient as BookingValueCollectionChart } from "./_components/booking-value-collection-chart-client";
+import { BookingEventTypeTrendChartClient as BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart-client";
+import { TeamPerformanceCardsClient as TeamPerformanceCards } from "./_components/team-performance-cards-client";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
 
 export async function generateMetadata({

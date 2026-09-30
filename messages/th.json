@@ -885,7 +885,11 @@
       "totalLabel": "รวม",
       "miniCalendar": {
         "today": "วันนี้",
-        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}"
+        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}",
+        "prevMonth": "เดือนก่อนหน้า",
+        "nextMonth": "เดือนถัดไป",
+        "jumpToToday": "ไปที่เดือนปัจจุบัน",
+        "dayBookingCount": "{count, plural, other {# การจอง}}"
       },
       "calendarTeam": {
         "label": "กรองตามทีม",
@@ -1585,7 +1589,8 @@
       "logOutConfirmBody": "คุณจะต้องเข้าสู่ระบบอีกครั้งเพื่อกลับเข้าเวิร์กสเปซของคุณ",
       "logOutConfirmCancel": "ยกเลิก",
       "portfolio": "พอร์ตโฟลิโอ",
-      "accountMenu": "เมนูบัญชี"
+      "accountMenu": "เมนูบัญชี",
+      "navigationLabel": "การนำทางหลัก"
     },
     "theme": {
       "label": "ธีม",
@@ -1707,6 +1712,11 @@
           "yearly": "รายปี",
           "savePill": "ประหยัด 2 เดือน"
         }
+      },
+      "errorBoundary": {
+        "title": "เกิดข้อผิดพลาด",
+        "retry": "ลองอีกครั้ง",
+        "reload": "โหลดหน้าใหม่"
       },
       "devPlan": {
         "title": "ตัวสลับแพ็กเกจสำหรับนักพัฒนา",
@@ -3586,6 +3596,7 @@
     },
     "clearFilters": "ล้างตัวกรอง",
     "loading": "กำลังโหลด…",
+    "close": "ปิด",
     "promoCode": {
       "disclosureLabel": "มีโค้ดโปรโมชันหรือไม่?",
       "close": "ปิดโค้ดโปรโมชัน",

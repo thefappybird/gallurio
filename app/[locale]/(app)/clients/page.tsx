@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags, getClientById } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
-import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 
 export async function generateMetadata({
@@ -49,8 +49,8 @@ export default async function ClientsPage({
   // malformed `?page=` can't flow into Mongo's skip() as NaN.
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
-  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+  const parsedLimit = Number.parseInt(sp.limit ?? String(DEFAULT_PAGE_SIZE), 10);
+  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : DEFAULT_PAGE_SIZE;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   // Total spent is rendered labelled with the workspace currency below, so a

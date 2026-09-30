@@ -885,7 +885,11 @@
       "totalLabel": "Total",
       "miniCalendar": {
         "today": "Today",
-        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}"
+        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}",
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "jumpToToday": "Jump to current month",
+        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}"
       },
       "calendarTeam": {
         "label": "Filter by team",
@@ -1585,7 +1589,8 @@
       "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
       "logOutConfirmCancel": "Cancel",
       "portfolio": "Portfolio",
-      "accountMenu": "Account menu"
+      "accountMenu": "Account menu",
+      "navigationLabel": "Main navigation"
     },
     "theme": {
       "label": "Theme",
@@ -1707,6 +1712,11 @@
           "yearly": "Yearly",
           "savePill": "Save 2 months"
         }
+      },
+      "errorBoundary": {
+        "title": "Something went wrong",
+        "retry": "Try again",
+        "reload": "Reload page"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -3586,6 +3596,7 @@
     },
     "clearFilters": "Clear filters",
     "loading": "Loading…",
+    "close": "Close",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "close": "Close promo code",

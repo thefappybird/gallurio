@@ -28,7 +28,10 @@ function KpiTileSkeleton() {
   return (
     <Card className="rounded-[var(--radius)] border-border">
       <CardContent className="flex items-center gap-3 px-3 py-2">
-        <Skeleton className="size-11 shrink-0 rounded-[var(--radius)]" />
+        <Skeleton
+          data-testid="kpi-icon-skeleton"
+          className="hidden size-11 shrink-0 rounded-[var(--radius)] sm:flex"
+        />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-5 w-20" />
@@ -48,7 +51,7 @@ export default function DashboardLoading() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Skeleton className="h-9 w-56" />
-          <Skeleton className="h-9 w-32" />
+          <Skeleton data-testid="tabs-skeleton" className="h-11 w-full sm:h-9 sm:w-32" />
         </div>
       </div>
 
@@ -64,32 +67,32 @@ export default function DashboardLoading() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-56" />
-        <CardSkeleton className="rounded-[var(--radius)]" contentClassName="h-56" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-56" />
+        <CardSkeleton className="rounded-[var(--radius)]" contentClassName="min-h-56" />
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-64" />
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-64" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-64" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-64" />
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-56" />
-        <CardSkeleton className="rounded-[var(--radius)]" contentClassName="h-56" />
+        <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-56" />
+        <CardSkeleton className="rounded-[var(--radius)]" contentClassName="min-h-56" />
       </div>
 
       <div className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
         <Skeleton className="h-4 w-24" />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-48" />
-          <CardSkeleton className="rounded-[var(--radius)]" contentClassName="h-48" />
+          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-48" />
+          <CardSkeleton className="rounded-[var(--radius)]" contentClassName="min-h-48" />
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-40" />
-          <CardSkeleton className="rounded-[var(--radius)] lg:row-span-2" contentClassName="h-[22rem]" />
-          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="h-40" />
+          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-40" />
+          <CardSkeleton className="rounded-[var(--radius)] lg:row-span-2" contentClassName="min-h-[22rem]" />
+          <CardSkeleton className="rounded-[var(--radius)] lg:col-span-2" contentClassName="min-h-40" />
         </div>
       </div>
     </div>

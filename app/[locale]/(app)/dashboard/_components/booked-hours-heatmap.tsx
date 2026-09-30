@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +72,10 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   const searchParams = useSearchParams();
   const t = useTranslations("app.dashboard");
   const [isPending, startTransition] = useTransition();
-  const allWeekStarts = Array.from(new Set(cells.map((c) => c.weekStart))).sort();
+  const allWeekStarts = useMemo(
+    () => Array.from(new Set(cells.map((c) => c.weekStart))).sort(),
+    [cells]
+  );
   const gridRef = useRef<HTMLDivElement>(null);
   // The initial width is deterministic for SSR and the first client render.
   // ResizeObserver updates it only after hydration has completed.
@@ -84,30 +87,36 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const usableWidth = Math.max(0, gridWidth - WEEKDAY_COLUMN_WIDTH);
-  const atPreferredSize = Math.floor((usableWidth + CELL_GAP) / (PREFERRED_CELL_SIZE + CELL_GAP));
-  const atMinimumLabelWidth = Math.max(
-    1,
-    Math.floor((usableWidth + CELL_GAP) / (Math.max(MIN_CELL_SIZE, MIN_LABEL_WIDTH) + CELL_GAP))
+  const { weekStarts, lastVisibleWeek, cellSize, hasPrevious, hasNext } = useMemo(() => {
+    const usableWidth = Math.max(0, gridWidth - WEEKDAY_COLUMN_WIDTH);
+    const atPreferredSize = Math.floor((usableWidth + CELL_GAP) / (PREFERRED_CELL_SIZE + CELL_GAP));
+    const atMinimumLabelWidth = Math.max(
+      1,
+      Math.floor((usableWidth + CELL_GAP) / (Math.max(MIN_CELL_SIZE, MIN_LABEL_WIDTH) + CELL_GAP))
+    );
+    // Keep 28px cells while they fit. On narrow cards, preserve twelve labelled
+    // columns by shrinking cells first; only then remove the oldest column.
+    const responsiveWeekCount = atPreferredSize >= MIN_VISIBLE_WEEKS
+      ? atPreferredSize
+      : Math.min(MIN_VISIBLE_WEEKS, atMinimumLabelWidth);
+    const visibleCount = Math.min(
+      allWeekStarts.length,
+      responsiveWeekCount
+    );
+    const weekStarts = allWeekStarts.slice(-visibleCount);
+    const lastVisibleWeek = weekStarts.at(-1);
+    const cellSize = Math.min(
+      PREFERRED_CELL_SIZE,
+      Math.max(MIN_CELL_SIZE, (usableWidth - Math.max(0, visibleCount - 1) * CELL_GAP) / visibleCount)
+    );
+    const hasPrevious = Boolean(weekStarts[0] && weekStarts[0] > earliestWeek);
+    const hasNext = Boolean(lastVisibleWeek && lastVisibleWeek < latestWeek);
+    return { weekStarts, lastVisibleWeek, cellSize, hasPrevious, hasNext };
+  }, [gridWidth, allWeekStarts, earliestWeek, latestWeek]);
+  const cellByKey = useMemo(
+    () => new Map(cells.map((cell) => [`${cell.weekStart}|${cell.weekday}`, cell])),
+    [cells]
   );
-  // Keep 28px cells while they fit. On narrow cards, preserve twelve labelled
-  // columns by shrinking cells first; only then remove the oldest column.
-  const responsiveWeekCount = atPreferredSize >= MIN_VISIBLE_WEEKS
-    ? atPreferredSize
-    : Math.min(MIN_VISIBLE_WEEKS, atMinimumLabelWidth);
-  const visibleCount = Math.min(
-    allWeekStarts.length,
-    responsiveWeekCount
-  );
-  const weekStarts = allWeekStarts.slice(-visibleCount);
-  const lastVisibleWeek = weekStarts.at(-1);
-  const cellSize = Math.min(
-    PREFERRED_CELL_SIZE,
-    Math.max(MIN_CELL_SIZE, (usableWidth - Math.max(0, visibleCount - 1) * CELL_GAP) / visibleCount)
-  );
-  const hasPrevious = Boolean(weekStarts[0] && weekStarts[0] > earliestWeek);
-  const hasNext = Boolean(lastVisibleWeek && lastVisibleWeek < latestWeek);
-  const cellByKey = new Map(cells.map((cell) => [`${cell.weekStart}|${cell.weekday}`, cell]));
 
   function goTo(endWeek?: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -120,7 +129,7 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-        <span className="flex items-center gap-1.5"><CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="bookedHoursHeatmap" /></span>
+        <div className="flex items-center gap-1.5"><CardTitle as="h2" className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="bookedHoursHeatmap" /></div>
         <HeatmapControls
           labels={labels}
           disabled={isPending}

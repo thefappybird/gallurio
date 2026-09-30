@@ -130,7 +130,7 @@ export function RemoveMemberDialog({
               <Button
                 variant="destructive"
                 disabled={pending !== null || Boolean(disabledReason)}
-                aria-describedby={disabledReason ? "team-workspace-removal-help" : undefined}
+                aria-describedby={isTeamMode && hasOtherTeams ? "team-workspace-removal-help" : undefined}
                 onClick={() => void run("team-and-workspace")}
               >
                 {pending === "team-and-workspace"

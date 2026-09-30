@@ -123,7 +123,7 @@ export function AppSidebar({
   const accountInitials = getInitials(userName, userEmail);
 
   return (
-    <Sidebar collapsible="icon" side={side}>
+    <Sidebar collapsible="icon" side={side} aria-label={t("navigationLabel")}>
       <SidebarHeader className="pb-0">
         <div
           data-testid="sidebar-workspace-header"
