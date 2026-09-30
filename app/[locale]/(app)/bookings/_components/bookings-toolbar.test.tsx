@@ -36,6 +36,9 @@ vi.mock("@/lib/i18n/navigation", () => ({
   ),
 }));
 
+const preloadSpy = vi.hoisted(() => vi.fn());
+vi.mock("./booking-wizard-dynamic", () => ({ preloadBookingWizard: preloadSpy }));
+
 // ── ImportSheet stub (avoids pulling in heavy file-upload deps) ───────────
 vi.mock("./import-sheet", () => ({
   ImportSheet: () => null,
@@ -51,6 +54,17 @@ vi.mock("./invoice-theme-dialog", () => ({
 }));
 
 const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+
+describe("BookingsToolbar wizard warm-up", () => {
+  it("preloads the wizard chunk on pointer-enter and focus of New booking", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    const btn = screen.getByRole("button", { name: /new booking/i });
+    fireEvent.pointerEnter(btn);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    fireEvent.focus(btn);
+    expect(preloadSpy).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("BookingsToolbar action order", () => {
   it("orders import, export, invoice/receipt theme, then new booking", () => {

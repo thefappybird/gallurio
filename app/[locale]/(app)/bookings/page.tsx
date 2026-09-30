@@ -35,13 +35,6 @@ import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
 
-type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
-
 export async function generateMetadata({
   params,
 }: {
@@ -205,12 +198,11 @@ async function BookingsContent({
   // These reads are independent — run them together to save a round-trip.
   //  - Calendar view: candles for the month window only (one windowed query).
   //    Table view: fetch only one page of bookings.
-  //  - All clients for the workspace power the booking wizard's client picker.
-  //    Limit 1000 covers all realistic workspace sizes and avoids per-keystroke
-  //    API calls in the modal.
+  //  - The Client.find below is no longer consumed (the wizard fetches its own
+  //    picker list lazily via /api/clients); a backend follow-up removes it.
   const defaultDate = parseCalendarDate(sp.date);
   const eventsWindow = calendarWindow(defaultDate, filters.workspaceTimezone);
-  const [{ rows: bookings, total: bookingsTotal }, allClients, events] = await Promise.all([
+  const [{ rows: bookings, total: bookingsTotal }, , events] = await Promise.all([
     view === "calendar"
       ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
       : listBookings(workspace._id, filters, { page: tablePage, limit: tableLimit }),
@@ -247,13 +239,6 @@ async function BookingsContent({
       redirect(`/${locale}/bookings?${next.toString()}`);
     }
   }
-
-  const initialClients: ClientHit[] = allClients.map((c) => ({
-    id: c._id.toString(),
-    name: c.name,
-    email: c.email ?? null,
-    phone: c.phone ?? null,
-  }));
 
   // List rows always read in the workspace currency — see bookingRowAmount.
   // Only table rows use the rate map; skip the lookup in calendar view.
@@ -339,7 +324,6 @@ async function BookingsContent({
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-              clients={initialClients}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}
               teams={teamOptions}
@@ -355,7 +339,6 @@ async function BookingsContent({
             <CalendarBookingManager
               events={events}
               defaultDate={defaultDate}
-              initialClients={initialClients}
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
@@ -419,7 +402,6 @@ async function BookingsContent({
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-          clients={initialClients}
           teams={writableTeams}
         />
       ) : null}

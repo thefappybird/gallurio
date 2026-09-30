@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { useBookingsToolbarPending, useBookingsWindowPending } from "./bookings-pending-shell";
-import { CalendarView, type ClientHit } from "./calendar-view";
+import { CalendarView } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -17,7 +17,6 @@ type Props = {
   defaultCurrency: SupportedCurrency;
   locale: string;
   workspaceTimezone?: string;
-  initialClients?: ClientHit[];
   messages: React.ComponentProps<typeof CalendarView>["messages"];
   /** Whether the current user may create bookings (owner-only in Phase 4). */
   canCreate: boolean;
@@ -53,7 +52,6 @@ export function CalendarBookingManager({
   defaultCurrency,
   locale,
   workspaceTimezone,
-  initialClients,
   messages,
   canCreate,
   defaultTeamId,
@@ -111,7 +109,6 @@ export function CalendarBookingManager({
         defaultCurrency={defaultCurrency}
         locale={locale}
         workspaceTimezone={workspaceTimezone}
-        initialClients={initialClients}
         messages={messages}
         externalAddNonce={addNonce}
         canCreate={canCreate}

@@ -1,5 +1,6 @@
 "use client";
 
+import { preloadBookingWizard } from "./booking-wizard-dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -307,6 +308,8 @@ export function BookingsToolbar({
             variant="brand"
             size="sm"
             className="min-h-11 flex-1 border-s-0 sm:flex-none sm:min-h-0 sm:border-s-0"
+            onPointerEnter={preloadBookingWizard}
+            onFocus={preloadBookingWizard}
             onClick={() => {
               if (onAddClick) {
                 onAddClick();

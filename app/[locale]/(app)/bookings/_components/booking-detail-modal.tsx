@@ -448,7 +448,9 @@ export function BookingDetailModal({
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const [syncedActivity, setSyncedActivity] = useState<BookingActivityBlock | null>(null);
   const queryData = bookingQuery.data;
-  if (queryData && seededFor !== bookingId) {
+  // Cached-but-stale data is not seeded until the mount refetch settles, so the
+  // modal never opens on a stale snapshot it would then never refresh.
+  if (queryData && seededFor !== bookingId && !bookingQuery.isFetching) {
     setSeededFor(bookingId);
     setSaveError(null);
     setPending({});
@@ -459,13 +461,13 @@ export function BookingDetailModal({
       setActivityTotal(queryData.activity.total ?? 0);
       setActorNames(queryData.activity.actorNames ?? {});
     }
-  } else if (queryData?.activity && queryData.activity !== syncedActivity) {
+  } else if (seededFor === bookingId && queryData?.activity && queryData.activity !== syncedActivity) {
     setSyncedActivity(queryData.activity);
     setActivity(queryData.activity.entries ?? []);
     setActivityTotal(queryData.activity.total ?? 0);
     setActorNames(queryData.activity.actorNames ?? {});
   }
-  const loading = bookingQuery.isPending;
+  const loading = seededFor !== bookingId && (bookingQuery.isPending || bookingQuery.isFetching);
   const notFound = bookingQuery.error instanceof BookingNotFoundError;
   const loadFailed = bookingQuery.isError && !notFound && seededFor !== bookingId;
 

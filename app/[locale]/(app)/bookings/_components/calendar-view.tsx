@@ -13,7 +13,7 @@ import type {
 import { BookingCalendarLazy } from "./booking-calendar-dynamic";
 import { TeamFilterControl } from "./team-filter-control";
 import type { BookingTeamOption } from "../_data/team-options";
-import { BookingWizardModal } from "./booking-wizard-modal";
+import { BookingWizardLazy } from "./booking-wizard-dynamic";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import type { View } from "react-big-calendar";
 import {
@@ -33,18 +33,10 @@ import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-w
 import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
-export type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
-
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   messages: React.ComponentProps<typeof BookingCalendar>["messages"];
-  initialClients?: ClientHit[];
   defaultCurrency?: SupportedCurrency;
   locale?: string;
   workspaceTimezone?: string;
@@ -134,7 +126,6 @@ export function CalendarView({
   events,
   defaultDate,
   messages,
-  initialClients,
   defaultCurrency = "PHP",
   locale = "en",
   workspaceTimezone,
@@ -216,25 +207,6 @@ export function CalendarView({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("edit")]);
-
-  const [clients, setClients] = useState<ClientHit[]>(initialClients ?? []);
-
-  const refetchClients = useCallback(async () => {
-    const r = await fetch("/api/clients?limit=1000");
-    if (r.ok) {
-      const data = await r.json();
-      setClients(Array.isArray(data) ? data : (data.clients ?? []));
-    }
-  }, []);
-
-  // If no initial clients were server-rendered, fetch on mount.
-  useEffect(() => {
-    if (!initialClients) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: fetches clients from API and sets state; async callback pattern avoids cascading renders
-      refetchClients();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
@@ -714,7 +686,7 @@ export function CalendarView({
         toolbarTrailing={toolbarTrailing}
       />
       {addState ? (
-        <BookingWizardModal
+        <BookingWizardLazy
           key={`add-${addState.nonce}`}
           mode="create"
           defaultDate={addState.date || undefined}
@@ -722,10 +694,8 @@ export function CalendarView({
           defaultCurrency={defaultCurrency}
           locale={locale}
           workspaceTimezone={workspaceTimezone}
-          clients={clients}
           teamId={defaultTeamId ?? undefined}
           teams={writableTeams}
-          onClientCreated={refetchClients}
           onClose={() => {
             setAddState(null);
             clearWizardParams();
@@ -733,15 +703,13 @@ export function CalendarView({
         />
       ) : null}
       {editState ? (
-        <BookingWizardModal
+        <BookingWizardLazy
           key={`edit-${editState.bookingId}`}
           mode="edit"
           bookingId={editState.bookingId}
           defaultCurrency={defaultCurrency}
           locale={locale}
           workspaceTimezone={workspaceTimezone}
-          clients={clients}
-          onClientCreated={refetchClients}
           onClose={() => {
             setEditState(null);
             clearWizardParams();
