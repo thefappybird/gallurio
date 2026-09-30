@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, ActivityLog, Client, Team, TEAM_COLOR_PALETTE } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team, User, TEAM_COLOR_PALETTE } from "@/lib/db/models";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -1236,5 +1236,62 @@ describe("PATCH /api/bookings/[id] rejectOnConflict", () => {
     const b = await seedAt(c._id, [sess(14, 16)]);
     const res = await patchFlag(b._id.toString(), [sess(11, 13)], "yes");
     expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/bookings/[id]?include=activity", () => {
+  it("returns booking plus first activity page with actorNames in a bounded query count", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    await User.create({
+      workosUserId: "u_in",
+      email: "in@x.test",
+      name: " Ana ",
+      memberships: [{ workspaceId, role: "owner" }],
+    });
+    await User.create({
+      workosUserId: "u_out",
+      email: "out@x.test",
+      name: "Outsider",
+      memberships: [{ workspaceId: otherWorkspaceId, role: "owner" }],
+    });
+    for (const actorUserId of ["u_in", "u_out"]) {
+      await ActivityLog.create({
+        workspaceId,
+        actorUserId,
+        entity: "booking",
+        entityId: b._id,
+        action: "updated",
+        diff: null,
+      });
+    }
+    const { GET } = await load();
+    const { countQueries } = await import("@/test-utils/query-counter");
+    const { result: res, queries } = await countQueries(() =>
+      GET(makeGet(`${b._id}`.concat("?include=activity")), ctx(b._id.toString()))
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.title).toBe("Carter Wedding");
+    expect(json.client).toMatchObject({ name: "Emma Carter" });
+    expect(json.activity).toMatchObject({
+      total: 2,
+      page: 1,
+      pageSize: 5,
+      actorNames: { u_in: "Ana" },
+    });
+    expect(json.activity.entries).toHaveLength(2);
+    // booking, client, activity find, activity count, users
+    expect(queries.map((q) => q.collection).sort()).toEqual(
+      ["activitylogs", "activitylogs", "bookings", "clients", "users"]
+    );
+  });
+
+  it("omits activity without include", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { GET } = await load();
+    const json = await (await GET(makeGet(b._id.toString()), ctx(b._id.toString()))).json();
+    expect(json.activity).toBeUndefined();
   });
 });

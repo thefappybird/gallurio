@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/db/models";
+import { resolveActorNames } from "@/lib/users/actor-names";
 
 export const runtime = "nodejs";
 
@@ -22,24 +22,7 @@ export async function GET(req: Request) {
     return NextResponse.json({});
   }
 
-  // Cap to avoid abuse — activity pages never need more than 50 unique actors.
-  const safeIds = ids.slice(0, 50);
-
   await connectDB();
 
-  // Constrain to members of the caller's workspace to prevent cross-tenant enumeration.
-  const users = await User.find(
-    {
-      workosUserId: { $in: safeIds },
-      "memberships.workspaceId": workspace._id,
-    },
-    { workosUserId: 1, name: 1 },
-  ).lean<{ workosUserId: string; name?: string }[]>();
-
-  const result: Record<string, string> = {};
-  for (const u of users) {
-    if (u.name?.trim()) result[u.workosUserId] = u.name.trim();
-  }
-
-  return NextResponse.json(result);
+  return NextResponse.json(await resolveActorNames(workspace._id, ids));
 }

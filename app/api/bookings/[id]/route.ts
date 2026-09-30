@@ -11,6 +11,7 @@ import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/noti
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { z } from "zod";
+import { loadBookingActivityPage } from "@/lib/bookings/activity-page";
 import { getShiftsOnDates, formatHHMM } from "@/lib/bookings/shift-conflicts";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
@@ -19,6 +20,8 @@ import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
 export const runtime = "nodejs";
+
+const ACTIVITY_INCLUDE_PAGE_SIZE = 5;
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -57,7 +60,7 @@ function hhmmToMinutes(hhmm: string): number {
   return Number(h) * 60 + Number(m);
 }
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const ctx = await requireOrg();
   const { id } = await params;
 
@@ -86,9 +89,19 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const client = await buildClientBlock(booking.clientId, ctx.workspace._id);
+  // `?include=activity` folds the first activity page (+ actor names) into the
+  // response so the detail modal needs one round-trip. The booking above is
+  // already workspace/team-scope checked, so no second existence query.
+  const includeActivity = new URL(req.url).searchParams.get("include") === "activity";
 
-  return NextResponse.json({ ...booking, client });
+  const [client, activity] = await Promise.all([
+    buildClientBlock(booking.clientId, ctx.workspace._id),
+    includeActivity
+      ? loadBookingActivityPage(ctx.workspace._id, id, 1, ACTIVITY_INCLUDE_PAGE_SIZE)
+      : undefined,
+  ]);
+
+  return NextResponse.json(activity ? { ...booking, client, activity } : { ...booking, client });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
