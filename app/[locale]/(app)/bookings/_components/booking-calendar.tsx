@@ -60,7 +60,6 @@ export type CalendarEvent = {
   end: Date;
   status: BookingStatus;
   clientName: string;
-  clientEmail: string | null;
   /** First day of this session's date range. */
   rangeStart: Date;
   /** Last day of this session's date range. */

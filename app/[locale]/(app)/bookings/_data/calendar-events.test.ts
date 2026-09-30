@@ -49,6 +49,6 @@ describe("loadBookingsCalendarEvents", () => {
     expect(queries).toHaveLength(1);
     expect(queries[0].collection).toBe("bookings");
     expect([...new Set(events.map((e) => e.title))].sort()).toEqual(["inside", "overnight-in"]);
-    expect(events.every((e) => e.clientEmail === null)).toBe(true);
+    expect(events.every((e) => !("clientEmail" in e))).toBe(true);
   });
 });

@@ -91,7 +91,6 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     end,
     status: "booked",
     clientName: "Emma Carter",
-    clientEmail: "emma@example.com",
     rangeStart: start,
     rangeEnd: end,
     sessionIndex: 0,
