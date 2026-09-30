@@ -128,6 +128,14 @@ describe("POST /api/bookings", () => {
     expect(log?.action).toBe("created");
   });
 
+  it("returns { id, clientId } with the newly created client id", async () => {
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    const json = await res.json();
+    const client = await Client.findOne({ workspaceId }).lean();
+    expect(json).toEqual({ id: expect.any(String), clientId: String(client?._id) });
+  });
+
   it("emits booking.created (+client.created for a new client) on success", async () => {
     const { POST } = await load();
     const res = await POST(makeReq(makeBody()));
@@ -369,6 +377,7 @@ describe("POST /api/bookings", () => {
       makeReq(makeBody({ client: { mode: "existing", clientId: existing._id.toString() } }))
     );
     expect(res.status).toBe(201);
+    expect((await res.json()).clientId).toBe(existing._id.toString());
     const booking = await Booking.findOne({ workspaceId }).lean();
     expect(booking?.clientName).toBe("Priya Shah");
     expect(await Client.countDocuments({ workspaceId })).toBe(1);

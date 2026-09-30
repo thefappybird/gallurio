@@ -231,5 +231,8 @@ export async function POST(req: Request) {
     emitDataChanged(wsId, { type: "client.created", clientId: committedClientId!.toString() });
   }
 
-  return NextResponse.json({ id: bookingId!.toString() }, { status: 201 });
+  return NextResponse.json(
+    { id: bookingId!.toString(), clientId: committedClientId!.toString() },
+    { status: 201 }
+  );
 }
