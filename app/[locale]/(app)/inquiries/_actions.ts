@@ -1086,7 +1086,7 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
  */
 export async function rescheduleInquirySessionAction(
   input: RescheduleSessionInput
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; draftBookingId: string | null } | { error: string }> {
   const ctx = await requireOrg();
 
   const parsed = rescheduleSessionSchema.safeParse(input);
@@ -1169,5 +1169,8 @@ export async function rescheduleInquirySessionAction(
 
   emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidatePath("/inquiries");
-  return { ok: true };
+  return {
+    ok: true,
+    draftBookingId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
+  };
 }

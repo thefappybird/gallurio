@@ -116,8 +116,8 @@ async function seedConflictingBooking(
 
 describe("rescheduleInquirySessionAction", () => {
   // (a) Happy path
-  it("updates the session and returns { ok: true }", async () => {
-    const { inquiry } = await seedInquiry(workspaceId);
+  it("updates the session and returns { ok: true, draftBookingId }", async () => {
+    const { inquiry, booking } = await seedInquiry(workspaceId);
     const res = await rescheduleInquirySessionAction({
       inquiryId: String(inquiry._id),
       sessionIndex: 0,
@@ -125,7 +125,7 @@ describe("rescheduleInquirySessionAction", () => {
       startTime: "10:00",
       endTime: "18:00",
     });
-    expect(res).toEqual({ ok: true });
+    expect(res).toEqual({ ok: true, draftBookingId: String(booking._id) });
 
     const fresh = await Inquiry.findById(inquiry._id).lean();
     expect(fresh?.sessions?.[0]?.startDate).toBe("2035-03-15");
@@ -230,8 +230,8 @@ describe("rescheduleInquirySessionAction", () => {
     const res1 = await rescheduleInquirySessionAction(input);
     const res2 = await rescheduleInquirySessionAction(input);
 
-    expect(res1).toEqual({ ok: true });
-    expect(res2).toEqual({ ok: true });
+    expect(res1).toMatchObject({ ok: true });
+    expect(res2).toMatchObject({ ok: true });
 
     const fresh = await Inquiry.findById(inquiry._id).lean();
     expect(fresh?.sessions?.[0]?.startDate).toBe("2035-03-25");
@@ -301,7 +301,7 @@ describe("rescheduleInquirySessionAction", () => {
       startTime: "10:00",
       endTime: "18:00",
     });
-    expect(res).toEqual({ ok: true });
+    expect(res).toMatchObject({ ok: true });
 
     const freshBooking = await Booking.findById(booking._id).lean();
     expect(freshBooking).not.toBeNull();
