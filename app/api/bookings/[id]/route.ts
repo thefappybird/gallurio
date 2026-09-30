@@ -6,6 +6,7 @@ import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBookin
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { sendNotification } from "@/lib/notifications/send";
 import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
@@ -640,6 +641,13 @@ export async function PATCH(req: Request, { params }: Params) {
     updated?.clientId as mongoose.Types.ObjectId | null | undefined,
     ctx.workspace._id
   );
+
+  emitDataChanged(ctx.workspace._id.toString(), {
+    type: "booking.updated",
+    bookingId: existing._id.toString(),
+    clientId: updated?.clientId ? String(updated.clientId) : null,
+    inquiryId: existing.createdFromInquiryId ? String(existing.createdFromInquiryId) : null,
+  });
 
   // --- Notifications ---
   const shouldNotifyTeamAssigned = teamReassignment !== null;

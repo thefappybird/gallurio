@@ -34,6 +34,9 @@ vi.mock("@/lib/auth/teamContext", () => ({
   getTeamsForUser: async () => auth.memberships,
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 // Mutable so individual tests can simulate a specific rate or an FX outage
 // (null) without touching the network. Default: same-currency freeze only.
 const fx = vi.hoisted(() => ({
@@ -53,6 +56,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  emit.mockClear();
   auth.role = "owner";
   auth.memberships = [];
   fx.resolveFxFreeze.mockReset();
@@ -124,6 +128,22 @@ describe("POST /api/bookings", () => {
     expect(log?.action).toBe("created");
   });
 
+  it("emits booking.created (+client.created for a new client) on success", async () => {
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    const { id } = await res.json();
+    const client = await Client.findOne({ workspaceId }).lean();
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "booking.created",
+      bookingId: id,
+      clientId: String(client?._id),
+    });
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "client.created",
+      clientId: String(client?._id),
+    });
+  });
+
   it("persists the teamId on the created booking", async () => {
     const { POST } = await load();
     const res = await POST(makeReq(makeBody()));
@@ -137,6 +157,7 @@ describe("POST /api/bookings", () => {
     const res = await POST(makeReq(makeBody({ teamId: String(new Types.ObjectId()) })));
     expect(res.status).toBe(404);
     expect(await Booking.countDocuments({ workspaceId })).toBe(0);
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("returns 400 when the target team is deactivated (no new work on dead teams)", async () => {

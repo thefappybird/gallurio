@@ -53,6 +53,9 @@ vi.mock("@/lib/email/brand", () => ({
   gallurioBrand: () => ({ kind: "platform", name: "Gallurio", accentHex: null, poweredByGallurio: false }),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 const notificationMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock("@/lib/notifications/send", () => ({
   sendNotification: (arg: unknown) => notificationMock(arg),
@@ -88,6 +91,7 @@ beforeEach(async () => {
   cancelledMocks.resolveWorkspaceBrand.mockReturnValue({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false });
   notificationMock.mockReset();
   notificationMock.mockResolvedValue(undefined);
+  emit.mockClear();
   fx.resolveFxFreeze.mockReset();
   fx.resolveFxFreeze.mockImplementation(async (base: string, target: string) =>
     base === target ? { rate: 1, target } : null
@@ -267,6 +271,20 @@ describe("PATCH /api/bookings/[id]", () => {
     expect(diff?.changes?.title).toEqual({ before: "Carter Wedding", after: "Renamed" });
   });
 
+  it("emits booking.updated with the server workspaceId after a successful patch", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Renamed" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "booking.updated",
+      bookingId: String(b._id),
+      clientId: String(c._id),
+      inquiryId: null,
+    });
+  });
+
   it("applies a multi-field patch and writes ONE activity entry with all changes", async () => {
     const c = await seedClient(workspaceId);
     const b = await seedBooking(workspaceId, c._id);
@@ -332,6 +350,7 @@ describe("PATCH /api/bookings/[id]", () => {
     expect(res.status).toBe(404);
     const fresh = await Booking.findById(b._id).lean();
     expect(fresh?.title).toBe("Carter Wedding");
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("skips identical values and does not write an activity log", async () => {
