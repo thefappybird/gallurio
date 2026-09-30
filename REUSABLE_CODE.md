@@ -221,6 +221,12 @@ Composed, app-specific shared components.
 | `lib/notifications/messages.ts` | `buildNotificationContent(type, vars, locale)` | Builds `{ title, body }` from the i18n notification copy for a given type/vars/locale combo. Used by `sendNotification`. |
 | `lib/notifications/recipients.ts` | `resolveTeamRecipients(workspaceId, teamId)`, `resolveStatusChangeRecipients({ workspaceId, teamId, ownerUserId, ownerEmail })` | Resolve `NotificationRecipient[]` for `sendNotification`. `resolveTeamRecipients` does the `TeamMembership`→`User` lookup scoped by `workspaceId`+`teamId` (deduped, tenant-isolated). `resolveStatusChangeRecipients` merges team members + the workspace owner, deduped by `workosUserId`. Use these instead of re-implementing the lookup at booking/notification call sites. |
 
+### `lib/sockets/` + `lib/data-events.ts` (cross-user cache invalidation)
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/data-events.ts` | `DataEvent`, `DataChangedPayload`, `DATA_CHANGED_EVENT` | Isomorphic `data:changed` event types (type + opaque ids only, no entity data). Client imports for its invalidation map. |
+| `lib/sockets/emitDataChanged.ts` | `emitDataChanged(workspaceId, event)` | Server-only, fire-and-forget broadcast to room `workspace:<id>`. Call AFTER a mutation commits, with the server-resolved workspaceId. Never throws; no-op when io is unset. |
+
 ### Other lib
 | Import | Export | Purpose |
 |--------|--------|---------|
