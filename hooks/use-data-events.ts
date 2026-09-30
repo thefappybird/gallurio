@@ -10,6 +10,11 @@ import { useAppWorkspaceId } from "@/components/app/app-query-provider";
 
 const REFRESH_DEBOUNCE_MS = 250;
 
+export interface InvalidateOptions {
+  /** Schedule `router.refresh()` for affected routes. Default true. */
+  refresh?: boolean;
+}
+
 // Module-level so every caller (mutation sites + socket) coalesces into one refresh.
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -38,28 +43,32 @@ function pathMatches(pathname: string, routes: string[]): boolean {
  * server-rendered data is affected, debounced `router.refresh()`. Does NOT mark
  * the event local — the socket path uses this after its own echo check.
  */
-export function useApplyDataEvent(): (event: DataEvent) => void {
+export function useApplyDataEvent(): (event: DataEvent, options?: InvalidateOptions) => void {
   const queryClient = useQueryClient();
   const workspaceId = useAppWorkspaceId();
   const router = useRouter();
 
   return useCallback(
-    (event: DataEvent) => {
+    (event: DataEvent, { refresh = true }: InvalidateOptions = {}) => {
       void invalidateFor(queryClient, workspaceId, event);
       // Read at event time: always the current page, no stale closure.
-      if (pathMatches(window.location.pathname, routesForEvent(event))) scheduleRefresh(() => router.refresh());
+      if (refresh && pathMatches(window.location.pathname, routesForEvent(event))) scheduleRefresh(() => router.refresh());
     },
     [queryClient, workspaceId, router],
   );
 }
 
-/** For mutation sites: mark local (suppresses the socket echo), then apply. */
-export function useInvalidateFor(): (event: DataEvent) => void {
+/**
+ * For mutation sites: mark local (suppresses the socket echo), then apply.
+ * Pass `{ refresh: false }` when the mutation's response already carries fresh RSC
+ * (server action that `revalidatePath`s this route) or the UI applied the result locally.
+ */
+export function useInvalidateFor(): (event: DataEvent, options?: InvalidateOptions) => void {
   const apply = useApplyDataEvent();
   return useCallback(
-    (event: DataEvent) => {
+    (event: DataEvent, options?: InvalidateOptions) => {
       markLocalEvent(event);
-      apply(event);
+      apply(event, options);
     },
     [apply],
   );
