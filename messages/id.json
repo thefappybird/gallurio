@@ -1048,6 +1048,7 @@
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
+        "previewMore": "{count} baris lainnya tidak ditampilkan",
         "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh pemesanan ditahan.",
         "columns": {
           "row": "#",

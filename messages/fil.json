@@ -1048,6 +1048,7 @@
         "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
         "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
         "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
+        "previewMore": "{count} pang row ang hindi ipinapakita",
         "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong booking.",
         "columns": {
           "row": "#",

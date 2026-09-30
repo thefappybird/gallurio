@@ -1048,6 +1048,7 @@
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
+        "previewMore": "{count} more rows not shown",
         "groupBlocked": "Another row sharing this booking_id has an error, so the whole booking is held back.",
         "columns": {
           "row": "#",

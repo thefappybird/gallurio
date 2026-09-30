@@ -1048,6 +1048,7 @@
         "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
         "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
         "crossesMidnight": "يجب أن تقع البداية والنهاية في اليوم نفسه بتوقيت مساحة العمل ({tz}).",
+        "previewMore": "{count} صفوف أخرى غير معروضة",
         "groupBlocked": "صف آخر يحمل booking_id نفسه به خطأ، لذلك أُوقف الحجز بأكمله.",
         "columns": {
           "row": "#",

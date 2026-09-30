@@ -10,6 +10,9 @@ import { toast } from "sonner";
 // Prevent sonner toast from throwing in jsdom
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
+
 // Import-results dialog does not need real rendering in these tests
 vi.mock("./import-results-dialog", () => ({
   ImportResultsDialog: () => null,
@@ -602,6 +605,42 @@ describe("ImportSheet steps", () => {
       await waitFor(() =>
         expect(screen.queryByText("Importing your bookings")).not.toBeInTheDocument()
       );
+    } finally {
+      restore();
+    }
+  });
+
+  it("previews at most 100 rows and says how many more are not shown", async () => {
+    const header = VALID_CSV.split("\n")[0];
+    const lines = Array.from(
+      { length: 150 },
+      (_, i) =>
+        `Jane ${i},jane${i}@example.com,2026-06-15T01:00:00.000Z,2026-06-15T10:00:00.000Z,Wedding ${i},wedding,booked,50000,10000,PHP,Ballroom,n`
+    );
+    const csv = [header, ...lines].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await uploadCsv(csv);
+      expect(screen.getAllByRole("row")).toHaveLength(101);
+      expect(screen.getByText("50 more rows not shown")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("announces bookings.imported after a successful import", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] }),
+    });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ type: "bookings.imported" }));
     } finally {
       restore();
     }
