@@ -105,13 +105,16 @@ describe("InquiriesCalendarManager reschedule", () => {
   const droppedEnd = new Date("2027-09-16T04:00:00Z");
 
   it("success: invalidates via data events (no direct router.refresh) and keeps the moved candle in place", async () => {
-    mockReschedule.mockResolvedValue({ ok: true });
+    mockReschedule.mockResolvedValue({ ok: true, draftBookingId: "bk9" });
     render(ui([inquiryEvent()]));
     await act(async () => {
       await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
     });
     expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
-    expect(mockInvalidateFor).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq1", bookingId: null });
+    expect(mockInvalidateFor).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "inq1", bookingId: "bk9" },
+      { refresh: false },
+    );
     expect(mockRefresh).not.toHaveBeenCalled();
     // Server events have not changed yet -> override must still be applied (no snap-back).
     expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();

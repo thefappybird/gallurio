@@ -256,12 +256,14 @@ export function InquiriesCalendarManager({
             endTime,
           });
           if ("error" in result) throw result.error;
-          // Success -- invalidate via data events (refreshes /inquiries); the
-          // useEffect on `events` clears the optimistic override only once the
-          // authoritative position arrives, preventing any snap-back. The
-          // draft booking id isn't known client-side (server echo may refresh
-          // once more; harmless).
-          invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: null });
+          // Success -- rescheduleInquirySessionAction revalidates /inquiries, so the
+          // response carries fresh RSC (no extra router.refresh). The useEffect on
+          // `events` clears the optimistic override only once the authoritative
+          // position arrives, preventing any snap-back.
+          invalidateFor(
+            { type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: result.draftBookingId ?? null },
+            { refresh: false },
+          );
         })();
         toast.promise(request, {
           loading: t("updating"),
