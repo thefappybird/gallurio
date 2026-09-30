@@ -14,7 +14,7 @@ import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
 import { DEPOSIT_REQUIRES_TOTAL_MESSAGE } from "@/lib/validators/booking";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
-import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
@@ -944,17 +944,12 @@ export async function editInquirySessionsAction(
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
   const excludeId = inquiry.draftBookingId ? String(inquiry.draftBookingId) : null;
 
-  // Batch shift lookups: fetch shifts once per unique date instead of once per
-  // session. For a 20-session inquiry that all share the same date this collapses
-  // 20 queries into 1; for n distinct dates it runs n queries (one each).
+  // One batched lookup for all unique session dates.
   const uniqueDates = [...new Set(parsed.data.sessions.map((s) => s.startDate))];
-  const shiftsByDate = new Map<string, Awaited<ReturnType<typeof getShiftsOnDate>>>();
-  for (const date of uniqueDates) {
-    shiftsByDate.set(date, await getShiftsOnDate(workspaceId, date, tz, { excludeId }));
-  }
+  const shiftsByDate = await getShiftsOnDates(workspaceId, uniqueDates, tz, { excludeId });
 
   for (const s of parsed.data.sessions) {
-    const shifts = shiftsByDate.get(s.startDate)!;
+    const shifts = shiftsByDate[s.startDate] ?? [];
     const aStart = toMinutes(s.startTime);
     const aEnd = toMinutes(s.endTime);
     if (aStart !== null && aEnd !== null && overlappingShifts(shifts, aStart, aEnd).length > 0) {

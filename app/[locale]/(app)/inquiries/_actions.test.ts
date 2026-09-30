@@ -54,7 +54,7 @@ vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/bookings/shift-conflicts")>();
   return {
     ...actual,
-    getShiftsOnDate: vi.fn().mockResolvedValue([]),
+    getShiftsOnDates: vi.fn().mockResolvedValue({}),
   };
 });
 
@@ -75,7 +75,7 @@ import {
   getInquiryDetailAction,
   resolveInquiryClientAction,
 } from "./_actions";
-import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
 
 beforeAll(async () => {
@@ -948,8 +948,8 @@ async function seedInquiryWithDraft(
 
 describe("editInquirySessionsAction", () => {
   beforeEach(() => {
-    // Reset getShiftsOnDate mock to return no shifts by default
-    vi.mocked(getShiftsOnDate).mockResolvedValue([]);
+    // Reset getShiftsOnDates mock to return no shifts by default
+    vi.mocked(getShiftsOnDates).mockReset().mockResolvedValue({});
   });
 
   it("returns not_found when inquiry does not exist", async () => {
@@ -1006,23 +1006,27 @@ describe("editInquirySessionsAction", () => {
     expect(res).toEqual({ error: "alter_only" });
   });
 
-  it("returns conflict when getShiftsOnDate returns an overlapping shift", async () => {
+  it("returns conflict when getShiftsOnDates returns an overlapping shift", async () => {
     const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const date = futureDateStr(10);
     // Mock an overlapping shift: 08:00–18:00 overlaps 09:00–17:00
-    vi.mocked(getShiftsOnDate).mockResolvedValue([
-      {
-        id: "other",
-        bookingId: "other",
-        sessionIndex: 0,
-        title: "Other Booking",
-        shiftStart: "08:00",
-        shiftEnd: "18:00",
-      },
-    ]);
+    vi.mocked(getShiftsOnDates).mockResolvedValue({
+      [date]: [
+        {
+          id: "other",
+          bookingId: "other",
+          sessionIndex: 0,
+          title: "Other Booking",
+          shiftStart: "08:00",
+          shiftEnd: "18:00",
+        },
+      ],
+    });
     const res = await editInquirySessionsAction(String(inquiry._id), {
-      sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
+      sessions: [{ startDate: date, startTime: "09:00", endTime: "17:00" }],
     });
     expect(res).toEqual({ error: "conflict" });
+    expect(getShiftsOnDates).toHaveBeenCalledTimes(1);
   });
 
   it("returns ok and updates inquiry sessions and phone on success", async () => {
