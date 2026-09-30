@@ -19,6 +19,7 @@ import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import {
   inviteMemberSchema,
   revokeInviteSchema,
@@ -265,6 +266,7 @@ export async function inviteMemberAction(
     }
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: null });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -317,6 +319,7 @@ export async function revokeInviteAction(
     ctx.workspace._id,
   );
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: null });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }

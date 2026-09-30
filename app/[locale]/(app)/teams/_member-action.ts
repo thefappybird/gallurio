@@ -17,6 +17,7 @@ import { User } from "@/lib/db/models/User";
 import { ActivityLog } from "@/lib/db/models/ActivityLog";
 import { connectDB } from "@/lib/db/mongoose";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -157,6 +158,7 @@ export async function assignMemberToTeamAction(
     throw err;
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -226,6 +228,7 @@ export async function removeMemberFromTeamAction(
     });
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -282,6 +285,7 @@ export async function removeMemberFromTeamAndWorkspaceAction(
     await session.endSession();
   }
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -326,6 +330,7 @@ export async function setLeadFlagAction(
     } finally {
       await session.endSession();
     }
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
     revalidatePath("/[locale]/teams", "page");
     return { ok: true };
   }
@@ -339,6 +344,7 @@ export async function setLeadFlagAction(
     .lean();
   if (!updated) return { error: "MEMBERSHIP_NOT_FOUND" };
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -412,6 +418,7 @@ export async function removeMemberFromWorkspaceAction(
     memberships.map((m) => releaseTeamSeat(m.teamId, ctx.workspace._id)),
   );
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: null });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
