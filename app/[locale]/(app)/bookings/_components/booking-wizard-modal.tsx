@@ -808,7 +808,7 @@ export function BookingWizardModal({
                 const hasError = stepErrors.has(i);
                 const isCurrent = i === stepIndex;
                 return (
-                  <li key={s.id} className="flex items-center gap-1.5">
+                  <li key={s.id} className="flex items-center gap-1.5" aria-current={isCurrent ? "step" : undefined}>
                     <button
                       type="button"
                       onClick={() => jumpToStep(i)}
@@ -838,7 +838,7 @@ export function BookingWizardModal({
                       {hasError ? (
                         <span
                           className="text-destructive"
-                          aria-label="Has validation errors"
+                          aria-label={t("hasErrors")}
                         >
                           *
                         </span>
@@ -858,7 +858,7 @@ export function BookingWizardModal({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="View booking"
+                aria-label={t("viewBooking")}
                 onClick={() => {
                   const params = new URLSearchParams(searchParams.toString());
                   params.delete("edit");

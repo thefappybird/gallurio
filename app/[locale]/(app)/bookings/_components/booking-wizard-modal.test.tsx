@@ -2330,3 +2330,14 @@ describe("BookingWizardModal — client step contact validation", () => {
     expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
   });
 });
+
+describe("BookingWizardModal — step list a11y", () => {
+  it("marks only the current step with aria-current=step", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    const items = await screen.findAllByRole("listitem");
+    const current = items.filter((li) => li.getAttribute("aria-current") === "step");
+    expect(current).toHaveLength(1);
+    expect(items[0]).toHaveAttribute("aria-current", "step");
+  });
+});

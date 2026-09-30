@@ -3143,7 +3143,7 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={commit}
-                  aria-label="Confirm"
+                  aria-label={tFields("confirmEdit")}
                   disabled={disabled || !canCommit || isCheckingConflicts}
                 >
                   {isCheckingConflicts ? (
@@ -3157,7 +3157,7 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={cancelEdit}
-                  aria-label="Cancel"
+                  aria-label={tFields("cancelEdit")}
                 >
                   <XIcon className="size-4" />
                 </Button>
@@ -3181,7 +3181,7 @@ function SessionCard({
                     variant="ghost"
                     onClick={onDiscardEdit}
                     disabled={disabled}
-                    aria-label="Discard edit"
+                    aria-label={tFields("discardEdit")}
                     className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
                   >
                     <XIcon className="size-4" />
@@ -3571,7 +3571,7 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={commit}
-              aria-label="Confirm draft session"
+              aria-label={tFields("confirmDraftSession")}
               disabled={disabled || !isDraftValid || isCheckingConflicts}
             >
               {isCheckingConflicts ? (
@@ -3585,7 +3585,7 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={onDiscard}
-              aria-label="Remove draft session"
+              aria-label={tFields("removeDraftSession")}
               className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
             >
               <XIcon className="size-4" />

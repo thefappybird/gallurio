@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { useFieldError } from "@/components/ui/form-field";
+import { useTranslations } from "next-intl";
 
 export type EditableFieldType =
   | "text"
@@ -116,6 +117,7 @@ export function EditableField({
   registerHandle,
 }: Props) {
   const timeMode = useTimeFormat();
+  const tFields = useTranslations("app.bookings.detail.fields");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | number | null>(
     hasPending ? (pendingValue ?? null) : (value ?? null)
@@ -261,8 +263,8 @@ export function EditableField({
                 <>
                   <span
                     className="inline-block size-1.5 bg-primary"
-                    aria-label="unsaved"
-                    title="Unsaved change"
+                    aria-label={tFields("unsavedChange")}
+                    title={tFields("unsavedChange")}
                   />
                   {onDiscardPending ? (
                     <button
@@ -415,7 +417,7 @@ export function EditableField({
                   size="icon-sm"
                   variant="ghost"
                   onClick={commit}
-                  aria-label="Confirm"
+                  aria-label={tFields("confirmEdit")}
                   disabled={!canCommit}
                 >
                   <CheckIcon className="size-4" />
@@ -425,7 +427,7 @@ export function EditableField({
                   size="icon-sm"
                   variant="ghost"
                   onClick={cancelEdit}
-                  aria-label="Cancel"
+                  aria-label={tFields("cancelEdit")}
                 >
                   <XIcon className="size-4" />
                 </Button>
