@@ -348,3 +348,47 @@ describe("GET /api/bookings/shifts-on-date", () => {
     expect(body.shifts).toHaveLength(0);
   });
 });
+
+describe("GET /api/bookings/shifts-on-date (dates batch)", () => {
+  async function getQs(qs: string) {
+    const { GET } = await load();
+    return GET(new Request(`http://test/api/bookings/shifts-on-date?${qs}`));
+  }
+
+  it("returns byDate with an entry per unique date", async () => {
+    await seedBooking([
+      { startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") },
+    ]);
+    const res = await getQs("dates=2030-08-15,2030-08-16,2030-08-15");
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(Object.keys(json.byDate).sort()).toEqual(["2030-08-15", "2030-08-16"]);
+    expect(json.byDate["2030-08-15"]).toHaveLength(1);
+    expect(json.byDate["2030-08-16"]).toEqual([]);
+  });
+
+  it("rejects more than 31 dates with 400", async () => {
+    const dates = Array.from({ length: 32 }, (_, i) => `2030-01-${String(i + 1).padStart(2, "0")}`);
+    const res = await getQs(`dates=${dates.join(",")}`);
+    expect(res.status).toBe(400);
+  });
+
+  it("requires exactly one of date / dates", async () => {
+    const res = await getQs("date=2030-08-15&dates=2030-08-15");
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a malformed entry in dates", async () => {
+    const res = await getQs("dates=2030-08-15,nope");
+    expect(res.status).toBe(400);
+  });
+
+  it("does not leak another workspace's bookings in a batch", async () => {
+    await seedBooking(
+      [{ startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") }],
+      { workspaceId: otherWorkspaceId }
+    );
+    const json = await (await getQs("dates=2030-08-15")).json();
+    expect(json.byDate["2030-08-15"]).toEqual([]);
+  });
+});

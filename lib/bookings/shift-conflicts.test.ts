@@ -5,7 +5,8 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Booking } from "@/lib/db/models";
-import { getShiftsOnDate } from "./shift-conflicts";
+import { getShiftsOnDate, getShiftsOnDates } from "./shift-conflicts";
+import { countQueries } from "@/test-utils/query-counter";
 
 // Asia/Manila is UTC+8. A session stored as 01:00 UTC is 09:00 Manila.
 const TZ = "Asia/Manila";
@@ -112,5 +113,28 @@ describe("getShiftsOnDate", () => {
     // Query Aug 15 — should return nothing
     const result = await getShiftsOnDate(workspaceId, "2030-08-15", TZ);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe("getShiftsOnDates", () => {
+  it("matches getShiftsOnDate per date using one booking query", async () => {
+    const b1 = await seedBooking([
+      { startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") },
+      { startAt: new Date("2030-08-17T01:00:00Z"), endAt: new Date("2030-08-17T05:00:00Z") },
+    ]);
+    // Overnight in Manila: 15:00 UTC Aug 15 (23:00 local) -> 02:00 UTC Aug 16 (10:00 local)
+    await seedBooking([
+      { startAt: new Date("2030-08-15T15:00:00Z"), endAt: new Date("2030-08-16T02:00:00Z") },
+    ]);
+    const dates = ["2030-08-15", "2030-08-16", "2030-08-17"];
+    const opts = { excludeShiftKey: `${b1._id}:1` };
+    const { result, queries } = await countQueries(() =>
+      getShiftsOnDates(workspaceId, dates, TZ, opts)
+    );
+    expect(queries.filter((q) => q.collection === "bookings")).toHaveLength(1);
+    for (const d of dates) {
+      expect(result[d]).toEqual(await getShiftsOnDate(workspaceId, d, TZ, opts));
+    }
+    expect(result["2030-08-17"]).toEqual([]);
   });
 });
