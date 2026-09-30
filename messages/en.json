@@ -1020,6 +1020,8 @@
         "formatLabel": "Format",
         "csv": "CSV",
         "xlsx": "Excel",
+        "preparing": "Preparing...",
+        "error": "Export failed. Check your selection and try again.",
         "listFiltersApply": "The list's status and search filters apply to this export too.",
         "download": "Download",
         "cancel": "Cancel"
