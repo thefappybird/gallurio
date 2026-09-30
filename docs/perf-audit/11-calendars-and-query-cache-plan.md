@@ -36,6 +36,8 @@ Executors re-verify every audit finding before fixing it. The Haiku audits had f
 
 After T4: `/dashboard` 1144.5 → **646.2 KB** (−498 KB, −44%; recharts now ships once, largest chunk 175.9 KB). `/clients` 601.5 → 618.4 KB and `/teams` 508.4 → 525.3 KB: the +17 KB is the react-query runtime, now shared app-wide.
 
+After T5 (rbc `next/dynamic`, commit `abd6cad1`): the analyzer's per-route number also counts lazy chunks, so it can't show first-load savings (`/bookings` 870.6 KB and `/inquiries` 775.8 KB, which includes react-query's +17 KB). Evidence for keeping the split: the calendar code is now ONE chunk (127.5 KB, same hash) shared by `/bookings` and `/inquiries`. Before, each route had its own ~152 KB chunk, so switching between the two calendars now reuses the cache. The browser pass checks the skeleton-to-calendar swap for layout shift.
+
 **Backend follow-up after T6 (T6b):**
 - `createClientAction` returns `{ ok: true, clientId }`.
 - Remove the `?detail` pre-checks.
