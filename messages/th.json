@@ -996,7 +996,8 @@
       "view": {
         "table": "ตาราง",
         "card": "โหมดการ์ด",
-        "calendar": "ปฏิทิน"
+        "calendar": "ปฏิทิน",
+        "inquiriesToggle": "สลับมุมมองคำขอ"
       },
       "toolbar": {
         "search": "ค้นหาการจอง",
@@ -1032,7 +1033,9 @@
         "label": "กรองตามทีม",
         "inactive": "ไม่ใช้งาน",
         "teams": "ทีม",
-        "countLabel": "{count, plural, one {# ทีม} other {# ทีม}}"
+        "countLabel": "{count, plural, one {# ทีม} other {# ทีม}}",
+        "previousPage": "หน้าก่อนหน้า",
+        "nextPage": "หน้าถัดไป"
       },
       "import": {
         "title": "นำเข้าการจอง",
@@ -1326,6 +1329,8 @@
           "conflictsLabel": "กะที่มีอยู่แล้วในวันที่ {date}:",
           "draftHint": "ปรับเวลาด้านล่างแล้วคลิกบันทึกการเปลี่ยนแปลงเพื่อเพิ่มเซสชันนี้",
           "confirmEdit": "ยืนยัน",
+          "editField": "แก้ไข{label}",
+          "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…",
           "cancelEdit": "ยกเลิก",
           "discardEdit": "ทิ้งการแก้ไข",
           "unsavedChange": "การเปลี่ยนแปลงที่ยังไม่ได้บันทึก",

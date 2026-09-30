@@ -2519,7 +2519,7 @@ function BookingTabs({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
+                    aria-label={tFields("editField", { label: tPayments("label", { n: idx + 1 }) })}
                     onClick={() => {
                       setEditPaymentPrice(effectivePrice);
                       setEditPaymentStatus(effectiveStatus);
@@ -2906,7 +2906,7 @@ function SessionConflictAlert({
         aria-live="polite"
       >
         <Loader2Icon className="size-3.5 animate-spin" />
-        <span>Checking for conflicts…</span>
+        <span>{tFields("checkingConflicts")}</span>
       </div>
     );
   }
@@ -3170,7 +3170,7 @@ function SessionCard({
                   variant="ghost"
                   onClick={startEdit}
                   disabled={disabled}
-                  aria-label={`Edit ${label}`}
+                  aria-label={tFields("editField", { label })}
                 >
                   <PencilIcon className="size-4" />
                 </Button>
@@ -3396,7 +3396,7 @@ function LockedDraftCard({
               variant="ghost"
               onClick={onEdit}
               disabled={disabled}
-              aria-label={`Edit ${label}`}
+              aria-label={tFields("editField", { label })}
             >
               <PencilIcon className="size-4" />
             </Button>

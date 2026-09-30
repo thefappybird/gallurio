@@ -996,7 +996,8 @@
       "view": {
         "table": "جدول",
         "card": "وضع البطاقات",
-        "calendar": "تقويم"
+        "calendar": "تقويم",
+        "inquiriesToggle": "تبديل عرض الاستفسارات"
       },
       "toolbar": {
         "search": "بحث في الحجوزات",
@@ -1032,7 +1033,9 @@
         "label": "تصفية حسب الفريق",
         "inactive": "غير نشط",
         "teams": "الفِرق",
-        "countLabel": "{count, plural, zero {لا فرق} one {فريق واحد} two {فريقان} few {# فرق} many {# فريقًا} other {# فريق}}"
+        "countLabel": "{count, plural, zero {لا فرق} one {فريق واحد} two {فريقان} few {# فرق} many {# فريقًا} other {# فريق}}",
+        "previousPage": "الصفحة السابقة",
+        "nextPage": "الصفحة التالية"
       },
       "import": {
         "title": "استيراد الحجوزات",
@@ -1326,6 +1329,8 @@
           "conflictsLabel": "ورديات موجودة بالفعل في {date}:",
           "draftHint": "اضبط الأوقات أدناه، ثم انقر على حفظ التغييرات لإضافة هذه الجلسة.",
           "confirmEdit": "تأكيد",
+          "editField": "تعديل {label}",
+          "checkingConflicts": "جارٍ التحقق من التعارضات…",
           "cancelEdit": "إلغاء",
           "discardEdit": "تجاهل التعديل",
           "unsavedChange": "تغيير غير محفوظ",
