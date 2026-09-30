@@ -23,8 +23,7 @@ vi.mock("./_components/bookings-pending-shell", () => ({ BookingsPendingShell: (
 vi.mock("./_components/calendar-booking-manager", () => ({ CalendarBookingManager: () => null }));
 vi.mock("./_components/table-booking-manager", () => ({ TableBookingManager: () => null }));
 vi.mock("./_components/bookings-page-client", () => ({ BookingsPageClient: () => null }));
-vi.mock("./_components/booking-detail-modal", () => ({ BookingDetailModal: () => null }));
-vi.mock("./_components/booking-wizard-modal", () => ({ BookingWizardModal: () => null }));
+vi.mock("./_components/booking-url-modals", () => ({ BookingUrlModals: () => null }));
 vi.mock("@/lib/invoices/theme", () => ({ INVOICE_THEME_PRESETS: {} }));
 
 import BookingsPage from "./page";

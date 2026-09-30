@@ -19,7 +19,7 @@ vi.mock("../bookings/_data/calendar-events", () => ({ parseCalendarDate: vi.fn()
 vi.mock("../bookings/_data/team-options", () => ({ getBookingTeamOptions: vi.fn() }));
 vi.mock("./_data/calendar-data", () => ({ loadInquiriesCalendarData: vi.fn() }));
 vi.mock("./_components/inquiries-page-client", () => ({ InquiriesPageClient: () => null }));
-vi.mock("../bookings/_components/booking-detail-modal", () => ({ BookingDetailModal: () => null }));
+vi.mock("../bookings/_components/booking-url-modals", () => ({ BookingUrlModals: () => null }));
 
 import InquiriesPage from "./page";
 

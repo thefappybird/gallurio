@@ -11,7 +11,6 @@ import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
-import { isValidObjectId } from "mongoose";
 import { listBookings } from "./_data/bookings-queries";
 import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
 import { bookingRowAmount } from "./_data/booking-rows";
@@ -28,8 +27,7 @@ import {
 } from "./_components/bookings-table";
 import { BookingsPageClient } from "./_components/bookings-page-client";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
-import { BookingDetailModal } from "./_components/booking-detail-modal";
-import { BookingWizardModal } from "./_components/booking-wizard-modal";
+import { BookingUrlModals } from "./_components/booking-url-modals";
 import type { CalendarEvent } from "./_components/booking-calendar";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
@@ -284,19 +282,6 @@ async function BookingsContent({
     workspace.contact?.address?.trim() && workspace.contact?.email?.trim()
   );
 
-  // A malformed ?detail= id is stripped here (no DB query): the detail modal
-  // fetches the booking itself and handles 404, but treats 400 as a load error.
-  // Existence/ownership is checked by GET /api/bookings/[id].
-  if (sp.detail) {
-    if (!isValidObjectId(sp.detail)) {
-      const cleanParams = new URLSearchParams(
-        Object.entries(sp).filter(([k]) => k !== "detail") as [string, string][]
-      );
-      const qs = cleanParams.toString();
-      redirect(qs ? `/${locale}/bookings?${qs}` : `/${locale}/bookings`);
-    }
-  }
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <BookingsPendingShell
@@ -371,28 +356,17 @@ async function BookingsContent({
         </>
       </BookingsPendingShell>
 
-      {sp.detail ? (
-        <BookingDetailModal
-          bookingId={sp.detail}
-          locale={locale}
-          teams={teamOptions}
-          writableTeams={writableTeams}
-          businessComplete={businessComplete}
-          workspaceId={workspace._id.toString()}
-        />
-      ) : null}
-
-      {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
-      {view !== "calendar" && sp.edit ? (
-        <BookingWizardModal
-          mode="edit"
-          bookingId={sp.edit}
-          defaultCurrency={workspace.currency as SupportedCurrency}
-          locale={locale}
-          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-          teams={writableTeams}
-        />
-      ) : null}
+      {/* ?detail / ?edit modals mount client-side: no RSC round-trip to open/close. */}
+      <BookingUrlModals
+        locale={locale}
+        teams={teamOptions}
+        writableTeams={writableTeams}
+        businessComplete={businessComplete}
+        workspaceId={workspace._id.toString()}
+        view={view}
+        defaultCurrency={workspace.currency as SupportedCurrency}
+        workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+      />
     </div>
   );
 }

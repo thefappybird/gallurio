@@ -14,7 +14,7 @@ import { loadInquiriesCalendarData } from "./_data/calendar-data";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
 import { InquiriesPageClient } from "./_components/inquiries-page-client";
-import { BookingDetailModal } from "../bookings/_components/booking-detail-modal";
+import { BookingUrlModals } from "../bookings/_components/booking-url-modals";
 import type { InquiryRow } from "./_components/inquiry-table";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
@@ -219,19 +219,6 @@ async function InquiriesContent({
     hasConflict: conflictSet.has(q._id.toString()),
   }));
 
-  // ?detail=<bookingId> — read-only booking detail modal (calendar view).
-  // A malformed id is stripped here (no DB query): the modal handles 404 itself
-  // via GET /api/bookings/[id] but treats 400 as a load error.
-  if (sp.detail && !isValidObjectId(sp.detail)) {
-    const clean = new URLSearchParams(
-      Object.entries(sp).filter(([k, v]) => k !== "detail" && v !== undefined) as [string, string][]
-    );
-    redirect({
-      href: { pathname: "/inquiries", query: Object.fromEntries(clean.entries()) },
-      locale,
-    });
-  }
-
   // Track whether the detail inquiry's conflict was already covered by the page-level query.
   const detailInPageConflicts = sp.inquiryId
     ? conflictInputs.some((ci) => ci._id === sp.inquiryId)
@@ -294,13 +281,8 @@ async function InquiriesContent({
         calendarWindow={{ start: eventsWindow.start.toISOString(), end: eventsWindow.end.toISOString() }}
         calendarDate={calendarDate}
       />
-      {sp.detail ? (
-        <BookingDetailModal
-          bookingId={sp.detail}
-          locale={locale}
-          readOnly={true}
-        />
-      ) : null}
+      <BookingUrlModals locale={locale} readOnly />
+
     </div>
   );
 }
