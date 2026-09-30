@@ -10,8 +10,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import {
   ArrowDownIcon,
@@ -95,10 +94,7 @@ export function BookingsTable({
   emptyHint,
   workspaceTimezone = "UTC",
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const t = useTranslations("app.bookings.table");
+  const t =useTranslations("app.bookings.table");
   const tActions = useTranslations("app.bookings.row");
   const tStatus = useTranslations("app.bookings.statusValues");
   const [sorting, setSorting] = useState<SortingState>([
@@ -107,23 +103,9 @@ export function BookingsTable({
 
   const visibleRows = rows;
 
-  const openDetail = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("detail", id);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [pathname, router, searchParams]
-  );
-
-  const openEdit = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("edit", id);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [pathname, router, searchParams]
-  );
+  // History API, not router.push: the modals mount client-side (BookingUrlModals).
+  const openDetail = useCallback((id: string) => setUrlParams((p) => p.set("detail", id)), []);
+  const openEdit = useCallback((id: string) => setUrlParams((p) => p.set("edit", id)), []);
 
   const formatSessionSummary = useCallback(
     (sessions: { startAt: string; endAt: string }[]) => {

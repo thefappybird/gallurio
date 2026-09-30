@@ -6,10 +6,9 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
@@ -268,15 +267,12 @@ export function BookingDetailModal({
   businessComplete = true,
   workspaceId = "",
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
   const tPayments = useTranslations("app.bookings.payments");
   const tDnd = useTranslations("app.bookings.dnd");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const errMsg = useActionError();
-  const [, startTransition] = useTransition();
 
   const eventTypeOptions = useMemo(
     () => EVENT_TYPES.map((e) => ({ value: e, label: safeT(tEvent, e, e) })),
@@ -396,16 +392,14 @@ export function BookingDetailModal({
   );
 
   const close = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("detail");
-    params.delete("edit");
-    const qs = params.toString();
     setDraftSessions([]);
     setOpen(false);
-    startTransition(() => {
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+    // History API: the host (BookingUrlModals) unmounts on the param change.
+    setUrlParams((p) => {
+      p.delete("detail");
+      p.delete("edit");
     });
-  }, [router, pathname, searchParams]);
+  }, []);
 
   /**
    * After a successful PATCH: write the response into the shared booking cache
@@ -483,11 +477,7 @@ export function BookingDetailModal({
     const detailId = searchParams.get("detail");
     const editId = searchParams.get("edit");
     if (detailId && editId && detailId !== editId) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("detail");
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`);
-      });
+      setUrlParams((p) => p.delete("detail"), "replace");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1331,14 +1321,12 @@ export function BookingDetailModal({
           readOnly={readOnly}
           onCommit={commitField}
           onDiscard={discardField}
-          onEditAll={() => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete("detail");
-            params.set("edit", bookingId);
-            startTransition(() => {
-              router.push(`${pathname}?${params.toString()}`);
-            });
-          }}
+          onEditAll={() =>
+            setUrlParams((p) => {
+              p.delete("detail");
+              p.set("edit", bookingId);
+            })
+          }
           onClose={() => attemptClose(false)}
         />
 

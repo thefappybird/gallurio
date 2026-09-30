@@ -288,7 +288,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} window={calendarWindow} defaultDate={calendarDate} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} window={calendarWindow} defaultDate={calendarDate} onOpenInquiry={openInquiry} />
       ) : (
         <>
           {/* Status tabs + Date popover tab */}

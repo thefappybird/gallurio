@@ -102,6 +102,34 @@ describe("InquiriesCalendarManager window navigation", () => {
   });
 });
 
+describe("InquiriesCalendarManager candle clicks", () => {
+  it("inquiry candle opens via onOpenInquiry, with no router navigation", () => {
+    const onOpenInquiry = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <InquiriesCalendarManager events={[inquiryEvent()]} locale="en" onOpenInquiry={onOpenInquiry} />
+      </NextIntlClientProvider>
+    );
+    act(() => (cal.onSelectEvent as (e: CalendarEvent) => void)(inquiryEvent()));
+    expect(onOpenInquiry).toHaveBeenCalledWith("inq1");
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("booking candle pushes ?detail via the History API and drops inquiryId", () => {
+    window.history.replaceState(null, "", "/en/inquiries?view=calendar&inquiryId=inq9");
+    const pushState = vi.spyOn(window.history, "pushState");
+    render(ui([inquiryEvent()]));
+    act(() =>
+      (cal.onSelectEvent as (e: CalendarEvent) => void)(
+        inquiryEvent({ kind: "booking", inquiryId: undefined, bookingId: "b1" })
+      )
+    );
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/en/inquiries?view=calendar&detail=b1");
+    expect(mockPush).not.toHaveBeenCalled();
+    pushState.mockRestore();
+  });
+});
+
 describe("InquiriesCalendarManager ?date anchor", () => {
   // Workspace tz far from the runner tz: one of the two is >12h away from any runner offset.
   it.each(["Pacific/Kiritimati", "Pacific/Pago_Pago"])(

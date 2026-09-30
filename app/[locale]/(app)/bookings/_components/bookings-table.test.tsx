@@ -85,6 +85,20 @@ describe("BookingsTable", () => {
     expect(screen.getAllByText(/75,000/).length).toBeGreaterThan(0);
   });
 
+  it("opens a card's detail with history.pushState, not a router push", () => {
+    window.history.replaceState(null, "", "/en/bookings?view=table");
+    const pushState = vi.spyOn(window.history, "pushState");
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+
+    fireEvent.click(within(screen.getByTestId("bookings-card-list")).getByRole("button", { name: /Carter Wedding/ }));
+
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/en/bookings?view=table&detail=1");
+    expect(mockPush).not.toHaveBeenCalled();
+    pushState.mockRestore();
+  });
+
   it("renders empty state when rows is empty", () => {
     renderWithProviders(
       <BookingsTable

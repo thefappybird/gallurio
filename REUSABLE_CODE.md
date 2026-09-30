@@ -110,6 +110,7 @@ Composed, app-specific shared components.
 | Import | Export | Signature | Purpose |
 |--------|--------|-----------|---------|
 | `lib/utils.ts` | `cn` | `(...ClassValue[]) => string` | Merge Tailwind classes (clsx + twMerge) |
+| `lib/utils/url-params.ts` | `setUrlParams` | `(mutate: (p: URLSearchParams) => void, mode?: "push" \| "replace") => void` | History-API query update built from `window.location` (no RSC round-trip; Next syncs `useSearchParams`). Used for `?detail`/`?edit` with `BookingUrlModals` (`bookings/_components/booking-url-modals.tsx`, client host for the booking detail/edit modals on /bookings and /inquiries) |
 | `lib/utils/format-currency.ts` | `formatMoney` | `(amount, currency, locale) => string` | Localized currency via Intl.NumberFormat |
 | `lib/utils/format-date.ts` | `stableWeekdayStyle` | `(locale) => "short" \| "narrow"` | Weekday option for `Intl` date formats rendered during SSR. Thai `short` differs between Node and browser ICU (`อา.` vs `อาทิตย์`) and mismatches on hydration; `narrow` is identical in both |
 | `lib/pricing/fxRates.ts` | `getFxRate`, `resolveFxFreeze` | `(base, target) => Promise<number\|null>`; `(base, target) => Promise<{rate,target}\|null>` | Daily FX rate via Open Exchange Rates (`OPENEXCHANGERATES_APP_ID`), 24h cached, `null` on any failure. `resolveFxFreeze` wraps it into the `{rate,target}` snapshot shape stored on a paid payment/booking amount when freezing an FX rate at write time (never throws). **Display/aggregation only — never charge with this** |

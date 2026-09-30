@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -35,6 +34,8 @@ type Props = {
   window?: { start: string; end: string };
   /** Calendar's initial date (the `?date` the server windowed around). */
   defaultDate?: Date;
+  /** Opens an inquiry candle through the page client (pushState + cached detail read). */
+  onOpenInquiry?: (inquiryId: string) => void;
 };
 
 /**
@@ -101,11 +102,9 @@ export function InquiriesCalendarManager({
   workspaceTz,
   window,
   defaultDate,
+  onOpenInquiry,
 }: Props) {
-  const router = useRouter();
   const invalidateFor = useInvalidateFor();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const tCal = useTranslations("app.calendar");
   const t = useTranslations("app.inquiries.calendar");
 
@@ -164,17 +163,18 @@ export function InquiriesCalendarManager({
   }, [filteredEvents]);
 
   const handleSelectEvent = useCallback((ev: CalendarEvent) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("view", "calendar");
     if (ev.kind === "inquiry" && ev.inquiryId) {
-      params.set("inquiryId", ev.inquiryId);
-      params.delete("detail");
-    } else {
-      params.set("detail", ev.bookingId);
-      params.delete("inquiryId");
+      // Client path (pushState + react-query detail read), same as the table.
+      onOpenInquiry?.(ev.inquiryId);
+      return;
     }
-    router.push(pathname + "?" + params.toString());
-  }, [router, pathname, searchParams]);
+    // Booking candle: BookingUrlModals mounts on ?detail, no RSC round-trip.
+    setUrlParams((p) => {
+      p.set("view", "calendar");
+      p.set("detail", ev.bookingId);
+      p.delete("inquiryId");
+    });
+  }, [onOpenInquiry]);
 
   /**
    * Shared handler for onEventDrop and onEventResize on New inquiry candles.

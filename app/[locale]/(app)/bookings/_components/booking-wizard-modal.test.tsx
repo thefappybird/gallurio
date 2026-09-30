@@ -931,6 +931,26 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
     expect(screen.getByRole("button", { name: /existing client/i })).toBeInTheDocument();
   });
 
+  it("edit-mode eye button swaps ?edit for ?detail via history.pushState", async () => {
+    mockFetchForEdit();
+    window.history.replaceState(null, "", `/bookings?view=table&edit=${BOOKING_ID}`);
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={BOOKING_ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "View booking" }));
+
+    expect(pushState).toHaveBeenCalledWith(
+      window.history.state,
+      "",
+      `/bookings?view=table&detail=${BOOKING_ID}`
+    );
+    pushState.mockRestore();
+  });
+
   it("single-session edit: PATCH body includes clientId when client is changed", async () => {
     const mockFetch = mockFetchForEdit();
 

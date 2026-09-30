@@ -2951,12 +2951,16 @@ describe("BookingDetailModal — load error", () => {
 describe("BookingDetailModal — 404", () => {
   it("closes the modal and strips ?detail when the booking does not exist", async () => {
     _search = `detail=${BOOKING_ID}&view=table`;
+    window.history.replaceState(null, "", `/bookings?${_search}`);
+    const pushState = vi.spyOn(window.history, "pushState");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: "not_found" }) }))
     );
     renderModal();
-    await waitFor(() => expect(pushSpy).toHaveBeenCalledWith("/bookings?view=table"));
+    await waitFor(() => expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/bookings?view=table"));
+    expect(pushSpy).not.toHaveBeenCalled();
+    pushState.mockRestore();
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 });

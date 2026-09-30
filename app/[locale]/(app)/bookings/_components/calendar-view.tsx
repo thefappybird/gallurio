@@ -30,6 +30,7 @@ import {
 import { buildBookingCalendarEvents, type BookingEventInput } from "@/lib/bookings/build-booking-events";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-window";
 import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
@@ -268,13 +269,10 @@ export function CalendarView({
   // Tracks the CalendarEvent currently being dragged out of the overflow popover.
   const externalDragRef = useRef<CalendarEvent | null>(null);
 
+  // History API: BookingUrlModals mounts client-side, so no RSC round-trip.
   const openDetailById = useCallback(
-    (bookingId: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("detail", bookingId);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [router, pathname, searchParams]
+    (bookingId: string) => setUrlParams((p) => p.set("detail", bookingId)),
+    []
   );
 
   const openDetail = useCallback(

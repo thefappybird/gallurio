@@ -59,6 +59,7 @@ type CalProps = {
   toolbarTrailing: unknown;
   onSelectSlot: unknown;
   emptyMessage?: string;
+  onSelectEvent: (e: CalendarEvent) => void;
 };
 let cal: CalProps;
 vi.mock("./booking-calendar-dynamic", () => ({
@@ -122,6 +123,16 @@ describe("CalendarView window navigation", () => {
     expect(mockReplace).toHaveBeenCalledWith("/bookings?team=a&date=2027-01-10", { scroll: false });
     expect(onWindowPendingChange).toHaveBeenCalledWith(true);
     expect(screen.getByText(/^Carter Wedding@/)).toBeInTheDocument();
+  });
+
+  it("opening a candle pushes ?detail via the History API, not the router", () => {
+    window.history.replaceState(null, "", "/en/bookings?team=a");
+    const pushState = vi.spyOn(window.history, "pushState");
+    renderView();
+    act(() => cal.onSelectEvent(makeEvent()));
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/en/bookings?team=a&detail=b1");
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    pushState.mockRestore();
   });
 
   it("closing the wizard keeps ?date (calendar stays on the month) and fires no RSC navigation", () => {

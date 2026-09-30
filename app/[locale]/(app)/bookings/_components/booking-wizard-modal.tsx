@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
@@ -130,13 +129,9 @@ export function BookingWizardModal({
   const workspaceIdForQueries = useAppWorkspaceId();
   const queryClient = useQueryClient();
   const invalidateFor = useInvalidateFor();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.wizard");
   const tDnd = useTranslations("app.bookings.dnd");
   const errMsg = useActionError();
-  const [, startTransition] = useTransition();
 
   const [open, setOpen] = useState(true);
   // Client picker list: fetched lazily once the wizard is open, cached as reference data.
@@ -202,16 +197,14 @@ export function BookingWizardModal({
    * any other async callback below without stale-closure issues.
    */
   const clearWizardUrlParams = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    let changed = false;
-    if (params.has("edit")) { params.delete("edit"); changed = true; }
-    if (params.has("detail")) { params.delete("detail"); changed = true; }
-    if (changed) {
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-      });
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("edit") || params.has("detail")) {
+      setUrlParams((p) => {
+        p.delete("edit");
+        p.delete("detail");
+      }, "replace");
     }
-  }, [router, pathname, searchParams]);
+  }, []);
 
   // Edit mode: booking comes from the shared react-query cache (same key as
   // the detail modal, so detail -> "Edit all" is a cache hit). The form is
@@ -390,29 +383,23 @@ export function BookingWizardModal({
       onClose();
       return;
     }
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("add");
-    params.delete("date");
-    params.delete("time");
-    params.delete("edit");
-    params.delete("detail");
-    const qs = params.toString();
-    startTransition(() => {
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    });
-  }, [router, pathname, searchParams, onClose]);
+    setUrlParams((p) => {
+      for (const k of ["add", "date", "time", "edit", "detail"]) p.delete(k);
+    }, "replace");
+  }, [onClose]);
 
   // Defensive unmount cleanup: if the component unmounts without close() having
   // run (e.g. error boundary, parent re-render, browser back), strip the params.
   useEffect(() => {
     return () => {
-      // Only clean up if we actually own the URL (no onClose parent handler).
-      if (!onClose) {
+      // Only clean up if we actually own the URL (no onClose parent handler) and
+      // the URL still points at THIS booking's edit: a switch to ?detail (eye
+      // button) or another ?edit id must survive this unmount.
+      if (!onClose && new URLSearchParams(window.location.search).get("edit") === bookingId) {
         clearWizardUrlParams();
       }
     };
-    // clearWizardUrlParams captures router/pathname/searchParams at effect
-    // creation time — that's intentional; we only need to run on unmount.
+    // Captured at effect creation time — intentional; we only need to run on unmount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -859,12 +846,12 @@ export function BookingWizardModal({
                 variant="ghost"
                 size="icon-sm"
                 aria-label={t("viewBooking")}
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.delete("edit");
-                  params.set("detail", bookingId);
-                  router.push(`${pathname}?${params.toString()}`);
-                }}
+                onClick={() =>
+                  setUrlParams((p) => {
+                    p.delete("edit");
+                    p.set("detail", bookingId);
+                  })
+                }
               >
                 <EyeIcon className="size-4" />
               </Button>
