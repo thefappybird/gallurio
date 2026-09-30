@@ -24,6 +24,18 @@ Executors re-verify every audit finding before fixing it. The Haiku audits had f
   - RSC payload bytes for both calendar views.
   - HTTP requests per flow and DB queries per render, using a mongoose query-counter test helper.
 
+### Baseline (2026-09-30, `pnpm analyze`, client JS gzip)
+| Route | Chunks | gzip | Largest chunk |
+|---|---|---|---|
+| `/bookings` | 41 | 852.2 KB | 151.8 KB |
+| `/inquiries` | 37 | 758.4 KB | 151.8 KB |
+| `/inquiries/[id]` | 34 | 518.0 KB | 75.9 KB |
+| `/dashboard` | 42 | 1144.5 KB | **4 × 158.7 KB, identical size** |
+| `/clients` | 37 | 601.5 KB | 75.9 KB |
+| `/teams` | 34 | 508.4 KB | 75.9 KB |
+
+Note: `pnpm analyze` finishes in about 70 s and then keeps serving the viewer on :4000. Stop it once the "Analyze completed" line appears.
+
 ## Reuse (don't re-implement)
 - `TableSkeleton` (`components/app/table-skeleton.tsx`)
 - `components/app/pagination.tsx`
@@ -38,6 +50,8 @@ Executors re-verify every audit finding before fixing it. The Haiku audits had f
 - The existing Socket.IO server (`lib/notifications/send.ts` `io.to(...)`) and `NotificationProvider`'s socket connection
 
 ## Tasks
+**Query-merge rule (applies to every `$facet` item below):** merge queries only when `explain("executionStats")` shows the merged form examines ≤ the docs/keys of the separate form. A `$facet` count reads every matched document, whereas `countDocuments` on a matching index is a key-only COUNT_SCAN. And independent queries already in `Promise.all` cost about one round-trip of latency. Where merging loses, keep the parallel queries and record why. The layout notifications `$facet` is **dropped**: both queries are index-backed and already parallel.
+
 Implementers run one at a time: tdd-guard state is shared per worktree. Each task ends with its own commit, and the orchestrator runs `tsc --noEmit` after every task, never concurrently with anything else.
 
 ### T0 · backend — per-request dedupe (all app pages)
@@ -48,10 +62,9 @@ Implementers run one at a time: tdd-guard state is shared per worktree. Each tas
   - `expireGrantIfPast`
 
   So every app render does all of that twice. Fix: move it into a React-`cache()`d, argument-free `resolveOrgContext()`, and keep a thin `requireOrg(opts)` that applies the onboarding/gated redirects on top.
-- Build `ownerContext()` on the same cached core.
 - Wrap `getAuthUser()` in `cache()`.
 - Wrap `getUserTimeFormat()` in `cache()`: the layout and the dashboard's BookingsTab both read it.
-- In the layout, merge `getRecentNotifications` + `getUnreadCount` into one `$facet`.
+- `ownerContext()` stays separate: it returns a hydrated (non-lean) `Workspace` doc that Server Actions may mutate, and React `cache()` doesn't dedupe inside Server Actions anyway.
 - Tests:
   - Two calls in one request produce one DB round-trip each.
   - The redirect gates still fire.
@@ -80,10 +93,10 @@ Work:
   - Unit-test tz, DST and month edges; assert the grid's spill-over days are always inside the window and the pad is never < 15 days.
 - **Paged queries.**
   - `listBookings` gains a `range` overlap filter. Confirm with `explain` that it uses the existing `{workspaceId,lastSessionEnd,firstSessionStart}` index.
-  - Paged `listBookings` returns rows and total from one `$facet`.
-  - `listInquiries` does the same, and also absorbs `getInquiryStatusCounts` into its `$facet`.
+  - Paged `listBookings`/`listInquiries` already run `find` + index-backed `countDocuments` in `Promise.all`, and `getInquiryStatusCounts` runs in parallel with them. Keep all three per the query-merge rule; no `$facet`.
   - If `explain` shows a scan on the inquiry `sessions.startDate` window, add an index that starts with `workspaceId`.
-- **Team reads.** Merge `resolveBookingTeamScope` + `getBookingTeamOptions` into one team read per request.
+- **Team reads — no change.** Verified: `resolveBookingTeamScope` and `getBookingTeamOptions` both go through the `cache()`d `getTeamsForUser`, and an owner's scope needs no query.
+- **Inquiries calendar query** filters `status: "inquiry"` plus the session window in the DB, instead of loading all inquiries and filtering in JS.
 - **Inquiry conflicts.** Split `computeInquiryConflicts` into a pure core plus a query wrapper, so the calendar reuses its single booking query. Staff team scope applies to what is rendered; other teams' booking data is never serialized.
 - **Remove unneeded reads.**
   - Drop the clients query from calendar renders: `CalendarEvent.clientEmail` is typed but never rendered. Verify, then remove the field.
@@ -116,7 +129,8 @@ Work:
 - **Settings.** `getDisplayPricing()` (`settings/[[...catchall]]/page.tsx:149`) should run only for the billing panel.
 - **Dashboard.**
   - Verify whether the ~14 metric queries run for tabs that aren't shown. If so, gate each one on the resolved active tab.
-  - Merge the heatmap earliest/latest `findOne`s (`booking-analytics.ts:138-145`) into one `$facet`.
+  - Merge the heatmap earliest/latest `findOne`s (`booking-analytics.ts:138-145`) into one `$facet`, if `explain` agrees.
+  - **Bundle:** `/dashboard` ships 4 chunks of identical size (158.7 KB gzip each). This is likely recharts duplicated once per `dynamic()` chart island. Confirm in the analyzer, then give the charts one shared dynamic boundary or chunk so recharts ships once. Target: −~475 KB gzip.
 - **Socket token.** `NotificationProvider` refetches `/api/socket-token` on every reconnect; reuse the token until the server rejects it.
 - **Replace full refreshes.** Wherever a mutation does a full `router.refresh()` only to update one row (for example, clients deactivate/reactivate at `clients-page-client.tsx:191,314`), apply the action result locally and invalidate through T3.
 - Tests: query-count assertions per render for the changed pages.
