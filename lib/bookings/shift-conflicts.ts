@@ -40,11 +40,12 @@ type GetShiftsOptions = {
 const PER_DATE_LIMIT = 20;
 
 /**
- * Returns shifts in the workspace that touch each given local date, using ONE
- * booking query. Per-date semantics are identical to a standalone single-date
- * lookup: a shift "touches" a date if any session's range overlaps
+ * Returns shifts in the workspace that touch each given local date. Runs one
+ * bounded query per date in parallel (callers batch dates so this is still one
+ * HTTP request): a shift "touches" a date if any session's range overlaps
  * [dayStart, dayEnd] in the workspace's timezone; each date keeps at most the
- * first PER_DATE_LIMIT matching bookings (ordered by firstSessionStart).
+ * first PER_DATE_LIMIT matching bookings (ordered by firstSessionStart), so a
+ * busy date cannot starve another.
  *
  * Returns the shift-start and shift-end times (HH:MM, local) from the matching
  * session so callers can show conflict ranges without leaking full booking
@@ -79,44 +80,19 @@ export async function getShiftsOnDates(
     dayEnd: dayBoundInTz(date, tz, 23, 59, 59, 999),
   }));
 
-  const filter: Record<string, unknown> = {
+  const baseFilter: Record<string, unknown> = {
     workspaceId,
     // Drafts are unapproved inquiry requests — they must not block availability
     // or surface as scheduling conflicts in the booking wizard.
     status: { $nin: ["cancelled", "draft"] },
-    $or: days.flatMap(({ dayStart, dayEnd }) => [
-      {
-        sessions: {
-          $elemMatch: {
-            startAt: { $lte: dayEnd },
-            endAt: { $gte: dayStart },
-          },
-        },
-      },
-      {
-        firstSessionStart: { $lte: dayEnd },
-        lastSessionEnd: { $gte: dayStart },
-      },
-    ]),
   };
 
   if (excludeId && /^[a-f0-9]{24}$/i.test(excludeId)) {
-    filter._id = { $ne: excludeId };
+    baseFilter._id = { $ne: excludeId };
   }
   if (teamScope !== undefined) {
-    filter.teamId = { $in: teamScope };
+    baseFilter.teamId = { $in: teamScope };
   }
-
-  const bookings = await Booking.find(filter)
-    .select({ _id: 1, title: 1, sessions: 1, firstSessionStart: 1, lastSessionEnd: 1 })
-    .sort({ firstSessionStart: 1 })
-    .limit(PER_DATE_LIMIT * days.length)
-    .lean();
-
-  type RawBooking = typeof bookings[number] & {
-    firstSessionStart?: Date;
-    lastSessionEnd?: Date;
-  };
 
   const dateFmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
@@ -125,21 +101,20 @@ export async function getShiftsOnDates(
     day: "2-digit",
   });
 
-  for (const { date, dayStart, dayEnd } of days) {
-    // Same match the DB applies per date, so the per-date cap behaves as in a
-    // standalone single-date query.
-    const matched = (bookings as RawBooking[])
-      .filter((b) => {
-        const ss = b.sessions as { startAt: Date; endAt: Date }[] | undefined;
-        return (
-          (ss ?? []).some((s) => s.startAt <= dayEnd && s.endAt >= dayStart) ||
-          (!!b.firstSessionStart &&
-            !!b.lastSessionEnd &&
-            b.firstSessionStart <= dayEnd &&
-            b.lastSessionEnd >= dayStart)
-        );
-      })
-      .slice(0, PER_DATE_LIMIT);
+  // One bounded, indexed query per date (run in parallel) so a busy date can
+  // never starve another date of its PER_DATE_LIMIT.
+  await Promise.all(days.map(async ({ date, dayStart, dayEnd }) => {
+    const matched = await Booking.find({
+      ...baseFilter,
+      $or: [
+        { sessions: { $elemMatch: { startAt: { $lte: dayEnd }, endAt: { $gte: dayStart } } } },
+        { firstSessionStart: { $lte: dayEnd }, lastSessionEnd: { $gte: dayStart } },
+      ],
+    })
+      .select({ _id: 1, title: 1, sessions: 1, firstSessionStart: 1, lastSessionEnd: 1 })
+      .sort({ firstSessionStart: 1 })
+      .limit(PER_DATE_LIMIT)
+      .lean();
 
     byDate[date] = matched.flatMap((b) => {
       const bookingId = b._id.toString();
@@ -194,7 +169,7 @@ export async function getShiftsOnDates(
           shiftEnd: formatHHMM(new Date(session.endAt), tz),
         }));
     });
-  }
+  }));
 
   return byDate;
 }
