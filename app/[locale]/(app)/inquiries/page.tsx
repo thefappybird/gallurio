@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
@@ -24,6 +25,9 @@ import type { InquiryDoc } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import { InquiriesHeaderSkeleton } from "./_components/inquiries-page-skeleton";
 import { INQUIRIES_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 
@@ -76,6 +80,9 @@ function compactSource(source: {
   return null;
 }
 
+// InquiryTable columns match INQUIRY_TABLE_COLUMNS in inquiries-page-client.tsx
+const INQUIRY_TABLE_COLUMNS = 6;
+
 export default async function InquiriesPage({
   params,
   searchParams,
@@ -85,15 +92,45 @@ export default async function InquiriesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.inquiries");
-
-  const { workspace, role, userId } = await requireOrg();
-
   const sp = await searchParams;
   const view = await resolveStoredCollectionView(
     sp.view,
     INQUIRIES_VIEW_COOKIE_NAME
   );
+
+  // Data-dependent content streams behind a per-view boundary so a table <->
+  // calendar switch shows the matching skeleton immediately.
+  return (
+    <Suspense
+      key={view}
+      fallback={
+        <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
+          <InquiriesHeaderSkeleton />
+          {view === "calendar" ? (
+            <CalendarSkeleton />
+          ) : (
+            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} />
+          )}
+        </div>
+      }
+    >
+      <InquiriesContent locale={locale} sp={sp} view={view} />
+    </Suspense>
+  );
+}
+
+async function InquiriesContent({
+  locale,
+  sp,
+  view,
+}: {
+  locale: string;
+  sp: SearchParams;
+  view: Awaited<ReturnType<typeof resolveStoredCollectionView>>;
+}) {
+  const t = await getTranslations("app.inquiries");
+
+  const { workspace, role, userId } = await requireOrg();
 
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;

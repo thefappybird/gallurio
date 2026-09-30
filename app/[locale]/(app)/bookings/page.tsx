@@ -6,6 +6,10 @@ import { Client, type BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
 import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
 import { bookingRowAmount } from "./_data/booking-rows";
@@ -21,7 +25,7 @@ import {
   type BookingRow,
 } from "./_components/bookings-table";
 import { BookingsPageClient } from "./_components/bookings-page-client";
-import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
@@ -67,6 +71,9 @@ type SearchParams = {
   limit?: string;
 };
 
+// BookingsTable columns: title, client, date, status, total, actions = 6
+const BOOKINGS_TABLE_COLUMNS = 6;
+
 export default async function BookingsPage({
   params,
   searchParams,
@@ -76,6 +83,42 @@ export default async function BookingsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const sp = await searchParams;
+  const view = (await resolveStoredCollectionView(
+    sp.view,
+    BOOKINGS_VIEW_COOKIE_NAME
+  )) as BookingsView;
+
+  // Everything data-dependent streams behind a per-view boundary: switching
+  // table <-> calendar shows the matching skeleton immediately.
+  return (
+    <Suspense
+      key={view}
+      fallback={
+        <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
+          <BookingsHeaderSkeleton />
+          {view === "calendar" ? (
+            <CalendarSkeleton />
+          ) : (
+            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} />
+          )}
+        </div>
+      }
+    >
+      <BookingsContent locale={locale} sp={sp} view={view} />
+    </Suspense>
+  );
+}
+
+async function BookingsContent({
+  locale,
+  sp,
+  view,
+}: {
+  locale: string;
+  sp: SearchParams;
+  view: BookingsView;
+}) {
   const t = await getTranslations("app.bookings");
   const tCal = await getTranslations("app.calendar");
 
@@ -86,12 +129,6 @@ export default async function BookingsPage({
   // bookings owned by teams they belong to. An empty membership list yields an
   // empty `teamIds` array → the query matches nothing (fail-closed).
   const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
-
-  const sp = await searchParams;
-  const view = (await resolveStoredCollectionView(
-    sp.view,
-    BOOKINGS_VIEW_COOKIE_NAME
-  )) as BookingsView;
 
   // Phase 5 — team scoping. Owners see every team; non-owners see only their own
   // (both include deactivated teams, shown as view-only choices).
