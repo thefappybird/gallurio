@@ -53,7 +53,7 @@ describe("ClientInfoCard — duplicate-client indicator", () => {
   });
 
   it("uses seeded matches from the detail read without fetching on mount", async () => {
-    const seeded = [{ _id: "c1", name: "Maria Santos", email: null, phone: null, notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }];
+    const seeded = [{ _id: "c1", name: "Maria Santos", email: null, phone: null, notes: null, tags: [], source: "manual" as const, bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }];
     renderWithProviders(<ClientInfoCard {...baseProps} initialMatches={seeded} />);
 
     expect(await screen.findByRole("button", { name: /resolve client/i })).toBeTruthy();

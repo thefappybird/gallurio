@@ -74,7 +74,7 @@ export function BookingUrlModals({
           readOnly={readOnly}
         />
       ) : null}
-      {editId ? (
+      {editId && defaultCurrency ? (
         <BookingWizardLazy
           key={editId}
           mode="edit"
