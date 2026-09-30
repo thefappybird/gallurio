@@ -121,7 +121,8 @@ export function TeamDetailDrawer({
         return;
       }
       toast.success(t("assignment.toasts.added"));
-      invalidateFor({ type: "team.updated", teamId });
+      // assignMemberToTeamAction revalidates /teams.
+      invalidateFor({ type: "team.updated", teamId }, { refresh: false });
     });
   }
 
@@ -150,7 +151,8 @@ export function TeamDetailDrawer({
       });
       try {
         await request;
-        invalidateFor({ type: "team.updated", teamId });
+        // setLeadFlagAction revalidates /teams.
+        invalidateFor({ type: "team.updated", teamId }, { refresh: false });
       } catch {
         setRoleOverrides(previousRoles);
       } finally {
@@ -170,7 +172,7 @@ export function TeamDetailDrawer({
       }
       toast.success(t("invite.toasts.revoked"));
       // revokeInviteAction broadcasts team.updated with a null teamId.
-      invalidateFor({ type: "team.updated", teamId: null });
+      invalidateFor({ type: "team.updated", teamId: null }, { refresh: false });
     });
   }
 

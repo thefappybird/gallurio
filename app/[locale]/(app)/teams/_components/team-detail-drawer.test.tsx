@@ -141,7 +141,7 @@ describe("TeamDetailDrawer", () => {
     vi.mocked(setLeadFlagAction).mockResolvedValue({ ok: true } as never);
     renderDrawer();
     fireEvent.click(screen.getByRole("switch"));
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t1" }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t1" }, { refresh: false }));
   });
 
   it("hides every mutating control for non-owners, but keeps the member list read-only", () => {

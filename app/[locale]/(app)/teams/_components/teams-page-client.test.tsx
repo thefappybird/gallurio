@@ -151,7 +151,7 @@ describe("TeamsPageClient", () => {
 
     await waitFor(() => expect(createTeamMock).toHaveBeenCalledWith({ name: "New crew", color: expect.any(String) }));
     // Refresh is owned by the data-event invalidation, not a direct router.refresh.
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t3" }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t3" }, { refresh: false }));
     expect(routerRefresh).not.toHaveBeenCalled();
   });
 

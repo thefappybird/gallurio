@@ -150,7 +150,8 @@ export function ViewMembersSidebar({
         return;
       }
       toast.success(t("invite.toasts.revoked"));
-      invalidateFor({ type: "team.updated", teamId: null });
+      // revokeInviteAction revalidates /teams.
+      invalidateFor({ type: "team.updated", teamId: null }, { refresh: false });
     });
   }
 

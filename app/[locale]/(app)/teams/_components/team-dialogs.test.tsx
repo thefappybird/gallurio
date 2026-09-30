@@ -129,6 +129,6 @@ describe("DeactivateDialog mutation invalidation", () => {
     expect(invalidateFor).not.toHaveBeenCalled();
     vi.mocked(deactivateTeamAction).mockResolvedValueOnce({} as never);
     fireEvent.click(confirm);
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "team-1" }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "team-1" }, { refresh: false }));
   });
 });

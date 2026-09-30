@@ -94,7 +94,8 @@ export function RemoveMemberDialog({
       return;
     }
     // Server emits the teamId for team-scoped removals, null for workspace-only.
-    invalidateFor({ type: "team.updated", teamId: action === "workspace" ? null : teamId });
+    // All three actions revalidate /teams, so the response already carries fresh RSC.
+    invalidateFor({ type: "team.updated", teamId: action === "workspace" ? null : teamId }, { refresh: false });
     onOpenChange(false);
   }
 

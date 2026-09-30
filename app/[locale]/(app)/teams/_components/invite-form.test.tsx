@@ -120,7 +120,7 @@ describe("InviteForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /send invite/i }));
 
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
-    expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null });
+    expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }, { refresh: false });
   });
 
   it("disables Send and shows an inline message when the typed email is already registered", async () => {

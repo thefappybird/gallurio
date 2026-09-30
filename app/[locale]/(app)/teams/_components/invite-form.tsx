@@ -154,7 +154,8 @@ export function InviteForm({
       toast.success(t("invite.toasts.sent"));
       onInvited?.(email.trim().toLowerCase());
       onOpenChange(false);
-      invalidateFor({ type: "team.updated", teamId: null });
+      // inviteMemberAction revalidates /teams: its response already carries fresh RSC.
+      invalidateFor({ type: "team.updated", teamId: null }, { refresh: false });
       onDone?.();
     });
   }

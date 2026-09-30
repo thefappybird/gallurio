@@ -136,7 +136,8 @@ export function CreateDialog({
         // teams-page-client.tsx).
         const teamId = result.team.id;
         Promise.resolve().then(() => {
-          invalidateFor({ type: "team.updated", teamId });
+          // createTeamAction revalidates /teams; the optimistic row is already in place.
+          invalidateFor({ type: "team.updated", teamId }, { refresh: false });
           onDone?.();
         });
       }
@@ -287,7 +288,8 @@ export function EditDialog({
 
       toast.success(t("toasts.saved"));
       onOpenChange(false);
-      invalidateFor({ type: "team.updated", teamId: team.id });
+      // rename/setColor actions revalidate /teams.
+      invalidateFor({ type: "team.updated", teamId: team.id }, { refresh: false });
       onDone?.();
     });
   }
@@ -387,7 +389,8 @@ export function DeactivateDialog({
       }
       toast.success(t("toasts.deactivated"));
       onOpenChange(false);
-      invalidateFor({ type: "team.updated", teamId: team.id });
+      // deactivateTeamAction revalidates /teams.
+      invalidateFor({ type: "team.updated", teamId: team.id }, { refresh: false });
       onDone?.();
     });
   }
@@ -458,7 +461,8 @@ export function ReactivateDialog({
       }
       toast.success(t("toasts.reactivated"));
       onOpenChange(false);
-      invalidateFor({ type: "team.updated", teamId: team.id });
+      // reactivateTeamAction revalidates /teams.
+      invalidateFor({ type: "team.updated", teamId: team.id }, { refresh: false });
       onDone?.();
     });
   }

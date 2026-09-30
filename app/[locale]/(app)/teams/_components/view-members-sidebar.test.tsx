@@ -178,7 +178,7 @@ describe("ViewMembersSidebar", () => {
     await waitFor(() =>
       expect(revokeInviteAction).toHaveBeenCalledWith({ invitationId: "invite_1" }),
     );
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }, { refresh: false }));
   });
 
   it("paginates each mode locally and clears filters when switching modes", () => {

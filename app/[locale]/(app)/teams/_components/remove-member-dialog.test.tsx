@@ -31,7 +31,7 @@ describe("RemoveMemberDialog", () => {
     renderWithProviders(<RemoveMemberDialog {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Remove from team + workspace" }));
     await waitFor(() => expect(removeMemberFromTeamAndWorkspaceAction).toHaveBeenCalledWith({ workosUserId: "u1", teamId: "t1" }));
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t1" }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "t1" }, { refresh: false }));
   });
 
   it("does not invalidate when removal fails", async () => {
@@ -47,7 +47,7 @@ describe("RemoveMemberDialog", () => {
     vi.mocked(removeMemberFromWorkspaceAction).mockResolvedValue({ ok: true });
     renderWithProviders(<RemoveMemberDialog {...props} mode="workspace" teamId={undefined} />);
     fireEvent.click(screen.getByRole("button", { name: /remove/i }));
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }, { refresh: false }));
   });
 
   it("disables combined removal with accessible help when the member is on other teams", () => {
