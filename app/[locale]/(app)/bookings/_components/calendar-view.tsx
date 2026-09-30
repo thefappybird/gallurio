@@ -282,17 +282,19 @@ export function CalendarView({
     [openDetailById]
   );
 
-  const clearWizardParams = useCallback(
-    (extra: string[] = []) => {
-      const params = new URLSearchParams(searchParams.toString());
-      for (const k of ["add", "date", "time", "edit", ...extra]) params.delete(k);
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      });
-    },
-    [router, pathname, searchParams]
-  );
+  // Keeps `date` (the window anchor): dropping it would snap the page back to
+  // today's window. Wizard params are not server data, so a history-only replace
+  // avoids an RSC round-trip (Next syncs useSearchParams with the History API).
+  const clearWizardParams = useCallback((extra: string[] = []) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const k of ["add", "time", "edit", ...extra]) params.delete(k);
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+    );
+  }, []);
 
   const openAddForDate = useCallback(
     (date: Date, time?: string) => {

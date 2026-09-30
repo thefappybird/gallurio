@@ -28,6 +28,13 @@ vi.mock("@/hooks/use-data-events", () => ({
   useInvalidateFor: () => mockInvalidateFor,
 }));
 vi.mock("./booking-wizard-modal", () => ({ BookingWizardModal: () => null }));
+let wizardProps: { onClose: () => void } | null = null;
+vi.mock("./booking-wizard-dynamic", () => ({
+  BookingWizardLazy: (props: { onClose: () => void }) => {
+    wizardProps = props;
+    return null;
+  },
+}));
 vi.mock("./team-filter-control", () => ({ TeamFilterControl: () => null }));
 const toastErrors: string[] = [];
 vi.mock("sonner", () => ({
@@ -114,6 +121,15 @@ describe("CalendarView window navigation", () => {
     expect(mockReplace).toHaveBeenCalledWith("/bookings?team=a&date=2027-01-10", { scroll: false });
     expect(onWindowPendingChange).toHaveBeenCalledWith(true);
     expect(screen.getByText(/^Carter Wedding@/)).toBeInTheDocument();
+  });
+
+  it("closing the wizard keeps ?date (calendar stays on the month) and fires no RSC navigation", () => {
+    search = "team=a&add=1&date=2027-01-10";
+    window.history.replaceState(null, "", `/bookings?${search}`);
+    renderView({ defaultDate: new Date("2027-01-10T04:00:00Z") });
+    act(() => wizardProps!.onClose());
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?team=a&date=2027-01-10");
   });
 
   it("follows a ?date that moves outside the visible grid (back button), ignores one inside it", () => {
