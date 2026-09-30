@@ -284,6 +284,17 @@ describe("getWorkspaceTags", () => {
 // ─── getClientById ────────────────────────────────────────────────────────────
 
 describe("getClientById", () => {
+  it("excludes draft bookings, agreeing with listClients", async () => {
+    const client = await seedClient(workspaceId, { name: "Drafty2" });
+    await seedBooking(workspaceId, client._id, { status: "booked" });
+    await seedBooking(workspaceId, client._id, { status: "draft" });
+
+    const byId = await getClientById(workspaceId, client._id.toString());
+    const { items } = await listClients({ workspaceId });
+    expect(byId?.bookingsCount).toBe(1);
+    expect(byId?.bookingsCount).toBe(items.find((c) => c.name === "Drafty2")?.bookingsCount);
+  });
+
   it("returns the client with derived bookingsCount and lastBookingAt", async () => {
     const client = await seedClient(workspaceId, { name: "Ana Reyes" });
     const start = new Date("2025-03-10T09:00:00Z");

@@ -141,7 +141,8 @@ export async function getClientById(
       count: number;
       lastStart: Date | null;
     }>([
-      { $match: { workspaceId, clientId: c._id } },
+      // Same draft exclusion as listClients so a ?client= deep link agrees.
+      { $match: { workspaceId, status: { $ne: "draft" }, clientId: c._id } },
       {
         $group: {
           _id: "$clientId",
