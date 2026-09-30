@@ -370,6 +370,8 @@ export function InquiriesCalendarManager({
       events={eventsWithConflicts}
       defaultDate={defaultDate}
       onVisibleChange={onVisibleChange}
+      workspaceTimezone={workspaceTz}
+      emptyMessage={windowPending ? undefined : t("emptyPeriod")}
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}

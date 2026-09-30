@@ -883,3 +883,59 @@ describe("BookingCalendar candle memoization", () => {
     renderedDnDEvent = null;
   });
 });
+
+describe("candle aria-label", () => {
+  it("month candle announces localized conflict and past state", () => {
+    const ev = makeEvent({ hasConflict: true, end: new Date("2020-01-01T13:00:00") });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    expect((container.firstElementChild as HTMLElement).getAttribute("aria-label")).toBe(
+      "Carter Wedding · Booked · Conflict · Past"
+    );
+  });
+});
+
+describe("BookingCalendar empty-period pill", () => {
+  const noCompact = () =>
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+  const ui = (events: CalendarEvent[], emptyMessage?: string) => (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <BookingCalendar
+        events={events}
+        messages={calendarMessages}
+        defaultDate={new Date(2090, 0, 15, 12)}
+        workspaceTimezone="UTC"
+        emptyMessage={emptyMessage}
+      />
+    </NextIntlClientProvider>
+  );
+
+  it("shows a non-blocking role=status pill inside the grid when nothing falls in the visible range", () => {
+    noCompact();
+    render(ui([makeEvent({ workspaceTz: "UTC" })], "No bookings in this period"));
+    const pill = screen.getByRole("status");
+    expect(pill).toHaveTextContent("No bookings in this period");
+    expect(pill.className).toContain("absolute");
+    expect(pill.className).toContain("pointer-events-none");
+  });
+
+  it("hides the pill when a candle sits in the visible range, or when no message is given (loading)", () => {
+    noCompact();
+    const inRange = makeEvent({
+      workspaceTz: "UTC",
+      start: new Date("2090-01-10T10:00:00Z"),
+      end: new Date("2090-01-10T12:00:00Z"),
+    });
+    const view = render(ui([inRange], "No bookings in this period"));
+    expect(screen.queryByRole("status")).toBeNull();
+    view.rerender(ui([], undefined));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});

@@ -1444,7 +1444,9 @@
         "filterByStatus": "Filter by status",
         "filterActive": "Filtering by {status} — tap again to clear",
         "teamsLegend": "Teams",
-        "inactiveTeam": "Inactive team"
+        "inactiveTeam": "Inactive team",
+        "conflict": "Conflict",
+        "emptyPeriod": "No bookings in this period"
       },
       "sessions": {
         "label": "Session {n}",
@@ -2404,7 +2406,8 @@
         "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
         "rescheduleFailed": "Could not reschedule — please try again",
         "updating": "Rescheduling…",
-        "updated": "Session rescheduled"
+        "updated": "Session rescheduled",
+        "emptyPeriod": "No inquiries in this period"
       }
     },
     "pageBuilder": {

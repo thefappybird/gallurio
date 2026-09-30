@@ -41,6 +41,7 @@ type CalProps = {
   toolbarTrailing: unknown;
   draggableAccessor: unknown;
   onSelectEvent: unknown;
+  emptyMessage?: string;
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
 };
 let cal: CalProps;
@@ -151,5 +152,15 @@ describe("InquiriesCalendarManager stable props", () => {
     expect(cal.toolbarTrailing).toBe(first.trailing);
     expect(cal.draggableAccessor).toBe(first.drag);
     expect(cal.onSelectEvent).toBe(first.select);
+  });
+});
+
+describe("InquiriesCalendarManager empty-period message", () => {
+  it("offers the localized message when idle and withholds it while a window refetch is pending", () => {
+    render(ui([]));
+    expect(cal.emptyMessage).toBe("No inquiries in this period");
+    mockPending = true;
+    render(ui([]));
+    expect(cal.emptyMessage).toBeUndefined();
   });
 });

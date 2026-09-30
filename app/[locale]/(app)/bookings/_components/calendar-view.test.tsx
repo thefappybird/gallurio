@@ -50,6 +50,7 @@ type CalProps = {
   date: Date;
   toolbarTrailing: unknown;
   onSelectSlot: unknown;
+  emptyMessage?: string;
 };
 let cal: CalProps;
 vi.mock("./booking-calendar-dynamic", () => ({
@@ -215,5 +216,12 @@ describe("CalendarView stable props", () => {
     );
     expect(cal.toolbarTrailing).toBe(first.trailing);
     expect(cal.onSelectSlot).toBe(first.slot);
+  });
+});
+
+describe("CalendarView empty-period message", () => {
+  it("passes the localized empty message to the calendar when idle", () => {
+    renderView();
+    expect(cal.emptyMessage).toBe("No bookings in this period");
   });
 });

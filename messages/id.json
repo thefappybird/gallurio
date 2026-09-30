@@ -1444,7 +1444,9 @@
         "filterByStatus": "Filter berdasarkan status",
         "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
         "teamsLegend": "Tim",
-        "inactiveTeam": "Tim tidak aktif"
+        "inactiveTeam": "Tim tidak aktif",
+        "conflict": "Konflik",
+        "emptyPeriod": "Tidak ada pemesanan pada periode ini"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -2404,7 +2406,8 @@
         "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
         "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
         "updating": "Menjadwalkan ulang…",
-        "updated": "Sesi dijadwalkan ulang"
+        "updated": "Sesi dijadwalkan ulang",
+        "emptyPeriod": "Tidak ada pertanyaan pada periode ini"
       }
     },
     "pageBuilder": {

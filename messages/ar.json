@@ -1444,7 +1444,9 @@
         "filterByStatus": "تصفية حسب الحالة",
         "filterActive": "تصفية حسب {status} — انقر مرة أخرى للمسح",
         "teamsLegend": "الفِرق",
-        "inactiveTeam": "فريق غير نشط"
+        "inactiveTeam": "فريق غير نشط",
+        "conflict": "متعارض",
+        "emptyPeriod": "لا توجد حجوزات في هذه الفترة"
       },
       "sessions": {
         "label": "الجلسة {n}",
@@ -2404,7 +2406,8 @@
         "rescheduleConflict": "يتعارض هذا الوقت مع حجز موجود؛ أُلغي النقل.",
         "rescheduleFailed": "تعذّرت إعادة الجدولة — يرجى المحاولة مرة أخرى",
         "updating": "جارٍ إعادة الجدولة…",
-        "updated": "تمت إعادة جدولة الجلسة"
+        "updated": "تمت إعادة جدولة الجلسة",
+        "emptyPeriod": "لا توجد استفسارات في هذه الفترة"
       }
     },
     "pageBuilder": {

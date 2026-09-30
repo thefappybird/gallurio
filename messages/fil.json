@@ -1444,7 +1444,9 @@
         "filterByStatus": "I-filter ayon sa status",
         "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin",
         "teamsLegend": "Mga Koponan",
-        "inactiveTeam": "Hindi aktibong koponan"
+        "inactiveTeam": "Hindi aktibong koponan",
+        "conflict": "May salungatan",
+        "emptyPeriod": "Walang booking sa panahong ito"
       },
       "sessions": {
         "label": "Sesyon {n}",
@@ -2404,7 +2406,8 @@
         "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
         "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli",
         "updating": "Nire-reschedule…",
-        "updated": "Na-reschedule ang session"
+        "updated": "Na-reschedule ang session",
+        "emptyPeriod": "Walang katanungan sa panahong ito"
       }
     },
     "pageBuilder": {

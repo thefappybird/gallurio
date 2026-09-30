@@ -154,6 +154,7 @@ export function CalendarView({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
+  const tCal = useTranslations("app.bookings.calendar");
 
   const [, startTransition] = useTransition();
   const invalidateFor = useInvalidateFor();
@@ -696,6 +697,7 @@ export function CalendarView({
         date={date}
         onDateChange={setDate}
         onVisibleChange={onVisibleChange}
+        emptyMessage={windowPending ? undefined : tCal("emptyPeriod")}
         onSelectEvent={openDetail}
         onSelectSlot={openAddForDate}
         onEventDrop={handleEventDrop}

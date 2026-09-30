@@ -32,6 +32,7 @@ import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/book
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { escapeHtml } from "@/lib/email/escapeHtml";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { visibleGridRange } from "@/lib/bookings/calendar-window";
 import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
 import { toCalendarGridDate, fromCalendarGridDate } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
@@ -161,6 +162,10 @@ type Props = {
   /** Fired whenever navigation / a view switch changes which days are shown, so
    *  the consumer can load data outside its server window. */
   onVisibleChange?: (visible: { date: Date; view: View }) => void;
+  /** Localized "nothing in this period" text. Shown as a non-blocking overlay
+   *  pill when no candle falls in the visible range. Omit while data is still
+   *  loading so a refetch never flashes a false empty state. */
+  emptyMessage?: string;
 };
 
 /**
@@ -331,6 +336,16 @@ function StatusPill({
   );
 }
 
+/** Screen-reader name for a candle: color is never the only conflict/past signal. */
+function buildCandleAriaLabel(
+  title: string,
+  status: string,
+  conflict: string | null,
+  past: string | null
+): string {
+  return [title, status, conflict, past].filter(Boolean).join(" · ");
+}
+
 /** Month view: three-line stacked — title / client / time range. */
 export const MonthBookingEvent = memo(function MonthBookingEvent({
   event,
@@ -396,7 +411,12 @@ export const MonthBookingEvent = memo(function MonthBookingEvent({
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status);
   const labelOverride = booking.kind === "inquiry" ? tInq("inquiry") : undefined;
-  const candleAriaLabel = `${booking.title} · ${labelOverride ?? statusLabel}${booking.hasConflict ? " · conflict" : ""}`;
+  const candleAriaLabel = buildCandleAriaLabel(
+    booking.title,
+    labelOverride ?? statusLabel,
+    booking.hasConflict ? t("conflict") : null,
+    isPast ? t("past") : null
+  );
 
   return (
     <span
@@ -463,7 +483,12 @@ export const TimeBookingEvent = memo(function TimeBookingEvent({ event }: EventP
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status);
   const labelOverride = ev.kind === "inquiry" ? tInq("inquiry") : undefined;
-  const candleAriaLabel = `${ev.title} · ${labelOverride ?? statusLabel}${ev.hasConflict ? " · conflict" : ""}`;
+  const candleAriaLabel = buildCandleAriaLabel(
+    ev.title,
+    labelOverride ?? statusLabel,
+    ev.hasConflict ? t("conflict") : null,
+    isPast ? t("past") : null
+  );
 
   return (
     <div
@@ -886,6 +911,7 @@ export function BookingCalendar({
   draggableAccessor,
   workspaceTimezone,
   onVisibleChange,
+  emptyMessage,
 }: Props) {
   const isRtl = useIsRtl();
   // Server-rendered `messages` is a fresh object on every RSC refresh; rebuild
@@ -1151,11 +1177,17 @@ export function BookingCalendar({
     [onDropFromOutside, workspaceTimezone]
   );
 
+  const isEmptyRange = useMemo(() => {
+    if (!emptyMessage) return false;
+    const range = visibleGridRange(date, effectiveView, workspaceTimezone ?? FALLBACK_TZ);
+    return !events.some((e) => e.start < range.end && e.end > range.start);
+  }, [emptyMessage, date, effectiveView, workspaceTimezone, events]);
+
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div
         ref={containerRef}
-        className="h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
+        className="relative h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
         style={calendarHeight === null ? undefined : { height: `${calendarHeight}px` }}
       >
         <DnDCalendar
@@ -1208,6 +1240,16 @@ export function BookingCalendar({
             };
           }}
         />
+        {isEmptyRange ? (
+          <div
+            role="status"
+            className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex justify-center px-4"
+          >
+            <span className="border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
+              {emptyMessage}
+            </span>
+          </div>
+        ) : null}
       </div>
     </CalendarToolbarCtx.Provider>
   );
