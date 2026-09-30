@@ -23,6 +23,7 @@ import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { resolveTeamRecipients } from "@/lib/notifications/recipients";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { getInquiryWithDraft } from "@/lib/db/queries/inquiries";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 
@@ -245,6 +246,7 @@ export async function resolveInquiryClientAction(
 
   let targetClientId: mongoose.Types.ObjectId | undefined;
   let targetClientName: string | undefined;
+  let createdNewClient = false;
 
   const session = await mongoose.startSession();
   try {
@@ -290,6 +292,7 @@ export async function resolveInquiryClientAction(
         );
         targetClientId = created._id;
         targetClientName = created.name;
+        createdNewClient = true;
       }
 
       await Inquiry.updateOne(
@@ -373,6 +376,12 @@ export async function resolveInquiryClientAction(
 
   if (!targetClientId) return { error: "resolve_failed" };
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, targetClientId);
+  emitDataChanged(String(workspaceId), {
+    type: createdNewClient ? "client.created" : "client.updated",
+    clientId: targetClientId.toString(),
+  });
+
   return { ok: true, clientId: targetClientId.toString() };
 }
 
@@ -393,6 +402,29 @@ export type DraftEdits = z.infer<typeof draftEditsSchema>;
 // Reusable phone validator — matches the phone rule in inquirySessionsEditSchema
 // (min 7, max 30, or empty string).
 const phoneSchema = z.string().trim().min(7).max(30).or(z.literal(""));
+
+/**
+ * Broadcast an inquiry write (and its draft/converted booking, when one was
+ * written) to the workspace room. Call only after the write has committed.
+ */
+function emitInquiryWrite(
+  workspaceId: mongoose.Types.ObjectId,
+  inquiryId: string,
+  bookingId?: mongoose.Types.ObjectId | string | null,
+  clientId?: mongoose.Types.ObjectId | string | null
+) {
+  const ws = String(workspaceId);
+  const bId = bookingId ? String(bookingId) : null;
+  emitDataChanged(ws, { type: "inquiry.updated", inquiryId, bookingId: bId });
+  if (bId) {
+    emitDataChanged(ws, {
+      type: "booking.updated",
+      bookingId: bId,
+      clientId: clientId ? String(clientId) : null,
+      inquiryId,
+    });
+  }
+}
 
 function revalidateInquiry(id: string) {
   revalidatePath("/inquiries");
@@ -634,6 +666,7 @@ export async function approveInquiryBookingAction(
     }
   })();
 
+  emitInquiryWrite(workspaceId, inquiryId, booking._id, booking.clientId);
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
   revalidatePath("/dashboard");
@@ -706,6 +739,7 @@ export async function saveDraftBookingFieldsAction(
     });
   }
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -768,6 +802,7 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
 
   if (!archived) return { error: "not_found" };
 
+  emitInquiryWrite(ctx.workspace._id, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -837,6 +872,8 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
   // A concurrent archive/decline/approval already resolved this inquiry — report
   // not_found without emailing (this call did not decline it).
   if (!declined) return { error: "not_found" };
+
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
 
   // Best-effort decline email — never throws, never rolls back.
   const ownerEmail = ctx.workspace.contact?.email ?? null;
@@ -978,6 +1015,7 @@ export async function editInquirySessionsAction(
     await mongoSession.endSession();
   }
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -1013,6 +1051,7 @@ export async function updateInquiryPhoneAction(
     diff: { phone: sanitized || null },
   });
 
+  emitInquiryWrite(workspaceId, inquiryId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -1128,6 +1167,7 @@ export async function rescheduleInquirySessionAction(
     await mongoSession.endSession();
   }
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidatePath("/inquiries");
   return { ok: true };
 }

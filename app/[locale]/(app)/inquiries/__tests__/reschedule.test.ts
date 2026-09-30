@@ -27,6 +27,11 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   }),
 }));
 
+const emitMock = vi.fn();
+vi.mock("@/lib/sockets/emitDataChanged", () => ({
+  emitDataChanged: (...args: unknown[]) => emitMock(...args),
+}));
+
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Inquiry, Booking, Client } from "@/lib/db/models";
 import { rescheduleInquirySessionAction } from "../_actions";
@@ -40,6 +45,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  emitMock.mockReset();
   mockCtx = { userId: "user_owner", role: "owner", workspaceId };
 });
 
@@ -125,6 +131,28 @@ describe("rescheduleInquirySessionAction", () => {
     expect(fresh?.sessions?.[0]?.startDate).toBe("2035-03-15");
     expect(fresh?.sessions?.[0]?.startTime).toBe("10:00");
     expect(fresh?.sessions?.[0]?.endTime).toBe("18:00");
+  });
+
+  it("emits inquiry.updated + booking.updated on success and nothing on conflict", async () => {
+    const { inquiry, booking, client } = await seedInquiry(workspaceId);
+    await seedConflictingBooking(workspaceId, "2035-03-20", "08:00", "18:00");
+    await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-20", startTime: "10:00", endTime: "16:00",
+    });
+    expect(emitMock).not.toHaveBeenCalled();
+    await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-15", startTime: "10:00", endTime: "18:00",
+    });
+    const ws = String(workspaceId);
+    expect(emitMock).toHaveBeenCalledWith(ws, {
+      type: "inquiry.updated", inquiryId: String(inquiry._id), bookingId: String(booking._id),
+    });
+    expect(emitMock).toHaveBeenCalledWith(ws, {
+      type: "booking.updated", bookingId: String(booking._id),
+      clientId: String(client._id), inquiryId: String(inquiry._id),
+    });
   });
 
   // (b) Conflict with a real Booking
