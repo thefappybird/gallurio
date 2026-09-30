@@ -14,7 +14,7 @@ type Props = ComponentProps<typeof BookingEventTypeTrendChartComponent>;
 // boundary moves, the chart still server-renders on first paint.
 const BookingEventTypeTrendChart = dynamic(
   () =>
-    import("./booking-event-type-trend-chart").then(
+    import("./dashboard-charts").then(
       (module) => module.BookingEventTypeTrendChart
     ),
   { ssr: true, loading: () => <ChartLoadingFallback className="rounded-[var(--radius)]" /> }
