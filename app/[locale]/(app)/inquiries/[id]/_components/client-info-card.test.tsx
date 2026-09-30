@@ -52,6 +52,14 @@ describe("ClientInfoCard — duplicate-client indicator", () => {
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 
+  it("uses seeded matches from the detail read without fetching on mount", async () => {
+    const seeded = [{ _id: "c1", name: "Maria Santos", email: null, phone: null, notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }];
+    renderWithProviders(<ClientInfoCard {...baseProps} initialMatches={seeded} />);
+
+    expect(await screen.findByRole("button", { name: /resolve client/i })).toBeTruthy();
+    expect(findInquiryClientMatchesAction).not.toHaveBeenCalled();
+  });
+
   it("stays hidden when the inquiry has no competing client", async () => {
     // The common case. A false indicator on every inquiry would be noise.
     findInquiryClientMatchesAction.mockResolvedValue({ ok: true, matches: [] });

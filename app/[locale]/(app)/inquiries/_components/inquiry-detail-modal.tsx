@@ -159,6 +159,7 @@ export function InquiryDetailModal({
                 message={detail.message}
                 clientResolutionRequest={clientResolutionRequest}
                 onInquiryChanged={readOnly ? undefined : onInquiryChanged}
+                initialMatches={detail.clientMatches}
               />
               <EventRequestCard
                 eventType={detail.eventType}

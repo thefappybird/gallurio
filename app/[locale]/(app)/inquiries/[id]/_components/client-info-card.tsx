@@ -35,6 +35,8 @@ type Props = {
   /** Increments when a conversion attempt detects a duplicate. */
   clientResolutionRequest?: number;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
+  /** Matches folded into the detail read; undefined = fetch on mount. */
+  initialMatches?: InquiryClientMatch[];
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -46,7 +48,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged, initialMatches }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
   const ws = useAppWorkspaceId();
@@ -65,6 +67,8 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
   // Computed live on the server, cached under the inquiry's key so
   // inquiry.updated refreshes it. Deliberately absent from the inquiries table:
   // that would need a per-row lookup across the list.
+  // Captured once so seeded data counts as fresh (provider staleTime) on mount.
+  const [seededAt] = useState(() => Date.now());
   const matchesKey = [...queryKeys(ws).inquiry(inquiryId), "clientMatches"];
   const matchesQuery = useQuery({
     queryKey: matchesKey,
@@ -74,6 +78,8 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       return "ok" in res ? res.matches : [];
     },
     enabled: !locked,
+    initialData: initialMatches,
+    initialDataUpdatedAt: seededAt,
     ...EDITABLE_QUERY_OPTIONS,
   });
   const matches = matchesQuery.data ?? [];
