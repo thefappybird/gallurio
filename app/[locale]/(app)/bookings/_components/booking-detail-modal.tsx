@@ -394,12 +394,19 @@ export function BookingDetailModal({
   const close = useCallback(() => {
     setDraftSessions([]);
     setOpen(false);
-    // History API: the host (BookingUrlModals) unmounts on the param change.
-    setUrlParams((p) => {
-      p.delete("detail");
-      p.delete("edit");
-    });
   }, []);
+
+  // History API: the host (BookingUrlModals) unmounts on the param change, so
+  // this runs only once the exit animation is done (or immediately on 404).
+  // Guarded: the user may already have opened another booking meanwhile.
+  const stripUrl = useCallback(() => {
+    const cur = new URLSearchParams(window.location.search);
+    if (cur.get("detail") !== bookingId && cur.get("edit") !== bookingId) return;
+    setUrlParams((p) => {
+      if (p.get("detail") === bookingId) p.delete("detail");
+      if (p.get("edit") === bookingId) p.delete("edit");
+    });
+  }, [bookingId]);
 
   /**
    * After a successful PATCH: write the response into the shared booking cache
@@ -468,9 +475,12 @@ export function BookingDetailModal({
   // Booking gone (deleted / other workspace): close and strip ?detail.
   useEffect(() => {
     if (!notFound) return;
-    const id = setTimeout(close, 0);
+    const id = setTimeout(() => {
+      close();
+      stripUrl();
+    }, 0);
     return () => clearTimeout(id);
-  }, [notFound, close]);
+  }, [notFound, close, stripUrl]);
 
   // Normalize conflicting URL params on mount.
   useEffect(() => {
@@ -1304,7 +1314,13 @@ export function BookingDetailModal({
   }, [pendingSessionEditDialog]);
 
   return (
-    <Dialog open={open} onOpenChange={attemptClose}>
+    <Dialog
+      open={open}
+      onOpenChange={attemptClose}
+      onOpenChangeComplete={(isOpen) => {
+        if (!isOpen) stripUrl();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex min-h-[60vh] max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"

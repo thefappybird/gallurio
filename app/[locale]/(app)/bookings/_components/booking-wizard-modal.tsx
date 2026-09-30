@@ -383,10 +383,18 @@ export function BookingWizardModal({
       onClose();
       return;
     }
+    // URL params are stripped in onOpenChangeComplete, after the exit animation.
+  }, [onClose]);
+
+  // Replace mode; guarded so a booking opened meanwhile (?edit=other) survives.
+  const stripUrlAfterClose = useCallback(() => {
+    if (onClose) return;
+    const cur = new URLSearchParams(window.location.search);
+    if (bookingId && cur.get("edit") !== bookingId) return;
     setUrlParams((p) => {
       for (const k of ["add", "date", "time", "edit", "detail"]) p.delete(k);
     }, "replace");
-  }, [onClose]);
+  }, [onClose, bookingId]);
 
   // Defensive unmount cleanup: if the component unmounts without close() having
   // run (e.g. error boundary, parent re-render, browser back), strip the params.
@@ -765,7 +773,13 @@ export function BookingWizardModal({
   const values = watch();
 
   return (
-    <Dialog open={open} onOpenChange={attemptClose}>
+    <Dialog
+      open={open}
+      onOpenChange={attemptClose}
+      onOpenChangeComplete={(isOpen) => {
+        if (!isOpen) stripUrlAfterClose();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex max-h-[calc(100vh-4em)] w-full max-w-2xl flex-col gap-0 p-0 transition-[max-height,width] duration-200 ease-out sm:max-w-2xl"

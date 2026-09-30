@@ -102,6 +102,28 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
+// jsdom has no exit animation, so Base UI completes instantly. Tests can hold
+// the completion callback and fire it by hand.
+const dialogHold = vi.hoisted(() => ({
+  hold: false,
+  complete: null as null | ((open: boolean) => void),
+}));
+vi.mock("@/components/ui/dialog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/ui/dialog")>();
+  return {
+    ...actual,
+    Dialog: ({ onOpenChangeComplete, ...props }: React.ComponentProps<typeof actual.Dialog>) =>
+      React.createElement(actual.Dialog, {
+        ...props,
+        onOpenChangeComplete: dialogHold.hold && onOpenChangeComplete
+          ? (o: boolean) => {
+              if (!o) dialogHold.complete = () => onOpenChangeComplete?.(o);
+            }
+          : onOpenChangeComplete,
+      }),
+  };
+});
+
 // The Event tab now renders the LocationPicker, which dynamically imports a
 // Leaflet map. Stub it — this suite covers session/pricing logic, not the map
 // (the picker has its own test).
@@ -1095,6 +1117,43 @@ describe("Issue 4 — AlertDialog for close-with-unsaved", () => {
 
     // No AlertDialog should appear.
     expect(screen.queryByText("Discard changes?")).not.toBeInTheDocument();
+  });
+
+  it("keeps ?detail until the exit animation completes, then strips it", async () => {
+    window.history.replaceState(null, "", `/bookings?detail=${BOOKING_ID}&view=table`);
+    dialogHold.hold = true;
+    dialogHold.complete = null;
+    renderModal();
+    await waitForLoad();
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    fireEvent.click(getHeaderCloseButton());
+    await waitFor(() => expect(dialogHold.complete).not.toBeNull());
+    expect(pushState).not.toHaveBeenCalled();
+
+    dialogHold.complete!(false);
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/bookings?view=table");
+    pushState.mockRestore();
+    dialogHold.hold = false;
+  });
+
+  it("does not strip another booking's ?detail opened during the exit animation", async () => {
+    window.history.replaceState(null, "", `/bookings?detail=${BOOKING_ID}`);
+    dialogHold.hold = true;
+    dialogHold.complete = null;
+    renderModal();
+    await waitForLoad();
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    fireEvent.click(getHeaderCloseButton());
+    await waitFor(() => expect(dialogHold.complete).not.toBeNull());
+    window.history.replaceState(null, "", "/bookings?detail=other-booking");
+    dialogHold.complete!(false);
+
+    expect(pushState).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?detail=other-booking");
+    pushState.mockRestore();
+    dialogHold.hold = false;
   });
 });
 

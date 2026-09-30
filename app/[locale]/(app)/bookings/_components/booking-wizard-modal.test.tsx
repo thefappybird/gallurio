@@ -951,6 +951,20 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
     pushState.mockRestore();
   });
 
+  it("closing the edit wizard strips ?edit once the dialog finishes closing", async () => {
+    mockFetchForEdit();
+    window.history.replaceState(null, "", `/bookings?view=table&edit=${BOOKING_ID}`);
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={BOOKING_ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => expect(window.location.search).toBe("?view=table"));
+  });
+
   it("single-session edit: PATCH body includes clientId when client is changed", async () => {
     const mockFetch = mockFetchForEdit();
 
