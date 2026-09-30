@@ -34,6 +34,14 @@ Executors re-verify every audit finding before fixing it. The Haiku audits had f
 | `/clients` | 37 | 601.5 KB | 75.9 KB |
 | `/teams` | 34 | 508.4 KB | 75.9 KB |
 
+After T4: `/dashboard` 1144.5 → **646.2 KB** (−498 KB, −44%; recharts now ships once, largest chunk 175.9 KB). `/clients` 601.5 → 618.4 KB and `/teams` 508.4 → 525.3 KB: the +17 KB is the react-query runtime, now shared app-wide.
+
+**Backend follow-up after T6 (T6b):**
+- `createClientAction` returns `{ ok: true, clientId }`.
+- Remove the `?detail` pre-checks.
+- Remove the bookings page's ≤1000-client query once the wizard uses `useWorkspaceClients`.
+- Remove `/api/users/names` and the single-`date` `shifts-on-date` form once no caller uses them.
+
 Note: `pnpm analyze` finishes in about 70 s and then keeps serving the viewer on :4000. Stop it once the "Analyze completed" line appears.
 
 ## Reuse (don't re-implement)
