@@ -2068,7 +2068,9 @@
           "loadingHistory": "Memuat riwayat aktivitas",
           "loading": "Memuat…",
           "loadMore": "Muat lebih banyak",
-          "noActivity": "Tidak ada aktivitas ditemukan."
+          "noActivity": "Tidak ada aktivitas ditemukan.",
+          "loadError": "Gagal memuat aktivitas.",
+          "retry": "Coba lagi"
         },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",

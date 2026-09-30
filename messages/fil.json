@@ -2068,7 +2068,9 @@
           "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad",
           "loading": "Naglo-load…",
           "loadMore": "Mag-load pa",
-          "noActivity": "Walang nakitang aktibidad."
+          "noActivity": "Walang nakitang aktibidad.",
+          "loadError": "Hindi ma-load ang aktibidad.",
+          "retry": "Subukan muli"
         },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",

@@ -2073,7 +2073,9 @@
           "loadingHistory": "Loading activity history",
           "loading": "Loading…",
           "loadMore": "Load more",
-          "noActivity": "No activity found."
+          "noActivity": "No activity found.",
+          "loadError": "Couldn't load activity.",
+          "retry": "Retry"
         },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
