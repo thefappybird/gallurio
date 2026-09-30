@@ -22,6 +22,25 @@ const authUserStub: {
   avatarUrl: null,
 };
 
+// Per-"request" memoizing stand-in for React's cache() (a pass-through outside
+// an RSC render). Cleared in beforeEach to simulate a fresh request.
+const cacheStores = vi.hoisted(() => [] as Map<string, unknown>[]);
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    cache: <A extends unknown[], R>(fn: (...args: A) => R) => {
+      const store = new Map<string, unknown>();
+      cacheStores.push(store);
+      return (...args: A): R => {
+        const key = JSON.stringify(args);
+        if (!store.has(key)) store.set(key, fn(...args));
+        return store.get(key) as R;
+      };
+    },
+  };
+});
+
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
@@ -80,6 +99,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   cookieStore.clear();
+  cacheStores.forEach((s) => s.clear());
   redirectMock.mockClear();
   // Reset to default owner stub.
   authUserStub.workosUserId = "user_owner";
@@ -486,6 +506,33 @@ describe("requireOrg — subscription gate", () => {
 
     await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
     expect(redirectMock).toHaveBeenCalledWith("/onboarding");
+  });
+});
+
+describe("requireOrg — request memoization", () => {
+  it("two calls in one request hit User and Workspace once each", async () => {
+    await makeWorkspaceWithOwner();
+    const userSpy = vi.spyOn(User, "findOne");
+    const wsSpy = vi.spyOn(Workspace, "findById");
+    const { requireOrg } = await load();
+
+    await requireOrg();
+    await requireOrg();
+
+    expect(userSpy).toHaveBeenCalledTimes(1);
+    expect(wsSpy).toHaveBeenCalledTimes(1);
+    userSpy.mockRestore();
+    wsSpy.mockRestore();
+  });
+
+  it("gates still evaluate per call with different opts against the cached core", async () => {
+    await makeWorkspaceWithOwner({ onboardingCompletedAt: null });
+    const { requireOrg } = await load();
+
+    const ctx = await requireOrg({ allowDuringOnboarding: true });
+    expect(ctx.role).toBe("owner");
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
   });
 });
 
