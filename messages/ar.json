@@ -1351,6 +1351,8 @@
           "title": "سجل الحجز",
           "totalCount": "{count} إدخال",
           "pageOf": "الصفحة {page} من {total}",
+          "loadError": "تعذّر تحميل السجل.",
+          "retry": "أعد المحاولة",
           "previous": "الصفحة السابقة",
           "next": "الصفحة التالية",
           "actions": {

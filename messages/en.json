@@ -1351,6 +1351,8 @@
           "title": "Booking history",
           "totalCount": "{count} entries",
           "pageOf": "Page {page} of {total}",
+          "loadError": "Couldn't load the history.",
+          "retry": "Retry",
           "previous": "Previous page",
           "next": "Next page",
           "actions": {

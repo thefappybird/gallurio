@@ -1351,6 +1351,8 @@
           "title": "ประวัติการจอง",
           "totalCount": "{count} รายการ",
           "pageOf": "หน้า {page} จาก {total}",
+          "loadError": "ไม่สามารถโหลดประวัติได้",
+          "retry": "ลองอีกครั้ง",
           "previous": "หน้าก่อนหน้า",
           "next": "หน้าถัดไป",
           "actions": {

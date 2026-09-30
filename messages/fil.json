@@ -1351,6 +1351,8 @@
           "title": "Kasaysayan ng booking",
           "totalCount": "{count} entry",
           "pageOf": "Pahina {page} ng {total}",
+          "loadError": "Hindi ma-load ang kasaysayan.",
+          "retry": "Subukan muli",
           "previous": "Nakaraang pahina",
           "next": "Susunod na pahina",
           "actions": {

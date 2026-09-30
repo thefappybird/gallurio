@@ -1351,6 +1351,8 @@
           "title": "Riwayat pemesanan",
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
+          "loadError": "Riwayat tidak dapat dimuat.",
+          "retry": "Coba lagi",
           "previous": "Halaman sebelumnya",
           "next": "Halaman berikutnya",
           "actions": {
