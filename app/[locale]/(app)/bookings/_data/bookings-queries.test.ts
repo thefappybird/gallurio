@@ -5,6 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
+import { countQueries } from "@/test-utils/query-counter";
 import { Booking, ActivityLog } from "@/lib/db/models";
 import {
   listBookings,
@@ -64,6 +65,17 @@ async function seedBooking(
 }
 
 describe("listBookings", () => {
+it("table page load is exactly one find + one count, both on bookings", async () => {
+await seedBooking(workspaceId);
+const { queries } = await countQueries(() =>
+listBookings(workspaceId, {}, { page: 1, limit: 10 })
+);
+expect(queries.map((q) => `${q.collection}.${q.method}`).sort()).toEqual([
+"bookings.countDocuments",
+"bookings.find",
+]);
+});
+
   it("returns bookings sorted ascending by firstSessionStart", async () => {
     await seedBooking(workspaceId, { startAt: days(5) });
     await seedBooking(workspaceId, { startAt: days(1) });
