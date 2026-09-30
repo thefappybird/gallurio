@@ -377,6 +377,7 @@ async function BookingsContent({
               limit={tableLimit}
               locale={locale}
               empty={hasFilters ? t("table.empty") : t("table.listEmpty")}
+              emptyHint={hasFilters ? undefined : t("table.listEmptyHint")}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
             />
           )}

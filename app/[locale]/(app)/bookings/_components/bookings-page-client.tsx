@@ -19,6 +19,7 @@ type Props = {
   limit: number;
   locale: string;
   empty: string;
+  emptyHint?: string;
   workspaceTimezone?: string;
 };
 
@@ -29,6 +30,7 @@ export function BookingsPageClient({
   limit,
   locale,
   empty,
+  emptyHint,
   workspaceTimezone,
 }: Props) {
   useLiveRefresh(["booking"]);
@@ -62,6 +64,7 @@ export function BookingsPageClient({
           rows={rows}
           locale={locale}
           empty={empty}
+          emptyHint={emptyHint}
           workspaceTimezone={workspaceTimezone}
         />
       )}

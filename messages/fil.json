@@ -1221,6 +1221,7 @@
       "table": {
         "empty": "Walang booking na tumutugma sa iyong mga filter.",
         "listEmpty": "Wala pang booking.",
+        "listEmptyHint": "Dito lalabas ang mga booking na gagawin mo o tatanggapin mula sa mga inquiry.",
         "past": "Lipas na",
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",

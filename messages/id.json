@@ -1221,6 +1221,7 @@
       "table": {
         "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
         "listEmpty": "Belum ada pemesanan.",
+        "listEmptyHint": "Pemesanan yang Anda buat atau terima dari pertanyaan akan muncul di sini.",
         "past": "Lalu",
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",

@@ -1221,6 +1221,7 @@
       "table": {
         "empty": "No bookings match your filters.",
         "listEmpty": "No bookings yet.",
+        "listEmptyHint": "Bookings you create or accept from inquiries will show up here.",
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",

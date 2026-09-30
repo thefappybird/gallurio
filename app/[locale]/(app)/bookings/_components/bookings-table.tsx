@@ -17,11 +17,13 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
+  CalendarIcon,
   EyeIcon,
   MoreHorizontalIcon,
   PencilIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/app/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +54,8 @@ type Props = {
   rows: BookingRow[];
   locale: string;
   empty: string;
+  /** Optional secondary line under the empty title (omit when filtered). */
+  emptyHint?: string;
   workspaceTimezone?: string;
 };
 
@@ -88,6 +92,7 @@ export function BookingsTable({
   rows,
   locale,
   empty,
+  emptyHint,
   workspaceTimezone = "UTC",
 }: Props) {
   const router = useRouter();
@@ -277,9 +282,11 @@ export function BookingsTable({
 
   if (visibleRows.length === 0) {
     return (
-      <div className="border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
-        {empty}
-      </div>
+      <EmptyState
+        icon={CalendarIcon}
+        title={empty}
+        description={emptyHint || undefined}
+      />
     );
   }
 

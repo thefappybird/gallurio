@@ -97,6 +97,19 @@ describe("BookingsTable", () => {
     expect(screen.getByText("No rows")).toBeInTheDocument();
   });
 
+  it("renders the empty hint as description when provided", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[]}
+        locale="en"
+        empty="No bookings yet."
+        emptyHint="Create one to see it here."
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    expect(screen.getByText("Create one to see it here.")).toBeInTheDocument();
+  });
+
   it("renders a mobile card list alongside the desktop table markup", () => {
     renderWithProviders(
       <BookingsTable
