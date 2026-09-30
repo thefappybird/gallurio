@@ -7,20 +7,19 @@ import {
   getInquiryStatusCounts,
   getInquiryWithDraft,
 } from "@/lib/db/queries/inquiries";
-import { listBookings, getBookingById } from "../bookings/_data/bookings-queries";
+import { getBookingById } from "../bookings/_data/bookings-queries";
+import { parseCalendarDate } from "../bookings/_data/calendar-events";
+import { loadInquiriesCalendarData } from "./_data/calendar-data";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
 import { InquiriesPageClient } from "./_components/inquiries-page-client";
 import { BookingDetailModal } from "../bookings/_components/booking-detail-modal";
 import type { InquiryRow } from "./_components/inquiry-table";
-import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 import { isValidObjectId } from "mongoose";
-import { buildInquiryCalendarEvents } from "@/lib/inquiries/inquiry-candles";
-import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events";
 import type { CalendarEvent } from "../bookings/_components/booking-calendar";
-import { connectDB } from "@/lib/db/mongoose";
-import { Client } from "@/lib/db/models";
+import type { InquiryDoc } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
@@ -47,6 +46,7 @@ type SearchParams = {
   inquiryId?: string;
   view?: string;
   detail?: string;
+  date?: string;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -96,8 +96,8 @@ export default async function InquiriesPage({
 
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "25", 10);
-  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 25;
+  const parsedLimit = Number.parseInt(sp.limit ?? String(DEFAULT_PAGE_SIZE), 10);
+  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : DEFAULT_PAGE_SIZE;
 
   const from = parseDate(sp.from);
   const to = parseDate(sp.to, true);
@@ -109,14 +109,14 @@ export default async function InquiriesPage({
     ? await resolveBookingTeamScope({ role, userId, workspace })
     : undefined;
 
-  const [{ rows: items, total }, counts] = await Promise.all([
-    listInquiries(
-      workspace._id,
-      { status: sp.status ?? null, from, to },
-      view === "table" ? { page, limit } : undefined
-    ),
-    getInquiryStatusCounts(workspace._id),
-  ]);
+  // Calendar view renders only candles: skip the paged list and status counts.
+  const isCalendar = view === "calendar";
+  const [{ rows: items, total }, counts] = isCalendar
+    ? [{ rows: [] as InquiryDoc[], total: 0 }, { all: 0, inquiry: 0, booked: 0, archived: 0 }]
+    : await Promise.all([
+        listInquiries(workspace._id, { status: sp.status ?? null, from, to }, { page, limit }),
+        getInquiryStatusCounts(workspace._id),
+      ]);
 
   // Compute conflicts for non-booked inquiries in the current page
   // (hoisted before calendar so candles carry hasConflict).
@@ -133,64 +133,20 @@ export default async function InquiriesPage({
     }));
   const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
 
-  // Calendar data: fetch all upcoming bookings + un-converted inquiries.
+  // Calendar data: windowed inquiries + bookings (1 query each).
   let events: CalendarEvent[] = [];
   let calendarTeams: Awaited<ReturnType<typeof getBookingTeamOptions>> = [];
-  if (view === "calendar") {
-    await connectDB();
-    const [{ rows: bookingRows }, allClients, teamsResult] = await Promise.all([
-      listBookings(
-        workspace._id,
-        {
-          includePast: true,
-          includeCancelled: false,
-          workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ,
-          teamIds: allowedTeamIds,
-        },
-        undefined
-      ),
-      Client.find({ workspaceId: workspace._id })
-        .select({ _id: 1, email: 1 })
-        .lean(),
+  if (isCalendar) {
+    [events, calendarTeams] = await Promise.all([
+      loadInquiriesCalendarData({
+        workspaceId: workspace._id,
+        tz,
+        date: parseCalendarDate(sp.date),
+        allowedTeamIds,
+      }),
       getBookingTeamOptions({ role, userId, workspace }),
     ]);
-    calendarTeams = teamsResult;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const emailByClientId = new Map(
-      allClients.map((c) => [c._id.toString(), c.email ?? null])
-    );
-
-    // Keep only un-converted inquiries (inquiry status) for the calendar overlay.
-    const unconvertedInquiries = items.filter((q) => q.status === "inquiry");
-
-    const inquiryEvents = buildInquiryCalendarEvents(
-      unconvertedInquiries.map((q) => ({
-        _id: q._id.toString(),
-        status: q.status,
-        eventName: q.eventTitle ?? null,
-        sessions: (q.sessions ?? []).map((s) => ({
-          startDate: (s as { startDate: string }).startDate,
-          startTime: (s as { startTime: string }).startTime,
-          endTime: (s as { endTime: string }).endTime,
-        })),
-        clientName: q.name ?? null,
-        hasConflict: conflictSet.has(q._id.toString()),
-      })),
-      { today, tz: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ }
-    );
-
-    // Keep only active booking statuses for the calendar.
-    const activeBookings = bookingRows.filter(
-      (b) => b.status === "booked" || b.status === "completed"
-    );
-
-    const bookingEvents = buildBookingCalendarEvents(activeBookings, { today, emailByClientId, tz });
-    events = [...inquiryEvents, ...bookingEvents];
   }
-
 
   // Stale/over-range page (e.g. after archiving the last row on a page): send the
   // owner to the last valid page instead of an empty table that looks like a dead end.
