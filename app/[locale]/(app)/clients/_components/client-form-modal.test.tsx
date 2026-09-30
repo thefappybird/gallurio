@@ -11,6 +11,8 @@ vi.mock("@/lib/actions/clients", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn() }));
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
 
 const defaultProps = {
   open: true,
@@ -133,6 +135,28 @@ describe("ClientFormModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+  });
+
+  it("invalidates client.created on successful create (server action returns no id yet)", async () => {
+    invalidateFor.mockClear();
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "" }));
+  });
+
+  it("invalidates client.updated on edit, and nothing when the save fails", async () => {
+    invalidateFor.mockClear();
+    vi.mocked(updateClientAction).mockResolvedValueOnce({ error: "client_update_failed" });
+    renderWithProviders(<ClientFormModal {...defaultProps} initialData={{ id: "c7", name: "Old Name" }} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "New Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(updateClientAction).toHaveBeenCalledTimes(1));
+    expect(invalidateFor).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() =>
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" })
+    );
   });
 
   it("shows inline error on action failure", async () => {
