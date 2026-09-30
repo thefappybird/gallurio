@@ -3,7 +3,8 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { countQueries } from "@/test-utils/query-counter";
 import { Booking } from "@/lib/db/models";
-import { loadBookingsCalendarEvents } from "./calendar-events";
+import { loadBookingsCalendarEvents, parseCalendarDate } from "./calendar-events";
+import { calendarWindow } from "@/lib/bookings/calendar-window";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -29,6 +30,31 @@ async function seed(title: string, startAt: Date, endAt: Date, wid = workspaceId
     amount: { total: 1, deposit: 0, currency: "PHP" },
   });
 }
+
+describe("parseCalendarDate", () => {
+  it("reads YYYY-MM-DD as a wall date in a west-of-UTC workspace tz", () => {
+    const date = parseCalendarDate("2026-11-01", "America/New_York");
+    // Nov grid (Sun Nov 1 .. Sat Dec 5) + 31 pad days: must reach Jan 5, not stop at Dec 1.
+    expect(calendarWindow(date, "America/New_York")).toMatchObject({
+      startDate: "2026-10-01",
+      endDate: "2027-01-05",
+    });
+  });
+
+  it("reads YYYY-MM-DD as a wall date in an east-of-UTC workspace tz", () => {
+    const date = parseCalendarDate("2026-11-30", "Asia/Manila");
+    expect(calendarWindow(date, "Asia/Manila")).toMatchObject({
+      startDate: "2026-10-01",
+      endDate: "2027-01-05",
+    });
+  });
+
+  it("falls back on absent or invalid input", () => {
+    const fallback = new Date("2026-01-01T00:00:00Z");
+    expect(parseCalendarDate(undefined, "Asia/Manila", fallback)).toBe(fallback);
+    expect(parseCalendarDate("nope", "Asia/Manila", fallback)).toBe(fallback);
+  });
+});
 
 describe("loadBookingsCalendarEvents", () => {
   it("issues exactly one booking query and returns only in-window, own-workspace events without emails", async () => {

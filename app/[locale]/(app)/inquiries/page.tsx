@@ -171,7 +171,7 @@ async function InquiriesContent({
   const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
 
   // Calendar data: windowed inquiries + bookings (1 query each).
-  const calendarDate = parseCalendarDate(sp.date);
+  const calendarDate = parseCalendarDate(sp.date, tz);
   const eventsWindow = calendarWindow(calendarDate, tz);
   let events: CalendarEvent[] = [];
   let calendarTeams: Awaited<ReturnType<typeof getBookingTeamOptions>> = [];

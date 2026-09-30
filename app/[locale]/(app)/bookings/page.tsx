@@ -200,7 +200,7 @@ async function BookingsContent({
   // These reads are independent — run them together to save a round-trip.
   //  - Calendar view: candles for the month window only (one windowed query).
   //    Table view: fetch only one page of bookings.
-  const defaultDate = parseCalendarDate(sp.date);
+  const defaultDate = parseCalendarDate(sp.date, filters.workspaceTimezone);
   const eventsWindow = calendarWindow(defaultDate, filters.workspaceTimezone);
   const [{ rows: bookings, total: bookingsTotal }, events] = await Promise.all([
     view === "calendar"
