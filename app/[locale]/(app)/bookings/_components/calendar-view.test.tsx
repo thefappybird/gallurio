@@ -24,12 +24,18 @@ vi.mock("@/hooks/use-data-events", () => ({
 vi.mock("react-big-calendar", () => ({ Views: { MONTH: "month", WEEK: "week", DAY: "day" } }));
 vi.mock("./booking-wizard-modal", () => ({ BookingWizardModal: () => null }));
 vi.mock("./team-filter-control", () => ({ TeamFilterControl: () => null }));
+const toastErrors: string[] = [];
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), {
-    error: vi.fn(),
-    promise: vi.fn(),
+    error: vi.fn((m: string) => toastErrors.push(m)),
+    promise: vi.fn((p: Promise<unknown>, msgs: { error?: (e: unknown) => string }) => {
+      p.catch((e) => toastErrors.push(msgs.error?.(e) ?? ""));
+      return p;
+    }),
   }),
 }));
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 
 type CalProps = {
   events: CalendarEvent[];
@@ -45,7 +51,7 @@ vi.mock("./booking-calendar", () => ({
     return (
       <ul>
         {props.events.map((e) => (
-          <li key={e.id}>{e.title}</li>
+          <li key={e.id}>{`${e.title}@${e.start.toISOString()}`}</li>
         ))}
       </ul>
     );
@@ -89,6 +95,7 @@ function renderView(props: Partial<React.ComponentProps<typeof CalendarView>> = 
 
 beforeEach(() => {
   vi.clearAllMocks();
+  toastErrors.length = 0;
   search = "team=a";
 });
 
@@ -99,7 +106,7 @@ describe("CalendarView window navigation", () => {
     act(() => cal.onVisibleChange({ date: new Date(2027, 0, 10, 12), view: "month" }));
     expect(mockReplace).toHaveBeenCalledWith("/bookings?team=a&date=2027-01-10", { scroll: false });
     expect(onWindowPendingChange).toHaveBeenCalledWith(true);
-    expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
+    expect(screen.getByText(/^Carter Wedding@/)).toBeInTheDocument();
   });
 
   it("follows a ?date that moves outside the visible grid (back button), ignores one inside it", () => {
@@ -117,5 +124,71 @@ describe("CalendarView window navigation", () => {
     const far = new Date("2027-01-10T00:00:00Z");
     rerender(far);
     expect(cal.date).toBe(far);
+  });
+});
+
+const FUTURE_START = new Date("2090-01-10T03:30:00Z");
+const FUTURE_END = new Date("2090-01-10T05:30:00Z");
+const futureEvent = () =>
+  makeEvent({
+    id: "b1_s0_2090-01-10",
+    start: FUTURE_START, end: FUTURE_END, sessionStartAt: FUTURE_START, sessionEndAt: FUTURE_END,
+    rangeStart: FUTURE_START, rangeEnd: FUTURE_END,
+  });
+const droppedStart = new Date("2090-01-11T03:30:00Z");
+const droppedEnd = new Date("2090-01-11T05:30:00Z");
+const shift = (bookingId: string, title: string) => ({
+  id: `${bookingId}:0`, bookingId, sessionIndex: 0, title, shiftStart: "10:00", shiftEnd: "12:00",
+});
+const jsonRes = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body });
+
+describe("CalendarView drag-to-reschedule (single PATCH)", () => {
+  it("409 conflict: one PATCH with rejectOnConflict, reverts the move, toasts the first title + count of the rest", async () => {
+    mockFetch.mockResolvedValue(
+      jsonRes(409, { error: "conflict", conflicts: [shift("o1", "Other"), shift("o1", "Other"), shift("o2", "Third")] })
+    );
+    renderView({ events: [futureEvent()] });
+    await act(async () => {
+      await cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("/api/bookings/b1");
+    expect(JSON.parse(init.body).rejectOnConflict).toBe(true);
+    expect(toastErrors).toEqual(['This time overlaps with "Other" and 1 other shift(s) — move cancelled']);
+    expect(screen.getByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("409 completed_booking_read_only: reverts and shows the generic update error", async () => {
+    mockFetch.mockResolvedValue(jsonRes(409, { error: "completed_booking_read_only" }));
+    renderView({ events: [futureEvent()] });
+    await act(async () => {
+      await cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(toastErrors).toEqual(["Failed to update booking"]);
+    expect(screen.getByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("200: rebuilds that booking's candles from the response, invalidates with the server's ids, never router.refresh", async () => {
+    mockFetch.mockResolvedValue(
+      jsonRes(200, {
+        _id: "b1", title: "Carter Wedding", clientName: "Emma", clientId: "c9", createdFromInquiryId: "i7",
+        teamId: null, status: "booked",
+        sessions: [{ startAt: droppedStart.toISOString(), endAt: droppedEnd.toISOString() }],
+        client: null,
+      })
+    );
+    renderView({ events: [futureEvent()] });
+    await act(async () => {
+      await cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(screen.getByText(`Carter Wedding@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    expect(screen.queryByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeNull();
+    expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
+    expect(mockInvalidateFor).toHaveBeenCalledWith({
+      type: "booking.updated", bookingId: "b1", clientId: "c9", inquiryId: "i7",
+    });
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(cal.pendingIds.has("b1")).toBe(false);
   });
 });

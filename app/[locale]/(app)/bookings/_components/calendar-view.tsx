@@ -20,13 +20,13 @@ import {
 } from "@/lib/bookings/session-edits";
 import {
   type ShiftHit,
-  overlappingShifts,
   isoDate,
   isoDateInTz,
-  dateToTzMinutes,
   reconstructSessions,
   detectConflictIds,
 } from "./_helpers/calendar-helpers";
+import { buildBookingCalendarEvents, type BookingEventInput } from "@/lib/bookings/build-booking-events";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
 import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-window";
 import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
@@ -77,60 +77,53 @@ type Props = {
   onWindowPendingChange?: (pending: boolean) => void;
 };
 
-/**
- * Fetch shifts on a date, excluding the specific session being dragged via its
- * shift key (`<bookingId>:<sessionIndex>`). Using excludeShiftKey (per-session
- * exclusion) means sibling sessions of the same booking CAN trigger a conflict
- * when the user drags one candle onto the exact time slot another session of
- * the same booking already occupies — which is the correct behaviour.
- *
- * Returns null on non-2xx response or network error — callers must treat
- * null as "check unavailable" and abort the operation.
- */
-async function fetchConflicts(
-  dateStr: string,
-  bookingId: string,
-  sessionIndex: number
-): Promise<ShiftHit[] | null> {
-  try {
-    const shiftKey = `${bookingId}:${sessionIndex}`;
-    const r = await fetch(
-      `/api/bookings/shifts-on-date?date=${dateStr}&excludeShiftKey=${encodeURIComponent(shiftKey)}`
-    );
-    if (!r.ok) {
-      console.error("[fetchConflicts] non-ok response", { status: r.status, dateStr });
-      return null;
-    }
-    const data: { shifts: ShiftHit[] } = await r.json();
-    return data.shifts ?? [];
-  } catch (err) {
-    console.error("[fetchConflicts] request failed", { dateStr, err });
-    return null;
-  }
-}
-
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+type PatchResult =
+  | { kind: "ok"; booking: BookingEventInput & { clientId?: string | null; createdFromInquiryId?: string | null } }
+  | { kind: "conflict"; conflicts: ShiftHit[] }
+  | { kind: "error" };
+
 /**
- * PATCH `/api/bookings/{id}` with the full sessions array.
- * Returns true on success, false on failure.
+ * PATCH `/api/bookings/{id}` with the full sessions array in ONE request.
+ * `rejectOnConflict` makes the server check overlaps and answer 409 (no write)
+ * instead of the client pre-flighting shifts-on-date. A 409 is also used for
+ * `completed_booking_read_only`, so branch on the `error` code.
  */
-async function patchBookingSessions(
-  bookingId: string,
-  sessions: Session[]
-): Promise<boolean> {
+async function patchBookingSessions(bookingId: string, sessions: Session[]): Promise<PatchResult> {
   const body = sessions.map((s) => ({
     startAt: s.startAt.toISOString(),
     endAt: s.endAt.toISOString(),
   }));
-  const res = await fetch(`/api/bookings/${bookingId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessions: body }),
-  });
-  return res.ok;
+  try {
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessions: body, rejectOnConflict: true }),
+    });
+    if (res.ok) return { kind: "ok", booking: await res.json() };
+    if (res.status === 409) {
+      const data = (await res.json().catch(() => null)) as
+        | { error?: string; conflicts?: ShiftHit[] }
+        | null;
+      if (data?.error === "conflict") {
+        // The server may report the same shift more than once.
+        const seen = new Set<string>();
+        const conflicts = (data.conflicts ?? []).filter((c) => {
+          const key = `${c.bookingId}:${c.sessionIndex}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return { kind: "conflict", conflicts };
+      }
+    }
+  } catch (err) {
+    console.error("[calendar-view] patchBookingSessions request failed", { bookingId, err });
+  }
+  return { kind: "error" };
 }
 
 export function CalendarView({
@@ -159,6 +152,7 @@ export function CalendarView({
   const t = useTranslations("app.bookings.dnd");
 
   const [, startTransition] = useTransition();
+  const invalidateFor = useInvalidateFor();
 
   // Local state for the add/edit wizard modals. Using local state (not URL)
   // ensures the modal always opens on click, even when the URL already contains
@@ -383,30 +377,55 @@ export function CalendarView({
       );
 
       setPendingIds((s) => new Set(s).add(event.bookingId));
-      try {
-        await toast.promise(
-          (async () => {
-            const ok = await patchBookingSessions(event.bookingId, newSessions);
-            if (!ok) throw new Error("PATCH returned non-ok");
-          })(),
-          {
-            loading: t("updating"),
-            success: t("updated"),
-            error: (err: unknown) => {
-              const errInfo =
-                err instanceof Error
-                  ? { name: err.name, message: err.message, stack: err.stack }
-                  : String(err);
-              console.error("[calendar-view] patchBookingSessions failed", {
-                bookingId: event.bookingId,
-                newSessions,
-                err: errInfo,
-              });
-              setOptimisticEvents(prev);
-              return t("updateError");
-            },
+      // Own the request promise so the pending/in-flight guards outlive the
+      // whole round-trip (toast.promise's return value is not awaitable).
+      const request = patchBookingSessions(event.bookingId, newSessions).then((result) => {
+        if (result.kind === "ok") return result.booking;
+        throw result;
+      });
+      toast.promise(request, {
+        loading: t("updating"),
+        success: t("updated"),
+        error: (err: unknown) => {
+          setOptimisticEvents(prev);
+          const failure = err as PatchResult;
+          if (failure?.kind === "conflict" && failure.conflicts.length > 0) {
+            const first = failure.conflicts[0];
+            const more = failure.conflicts.length - 1;
+            return more > 0
+              ? t("conflictBlockDndMany", { title: first.title, more })
+              : t("conflictBlockDnd", { title: first.title });
           }
-        );
+          console.error("[calendar-view] patchBookingSessions failed", {
+            bookingId: event.bookingId,
+            newSessions,
+          });
+          return t("updateError");
+        },
+      });
+      try {
+        const booking = await request;
+        // Authoritative candles for this booking replace the optimistic guess;
+        // the events-prop resync then reconciles once the refresh lands.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const rebuilt = buildBookingCalendarEvents([booking], {
+          today,
+          tz: workspaceTimezone || FALLBACK_TZ,
+        });
+        setOptimisticEvents((cur) => [
+          ...cur.filter((e) => e.bookingId !== event.bookingId),
+          ...rebuilt,
+        ]);
+        // Ids mirror the server broadcast so the socket echo is suppressed.
+        invalidateFor({
+          type: "booking.updated",
+          bookingId: event.bookingId,
+          clientId: booking.clientId ?? null,
+          inquiryId: booking.createdFromInquiryId ?? null,
+        });
+      } catch {
+        // Reverted + toasted in the toast.promise error callback.
       } finally {
         setPendingIds((s) => {
           const next = new Set(s);
@@ -415,7 +434,7 @@ export function CalendarView({
         });
       }
     },
-    [optimisticEvents, t]
+    [optimisticEvents, t, workspaceTimezone, invalidateFor]
   );
 
   // ─── Universal drag handler ───────────────────────────────────────────────
@@ -429,9 +448,7 @@ export function CalendarView({
    *   2b. Reject overnight moves — bookings cannot span midnight.
    *   3. Past-date check → PastDateConfirmDialog (skipped when the session's
    *      current startAt is already in the past — user already accepted it).
-   *   4. Conflict check (single date only, overnight is rejected above).
-   *   4b. Hard-block conflicting shifts with a toast.
-   *   5. Apply.
+   *   4. Apply: ONE PATCH with rejectOnConflict; a 409 reverts + toasts.
    */
   const handleAnyDrop = useCallback(
     async (
@@ -511,32 +528,7 @@ export function CalendarView({
           }
         }
 
-        // 4. Conflict check — fetch shifts for the (single) date.
-        const startDateStr = isoDateInTz(newCandleStart, tz);
-        const aStart = dateToTzMinutes(newCandleStart, tz);
-        const aEnd = dateToTzMinutes(newCandleEnd, tz);
-
-        const allShifts = await fetchConflicts(startDateStr, event.bookingId, event.sessionIndex);
-        if (allShifts === null) {
-          toast.error(t("conflictCheckFailed"));
-          return;
-        }
-
-        const conflicts = overlappingShifts(allShifts, aStart, aEnd);
-
-        // 4b. Hard block — overlapping shifts are forbidden.
-        if (conflicts.length > 0) {
-          const first = conflicts[0];
-          const more = conflicts.length - 1;
-          toast.error(
-            more > 0
-              ? t("conflictBlockDndMany", { title: first.title, more })
-              : t("conflictBlockDnd", { title: first.title })
-          );
-          return;
-        }
-
-        // 5. Apply.
+        // 4. Apply (server-side conflict check via rejectOnConflict).
         await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
       } finally {
         inFlightRef.current.delete(event.bookingId);
