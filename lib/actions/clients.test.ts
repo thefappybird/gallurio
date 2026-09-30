@@ -15,6 +15,8 @@ import {
 } from "./clients";
 
 vi.mock("@/lib/auth/requireOrg", () => ({ requireOrg: vi.fn(), requireRole: vi.fn() }));
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undefined) }));
@@ -72,6 +74,18 @@ describe("createClientAction", () => {
     expect(saved?.email).toBe("alice@example.com");
   });
 
+  it("emits client.created with the session workspace after create, none on invalid input", async () => {
+    mockOrg();
+    await createClientAction({ ...validInput, name: "" });
+    expect(emit).not.toHaveBeenCalled();
+    await createClientAction(validInput);
+    const saved = await Client.findOne({ workspaceId, name: "Alice Wonderland" }).lean();
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "client.created",
+      clientId: String(saved?._id),
+    });
+  });
+
   it("missing name returns validation error", async () => {
     mockOrg();
 
@@ -112,6 +126,16 @@ describe("updateClientAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await Client.findById(client._id).lean();
     expect(updated?.name).toBe("Updated Name");
+  });
+
+  it("emits client.updated after update, none for a foreign client", async () => {
+    mockOrg();
+    const foreign = await Client.create({ workspaceId: otherWorkspaceId, name: "F", source: "manual", tags: [], notes: "" });
+    await updateClientAction(foreign._id.toString(), validInput);
+    expect(emit).not.toHaveBeenCalled();
+    const own = await Client.create({ workspaceId, name: "O", source: "manual", tags: [], notes: "" });
+    await updateClientAction(own._id.toString(), validInput);
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), { type: "client.updated", clientId: String(own._id) });
   });
 
   it("wrong workspaceId (cross-workspace) returns { error: 'client_not_found' }", async () => {
@@ -168,6 +192,19 @@ describe("deactivateClientAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await Client.findById(client._id).lean();
     expect(updated?.isActive).toBe(false);
+  });
+
+  it("emits client.updated after (de/re)activation, none for a foreign client", async () => {
+    mockOrg();
+    const foreign = await Client.create({ workspaceId: otherWorkspaceId, name: "F", source: "manual", tags: [], notes: "" });
+    await deactivateClientAction(foreign._id.toString());
+    await reactivateClientAction(foreign._id.toString());
+    expect(emit).not.toHaveBeenCalled();
+    const own = await Client.create({ workspaceId, name: "O", source: "manual", tags: [], notes: "" });
+    await deactivateClientAction(own._id.toString());
+    await reactivateClientAction(own._id.toString());
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenLastCalledWith(String(workspaceId), { type: "client.updated", clientId: String(own._id) });
   });
 
   it("wrong workspaceId returns { error: 'client_not_found' }", async () => {
