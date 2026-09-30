@@ -34,7 +34,7 @@ import { escapeHtml } from "@/lib/email/escapeHtml";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { visibleGridRange } from "@/lib/bookings/calendar-window";
 import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
-import { toCalendarGridDate, fromCalendarGridDate } from "./_helpers/calendar-helpers";
+import { toCalendarGridDate, fromCalendarGridDate, workspaceNowAsLocal } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type OverflowEvent = {
@@ -950,7 +950,12 @@ export function BookingCalendar({
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
   const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
-  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? new Date());
+  // "Now" on the workspace wall clock (local-Date re-anchored), so Today / the
+  // today highlight / the time indicator follow the workspace tz. Past/dim logic
+  // elsewhere compares real instants and is intentionally left alone.
+  const wsTz = workspaceTimezone ?? FALLBACK_TZ;
+  const getNow = useCallback(() => workspaceNowAsLocal(new Date(), wsTz), [wsTz]);
+  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? getNow());
   const view = viewProp ?? internalView;
   const effectiveView = isCompactCalendar ? Views.DAY : view;
   const date = dateProp ?? internalDate;
@@ -1008,12 +1013,12 @@ export function BookingCalendar({
       setView(newView);
       let nextDate = dateRef.current;
       if (newView === Views.WEEK || newView === Views.DAY) {
-        nextDate = new Date();
+        nextDate = getNow();
         setDate(nextDate);
       }
       onVisibleChange?.({ date: nextDate, view: newView });
     },
-    [setView, setDate, onVisibleChange]
+    [setView, setDate, onVisibleChange, getNow]
   );
   const handleNavigate = useCallback(
     (d: Date) => {
@@ -1198,6 +1203,7 @@ export function BookingCalendar({
           view={effectiveView}
           onView={handleViewChange}
           date={date}
+          getNow={getNow}
           onNavigate={handleNavigate}
           views={availableViews}
           scrollToTime={scrollToTime}

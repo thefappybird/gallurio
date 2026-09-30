@@ -794,6 +794,51 @@ describe("BookingCalendar grid positioning (timezone-correct startAccessor/endAc
   });
 });
 
+describe("BookingCalendar workspace-tz today", () => {
+  it("passes getNow on the workspace wall clock, not the browser's", () => {
+    capturedDnDProps = null;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 20:00Z Sep 30: still Sep 30 in UTC, already Oct 1 04:00 in Manila.
+    vi.setSystemTime(new Date("2026-09-30T20:00:00Z"));
+    try {
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <BookingCalendar events={[]} messages={calendarMessages} workspaceTimezone="Asia/Manila" />
+        </NextIntlClientProvider>
+      );
+      const now = (capturedDnDProps!.getNow as () => Date)();
+      expect([now.getMonth(), now.getDate(), now.getHours()]).toEqual([9, 1, 4]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("week/day view snap targets the workspace date", () => {
+    capturedDnDProps = null;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-30T20:00:00Z"));
+    try {
+      const onVisibleChange = vi.fn();
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <BookingCalendar
+            events={[]}
+            messages={calendarMessages}
+            workspaceTimezone="Asia/Manila"
+            onVisibleChange={onVisibleChange}
+          />
+        </NextIntlClientProvider>
+      );
+      onVisibleChange.mockClear();
+      (capturedDnDProps!.onView as (v: string) => void)("week");
+      const { date } = onVisibleChange.mock.calls[0][0] as { date: Date };
+      expect([date.getMonth(), date.getDate()]).toEqual([9, 1]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("BookingCalendar mobile view constraints", () => {
   it("forces day view and removes month/week views on small screens", async () => {
     capturedDnDProps = null;
