@@ -86,7 +86,9 @@ test.describe("calendars + query cache wave", () => {
     let m = net.mark();
     await nextBtn.click();
     await settle(page);
-    expect(net.since(m).filter(isRsc), "1 month forward must stay inside the window").toHaveLength(0);
+    const oneMonthRsc = net.since(m).filter(isRsc);
+    test.info().annotations.push({ type: "rsc for +1 month", description: oneMonthRsc.map((r) => r.url()).join(", ") });
+    expect.soft(oneMonthRsc, "1 month forward must stay inside the window").toHaveLength(0);
 
     // --- ...and leaving the window triggers exactly one RSC fetch with ?date= ---
     // Month +1 is inside the padded window; +2 leaves it (one re-centred fetch);
@@ -100,8 +102,8 @@ test.describe("calendars + query cache wave", () => {
     await expect.poll(() => new URL(page.url()).searchParams.get("date")).not.toBeNull();
     await settle(page, 2_000);
     const navRsc = net.since(m).filter(isRsc);
-    test.info().annotations.push({ type: "rsc fetches for +3 months", description: String(navRsc.length) });
-    expect(navRsc, "leaving the window costs exactly one RSC fetch").toHaveLength(1);
+    test.info().annotations.push({ type: "rsc fetches for +3 months", description: navRsc.map((r) => r.url()).join(", ") });
+    expect.soft(navRsc, "leaving the window costs exactly one RSC fetch").toHaveLength(1);
     await expect(page.locator(".rbc-calendar")).toBeVisible();
     await page.getByRole("button", { name: /^today$/i }).first().click();
     await settle(page, 2_500);
@@ -122,10 +124,11 @@ test.describe("calendars + query cache wave", () => {
       type: "detail modal requests",
       description: opened.filter((r) => pathOf(r).startsWith("/api/")).map((r) => pathOf(r)).join(", "),
     });
-    expect(bookingGets).toHaveLength(1);
-    expect(bookingGets[0]!.url()).toContain("include=activity");
-    expect(opened.filter((r) => pathOf(r) === "/api/users/names")).toHaveLength(0);
-    expect(opened.filter((r) => pathOf(r) === "/api/bookings/shifts-on-date").length).toBeLessThanOrEqual(1);
+    expect.soft(opened.filter(isRsc), "opening the detail modal is client-only (no RSC)").toHaveLength(0);
+    expect.soft(bookingGets).toHaveLength(1);
+    expect.soft(bookingGets[0]?.url() ?? "").toContain("include=activity");
+    expect.soft(opened.filter((r) => pathOf(r) === "/api/users/names")).toHaveLength(0);
+    expect.soft(opened.filter((r) => pathOf(r) === "/api/bookings/shifts-on-date").length).toBeLessThanOrEqual(1);
     await page.screenshot({ path: path.join(SHOT_DIR, "bookings-detail-1280.png") });
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden({ timeout: 10_000 });
@@ -143,12 +146,15 @@ test.describe("calendars + query cache wave", () => {
     if (await otherCandle.count()) {
       await otherCandle.click();
       const retry = page.getByRole("button", { name: /retry/i }).first();
-      await expect(retry).toBeVisible({ timeout: 30_000 });
-      await page.screenshot({ path: path.join(SHOT_DIR, "bookings-detail-error-1280.png") });
+      await expect.soft(retry, "second detail open shows error + Retry").toBeVisible({ timeout: 30_000 });
+      if (await retry.isVisible()) {
+        await page.screenshot({ path: path.join(SHOT_DIR, "bookings-detail-error-1280.png") });
+        failDetail = false;
+        await retry.click();
+        await expect.soft(retry).toBeHidden({ timeout: 30_000 });
+        await page.keyboard.press("Escape");
+      }
       failDetail = false;
-      await retry.click();
-      await expect(retry).toBeHidden({ timeout: 30_000 });
-      await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10_000 });
     }
     await page.unroute(detailRoute);
@@ -196,13 +202,13 @@ test.describe("calendars + query cache wave", () => {
         type: "drag requests",
         description: dragReqs.filter((r) => pathOf(r).startsWith("/api/") || isRsc(r)).map((r) => `${r.method()} ${pathOf(r)}${isRsc(r) ? " [rsc]" : ""}`).join(", "),
       });
-      expect(patches, "drag = exactly one PATCH").toHaveLength(1);
-      expect(patches[0]!.postDataJSON()).toMatchObject({ rejectOnConflict: true });
-      expect(dragReqs.filter((r) => pathOf(r) === "/api/bookings/shifts-on-date")).toHaveLength(0);
-      expect(dragReqs.filter(isRsc), "no page refresh after a rejected drag").toHaveLength(0);
-      await expect(page.getByText(/E2E Conflict/).first()).toBeVisible({ timeout: 10_000 });
+      expect.soft(patches, "drag = exactly one PATCH").toHaveLength(1);
+      expect.soft(patches[0]?.postDataJSON() ?? {}).toMatchObject({ rejectOnConflict: true });
+      expect.soft(dragReqs.filter((r) => pathOf(r) === "/api/bookings/shifts-on-date")).toHaveLength(0);
+      expect.soft(dragReqs.filter(isRsc), "no page refresh after a rejected drag").toHaveLength(0);
+      await expect.soft(page.getByText(/E2E Conflict/).first()).toBeVisible({ timeout: 10_000 });
       const after = await dragCandle.boundingBox();
-      expect(Math.abs((after?.x ?? 0) - before.x), "candle rolled back").toBeLessThan(4);
+      expect.soft(Math.abs((after?.x ?? 0) - before.x), "candle rolled back").toBeLessThan(4);
     } else {
       test.info().annotations.push({ type: "drag", description: "skipped: no candle with a right-hand neighbour cell" });
     }
@@ -220,7 +226,7 @@ test.describe("calendars + query cache wave", () => {
     await expect(page.getByRole("dialog").first()).toBeVisible({ timeout: 30_000 });
     await settle(page, 1_500);
     const clientCalls = net.since(m).filter((r) => pathOf(r) === "/api/clients");
-    expect(clientCalls, "picker loads once, reopen is cached").toHaveLength(1);
+    expect.soft(clientCalls, "picker loads once, reopen is cached").toHaveLength(1);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10_000 });
 
@@ -231,9 +237,9 @@ test.describe("calendars + query cache wave", () => {
     await settle(page, 1_500);
     const tableCls = await readCls(page);
     test.info().annotations.push({ type: "cls:/bookings table", description: tableCls.toFixed(4) });
-    expect(tableCls).toBeLessThan(0.1);
+    expect.soft(tableCls).toBeLessThan(0.1);
     const sortable = page.locator("th[aria-sort]");
-    expect(await sortable.count()).toBeGreaterThan(0);
+    expect.soft(await sortable.count()).toBeGreaterThan(0);
     await expect(page.locator("th[scope=col]").first()).toBeVisible();
     const rowH = await page.locator("tbody tr").first().evaluate((el) => el.getBoundingClientRect().height);
     test.info().annotations.push({ type: "bookings row height (skeleton=49)", description: rowH.toFixed(1) });
@@ -301,18 +307,22 @@ test.describe("calendars + query cache wave", () => {
     await firstRow.click();
     await expect(page.getByRole("dialog").first()).toBeVisible({ timeout: 30_000 });
     await settle(page, 1_500);
+    const firstOpen = net.since(m).filter(isAction).length;
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10_000 });
+    m = net.mark();
     await firstRow.click();
     await expect(page.getByRole("dialog").first()).toBeVisible({ timeout: 30_000 });
     await settle(page, 1_500);
-    const actionReads = net.since(m).filter(isAction);
-    test.info().annotations.push({ type: "inquiry opens -> action calls", description: String(actionReads.length) });
-    expect(actionReads.length).toBeLessThanOrEqual(1);
+    const secondOpen = net.since(m).filter(isAction).length;
+    test.info().annotations.push({ type: "inquiry opens -> action calls (1st, 2nd)", description: `${firstOpen}, ${secondOpen}` });
+    expect.soft(firstOpen, "first open = one server-action read").toBe(1);
+    expect.soft(secondOpen, "reopen served from cache").toBe(0);
+    const openInquiryId = new URL(page.url()).searchParams.get("inquiryId");
     await page.keyboard.press("Escape");
 
     // --- /inquiries/[id]: loading -> page with no layout shift ---
-    const href = await page.locator('a[href*="/inquiries/"]').first().getAttribute("href").catch(() => null);
+    const href = openInquiryId ? `/inquiries/${openInquiryId}` : null;
     if (href) {
       await installClsObserver(page);
       await page.goto(href);
@@ -320,7 +330,7 @@ test.describe("calendars + query cache wave", () => {
       await settle(page, 3_000);
       const idCls = await readCls(page);
       test.info().annotations.push({ type: "cls:/inquiries/[id]", description: idCls.toFixed(4) });
-      expect(idCls).toBeLessThan(0.1);
+      expect.soft(idCls).toBeLessThan(0.1);
     }
 
     // --- Dashboard mini-calendar: revisiting a month is served from cache ---
@@ -338,7 +348,7 @@ test.describe("calendars + query cache wave", () => {
       await miniNext.click();
       await settle(page, 1_500);
       const byDay = net.since(m).filter((r) => pathOf(r) === "/api/bookings/by-day");
-      expect(byDay, "revisited month served from cache").toHaveLength(0);
+      expect.soft(byDay, "revisited month served from cache").toHaveLength(0);
     }
 
     // --- Cross-tab: a mutation in tab A refreshes tab B's table via the socket ---
@@ -349,6 +359,8 @@ test.describe("calendars + query cache wave", () => {
     await tabB.locator("tbody tr").first().click();
     await expect.poll(() => new URL(tabB.url()).searchParams.get("detail"), { timeout: 30_000 }).not.toBeNull();
     const bookingId = new URL(tabB.url()).searchParams.get("detail")!;
+    // The modal is lazy: Escape before it mounts would leave it open (and the table aria-hidden).
+    await expect(tabB.getByRole("dialog").first()).toBeVisible({ timeout: 30_000 });
     await tabB.keyboard.press("Escape");
     await expect(tabB.getByRole("dialog")).toHaveCount(0, { timeout: 10_000 });
     await settle(tabB, 1_000);
@@ -371,7 +383,8 @@ test.describe("calendars + query cache wave", () => {
         [bookingId, renamed] as const,
       );
       expect(status).toBe(200);
-      await expect(tabB.getByText(renamed, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
+      // Scoped to the table: the mobile card list carries a hidden copy of every title.
+      await expect(tabB.getByRole("table").getByText(renamed, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
     } finally {
       await page.evaluate(
         async ([id, title]) => {
@@ -384,7 +397,7 @@ test.describe("calendars + query cache wave", () => {
         [bookingId, original] as const,
       );
     }
-    await expect(tabB.getByText(original, { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(tabB.getByRole("table").getByText(original, { exact: true }).first()).toBeVisible({ timeout: 15_000 });
     await tabB.close();
 
     expect(errors, `page errors: ${errors.join("; ")}`).toEqual([]);
