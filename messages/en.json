@@ -1064,6 +1064,7 @@
           "kindServer": "Server",
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
+        "showAll": "Show all {count}",
           "untitled": "Untitled booking",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them.",

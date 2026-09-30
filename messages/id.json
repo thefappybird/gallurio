@@ -1064,6 +1064,7 @@
           "kindServer": "Server",
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
+        "showAll": "Tampilkan semua {count}",
           "untitled": "Pemesanan tanpa judul",
           "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
           "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",

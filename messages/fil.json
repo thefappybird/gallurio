@@ -1064,6 +1064,7 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
+        "showAll": "Ipakita lahat ({count})",
           "untitled": "Walang pamagat na booking",
           "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
           "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
