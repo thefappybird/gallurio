@@ -89,17 +89,19 @@ test.describe("calendars + query cache wave", () => {
     expect(net.since(m).filter(isRsc), "1 month forward must stay inside the window").toHaveLength(0);
 
     // --- ...and leaving the window triggers exactly one RSC fetch with ?date= ---
+    // Month +1 is inside the padded window; +2 leaves it (one re-centred fetch);
+    // +3 is inside the re-centred window. Wait for each fetch to land before
+    // the next click so a click during a pending transition can't double-fetch.
     m = net.mark();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       await nextBtn.click();
-      await settle(page, 800);
+      await settle(page, 3_000);
     }
     await expect.poll(() => new URL(page.url()).searchParams.get("date")).not.toBeNull();
     await settle(page, 2_000);
     const navRsc = net.since(m).filter(isRsc);
-    test.info().annotations.push({ type: "rsc fetches for 3 more months", description: String(navRsc.length) });
-    expect(navRsc.length).toBeGreaterThanOrEqual(1);
-    expect(navRsc.length).toBeLessThanOrEqual(2);
+    test.info().annotations.push({ type: "rsc fetches for +3 months", description: String(navRsc.length) });
+    expect(navRsc, "leaving the window costs exactly one RSC fetch").toHaveLength(1);
     await expect(page.locator(".rbc-calendar")).toBeVisible();
     await page.getByRole("button", { name: /^today$/i }).first().click();
     await settle(page, 2_500);
@@ -127,6 +129,84 @@ test.describe("calendars + query cache wave", () => {
     await page.screenshot({ path: path.join(SHOT_DIR, "bookings-detail-1280.png") });
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden({ timeout: 10_000 });
+
+    // --- Detail modal error state: forced 500 -> error + Retry recovers ---
+    const detailRoute = /\/api\/bookings\/[a-f0-9]{24}\?include=activity/;
+    let failDetail = true;
+    await page.route(detailRoute, (route) =>
+      failDetail
+        ? route.fulfill({ status: 500, contentType: "application/json", body: "{}" })
+        : route.continue(),
+    );
+    // A fresh key is needed so the cached booking isn't served: use a different candle.
+    const otherCandle = page.locator(".rbc-event").nth(1);
+    if (await otherCandle.count()) {
+      await otherCandle.click();
+      const retry = page.getByRole("button", { name: /retry/i }).first();
+      await expect(retry).toBeVisible({ timeout: 30_000 });
+      await page.screenshot({ path: path.join(SHOT_DIR, "bookings-detail-error-1280.png") });
+      failDetail = false;
+      await retry.click();
+      await expect(retry).toBeHidden({ timeout: 30_000 });
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10_000 });
+    }
+    await page.unroute(detailRoute);
+
+    // --- Drag reschedule: ONE PATCH (forced 409), no pre-flight, no RSC, rollback ---
+    await page.route(/\/api\/bookings\/[a-f0-9]{24}$/, (route) =>
+      route.request().method() === "PATCH"
+        ? route.fulfill({
+            status: 409,
+            contentType: "application/json",
+            body: JSON.stringify({
+              error: "conflict",
+              conflicts: [
+                { id: "e2e", bookingId: "e2e", sessionIndex: 0, title: "E2E Conflict", shiftStart: "10:00", shiftEnd: "11:00" },
+              ],
+            }),
+          })
+        : route.continue(),
+    );
+    const dragCandle = page.locator(".rbc-month-view .rbc-event").first();
+    await dragCandle.waitFor({ timeout: 30_000 });
+    const before = await dragCandle.boundingBox();
+    const cell = before ? await page.locator(".rbc-month-view .rbc-day-bg").all() : [];
+    // Target: the day cell one column to the right of the candle, same row.
+    const target = before
+      ? await (async () => {
+          for (const c of cell) {
+            const b = await c.boundingBox();
+            if (b && b.y <= before.y && b.y + b.height >= before.y && b.x > before.x + before.width / 2) return b;
+          }
+          return null;
+        })()
+      : null;
+    if (before && target) {
+      m = net.mark();
+      await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(before.x + before.width / 2 + 10, before.y + before.height / 2, { steps: 5 });
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 15 });
+      await page.mouse.up();
+      await settle(page, 3_000);
+      const dragReqs = net.since(m);
+      const patches = dragReqs.filter((r) => r.method() === "PATCH" && /\/api\/bookings\//.test(pathOf(r)));
+      test.info().annotations.push({
+        type: "drag requests",
+        description: dragReqs.filter((r) => pathOf(r).startsWith("/api/") || isRsc(r)).map((r) => `${r.method()} ${pathOf(r)}${isRsc(r) ? " [rsc]" : ""}`).join(", "),
+      });
+      expect(patches, "drag = exactly one PATCH").toHaveLength(1);
+      expect(patches[0]!.postDataJSON()).toMatchObject({ rejectOnConflict: true });
+      expect(dragReqs.filter((r) => pathOf(r) === "/api/bookings/shifts-on-date")).toHaveLength(0);
+      expect(dragReqs.filter(isRsc), "no page refresh after a rejected drag").toHaveLength(0);
+      await expect(page.getByText(/E2E Conflict/).first()).toBeVisible({ timeout: 10_000 });
+      const after = await dragCandle.boundingBox();
+      expect(Math.abs((after?.x ?? 0) - before.x), "candle rolled back").toBeLessThan(4);
+    } else {
+      test.info().annotations.push({ type: "drag", description: "skipped: no candle with a right-hand neighbour cell" });
+    }
+    await page.unroute(/\/api\/bookings\/[a-f0-9]{24}$/);
 
     // --- Wizard: client list fetched lazily once, served from cache on reopen ---
     const newBooking = page.getByRole("button", { name: /new booking/i }).first();
