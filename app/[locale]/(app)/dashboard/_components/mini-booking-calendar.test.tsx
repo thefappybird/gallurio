@@ -179,9 +179,12 @@ describe("MiniBookingCalendar", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // Wait for the settled error (after the provider's single retry): nav is
+    // disabled while a fetch is in flight.
+    await screen.findByRole("button", { name: /retry/i }, { timeout: 5_000 });
+    const failedCalls = fetchMock.mock.calls.length;
 
-    // The first fetch for June failed; a second visit to June must re-fetch
+    // The fetch for June failed; a second visit to June must re-fetch
     // rather than serve a poisoned "[]" cache entry.
     fetchMock.mockImplementation(() =>
       Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rows) })
@@ -189,7 +192,7 @@ describe("MiniBookingCalendar", () => {
     fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(failedCalls + 1));
     await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
   });
 });
