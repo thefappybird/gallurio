@@ -184,7 +184,8 @@ export function ClientsPageClient({
         toast.success(t("form.updateSuccess"), { id: toastId });
         setDetailOpen(false);
         stripClientParam();
-        invalidateFor({ type: "client.updated", clientId: client.id });
+        // reactivateClientAction revalidates /clients.
+        invalidateFor({ type: "client.updated", clientId: client.id }, { refresh: false });
       } finally {
         setReactivatingId(null);
       }

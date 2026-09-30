@@ -5,7 +5,7 @@ import { ClientFormModal } from "./client-form-modal";
 import { updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 
 vi.mock("@/lib/actions/clients", () => ({
-  createClientAction: vi.fn().mockResolvedValue({ ok: true }),
+  createClientAction: vi.fn().mockResolvedValue({ ok: true, clientId: "c-new" }),
   updateClientAction: vi.fn().mockResolvedValue({ ok: true }),
   findClientMatchesAction: vi.fn().mockResolvedValue({ matches: [] }),
 }));
@@ -137,12 +137,12 @@ describe("ClientFormModal", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
   });
 
-  it("invalidates client.created on successful create (server action returns no id yet)", async () => {
+  it("invalidates client.created with the new client id on successful create, without a redundant refresh", async () => {
     invalidateFor.mockClear();
     renderWithProviders(<ClientFormModal {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
-    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "" }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "c-new" }, { refresh: false }));
   });
 
   it("invalidates client.updated on edit, and nothing when the save fails", async () => {
@@ -155,7 +155,7 @@ describe("ClientFormModal", () => {
     expect(invalidateFor).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() =>
-      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" })
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" }, { refresh: false })
     );
   });
 

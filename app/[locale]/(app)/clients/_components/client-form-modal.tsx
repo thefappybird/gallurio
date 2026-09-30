@@ -118,8 +118,8 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
       return;
     }
     toast.success(t("form.createSuccess"));
-    // createClientAction returns no id yet; "" still invalidates the whole clients domain.
-    invalidateFor({ type: "client.created", clientId: "" });
+    // Client actions revalidate /clients: the response already carries fresh RSC.
+    invalidateFor({ type: "client.created", clientId: result.clientId }, { refresh: false });
     onSuccess?.();
     onOpenChange(false);
   }
@@ -132,7 +132,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     }
     // Not "created" — this path attaches to an existing client.
     toast.success(t("form.linkSuccess"));
-    invalidateFor({ type: "client.updated", clientId });
+    invalidateFor({ type: "client.updated", clientId }, { refresh: false });
     onSuccess?.();
     onOpenChange(false);
   }
@@ -145,7 +145,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         return;
       }
       toast.success(t("form.updateSuccess"));
-      invalidateFor({ type: "client.updated", clientId: initialData!.id! });
+      invalidateFor({ type: "client.updated", clientId: initialData!.id! }, { refresh: false });
       onSuccess?.();
       onOpenChange(false);
       return;
