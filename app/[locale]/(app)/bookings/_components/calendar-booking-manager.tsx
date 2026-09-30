@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { useBookingsToolbarPending, useBookingsWindowPending } from "./bookings-pending-shell";
 import { CalendarView } from "./calendar-view";
@@ -65,9 +63,6 @@ export function CalendarBookingManager({
   invoiceThemeBusiness,
   window,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const onPendingChange = useBookingsToolbarPending();
   const onWindowPendingChange = useBookingsWindowPending();
 
@@ -79,14 +74,16 @@ export function CalendarBookingManager({
     if (!canCreate) return;
     nonceRef.current += 1;
     setAddNonce(nonceRef.current);
-    // Side-effect: set ?add=1 for shareability.
-    const sp = new URLSearchParams(searchParams.toString());
+    // Side-effect: set ?add=1 for shareability. Keeps `date` (the window anchor:
+    // dropping it snaps the calendar to today) and uses a history-only replace so
+    // no RSC round-trip fires (Next syncs useSearchParams with the History API).
+    // `window` is shadowed by the window prop, hence globalThis.
+    const { location, history } = globalThis;
+    const sp = new URLSearchParams(location.search);
     sp.set("add", "1");
-    sp.delete("date");
     sp.delete("time");
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [canCreate, router, pathname, searchParams]);
+    history.replaceState(history.state, "", `${location.pathname}?${sp.toString()}`);
+  }, [canCreate]);
 
   return (
     <>
