@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent, ReactNode } from "react";
+import { useCallback, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
 import { AlertTriangleIcon, EyeIcon, InboxIcon } from "lucide-react";
@@ -34,6 +34,22 @@ type Props = {
   onOpenInquiry?: (inquiryId: string) => void;
 };
 
+// One Intl.DateTimeFormat per locale, built once (construction is expensive).
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function getDateFormatter(locale: string): Intl.DateTimeFormat {
+  let formatter = dateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    dateFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
 function CardField({
   label,
   value,
@@ -57,6 +73,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
+  const dateFormatter = getDateFormatter(locale);
+
   function eventTypeLabel(type: string): string {
     try {
       return t(`eventTypes.${type}`);
@@ -67,28 +85,23 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
 
   function fmtDate(iso: string | null): string {
     if (!iso) return t("table.noDate");
-    return new Date(iso).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return dateFormatter.format(new Date(iso));
   }
 
-  function fmtDateTime(iso: string): string {
-    return new Date(iso).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
+  // Submitted timestamps render date-only, same as event dates.
+  const fmtDateTime = (iso: string): string =>
+    dateFormatter.format(new Date(iso));
 
-  function openInquiry(id: string) {
-    if (onOpenInquiry) {
-      onOpenInquiry(id);
-      return;
-    }
-    router.push(buildInquiryModalPath(id));
-  }
+  const openInquiry = useCallback(
+    (id: string) => {
+      if (onOpenInquiry) {
+        onOpenInquiry(id);
+        return;
+      }
+      router.push(buildInquiryModalPath(id));
+    },
+    [onOpenInquiry, router]
+  );
 
   if (rows.length === 0) {
     return <EmptyState icon={InboxIcon} title={empty} description={emptyHint} />;
