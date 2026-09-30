@@ -5,6 +5,8 @@ import { renderWithProviders } from "@/test-utils/render";
 import { InquiryActions } from "./inquiry-actions";
 
 const refresh = vi.fn();
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ refresh }),
   Link: ({ children, href }: { children: ReactNode; href: string }) =>
@@ -32,6 +34,15 @@ beforeEach(() => {
 });
 
 describe("InquiryActions", () => {
+  it("announces inquiry.updated (not router.refresh) after archiving", async () => {
+    renderWithProviders(<InquiryActions inquiryId="inq-1" status="new" />);
+    fireEvent.click(screen.getByRole("button", { name: /^archive$/i }));
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" })
+    );
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it("shows a spinner only on the clicked button while the other stays disabled without one", async () => {
     renderWithProviders(<InquiryActions inquiryId="inq-1" status="new" />);
 

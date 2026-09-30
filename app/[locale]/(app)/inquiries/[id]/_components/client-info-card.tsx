@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { EDITABLE_QUERY_OPTIONS, queryKeys } from "@/lib/query/keys";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -45,7 +49,9 @@ function Row({ label, value }: { label: string; value: string }) {
 export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
-  const [matches, setMatches] = useState<InquiryClientMatch[]>([]);
+  const ws = useAppWorkspaceId();
+  const queryClient = useQueryClient();
+  const invalidateFor = useInvalidateFor();
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [handledClientResolutionRequest, setHandledClientResolutionRequest] = useState(0);
   const tp = useTranslations("app.inquiries.preferred");
@@ -56,21 +62,21 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
 
   const locked = readOnly || status === "booked" || status === "converted" || status === "archived";
 
-  // Computed live when this card mounts — i.e. when the inquiry is opened.
-  // Nothing is stored, so there is nothing to invalidate. Deliberately absent
-  // from the inquiries table: that would need a per-row lookup across the list.
-  useEffect(() => {
-    if (locked) return;
-    let cancelled = false;
-    void findInquiryClientMatchesAction(inquiryId).then((res) => {
-      // Guard against a resolve landing after the modal closed. A non-owner
-      // gets an error here, which leaves the indicator hidden — as intended.
-      if (!cancelled && "ok" in res) setMatches(res.matches);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [inquiryId, locked]);
+  // Computed live on the server, cached under the inquiry's key so
+  // inquiry.updated refreshes it. Deliberately absent from the inquiries table:
+  // that would need a per-row lookup across the list.
+  const matchesKey = [...queryKeys(ws).inquiry(inquiryId), "clientMatches"];
+  const matchesQuery = useQuery({
+    queryKey: matchesKey,
+    queryFn: async (): Promise<InquiryClientMatch[]> => {
+      const res = await findInquiryClientMatchesAction(inquiryId);
+      // A non-owner gets an error here, which leaves the indicator hidden — as intended.
+      return "ok" in res ? res.matches : [];
+    },
+    enabled: !locked,
+    ...EDITABLE_QUERY_OPTIONS,
+  });
+  const matches = matchesQuery.data ?? [];
 
   if (clientResolutionRequest > handledClientResolutionRequest && matches.length > 0) {
     setHandledClientResolutionRequest(clientResolutionRequest);
@@ -85,7 +91,9 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       return;
     }
     toast.success(tMatch("resolvedToast"));
-    setMatches([]);
+    queryClient.setQueryData(matchesKey, []);
+    invalidateFor({ type: "inquiry.updated", inquiryId });
+    if (res.clientId) invalidateFor({ type: "client.updated", clientId: res.clientId });
   }
 
   const [editingPhone, setEditingPhone] = useState(false);
@@ -103,6 +111,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     toast.success(t("savedToast"));
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
+    invalidateFor({ type: "inquiry.updated", inquiryId });
   }
 
   function handleCancelPhone() {

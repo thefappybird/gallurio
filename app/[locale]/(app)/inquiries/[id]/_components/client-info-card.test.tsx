@@ -11,6 +11,9 @@ vi.mock("@/app/[locale]/(app)/inquiries/_actions", () => ({
   resolveInquiryClientAction: (...a: unknown[]) => resolveInquiryClientAction(...a),
 }));
 
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -89,5 +92,21 @@ describe("ClientInfoCard", () => {
 
     await waitFor(() => expect(updateInquiryPhoneAction).toHaveBeenCalledOnce());
     expect(onInquiryChanged).toHaveBeenCalledWith("inq-1", { phone: "+63999999999" });
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" });
+  });
+
+  it("announces inquiry.updated and client.updated after resolving a duplicate", async () => {
+    findInquiryClientMatchesAction.mockResolvedValue({
+      ok: true,
+      matches: [{ _id: "c1", name: "Maria Santos", email: "maria@example.com", phone: "+63912345678", notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }],
+    });
+    renderWithProviders(<ClientInfoCard {...baseProps} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /resolve client/i }));
+    fireEvent.click(screen.getByRole("radio", { name: "Maria Santos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Link client" }));
+
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ type: "client.updated", clientId: "c1" }));
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" });
   });
 });
