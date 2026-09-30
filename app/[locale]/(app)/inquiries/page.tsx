@@ -8,7 +8,6 @@ import {
   getInquiryStatusCounts,
   getInquiryWithDraft,
 } from "@/lib/db/queries/inquiries";
-import { getBookingById } from "../bookings/_data/bookings-queries";
 import { parseCalendarDate } from "../bookings/_data/calendar-events";
 import { calendarWindow } from "@/lib/bookings/calendar-window";
 import { loadInquiriesCalendarData } from "./_data/calendar-data";
@@ -142,9 +141,8 @@ async function InquiriesContent({
   const to = parseDate(sp.to, true);
   const hasFilters = Boolean((sp.status && sp.status !== "all") || from || to);
 
-  // Resolve team scope once — used for both calendar booking fetch and ?detail validation.
-  const needsTeamScope = view === "calendar" || Boolean(sp.detail);
-  const allowedTeamIds = needsTeamScope
+  // Team scope is only needed for the calendar booking fetch.
+  const allowedTeamIds = view === "calendar"
     ? await resolveBookingTeamScope({ role, userId, workspace })
     : undefined;
 
@@ -221,35 +219,16 @@ async function InquiriesContent({
   }));
 
   // ?detail=<bookingId> — read-only booking detail modal (calendar view).
-  // Strip the param if the booking doesn't exist to prevent a broken URL.
-  if (sp.detail) {
-    const detailCleanParams = () =>
-      new URLSearchParams(
-        Object.entries(sp).filter(([k, v]) => k !== "detail" && v !== undefined) as [string, string][]
-      );
-    if (!isValidObjectId(sp.detail)) {
-      const clean = detailCleanParams();
-      redirect({
-        href: { pathname: "/inquiries", query: Object.fromEntries(clean.entries()) },
-        locale,
-      });
-    }
-    try {
-      const found = await getBookingById(workspace._id, sp.detail, allowedTeamIds);
-      if (!found) {
-        const clean = detailCleanParams();
-        redirect({
-          href: { pathname: "/inquiries", query: Object.fromEntries(clean.entries()) },
-          locale,
-        });
-      }
-    } catch {
-      const clean = detailCleanParams();
-      redirect({
-        href: { pathname: "/inquiries", query: Object.fromEntries(clean.entries()) },
-        locale,
-      });
-    }
+  // A malformed id is stripped here (no DB query): the modal handles 404 itself
+  // via GET /api/bookings/[id] but treats 400 as a load error.
+  if (sp.detail && !isValidObjectId(sp.detail)) {
+    const clean = new URLSearchParams(
+      Object.entries(sp).filter(([k, v]) => k !== "detail" && v !== undefined) as [string, string][]
+    );
+    redirect({
+      href: { pathname: "/inquiries", query: Object.fromEntries(clean.entries()) },
+      locale,
+    });
   }
 
   // Track whether the detail inquiry's conflict was already covered by the page-level query.

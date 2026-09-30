@@ -2,7 +2,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client, type BookingDoc } from "@/lib/db/models";
+import type { BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -11,7 +11,8 @@ import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
-import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { isValidObjectId } from "mongoose";
+import { listBookings } from "./_data/bookings-queries";
 import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
 import { bookingRowAmount } from "./_data/booking-rows";
 import { getWorkspaceRateMap, NO_CONVERSION } from "@/lib/pricing/workspaceRates";
@@ -199,19 +200,12 @@ async function BookingsContent({
   // These reads are independent — run them together to save a round-trip.
   //  - Calendar view: candles for the month window only (one windowed query).
   //    Table view: fetch only one page of bookings.
-  //  - The Client.find below is no longer consumed (the wizard fetches its own
-  //    picker list lazily via /api/clients); a backend follow-up removes it.
   const defaultDate = parseCalendarDate(sp.date);
   const eventsWindow = calendarWindow(defaultDate, filters.workspaceTimezone);
-  const [{ rows: bookings, total: bookingsTotal }, , events] = await Promise.all([
+  const [{ rows: bookings, total: bookingsTotal }, events] = await Promise.all([
     view === "calendar"
       ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
       : listBookings(workspace._id, filters, { page: tablePage, limit: tableLimit }),
-    Client.find({ workspaceId: workspace._id })
-      .select({ _id: 1, name: 1, email: 1, phone: 1 })
-      .sort({ name: 1 })
-      .limit(1000)
-      .lean(),
     view === "calendar"
       ? loadBookingsCalendarEvents({
           workspaceId: workspace._id,
@@ -290,19 +284,11 @@ async function BookingsContent({
     workspace.contact?.address?.trim() && workspace.contact?.email?.trim()
   );
 
-  // Defensive: if ?detail= is present but the booking doesn't exist (or is
-  // not owned by this workspace), strip the param and redirect — prevents the
-  // URL from staying broken after a delete, hard-reload, or bad link.
+  // A malformed ?detail= id is stripped here (no DB query): the detail modal
+  // fetches the booking itself and handles 404, but treats 400 as a load error.
+  // Existence/ownership is checked by GET /api/bookings/[id].
   if (sp.detail) {
-    let detailExists = false;
-    try {
-      const found = await getBookingById(workspace._id, sp.detail, allowedTeamIds);
-      detailExists = found !== null;
-    } catch {
-      // Invalid ObjectId format — treat as not found.
-      detailExists = false;
-    }
-    if (!detailExists) {
+    if (!isValidObjectId(sp.detail)) {
       const cleanParams = new URLSearchParams(
         Object.entries(sp).filter(([k]) => k !== "detail") as [string, string][]
       );
