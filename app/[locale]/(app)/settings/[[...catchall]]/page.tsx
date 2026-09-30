@@ -75,10 +75,16 @@ export default async function SettingsCatchallPage({
 
   await connectDB();
 
-  // Load full user doc for MFA state
-  const userDoc = await User.findOne({ workosUserId: userId }).lean();
+  // Independent reads: MFA state, auth methods, active draft, tab labels and
+  // pricing (billing panel is preloaded client-side, so it is always needed).
+  const [userDoc, { hasOAuth }, draftId, t, proPricing] = await Promise.all([
+    User.findOne({ workosUserId: userId }).lean(),
+    getAuthMethods(userId),
+    resolveActiveDraftId(workspace._id),
+    getTranslations("app.settings.tabs"),
+    getDisplayPricing(),
+  ]);
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
-  const { hasOAuth } = await getAuthMethods(userId);
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -99,7 +105,6 @@ export default async function SettingsCatchallPage({
   const currencyLockedUntil =
     currencyChangeLockedUntil(workspace.currencyChangedAt ?? null)?.toISOString() ?? null;
 
-  const draftId = await resolveActiveDraftId(workspace._id);
   const settingsDraftFields = normalizeSettingsSeoFields(
     workspace.publicPage?.settingsDraft ?? workspace.publicPage
   );
@@ -145,8 +150,6 @@ export default async function SettingsCatchallPage({
     },
   };
 
-  const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getDisplayPricing();
   const portfolioDomain = portfolioBaseDomain();
 
   // Active slug: null means base /settings -> render account tab

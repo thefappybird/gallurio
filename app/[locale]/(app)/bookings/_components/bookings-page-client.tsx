@@ -3,11 +3,11 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 
 // BookingsTable columns: title, client, date, status, total, actions = 6
 const BOOKINGS_TABLE_COLUMNS = 6;
@@ -19,6 +19,7 @@ type Props = {
   limit: number;
   locale: string;
   empty: string;
+  emptyHint?: string;
   workspaceTimezone?: string;
 };
 
@@ -29,9 +30,9 @@ export function BookingsPageClient({
   limit,
   locale,
   empty,
+  emptyHint,
   workspaceTimezone,
 }: Props) {
-  useLiveRefresh(["booking"]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,12 +57,14 @@ export function BookingsPageClient({
           columns={BOOKINGS_TABLE_COLUMNS}
           rows={limit}
           cardRows={Math.min(limit, 4)}
+          {...BOOKINGS_SKELETON}
         />
       ) : (
         <BookingsTable
           rows={rows}
           locale={locale}
           empty={empty}
+          emptyHint={emptyHint}
           workspaceTimezone={workspaceTimezone}
         />
       )}

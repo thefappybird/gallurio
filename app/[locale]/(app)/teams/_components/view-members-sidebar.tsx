@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/app/pagination";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { revokeInviteAction } from "../_invite-action";
 import {
   Sheet,
@@ -79,7 +79,7 @@ export function ViewMembersSidebar({
   onOpenChange,
 }: Props) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
   const [detailMember, setDetailMember] = useState<MemberSummary | null>(null);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
@@ -150,7 +150,8 @@ export function ViewMembersSidebar({
         return;
       }
       toast.success(t("invite.toasts.revoked"));
-      router.refresh();
+      // revokeInviteAction revalidates /teams.
+      invalidateFor({ type: "team.updated", teamId: null }, { refresh: false });
     });
   }
 

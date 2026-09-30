@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { queryKeys } from "@/lib/query/keys";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,55 +31,40 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
   const t = useTranslations("app.teams.members.details");
   const ownerT = useTranslations("app.teams.members");
   const [tab, setTab] = useState<"details" | "history">("details");
-  const [items, setItems] = useState<Activity[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [action, setAction] = useState("");
-  const [loading, setLoading] = useState(false);
-  // Every load() call (both the filter-driven effect and the Load More
-  // button) claims the next generation number; a response only applies if
-  // its generation is still the latest one requested. This guards against
-  // Load More's page-2 response landing after a filter change has already
-  // reset the list with a newer request.
-  const requestGenRef = useRef(0);
+  const workspaceId = useAppWorkspaceId();
+  const userId = member?.workosUserId;
 
-  async function load(reset: boolean) {
-    if (!member) return;
-    const myGen = ++requestGenRef.current;
-    setLoading(true);
-    const result = await getMemberActivityAction({
-      workosUserId: member.workosUserId,
-      cursor: reset ? undefined : cursor ?? undefined,
-      from: from ? new Date(`${from}T00:00:00`).toISOString() : undefined,
-      to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
-      action: action || undefined,
-    });
-    if (myGen !== requestGenRef.current) return;
-    if (!("error" in result)) {
-      setItems((previous) => (reset ? result.items : [...previous, ...result.items]));
-      setCursor(result.nextCursor);
-    }
-    setLoading(false);
-  }
+  // Filters are part of the key, so each filter set is its own cursor-paginated
+  // result set and a superseded response can never land in the current one.
+  const history = useInfiniteQuery({
+    queryKey: queryKeys(workspaceId).memberActivity(userId, { from, to, action }),
+    queryFn: async ({ pageParam }) => {
+      const result = await getMemberActivityAction({
+        workosUserId: userId!,
+        cursor: pageParam,
+        from: from ? new Date(`${from}T00:00:00`).toISOString() : undefined,
+        to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
+        action: action || undefined,
+      });
+      if ("error" in result) throw new Error(result.error);
+      return result;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    enabled: Boolean(open && userId && tab === "history"),
+  });
+  const items: Activity[] = history.data?.pages.flatMap((p) => p.items) ?? [];
+  const cursor = history.hasNextPage;
+  const loading = history.isPending || history.isFetching;
 
-  // Filters deliberately start a new cursor-paginated result set.
-  useEffect(() => {
-    if (!(open && member && tab === "history")) return;
-    // Deferred a tick so `load`'s setState calls don't run synchronously
-    // inside the effect body. The generation ref (not a cancel flag) is what
-    // guards a superseded request's response from landing.
-    void Promise.resolve().then(() => void load(true));
-    // `load` is intentionally omitted: including it would re-fetch the first
-    // page after `cursor` changes and defeat cursor pagination.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, member?.workosUserId, tab, from, to, action]);
   useEffect(() => {
     if (!open) {
       void Promise.resolve().then(() => {
         setTab("details");
-        setItems([]);
-        setCursor(null);
         setFrom("");
         setTo("");
         setAction("");
@@ -154,7 +142,14 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
                 </select>
               </label>
             </div>
-            {loading && items.length === 0 ? (
+            {history.isError ? (
+              <div role="alert" className="flex items-center justify-between gap-2 border border-border px-3 py-3">
+                <p className="text-sm text-destructive">{t("loadError")}</p>
+                <Button variant="outline" size="sm" onClick={() => void history.refetch()} disabled={history.isFetching}>
+                  {t("retry")}
+                </Button>
+              </div>
+            ) : loading && items.length === 0 ? (
               <HistorySkeleton label={t("loadingHistory")} />
             ) : (
               <ul className="divide-y divide-border border border-border">
@@ -167,7 +162,7 @@ export function MemberDetailsDialog({ member, teams, ownerWorkosUserId, open, on
                 {!loading && items.length === 0 && <li className="px-3 py-6 text-sm text-muted-foreground">{t("noActivity")}</li>}
               </ul>
             )}
-            {cursor && <Button variant="outline" size="sm" onClick={() => void load(false)} disabled={loading}>{loading ? t("loading") : t("loadMore")}</Button>}
+            {cursor && <Button variant="outline" size="sm" onClick={() => void history.fetchNextPage()} disabled={loading}>{history.isFetchingNextPage ? t("loading") : t("loadMore")}</Button>}
           </div>
         )}
       </DialogContent>

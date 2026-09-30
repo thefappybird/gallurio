@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -42,6 +42,9 @@ import { ImportValueMapping } from "./import-value-mapping";
 import { cn } from "@/lib/utils";
 
 type Step = "upload" | "map" | "values" | "preview";
+
+/** Rows drawn in the preview table; the import still processes every row. */
+const PREVIEW_ROW_CAP = 100;
 
 type ParsedRow = {
   index: number;
@@ -84,8 +87,7 @@ export function ImportSheet({
   const tCoerce = useTranslations("app.bookings.import.coerce");
   const errMsg = useActionError();
   const tCols = useTranslations("app.bookings.import.columns");
-  const router = useRouter();
-  const [refreshing, startTransition] = useTransition();
+  const invalidateFor = useInvalidateFor();
 
   const timeZone = workspaceTimezone || FALLBACK_TZ;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -373,7 +375,7 @@ export function ImportSheet({
       const written = data.created + data.updated;
       if (written > 0) {
         toast.success(t("success", { bookings: written, shifts: data.shifts }));
-        startTransition(() => router.refresh());
+        invalidateFor({ type: "bookings.imported" });
         // A clean import is complete. Leave a partial import open so its
         // actionable errors stay available; otherwise return the owner to the
         // refreshed booking view rather than making them dismiss this sheet.
@@ -388,7 +390,7 @@ export function ImportSheet({
           toast.error(tDialog("failedWithDetails"));
         }
       }
-    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, router, startTransition, resetImportState, onClose]),
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, invalidateFor, resetImportState, onClose]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -396,10 +398,9 @@ export function ImportSheet({
     }
   );
 
-  // The sheet stays locked while anything is in flight: the import itself, and
-  // then the router refresh that repopulates the table behind it. Reporting
-  // success while the list is still stale is what makes an import feel broken.
-  const busy = importing || refreshing;
+  // The sheet stays locked while the import request is in flight. The table
+  // behind it refreshes via the data-event invalidation, not a blocking refresh.
+  const busy = importing;
 
   // ── file intake ────────────────────────────────────────────────────────────
 
@@ -601,6 +602,7 @@ export function ImportSheet({
                     reviewMapping: tNav("reviewMapping"),
                     reviewMappingAction: tNav("reviewMappingAction"),
                     groupBlocked: t("groupBlocked"),
+                    moreRows: (count: number) => t("previewMore", { count }),
                     teamLabel: tDialog("teamLabel"),
                     teamDefault: tDialog("teamDefault"),
                     col: (k: "row" | "title" | "client" | "start" | "error") => tCols(k),
@@ -617,7 +619,7 @@ export function ImportSheet({
               >
                 <Loader2Icon className="size-6 animate-spin text-brand" />
                 <p className="text-sm text-muted-foreground">
-                  {importing ? tNav("committing") : tNav("refreshing")}
+                  {tNav("committing")}
                 </p>
               </div>
             ) : null}
@@ -917,6 +919,7 @@ function PreviewStep({
     reviewMapping: string;
     reviewMappingAction: string;
     groupBlocked: string;
+    moreRows: (count: number) => string;
     teamLabel: string;
     teamDefault: string;
     col: (k: "row" | "title" | "client" | "start" | "error") => string;
@@ -1003,7 +1006,7 @@ function PreviewStep({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {rows.slice(0, PREVIEW_ROW_CAP).map((row) => {
               // Group-blocked rows parse fine on their own but are still not
               // importable. Showing them with a green tick contradicted the
               // counts right above the table.
@@ -1048,6 +1051,11 @@ function PreviewStep({
           </tbody>
         </table>
       </div>
+      {rows.length > PREVIEW_ROW_CAP ? (
+        <p className="text-xs text-muted-foreground">
+          {labels.moreRows(rows.length - PREVIEW_ROW_CAP)}
+        </p>
+      ) : null}
     </div>
   );
 }

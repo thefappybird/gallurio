@@ -22,6 +22,9 @@ type Props = {
   summary?: { created: number; updated: number; skipped: number };
 };
 
+/** Error rows drawn before "Show all"; keeps a 500-error import from mounting 500 rows. */
+const ERROR_ROW_CAP = 50;
+
 /** Read a display value straight off the raw row — no shape assumptions. */
 function cell(row: Record<string, unknown>, key: string): string {
   const v = row[key];
@@ -104,6 +107,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
 
 export function ImportResultsDialog({ open, onClose, errors, summary }: Props) {
   const t = useTranslations("app.bookings.import.results");
+  const [showAll, setShowAll] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -116,9 +120,20 @@ export function ImportResultsDialog({ open, onClose, errors, summary }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {errors.map((e) => (
+          {(showAll ? errors : errors.slice(0, ERROR_ROW_CAP)).map((e) => (
             <ErrorRow key={e.index} entry={e} />
           ))}
+          {!showAll && errors.length > ERROR_ROW_CAP ? (
+            <div className="px-3 py-2">
+              <button
+                type="button"
+                className="min-h-11 text-xs font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0"
+                onClick={() => setShowAll(true)}
+              >
+                {t("showAll", { count: errors.length })}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">

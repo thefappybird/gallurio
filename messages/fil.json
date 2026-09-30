@@ -889,7 +889,9 @@
         "prevMonth": "Nakaraang buwan",
         "nextMonth": "Susunod na buwan",
         "jumpToToday": "Pumunta sa kasalukuyang buwan",
-        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}"
+        "dayBookingCount": "{count, plural, one {# booking} other {# na booking}}",
+        "loadError": "Hindi ma-load ang buwang ito.",
+        "retry": "Subukan muli"
       },
       "calendarTeam": {
         "label": "I-filter ayon sa team",
@@ -994,7 +996,8 @@
       "view": {
         "table": "Talahanayan",
         "card": "Card Mode",
-        "calendar": "Kalendaryo"
+        "calendar": "Kalendaryo",
+        "inquiriesToggle": "Toggle ng view ng mga inquiry"
       },
       "toolbar": {
         "search": "Maghanap ng booking",
@@ -1018,6 +1021,8 @@
         "formatLabel": "Format",
         "csv": "CSV",
         "xlsx": "Excel",
+        "preparing": "Inihahanda...",
+        "error": "Hindi natuloy ang export. Suriin ang iyong pinili at subukan muli.",
         "listFiltersApply": "Nalalapat din sa export na ito ang status at paghahanap na filter ng listahan.",
         "download": "I-download",
         "cancel": "Kanselahin"
@@ -1028,7 +1033,9 @@
         "label": "I-filter ayon sa koponan",
         "inactive": "Hindi aktibo",
         "teams": "Mga Team",
-        "countLabel": "{count, plural, other {# koponan}}"
+        "countLabel": "{count, plural, other {# koponan}}",
+        "previousPage": "Nakaraang pahina",
+        "nextPage": "Susunod na pahina"
       },
       "import": {
         "title": "Mag-import ng mga booking",
@@ -1046,6 +1053,7 @@
         "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
         "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
         "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
+        "previewMore": "{count} pang row ang hindi ipinapakita",
         "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong booking.",
         "columns": {
           "row": "#",
@@ -1061,6 +1069,7 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
+        "showAll": "Ipakita lahat ({count})",
           "untitled": "Walang pamagat na booking",
           "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
           "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
@@ -1201,8 +1210,7 @@
           "continue": "Magpatuloy",
           "reviewMapping": "Awtomatikong naitugma ang mga column",
           "reviewMappingAction": "Suriin",
-          "committing": "Ini-import ang inyong mga booking",
-          "refreshing": "Nire-refresh ang inyong mga booking"
+          "committing": "Ini-import ang inyong mga booking"
         }
       },
       "export": {
@@ -1212,6 +1220,7 @@
       "table": {
         "empty": "Walang booking na tumutugma sa iyong mga filter.",
         "listEmpty": "Wala pang booking.",
+        "listEmptyHint": "Dito lalabas ang mga booking na gagawin mo o tatanggapin mula sa mga inquiry.",
         "past": "Lipas na",
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",
@@ -1319,6 +1328,14 @@
           "endBeforeStart": "Hindi maaaring mas maaga ang katapusan kaysa sa simula.",
           "conflictsLabel": "Mga shift na nasa {date} na:",
           "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito.",
+          "confirmEdit": "Kumpirmahin",
+          "editField": "I-edit ang {label}",
+          "checkingConflicts": "Sinusuri ang mga conflict…",
+          "cancelEdit": "Kanselahin",
+          "discardEdit": "Itapon ang pagbabago",
+          "unsavedChange": "Hindi pa nai-save na pagbabago",
+          "confirmDraftSession": "Kumpirmahin ang draft na sesyon",
+          "removeDraftSession": "Alisin ang draft na sesyon",
           "email": "Email",
           "phone": "Telepono",
           "openClient": "Buksan ang kliyente",
@@ -1349,6 +1366,8 @@
           "title": "Kasaysayan ng booking",
           "totalCount": "{count} entry",
           "pageOf": "Pahina {page} ng {total}",
+          "loadError": "Hindi ma-load ang kasaysayan.",
+          "retry": "Subukan muli",
           "previous": "Nakaraang pahina",
           "next": "Susunod na pahina",
           "actions": {
@@ -1381,6 +1400,8 @@
         "restoredToast": "Na-restore ang booking.",
         "actionFailed": "May naganap na mali. Subukan muli.",
         "notFound": "Hindi natagpuan ang booking.",
+        "loadFailed": "Hindi ma-load ang booking na ito.",
+        "retry": "Subukan muli",
         "editAll": "I-edit lahat",
         "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
         "unconfirmedDrafts": {
@@ -1442,7 +1463,9 @@
         "filterByStatus": "I-filter ayon sa status",
         "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin",
         "teamsLegend": "Mga Koponan",
-        "inactiveTeam": "Hindi aktibong koponan"
+        "inactiveTeam": "Hindi aktibong koponan",
+        "conflict": "May salungatan",
+        "emptyPeriod": "Walang booking sa panahong ito"
       },
       "sessions": {
         "label": "Sesyon {n}",
@@ -1494,6 +1517,8 @@
         "savedToast": "Na-update ang booking.",
         "depositExceedsTotal": "Hindi maaaring mas malaki ang deposito kaysa sa kabuuan.",
         "unsavedConfirm": "Mawawala ang iyong progreso kung lalabas ka ngayon. Sigurado ka ba?",
+        "hasErrors": "May mga error sa validation",
+        "viewBooking": "Tingnan ang booking",
         "unsaved": {
           "title": "Itapon ang iyong mga pagbabago?",
           "body": "Mawawala ang lahat ng iyong nai-enter sa booking na ito kung aalis ka ngayon. Hindi pa nai-save ang iyong mga pagbabago.",
@@ -1521,6 +1546,9 @@
           "searchPlaceholder": "Maghanap ayon sa pangalan o email",
           "noResults": "Walang kliyenteng tumutugma. Subukan ang ibang paghahanap.",
           "selectRequired": "Pumili ng kliyente para magpatuloy.",
+          "loadingClients": "Nilo-load ang mga kliyente",
+          "loadError": "Hindi ma-load ang mga kliyente.",
+          "retry": "Subukan muli",
           "name": "Pangalan",
           "namePlaceholder": "hal. Emma Carter",
           "email": "Email",
@@ -2066,7 +2094,9 @@
           "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad",
           "loading": "Naglo-load…",
           "loadMore": "Mag-load pa",
-          "noActivity": "Walang nakitang aktibidad."
+          "noActivity": "Walang nakitang aktibidad.",
+          "loadError": "Hindi ma-load ang aktibidad.",
+          "retry": "Subukan muli"
         },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
@@ -2173,6 +2203,7 @@
       },
       "detail": {
         "inactive": "Hindi aktibo",
+        "retry": "Subukan muli",
         "tabs": {
           "overview": "Pangkalahatan",
           "bookings": "Mga Booking",
@@ -2298,6 +2329,10 @@
       "detail": {
         "back": "Bumalik sa mga katanungan",
         "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
+        "loadingTitle": "Inquiry",
+        "loading": "Nilo-load ang inquiry...",
+        "loadError": "Hindi ma-load ang inquiry na ito.",
+        "retry": "Subukan muli",
         "submittedOn": "Isinumite noong {date}",
         "notFound": "Hindi natagpuan ang katanungan.",
         "clientInfo": {
@@ -2399,7 +2434,8 @@
         "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
         "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli",
         "updating": "Nire-reschedule…",
-        "updated": "Na-reschedule ang session"
+        "updated": "Na-reschedule ang session",
+        "emptyPeriod": "Walang katanungan sa panahong ito"
       }
     },
     "pageBuilder": {

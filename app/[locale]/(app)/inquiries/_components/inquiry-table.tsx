@@ -1,11 +1,12 @@
 "use client";
 
-import type { KeyboardEvent, ReactNode } from "react";
+import { useCallback, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
 import { AlertTriangleIcon, EyeIcon, InboxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
+import { preloadInquiryDetailModal } from "./inquiry-detail-dynamic";
 import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,22 @@ type Props = {
   onOpenInquiry?: (inquiryId: string) => void;
 };
 
+// One Intl.DateTimeFormat per locale, built once (construction is expensive).
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function getDateFormatter(locale: string): Intl.DateTimeFormat {
+  let formatter = dateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    dateFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
 function CardField({
   label,
   value,
@@ -56,6 +73,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
+  const dateFormatter = getDateFormatter(locale);
+
   function eventTypeLabel(type: string): string {
     try {
       return t(`eventTypes.${type}`);
@@ -66,28 +85,23 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
 
   function fmtDate(iso: string | null): string {
     if (!iso) return t("table.noDate");
-    return new Date(iso).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return dateFormatter.format(new Date(iso));
   }
 
-  function fmtDateTime(iso: string): string {
-    return new Date(iso).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
+  // Submitted timestamps render date-only, same as event dates.
+  const fmtDateTime = (iso: string): string =>
+    dateFormatter.format(new Date(iso));
 
-  function openInquiry(id: string) {
-    if (onOpenInquiry) {
-      onOpenInquiry(id);
-      return;
-    }
-    router.push(buildInquiryModalPath(id));
-  }
+  const openInquiry = useCallback(
+    (id: string) => {
+      if (onOpenInquiry) {
+        onOpenInquiry(id);
+        return;
+      }
+      router.push(buildInquiryModalPath(id));
+    },
+    [onOpenInquiry, router]
+  );
 
   if (rows.length === 0) {
     return <EmptyState icon={InboxIcon} title={empty} description={emptyHint} />;
@@ -113,6 +127,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
               role="button"
               tabIndex={0}
               aria-label={t("table.open", { name: row.name })}
+              onPointerEnter={preloadInquiryDetailModal}
+              onFocus={preloadInquiryDetailModal}
               onClick={() => openInquiry(row.id)}
               onKeyDown={handleKeyDown}
               className="border border-border bg-card p-4 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -215,6 +231,8 @@ export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: 
                 tabIndex={0}
                 aria-label={t("table.open", { name: row.name })}
                 className="cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                onPointerEnter={preloadInquiryDetailModal}
+                onFocus={preloadInquiryDetailModal}
                 onClick={() => openInquiry(row.id)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {

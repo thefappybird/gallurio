@@ -25,6 +25,9 @@ vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
 }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
+
 const toastError = vi.fn();
 vi.mock("sonner", () => ({
   toast: { error: (...args: unknown[]) => toastError(...args) },
@@ -230,7 +233,18 @@ describe("WorkspaceBusinessForm — currency change lock + restatement dialog", 
     });
   });
 
+  it("invalidates workspace.updated after a successful save", async () => {
+    invalidateFor.mockClear();
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    fireEvent.change(screen.getByLabelText("businessName"), { target: { value: "New name" } });
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "workspace.updated" }));
+  });
+
   it("shows the FX rate error and does not treat it as saved on fx_rate_unavailable", async () => {
+    invalidateFor.mockClear();
     updateWorkspaceBusinessAction.mockResolvedValueOnce({ error: "fx_rate_unavailable" });
     render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
 
@@ -240,6 +254,7 @@ describe("WorkspaceBusinessForm — currency change lock + restatement dialog", 
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith("currencyChangeRateError");
     });
+    expect(invalidateFor).not.toHaveBeenCalled();
   });
 });
 

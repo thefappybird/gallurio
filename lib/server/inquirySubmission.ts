@@ -1,5 +1,6 @@
 import "server-only";
 import mongoose from "mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { isWorkspaceGated } from "@/lib/billing/access";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
@@ -102,6 +103,7 @@ export async function submitInquiry(
   let inquiryId: mongoose.Types.ObjectId | null = null;
   let draftBookingId: mongoose.Types.ObjectId | null = null;
   let clientId: mongoose.Types.ObjectId | null = null;
+  let clientIsNew = false;
 
   try {
     await session.withTransaction(async () => {
@@ -127,6 +129,7 @@ export async function submitInquiry(
         );
         resolvedClientId = created._id;
         resolvedClientName = created.name;
+        clientIsNew = true;
       }
 
       const [inquiry] = await Inquiry.create(
@@ -197,6 +200,17 @@ export async function submitInquiry(
 
   if (!inquiryId || !draftBookingId || !clientId) {
     return { ok: false, error: "submission_failed" };
+  }
+
+  const wsIdStr = String(workspaceId);
+  emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
+  emitDataChanged(wsIdStr, {
+    type: "booking.created",
+    bookingId: String(draftBookingId),
+    clientId: String(clientId),
+  });
+  if (clientIsNew) {
+    emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
   }
 
   // Bump the portfolio analytics inquiry counter for the day — outside the

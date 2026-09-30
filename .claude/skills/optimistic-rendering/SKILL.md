@@ -39,13 +39,17 @@ useEffect(() => {
 // success path now only calls router.refresh(); error path still reverts to prevEvent.
 ```
 
-## The four concrete variants in this repo (copy the closest one)
+## The five concrete variants in this repo (copy the closest one)
 
 **A. Array-replace + `useEffect` resync — calendars.**
 `bookings/_components/calendar-view.tsx`. `optimisticEvents` state seeded from the `events`
 prop; a `useEffect([events])` with a `prevEventsRef` resyncs when the server prop changes.
-Drag handler saves `prev`, maps the array to the new position, runs `toast.promise`, reverts
-`setOptimisticEvents(prev)` on error. Uses `pendingIds` + an `inFlightRef` to dim in-flight
+Drag handler saves `prev`, maps the array to the new position, then sends ONE PATCH with
+`rejectOnConflict` inside `toast.promise`. **200:** rebuild that booking's candles from the
+response (`buildBookingCalendarEvents([booking], ...)`, replacing only its candles) and call
+`invalidateFor({type:"booking.updated", ...}, { refresh: false })`; no router refresh (other tabs
+refresh via socket). **409/error:** roll back only the dragged booking's candles, never the whole
+array. Uses `pendingIds` + an `inFlightRef` to dim in-flight
 candles and block concurrent drags. `inquiries-calendar-manager.tsx` does the `Map<id,override>`
 flavor of the same idea (override + merge useMemo + clear-on-events-change) — pick array vs map
 by whether you patch a few items or replace the set.
@@ -69,6 +73,15 @@ automatically when the action's `revalidatePath` lands.
 `clients/_components/clients-page-client.tsx` reactivate: a per-row spinner + `toast.loading`
 → success/error, data refreshes on modal close. Less responsive but simplest; use when an
 instant local guess would be misleading.
+
+**E. react-query mutations — `invalidateFor`.** Client queries live under `AppQueryProvider`
+with keys from `queryKeys(workspaceId)` (`["ws", workspaceId, domain, ...]`). After a mutation
+call `useInvalidateFor()(event)` (`hooks/use-data-events.ts`): it marks the event local (socket
+echo suppressed ~2 s), invalidates the keys from `lib/query/invalidation.ts`, and debounces a
+`router.refresh()` when the current route's server data is affected. Pass `{ refresh: false }`
+only when the UI already applied the result locally or revalidation covers every locale
+(clients/inquiries actions use locale-less `revalidatePath`, so they keep the refresh). Never
+hand-invalidate keys at a call site; extend the map.
 
 ## Rules of thumb
 - **Always** revert on error — never leave a wrong value showing.

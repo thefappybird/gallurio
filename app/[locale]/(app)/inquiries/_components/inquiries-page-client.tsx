@@ -3,16 +3,20 @@
 import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
 import { applyOptimisticPatch, type InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import type { InquiryStatusCounts } from "@/lib/db/queries/inquiries";
-import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detail-modal";
+import type { InquiryDetailModalData } from "./inquiry-detail-modal";
+import { InquiryDetailModalLazy } from "./inquiry-detail-dynamic";
+import { useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { EDITABLE_QUERY_OPTIONS, queryKeys } from "@/lib/query/keys";
 import { InquiryViewToggle, type InquiriesView } from "./inquiry-view-toggle";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
@@ -42,6 +46,8 @@ type Props = {
   teams?: BookingTeamOption[];
   isOwner?: boolean;
   workspaceTz?: string;
+  calendarWindow?: { start: string; end: string };
+  calendarDate?: Date;
 };
 
 export function InquiriesPageClient({
@@ -62,26 +68,41 @@ export function InquiriesPageClient({
   teams = [],
   isOwner = false,
   workspaceTz,
+  calendarWindow,
+  calendarDate,
 }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const [detail, setDetail] = useState(initialDetail);
+  const ws = useAppWorkspaceId();
+  const [selectedId, setSelectedId] = useState<string | null>(initialDetail?.inquiryId ?? null);
   const [syncedInitialDetailId, setSyncedInitialDetailId] = useState(
     initialDetail?.inquiryId ?? null
   );
-  const detailOpen = detail !== null;
-  const detailRequest = useRef(0);
   const isCalendar = view === "calendar";
-  // A direct URL/deep link supplies its detail from the server. Table clicks
-  // load only the selected inquiry via a server action, leaving the table intact.
+  // A direct URL/deep link supplies its detail from the server (seeded into the
+  // query as initialData). Table clicks load only the selected inquiry through
+  // the query, so reopening one is served from cache and the table stays intact.
   const initialDetailId = initialDetail?.inquiryId ?? null;
   if (initialDetailId !== syncedInitialDetailId) {
     setSyncedInitialDetailId(initialDetailId);
-    setDetail(initialDetail);
+    setSelectedId(initialDetailId);
   }
-  useLiveRefresh(["inquiry", "booking"], detailOpen);
+  const detailQuery = useQuery({
+    queryKey: queryKeys(ws).inquiry(selectedId ?? ""),
+    queryFn: async () => {
+      const result = await getInquiryDetailAction(selectedId as string, locale);
+      if (!("ok" in result)) throw new Error(result.error);
+      return result.detail;
+    },
+    enabled: selectedId !== null,
+    initialData: initialDetail && initialDetail.inquiryId === selectedId ? initialDetail : undefined,
+    ...EDITABLE_QUERY_OPTIONS,
+  });
+  const detail = selectedId !== null ? (detailQuery.data ?? null) : null;
+  const detailOpen = selectedId !== null;
+  const detailLoadState = detail ? undefined : detailQuery.isError ? "error" : "loading";
 
   function readCurrentParams() {
     return new URLSearchParams(window.location.search);
@@ -149,8 +170,7 @@ export function InquiriesPageClient({
     // Convert closes the modal directly and handles its own refresh path;
     // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
     hasChanges.current = false;
-    detailRequest.current += 1;
-    setDetail(null);
+    setSelectedId(null);
     // Strip the inquiryId param so that the revalidatePath re-render does not
     // re-supply a truthy initialDetail and re-open the modal via the deep-link
     // sync block.
@@ -203,8 +223,8 @@ export function InquiriesPageClient({
     });
   }
 
-  async function openInquiry(inquiryId: string) {
-    if (detail?.inquiryId === inquiryId) return;
+  function openInquiry(inquiryId: string) {
+    if (selectedId === inquiryId) return;
 
     const params = readCurrentParams();
     params.set("inquiryId", inquiryId);
@@ -215,12 +235,7 @@ export function InquiriesPageClient({
       "",
       next ? `${pathname}?${next}` : pathname
     );
-
-    const request = detailRequest.current + 1;
-    detailRequest.current = request;
-    const result = await getInquiryDetailAction(inquiryId, locale);
-    if (detailRequest.current !== request) return;
-    if ("ok" in result) setDetail(result.detail);
+    setSelectedId(inquiryId);
   }
 
   function selectTab(tab: TabKey) {
@@ -273,7 +288,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} window={calendarWindow} defaultDate={calendarDate} onOpenInquiry={openInquiry} />
       ) : (
         <>
           {/* Status tabs + Date popover tab */}
@@ -375,6 +390,7 @@ export function InquiriesPageClient({
               columns={INQUIRY_TABLE_COLUMNS}
               rows={Math.min(limit, 8)}
               cardRows={Math.min(limit, 4)}
+              {...INQUIRIES_SKELETON}
             />
           ) : (
             <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} onOpenInquiry={openInquiry} />
@@ -397,23 +413,26 @@ export function InquiriesPageClient({
         </>
       )}
 
-      <InquiryDetailModal
-        detail={detail}
-        open={detailOpen}
-        teams={teams}
-        onClose={() => {
-          detailRequest.current += 1;
-          setDetail(null);
-          if (hasChanges.current) {
-            hasChanges.current = false;
-            replaceWithoutInquiryParam();
-          } else {
-            stripInquiryParam();
-          }
-        }}
-        onConverted={handleConverted}
-        onInquiryChanged={handleInquiryChanged}
-      />
+      {detailOpen ? (
+        <InquiryDetailModalLazy
+          detail={detail}
+          open
+          loadState={detailLoadState}
+          onRetry={() => void detailQuery.refetch()}
+          teams={teams}
+          onClose={() => {
+            setSelectedId(null);
+            if (hasChanges.current) {
+              hasChanges.current = false;
+              replaceWithoutInquiryParam();
+            } else {
+              stripInquiryParam();
+            }
+          }}
+          onConverted={handleConverted}
+          onInquiryChanged={handleInquiryChanged}
+        />
+      ) : null}
     </div>
   );
 }

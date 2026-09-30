@@ -91,6 +91,19 @@ describe("ImportResultsDialog", () => {
     expect(screen.getByText(/"clientName"/)).toBeDefined();
   });
 
+  it("lists the first 50 errors and reveals the rest behind Show all", () => {
+    const many: ImportErrorEntry[] = Array.from({ length: 120 }, (_, i) => ({
+      index: i,
+      row: { title: `Row ${i}` },
+      kind: "validation" as const,
+      message: `Bad value ${i}`,
+    }));
+    renderDialog(true, many);
+    expect(screen.getAllByText(/^Bad value \d+$/)).toHaveLength(50);
+    fireEvent.click(screen.getByRole("button", { name: /show all 120/i }));
+    expect(screen.getAllByText(/^Bad value \d+$/)).toHaveLength(120);
+  });
+
   it("does not render when closed", () => {
     renderDialog(false);
     expect(screen.queryByText("Title is required")).toBeNull();

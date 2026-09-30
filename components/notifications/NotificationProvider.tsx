@@ -2,6 +2,9 @@
 
 import { createContext, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
+import { DATA_CHANGED_EVENT, type DataChangedPayload } from '@/lib/data-events'
+import { isLocalEcho } from '@/lib/query/invalidation'
+import { useApplyDataEvent } from '@/hooks/use-data-events'
 import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -48,12 +51,15 @@ export const NotificationContext = createContext<NotificationContextValue | null
 interface NotificationProviderProps {
   initialNotifications: SerializedNotification[]
   initialUnreadCount: number
+  /** Active workspace; data:changed payloads for any other workspace are ignored. */
+  workspaceId: string
   children: React.ReactNode
 }
 
 export function NotificationProvider({
   initialNotifications,
   initialUnreadCount,
+  workspaceId,
   children,
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<SerializedNotification[]>(initialNotifications)
@@ -62,6 +68,12 @@ export function NotificationProvider({
   const [lastEntityEvent, setLastEntityEvent] = useState<NotificationContextValue['lastEntityEvent']>(null)
   const entityEventTick = useRef(0)
   const socketRef = useRef<Socket | null>(null)
+  const applyDataEvent = useApplyDataEvent()
+  // Latest handler without re-running the socket effect (its [] deps keep one connection).
+  const applyRef = useRef(applyDataEvent)
+  useEffect(() => {
+    applyRef.current = applyDataEvent
+  }, [applyDataEvent])
 
   useEffect(() => {
     // Use socket.io's async auth callback so a fresh token is fetched on every
@@ -121,6 +133,13 @@ export function NotificationProvider({
       })
     })
 
+    socket.on(DATA_CHANGED_EVENT, (payload: DataChangedPayload) => {
+      if (payload.workspaceId !== workspaceId) return
+      // The actor's own tab already invalidated locally.
+      if (isLocalEcho(payload.event)) return
+      applyRef.current(payload.event)
+    })
+
     socket.on('notification:read', ({ id }: { id: string }) => {
       setNotifications((prev) =>
         prev.map((n) =>
@@ -141,7 +160,7 @@ export function NotificationProvider({
       socket.disconnect()
       socketRef.current = null
     }
-  }, [])
+  }, [workspaceId])
 
   function markRead(id: string) {
     setNotifications((prev) =>

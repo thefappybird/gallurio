@@ -25,8 +25,17 @@ function makeBooking(
 }
 
 describe("buildBookingCalendarEvents", () => {
+  it("does not ship a clientEmail field (never rendered, PII stays server-side)", () => {
+    const booking = makeBooking("b1", [
+      { startAt: new Date("2026-08-15T01:00:00Z"), endAt: new Date("2026-08-15T09:00:00Z") },
+    ]);
+    const events = buildBookingCalendarEvents([booking], { today: TODAY, tz: TZ });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.every((e) => !("clientEmail" in e))).toBe(true);
+  });
+
   it("returns empty array for empty bookings", () => {
-    const result = buildBookingCalendarEvents([], { today: TODAY, emailByClientId: new Map(), tz: TZ });
+    const result = buildBookingCalendarEvents([], { today: TODAY, tz: TZ });
     expect(result).toEqual([]);
   });
 
@@ -36,7 +45,6 @@ describe("buildBookingCalendarEvents", () => {
     ]);
     const events = buildBookingCalendarEvents([booking], {
       today: TODAY,
-      emailByClientId: new Map(),
       tz: TZ,
     });
     expect(events.length).toBeGreaterThan(0);
@@ -51,7 +59,6 @@ describe("buildBookingCalendarEvents", () => {
     ]);
     const [event] = buildBookingCalendarEvents([booking], {
       today: TODAY,
-      emailByClientId: new Map(),
       tz: "America/New_York",
     });
     expect(event.workspaceTz).toBe("America/New_York");
@@ -63,36 +70,9 @@ describe("buildBookingCalendarEvents", () => {
     ]);
     const [event] = buildBookingCalendarEvents([booking], {
       today: TODAY,
-      emailByClientId: new Map(),
       tz: TZ,
     });
     expect(event.id).toBe("b1_s0_2026-08-15");
-  });
-
-  it("resolves clientEmail from emailByClientId when clientId is set", () => {
-    const booking = makeBooking("b1", [
-      { startAt: new Date("2026-08-15T01:00:00Z"), endAt: new Date("2026-08-15T09:00:00Z") },
-    ]);
-    const [event] = buildBookingCalendarEvents([booking], {
-      today: TODAY,
-      emailByClientId: new Map([["client1", "ada@example.com"]]),
-      tz: TZ,
-    });
-    expect(event.clientEmail).toBe("ada@example.com");
-  });
-
-  it("sets clientEmail to null when clientId is absent", () => {
-    const booking = makeBooking(
-      "b1",
-      [{ startAt: new Date("2026-08-15T01:00:00Z"), endAt: new Date("2026-08-15T09:00:00Z") }],
-      { clientId: null }
-    );
-    const [event] = buildBookingCalendarEvents([booking], {
-      today: TODAY,
-      emailByClientId: new Map(),
-      tz: TZ,
-    });
-    expect(event.clientEmail).toBeNull();
   });
 
   it("returns one event per session for a multi-session booking with same-day sessions", () => {
@@ -102,7 +82,6 @@ describe("buildBookingCalendarEvents", () => {
     ]);
     const events = buildBookingCalendarEvents([booking], {
       today: TODAY,
-      emailByClientId: new Map(),
       tz: TZ,
     });
     expect(events).toHaveLength(2);

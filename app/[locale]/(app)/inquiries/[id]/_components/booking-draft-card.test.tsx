@@ -23,6 +23,8 @@ vi.mock("../../_actions", () => ({
 }));
 
 const refresh = vi.fn();
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ refresh }),
   Link: ({ children, href }: { children: ReactNode; href: string }) =>
@@ -55,6 +57,11 @@ beforeEach(() => {
   editInquirySessionsAction.mockReset();
   editInquirySessionsAction.mockResolvedValue({ ok: true });
   refresh.mockReset();
+  invalidateSpy.mockReset();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: async () => ({ byDate: {} }) })
+  );
 });
 
 describe("BookingDraftCard", () => {
@@ -150,6 +157,7 @@ describe("BookingDraftCard", () => {
       "abc",
       expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
     );
+    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
   });
 
   it("calls toast.success after a successful sessions save", async () => {
@@ -194,63 +202,60 @@ describe("BookingDraftCard", () => {
     expect(onInquiryChanged).toHaveBeenCalledWith("abc", {
       eventDate: "2099-12-31T00:00:00.000Z",
     });
+    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
   });
 
-  it("shows a loading indicator while checking session conflicts and discards a stale response", async () => {
-    let resolveFirst!: () => void;
-    let resolveSecond!: () => void;
-    let calls = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => {
-        calls += 1;
-        if (calls === 1) {
-          return new Promise((resolve) => {
-            resolveFirst = () =>
-              resolve({
-                ok: true,
-                json: async () => ({
-                  shifts: [{ id: "x", title: "Other", shiftStart: "09:00", shiftEnd: "11:00" }],
-                }),
-              });
-          });
-        }
-        return new Promise((resolve) => {
-          resolveSecond = () => resolve({ ok: true, json: async () => ({ shifts: [] }) });
-        });
-      })
-    );
+  it("announces inquiry.updated and booking.updated after approving", async () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /convert to booking/i }));
 
-    const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
-    const { container } = renderWithProviders(
-      <BookingDraftCard {...baseProps} sessions={[futureSession]} />
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenLastCalledWith(
+        { type: "booking.updated", bookingId: "bk_1", inquiryId: "abc" },
+      )
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+    );
+  });
+
+  it("checks every session date with ONE batched request and flags the overlapping session", async () => {
+    let resolveFetch!: () => void;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () =>
+            resolve({
+              ok: true,
+              json: async () => ({
+                byDate: {
+                  "2099-12-30": [{ id: "x", title: "Other", shiftStart: "09:00", shiftEnd: "11:00" }],
+                  "2099-12-31": [],
+                },
+              }),
+            });
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sessions = [
+      { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" },
+      { startDate: "2099-12-30", startTime: "10:00", endTime: "12:00" },
+      { startDate: "2099-12-31", startTime: "14:00", endTime: "15:00" },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} sessions={sessions} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
 
-    const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-    fireEvent.change(dateInput, { target: { value: "2099-12-30" } });
+    await waitFor(() => expect(screen.getByText("Checking for conflicts…")).toBeInTheDocument());
+    resolveFetch();
+    await waitFor(() => expect(screen.queryByText("Checking for conflicts…")).not.toBeInTheDocument());
 
-    // Loading indicator appears while the first check is in flight.
-    await waitFor(() => {
-      expect(screen.getByText("Checking for conflicts…")).toBeInTheDocument();
-    });
-
-    // A second, superseding change fires before the first request resolves.
-    fireEvent.change(dateInput, { target: { value: "2099-12-29" } });
-
-    // Resolve the SECOND (current) request first — no conflict.
-    resolveSecond();
-    await waitFor(() => {
-      expect(screen.queryByText("Checking for conflicts…")).not.toBeInTheDocument();
-    });
-    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
-
-    // The stale FIRST response arrives late — it must be discarded, not overwrite
-    // the current (conflict-free) result.
-    resolveFirst();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/bookings/shifts-on-date?dates=2099-12-30,2099-12-31&excludeId=bk_1"
+    );
+    expect(screen.getAllByText("conflict")).toHaveLength(1);
   });
 
   it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { listClients, getWorkspaceTags, getClientById } from "./_data/clients-queries";
+import { listClients, getWorkspaceTags, resolveDetailClient } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
@@ -137,15 +137,15 @@ export default async function ClientsPage({
     );
     const cleanQuery = Object.fromEntries(cleanParams.entries());
 
-    let found: Awaited<ReturnType<typeof getClientById>> = null;
+    let found: Awaited<ReturnType<typeof resolveDetailClient>> = null;
     try {
-      found = await getClientById(workspace._id, sp.client, fxPromise);
+      found = await resolveDetailClient(workspace._id, sp.client, items, fxPromise);
     } catch (err) {
       // Unexpected error (e.g. transient DB failure) — log with context, then
       // treat as not-found and strip the stale param rather than crashing the
       // page. (redirect() below is outside this try, so NEXT_REDIRECT is never
       // swallowed here.)
-      console.error("[clients] getClientById failed", {
+      console.error("[clients] resolveDetailClient failed", {
         clientId: sp.client,
         workspaceId: String(workspace._id),
         err,

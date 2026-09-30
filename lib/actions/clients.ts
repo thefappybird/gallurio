@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { isClientMatch } from "@/lib/clients/nameMatch";
 import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
@@ -20,7 +21,9 @@ import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients
 
 type MutationResult = { ok: true } | { error: string };
 
-export async function createClientAction(input: ClientFormInput): Promise<MutationResult> {
+export async function createClientAction(
+  input: ClientFormInput
+): Promise<{ ok: true; clientId: string } | { error: string }> {
   try {
     const ctx = await requireOrg();
     await connectDB();
@@ -30,13 +33,14 @@ export async function createClientAction(input: ClientFormInput): Promise<Mutati
       return { error: "invalid_input" };
     }
 
-    await Client.create({
+    const created = await Client.create({
       workspaceId: ctx.workspace._id,
       ...parsed.data,
     });
 
+    emitDataChanged(String(ctx.workspace._id), { type: "client.created", clientId: String(created._id) });
     revalidatePath("/clients");
-    return { ok: true };
+    return { ok: true, clientId: String(created._id) };
   } catch {
     return { error: "client_create_failed" };
   }
@@ -129,6 +133,7 @@ export async function updateClientAction(
 
     if (!updated) return { error: "client_not_found" };
 
+    emitDataChanged(String(ctx.workspace._id), { type: "client.updated", clientId: String(updated._id) });
     revalidatePath("/clients");
     return { ok: true };
   } catch {
@@ -149,6 +154,7 @@ export async function deactivateClientAction(clientId: string): Promise<Mutation
 
     if (!updated) return { error: "client_not_found" };
 
+    emitDataChanged(String(ctx.workspace._id), { type: "client.updated", clientId: String(updated._id) });
     revalidatePath("/clients");
     return { ok: true };
   } catch {
@@ -169,6 +175,7 @@ export async function reactivateClientAction(clientId: string): Promise<Mutation
 
     if (!updated) return { error: "client_not_found" };
 
+    emitDataChanged(String(ctx.workspace._id), { type: "client.updated", clientId: String(updated._id) });
     revalidatePath("/clients");
     return { ok: true };
   } catch {

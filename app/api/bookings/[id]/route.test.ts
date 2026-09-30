@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, ActivityLog, Client, Team, TEAM_COLOR_PALETTE } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team, User, TEAM_COLOR_PALETTE } from "@/lib/db/models";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -53,6 +53,9 @@ vi.mock("@/lib/email/brand", () => ({
   gallurioBrand: () => ({ kind: "platform", name: "Gallurio", accentHex: null, poweredByGallurio: false }),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 const notificationMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock("@/lib/notifications/send", () => ({
   sendNotification: (arg: unknown) => notificationMock(arg),
@@ -88,6 +91,7 @@ beforeEach(async () => {
   cancelledMocks.resolveWorkspaceBrand.mockReturnValue({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false });
   notificationMock.mockReset();
   notificationMock.mockResolvedValue(undefined);
+  emit.mockClear();
   fx.resolveFxFreeze.mockReset();
   fx.resolveFxFreeze.mockImplementation(async (base: string, target: string) =>
     base === target ? { rate: 1, target } : null
@@ -267,6 +271,20 @@ describe("PATCH /api/bookings/[id]", () => {
     expect(diff?.changes?.title).toEqual({ before: "Carter Wedding", after: "Renamed" });
   });
 
+  it("emits booking.updated with the server workspaceId after a successful patch", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Renamed" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "booking.updated",
+      bookingId: String(b._id),
+      clientId: String(c._id),
+      inquiryId: null,
+    });
+  });
+
   it("applies a multi-field patch and writes ONE activity entry with all changes", async () => {
     const c = await seedClient(workspaceId);
     const b = await seedBooking(workspaceId, c._id);
@@ -332,6 +350,7 @@ describe("PATCH /api/bookings/[id]", () => {
     expect(res.status).toBe(404);
     const fresh = await Booking.findById(b._id).lean();
     expect(fresh?.title).toBe("Carter Wedding");
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("skips identical values and does not write an activity log", async () => {
@@ -1123,5 +1142,175 @@ describe("PATCH /api/bookings/[id] — cancellation emails", () => {
     expect(res.status).toBe(200);
     expect(cancelledMocks.sendBookingCancelledClient).not.toHaveBeenCalled();
     expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/bookings/[id] rejectOnConflict", () => {
+  const at = (h: number, m = 0) => new Date(Date.UTC(2030, 7, 15, h, m));
+  const sess = (h1: number, h2: number) => ({ startAt: at(h1), endAt: at(h2) });
+  const iso = (s: { startAt: Date; endAt: Date }) => ({
+    startAt: s.startAt.toISOString(),
+    endAt: s.endAt.toISOString(),
+  });
+
+  async function seedAt(cid: Types.ObjectId, sessions: { startAt: Date; endAt: Date }[], o: Record<string, unknown> = {}) {
+    return seedBooking(workspaceId, cid, {
+      sessions,
+      firstSessionStart: sessions[0].startAt,
+      lastSessionEnd: sessions[sessions.length - 1].endAt,
+      ...o,
+    });
+  }
+
+  it("409s with conflicts and does not write when the moved session overlaps another booking", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const other = await seedAt(c._id, [sess(10, 12)], { title: "Other" });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ sessions: [iso(sess(11, 13))], rejectOnConflict: true }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe("conflict");
+    expect(json.conflicts).toEqual([
+      expect.objectContaining({ bookingId: other._id.toString(), shiftStart: "10:00", shiftEnd: "12:00" }),
+    ]);
+    const stored = await Booking.findById(b._id).lean();
+    expect(stored?.sessions[0].startAt.toISOString()).toBe(at(14).toISOString());
+  });
+
+  async function patchFlag(id: string, sessions: { startAt: Date; endAt: Date }[], flag: unknown = true) {
+    const { PATCH } = await load();
+    return PATCH(
+      makePatch({ sessions: sessions.map(iso), ...(flag === "omit" ? {} : { rejectOnConflict: flag }) }, id),
+      ctx(id)
+    );
+  }
+
+  it("adjacent boundaries do not conflict; 200 returns updated booking with client block", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)]);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(12, 14)]);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(new Date(json.sessions[0].startAt).toISOString()).toBe(at(12).toISOString());
+    expect(json.client).toMatchObject({ name: "Emma Carter" });
+  });
+
+  it("does not conflict with its own stored session (same index excluded)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(10, 12)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("conflicts with a sibling session of the same booking", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(10, 12), sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(10, 12), sess(11, 15)]);
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.conflicts).toEqual([expect.objectContaining({ sessionIndex: 0 })]);
+  });
+
+  it("without the flag an overlapping move is written (soft-confirm flows unchanged)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)]);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)], "omit");
+    expect(res.status).toBe(200);
+  });
+
+  it("ignores other workspaces' bookings (tenant isolation)", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const oc = await seedClient(otherWorkspaceId);
+    await seedBooking(otherWorkspaceId, oc._id, { sessions: [sess(10, 12)], firstSessionStart: at(10), lastSessionEnd: at(12) });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("staff conflict check is limited to their team scope", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    auth.role = "staff";
+    auth.memberships = [{ teamId: teamId.toString(), role: "lead" }];
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)], { teamId: new Types.ObjectId() });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("400s on a non-boolean rejectOnConflict", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)], "yes");
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/bookings/[id]?include=activity", () => {
+  it("returns booking plus first activity page with actorNames in a bounded query count", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    await User.create({
+      workosUserId: "u_in",
+      email: "in@x.test",
+      name: " Ana ",
+      memberships: [{ workspaceId, role: "owner" }],
+    });
+    await User.create({
+      workosUserId: "u_out",
+      email: "out@x.test",
+      name: "Outsider",
+      memberships: [{ workspaceId: otherWorkspaceId, role: "owner" }],
+    });
+    for (const actorUserId of ["u_in", "u_out"]) {
+      await ActivityLog.create({
+        workspaceId,
+        actorUserId,
+        entity: "booking",
+        entityId: b._id,
+        action: "updated",
+        diff: null,
+      });
+    }
+    const { GET } = await load();
+    const { countQueries } = await import("@/test-utils/query-counter");
+    const { result: res, queries } = await countQueries(() =>
+      GET(makeGet(`${b._id}`.concat("?include=activity")), ctx(b._id.toString()))
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.title).toBe("Carter Wedding");
+    expect(json.client).toMatchObject({ name: "Emma Carter" });
+    expect(json.activity).toMatchObject({
+      total: 2,
+      page: 1,
+      pageSize: 5,
+      actorNames: { u_in: "Ana" },
+    });
+    expect(json.activity.entries).toHaveLength(2);
+    // booking, client, activity find, activity count, users
+    expect(queries.map((q) => q.collection).sort()).toEqual(
+      ["activitylogs", "activitylogs", "bookings", "clients", "users"]
+    );
+  });
+
+  it("omits activity without include", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { GET } = await load();
+    const json = await (await GET(makeGet(b._id.toString()), ctx(b._id.toString()))).json();
+    expect(json.activity).toBeUndefined();
   });
 });

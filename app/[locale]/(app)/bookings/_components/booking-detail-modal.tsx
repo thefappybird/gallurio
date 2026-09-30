@@ -6,13 +6,17 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { queryKeys } from "@/lib/query/keys";
+import { BookingNotFoundError, useBookingQuery, type BookingActivityBlock } from "./use-booking-query";
 import {
   ArrowUpRightIcon,
   CalendarDaysIcon,
@@ -124,6 +128,7 @@ type BookingDoc = {
   title: string;
   clientName: string;
   clientId: string;
+  createdFromInquiryId?: string | null;
   client: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventType: string;
   status: string;
@@ -262,23 +267,24 @@ export function BookingDetailModal({
   businessComplete = true,
   workspaceId = "",
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
   const tPayments = useTranslations("app.bookings.payments");
   const tDnd = useTranslations("app.bookings.dnd");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const errMsg = useActionError();
-  const [, startTransition] = useTransition();
 
   const eventTypeOptions = useMemo(
     () => EVENT_TYPES.map((e) => ({ value: e, label: safeT(tEvent, e, e) })),
     [tEvent]
   );
 
+  const workspaceIdForQueries = useAppWorkspaceId();
+  const queryClient = useQueryClient();
+  const invalidateFor = useInvalidateFor();
+  const bookingKey = queryKeys(workspaceIdForQueries).booking(bookingId);
+
   const [open, setOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDoc | null>(null);
   const [viewClient, setViewClient] = useState<ClientRow | null>(null);
   const [viewClientOpen, setViewClientOpen] = useState(false);
@@ -360,26 +366,6 @@ export function BookingDetailModal({
   const [editorResetNonce, setEditorResetNonce] = useState(0);
 
   /**
-   * Shifts keyed by YYYY-MM-DD date. Treated as a cache — entries are added on
-   * demand and never evicted (harmless; small footprint). Each card derives its
-   * own conflict list by looking up its current effective date in this map.
-   */
-  const [shiftsByDate, setShiftsByDate] = useState<Map<string, ShiftHit[]>>(
-    new Map()
-  );
-  /** Dates currently being fetched for conflict check — used to show inline loading.
-   *  Only contains dates that are genuinely in-flight, never cached dates. */
-  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
-  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
-  const reqIdRef = useRef(0);
-  /**
-   * Mirror of shiftsByDate kept in a ref so the fetch effect can check cached
-   * keys without adding shiftsByDate to its dependency array (which would
-   * re-trigger the effect on every cache write, defeating the cache).
-   */
-  const shiftsByDateRef = useRef<Map<string, ShiftHit[]>>(new Map());
-
-  /**
    * In-flight draft dates: tracks the date currently typed in an open session
    * editor before the user clicks ✓ (commit).
    *
@@ -406,29 +392,41 @@ export function BookingDetailModal({
   );
 
   const close = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("detail");
-    params.delete("edit");
-    const qs = params.toString();
     setDraftSessions([]);
     setOpen(false);
-    startTransition(() => {
-      router.push(qs ? `${pathname}?${qs}` : pathname);
-    });
-  }, [router, pathname, searchParams]);
+  }, []);
 
-  const refetchInlineActivity = useCallback(async () => {
-    const res = await fetch(
-      `/api/bookings/${bookingId}/activity?page=1&pageSize=5`
-    ).catch(() => null);
-    if (!res || !res.ok) return;
-    const data = (await res.json().catch(() => null)) as
-      | { entries: ActivityEntry[]; total: number }
-      | null;
-    if (!data) return;
-    setActivity(data.entries ?? []);
-    setActivityTotal(data.total ?? 0);
+  // History API: the host (BookingUrlModals) unmounts on the param change, so
+  // this runs only once the exit animation is done (or immediately on 404).
+  // Guarded: the user may already have opened another booking meanwhile.
+  const stripUrl = useCallback(() => {
+    const cur = new URLSearchParams(window.location.search);
+    if (cur.get("detail") !== bookingId && cur.get("edit") !== bookingId) return;
+    setUrlParams((p) => {
+      if (p.get("detail") === bookingId) p.delete("detail");
+      if (p.get("edit") === bookingId) p.delete("edit");
+    });
   }, [bookingId]);
+
+  /**
+   * After a successful PATCH: write the response into the shared booking cache
+   * (the edit wizard reads the same key) and broadcast so every dependent
+   * query / server page refreshes. The refetch it triggers also refreshes the
+   * inline activity list (see the activity sync above).
+   */
+  function afterSave(updated: BookingDoc, client: BookingDoc["client"]) {
+    queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
+      ...updated,
+      client,
+      activity: old?.activity,
+    }));
+    invalidateFor({
+      type: "booking.updated",
+      bookingId,
+      clientId: updated.clientId ?? null,
+      inquiryId: updated.createdFromInquiryId ?? null,
+    });
+  }
 
   async function handleViewClient() {
     if (!booking?.client) return;
@@ -443,65 +441,53 @@ export function BookingDetailModal({
     setViewClientOpen(true);
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.resolve()
-      .then(() => {
-        if (cancelled) return;
-        setLoading(true);
-        setSaveError(null);
-        setPending({});
-        return Promise.all([
-          fetch(`/api/bookings/${bookingId}`).then((r) => (r.ok ? r.json() : null)),
-          fetch(`/api/bookings/${bookingId}/activity?page=1&pageSize=5`).then(
-            (r) => (r.ok ? r.json() : { entries: [], total: 0 })
-          ),
-        ]);
-      })
-      .then(async (results) => {
-        if (!results || cancelled) return;
-        const [b, a] = results;
-        setBooking(normalizeBookingDoc(b));
-        const entries: ActivityEntry[] = a?.entries ?? [];
-        setActivity(entries);
-        setActivityTotal(a?.total ?? 0);
-        setLoading(false);
+  // ONE request: booking + first activity page + actor names. Local editable
+  // state is seeded ONCE per booking id from the first successful result; a
+  // background refetch (invalidations happen after saves) must never overwrite
+  // in-progress edits, so only the activity list follows later refetches.
+  const bookingQuery = useBookingQuery<BookingDoc>(bookingId);
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  const [syncedActivity, setSyncedActivity] = useState<BookingActivityBlock | null>(null);
+  const queryData = bookingQuery.data;
+  // Cached-but-stale data is not seeded until the mount refetch settles, so the
+  // modal never opens on a stale snapshot it would then never refresh.
+  if (queryData && seededFor !== bookingId && !bookingQuery.isFetching) {
+    setSeededFor(bookingId);
+    setSaveError(null);
+    setPending({});
+    setBooking(normalizeBookingDoc(queryData));
+    if (queryData.activity) {
+      setSyncedActivity(queryData.activity);
+      setActivity(queryData.activity.entries ?? []);
+      setActivityTotal(queryData.activity.total ?? 0);
+      setActorNames(queryData.activity.actorNames ?? {});
+    }
+  } else if (seededFor === bookingId && queryData?.activity && queryData.activity !== syncedActivity) {
+    setSyncedActivity(queryData.activity);
+    setActivity(queryData.activity.entries ?? []);
+    setActivityTotal(queryData.activity.total ?? 0);
+    setActorNames(queryData.activity.actorNames ?? {});
+  }
+  const loading = seededFor !== bookingId && (bookingQuery.isPending || bookingQuery.isFetching);
+  const notFound = bookingQuery.error instanceof BookingNotFoundError;
+  const loadFailed = bookingQuery.isError && !notFound && seededFor !== bookingId;
 
-        // Resolve actor display names for the initial page of activity entries.
-        const ids = [...new Set(
-          entries
-            .map((e) => e.actorUserId)
-            .filter((id): id is string => !!id)
-        )];
-        if (ids.length > 0) {
-          const params = new URLSearchParams();
-          ids.forEach((id) => params.append("ids", id));
-          const res = await fetch(`/api/users/names?${params.toString()}`);
-          if (!cancelled && res.ok) {
-            const names: Record<string, string> = await res.json();
-            setActorNames(names);
-          }
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId]);
+  // Booking gone (deleted / other workspace): close and strip ?detail.
+  useEffect(() => {
+    if (!notFound) return;
+    const id = setTimeout(() => {
+      close();
+      stripUrl();
+    }, 0);
+    return () => clearTimeout(id);
+  }, [notFound, close, stripUrl]);
 
   // Normalize conflicting URL params on mount.
   useEffect(() => {
     const detailId = searchParams.get("detail");
     const editId = searchParams.get("edit");
     if (detailId && editId && detailId !== editId) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("detail");
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`);
-      });
+      setUrlParams((p) => p.delete("detail"), "replace");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -549,57 +535,36 @@ export function BookingDetailModal({
     });
   }, [booking, pendingSessionEdits, draftSessions, editingDraftDates]);
 
-  useEffect(() => {
-    if (!booking) return;
-
-    const uniqueDates = [...new Set(allVisibleSessionDates.filter(Boolean))];
-    if (uniqueDates.length === 0) return;
-
-    // Only fetch dates that are not already cached — treat shiftsByDateRef as
-    // the cache. Cached entries are never evicted (harmless small footprint).
-    const datesToFetch = uniqueDates.filter((d) => !shiftsByDateRef.current.has(d));
-    if (datesToFetch.length === 0) return;
-
-    const myId = ++reqIdRef.current;
-    let cancelled = false;
-
-    // Mark only the new in-flight dates as loading.
-    setLoadingDates(new Set(datesToFetch));
-
-    Promise.all(
-      datesToFetch.map((date) =>
-        fetch(
-          `/api/bookings/shifts-on-date?${new URLSearchParams({ date, excludeId: bookingId }).toString()}`
-        )
-          .then((r) => (r.ok ? r.json() : { shifts: [] }))
-          .then((data: { shifts: ShiftHit[] }) => [date, data.shifts ?? []] as const)
-          .catch(() => [date, [] as ShiftHit[]] as const)
-      )
-    ).then((entries) => {
-      if (cancelled || myId !== reqIdRef.current) return;
-      setLoadingDates(new Set());
-      // Merge new results into the existing cache rather than overwriting.
-      setShiftsByDate((prev) => {
-        const next = new Map(prev);
-        for (const [date, shifts] of entries) {
-          next.set(date, shifts);
-        }
-        // Keep the ref in sync with the new map.
-        shiftsByDateRef.current = next;
-        return next;
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // allVisibleSessionDates is a new array reference each render but its contents
-    // are what matter — JSON.stringify gives a stable dependency.
-    // shiftsByDate intentionally omitted: including it would cause a re-run on
-    // every cache write, defeating the purpose. The filter inside the effect
-    // reads the current snapshot via the functional setState pattern (merge).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(allVisibleSessionDates), bookingId]);
+  // ONE batched request for every visible date (was one request per date).
+  // Keyed by the sorted unique dates + excluded booking; the previous result
+  // stays visible while the next set loads so cards don't flash.
+  const conflictDates = useMemo(
+    () => [...new Set(allVisibleSessionDates.filter(Boolean))].sort(),
+    [allVisibleSessionDates]
+  );
+  const shiftsQuery = useQuery({
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId],
+    queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
+      const qs = new URLSearchParams({ dates: conflictDates.join(","), excludeId: bookingId });
+      const res = await fetch(`/api/bookings/shifts-on-date?${qs.toString()}`);
+      if (!res.ok) throw new Error("shifts_load_failed");
+      return res.json();
+    },
+    enabled: !!booking && conflictDates.length > 0,
+    placeholderData: keepPreviousData,
+  });
+  const shiftsByDate = useMemo(
+    () => new Map<string, ShiftHit[]>(Object.entries(shiftsQuery.data?.byDate ?? {})),
+    [shiftsQuery.data]
+  );
+  /** Dates still awaiting their first result — drives the inline "checking" state. */
+  const loadingDates = useMemo(
+    () =>
+      shiftsQuery.isFetching
+        ? new Set(conflictDates.filter((d) => !shiftsByDate.has(d)))
+        : new Set<string>(),
+    [shiftsQuery.isFetching, conflictDates, shiftsByDate]
+  );
 
   // Whether any session has an unresolved conflict — gates the global Save button.
   // We only count conflicts for dates that are "committed" (pending or saved),
@@ -941,7 +906,7 @@ export function BookingDetailModal({
           ...draftPayments.map((d) => ({ price: d.price as number, status: d.status, title: d.title, method: d.method })),
         ];
       }
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
@@ -961,6 +926,7 @@ export function BookingDetailModal({
             : null)
         : previous.client;
       setBooking(normalizeBookingDoc({ ...updated, client: clientAfterSave }));
+      afterSave(updated, clientAfterSave);
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
@@ -969,8 +935,6 @@ export function BookingDetailModal({
       setRemovedPaymentIndexes(new Set());
       setReassignedClient(null);
       toast.success(t("savedToast"));
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
     } catch (err) {
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
@@ -1018,7 +982,7 @@ export function BookingDetailModal({
     });
 
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ sessions: newSessions }),
@@ -1029,9 +993,8 @@ export function BookingDetailModal({
       }
       const updated: BookingDoc = await res.json();
       setBooking(normalizeBookingDoc(updated));
+      afterSave(updated, previous.client);
       toast.success(t("savedToast"));
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
     } catch (err) {
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
@@ -1303,7 +1266,7 @@ export function BookingDetailModal({
       status: { before: previous.status, after: newStatus },
     });
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -1311,11 +1274,10 @@ export function BookingDetailModal({
       if (!res.ok) throw new Error("Action failed");
       const updated: BookingDoc = await res.json();
       setBooking(normalizeBookingDoc(updated));
+      afterSave(updated, previous.client);
       toast.success(
         newStatus === "cancelled" ? t("cancelledToast") : t("restoredToast")
       );
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
     } catch {
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
@@ -1352,7 +1314,13 @@ export function BookingDetailModal({
   }, [pendingSessionEditDialog]);
 
   return (
-    <Dialog open={open} onOpenChange={attemptClose}>
+    <Dialog
+      open={open}
+      onOpenChange={attemptClose}
+      onOpenChangeComplete={(isOpen) => {
+        if (!isOpen) stripUrl();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex min-h-[60vh] max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
@@ -1369,20 +1337,34 @@ export function BookingDetailModal({
           readOnly={readOnly}
           onCommit={commitField}
           onDiscard={discardField}
-          onEditAll={() => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete("detail");
-            params.set("edit", bookingId);
-            startTransition(() => {
-              router.push(`${pathname}?${params.toString()}`);
-            });
-          }}
+          onEditAll={() =>
+            setUrlParams((p) => {
+              p.delete("detail");
+              p.set("edit", bookingId);
+            })
+          }
           onClose={() => attemptClose(false)}
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <ModalSkeleton />
+          ) : loadFailed ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground"
+            >
+              <p>{t("loadFailed")}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void bookingQuery.refetch()}
+                disabled={bookingQuery.isFetching}
+              >
+                {t("retry")}
+              </Button>
+            </div>
           ) : !booking ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               {t("notFound")}
@@ -2541,7 +2523,7 @@ function BookingTabs({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
+                    aria-label={tFields("editField", { label: tPayments("label", { n: idx + 1 }) })}
                     onClick={() => {
                       setEditPaymentPrice(effectivePrice);
                       setEditPaymentStatus(effectiveStatus);
@@ -2928,7 +2910,7 @@ function SessionConflictAlert({
         aria-live="polite"
       >
         <Loader2Icon className="size-3.5 animate-spin" />
-        <span>Checking for conflicts…</span>
+        <span>{tFields("checkingConflicts")}</span>
       </div>
     );
   }
@@ -2941,7 +2923,10 @@ function SessionConflictAlert({
       })
     : date;
   return (
-    <div className="mt-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
+    <div
+      role="alert"
+      className="mt-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs"
+    >
       <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="font-semibold text-destructive">
@@ -3162,7 +3147,7 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={commit}
-                  aria-label="Confirm"
+                  aria-label={tFields("confirmEdit")}
                   disabled={disabled || !canCommit || isCheckingConflicts}
                 >
                   {isCheckingConflicts ? (
@@ -3176,7 +3161,7 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={cancelEdit}
-                  aria-label="Cancel"
+                  aria-label={tFields("cancelEdit")}
                 >
                   <XIcon className="size-4" />
                 </Button>
@@ -3189,7 +3174,7 @@ function SessionCard({
                   variant="ghost"
                   onClick={startEdit}
                   disabled={disabled}
-                  aria-label={`Edit ${label}`}
+                  aria-label={tFields("editField", { label })}
                 >
                   <PencilIcon className="size-4" />
                 </Button>
@@ -3200,7 +3185,7 @@ function SessionCard({
                     variant="ghost"
                     onClick={onDiscardEdit}
                     disabled={disabled}
-                    aria-label="Discard edit"
+                    aria-label={tFields("discardEdit")}
                     className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
                   >
                     <XIcon className="size-4" />
@@ -3415,7 +3400,7 @@ function LockedDraftCard({
               variant="ghost"
               onClick={onEdit}
               disabled={disabled}
-              aria-label={`Edit ${label}`}
+              aria-label={tFields("editField", { label })}
             >
               <PencilIcon className="size-4" />
             </Button>
@@ -3590,7 +3575,7 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={commit}
-              aria-label="Confirm draft session"
+              aria-label={tFields("confirmDraftSession")}
               disabled={disabled || !isDraftValid || isCheckingConflicts}
             >
               {isCheckingConflicts ? (
@@ -3604,7 +3589,7 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={onDiscard}
-              aria-label="Remove draft session"
+              aria-label={tFields("removeDraftSession")}
               className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
             >
               <XIcon className="size-4" />
@@ -3882,7 +3867,7 @@ function DialogFooterBar({
   const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
   const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
+  const downloadUrl = `/api/bookings/${encodeURIComponent(bookingId)}/${completed ? "receipt" : "invoice"}`;
   const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
 
   function openDownload() {
@@ -4013,10 +3998,18 @@ function DialogFooterBar({
 
 function ModalSkeleton() {
   return (
-    <div className="flex flex-col gap-3 py-2">
+    <div className="flex flex-col gap-3 py-2" aria-busy="true">
+      {/* tab list */}
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+      </div>
       <Skeleton className="h-4 w-2/3" />
       <Skeleton className="h-4 w-1/2" />
       <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-16 w-full" />
     </div>
   );
 }

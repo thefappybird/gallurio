@@ -28,6 +28,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 
 // ---------------------------------------------------------------------------
 // Workspace business settings
@@ -166,6 +167,7 @@ export async function updateWorkspaceBusinessAction(
     }
   }
 
+  emitDataChanged(workspaceId, { type: "workspace.updated" });
   revalidatePath("/settings/workspace", "page");
   return { ok: true };
 }

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import type { Control, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -159,5 +159,55 @@ describe("ClientStep existing-client search validation", () => {
     const input = screen.getByPlaceholderText(/search by name or email/i);
     expect(input).not.toHaveAttribute("aria-invalid");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+function ListHarness(props: {
+  clients?: ClientHit[];
+  clientsLoading?: boolean;
+  clientsError?: boolean;
+  onRetryClients?: () => void;
+}) {
+  const { control } = useForm<{ client: WizardValues["client"] }>({
+    defaultValues: { client: { mode: "existing", clientId: "", clientName: "" } },
+  });
+  return (
+    <ClientStep
+      control={control as unknown as Control<WizardValues>}
+      errors={{} as FieldErrors<WizardValues>}
+      {...props}
+    />
+  );
+}
+
+function renderList(props: Parameters<typeof ListHarness>[0]) {
+  return render(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <ListHarness {...props} />
+    </NextIntlClientProvider>
+  );
+}
+
+describe("ClientStep existing-client list states", () => {
+  it("shows an error with Retry when the client list failed to load", () => {
+    const onRetryClients = vi.fn();
+    renderList({ clientsError: true, onRetryClients });
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load clients.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetryClients).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows skeleton rows (no empty state) while the list is loading", () => {
+    renderList({ clientsLoading: true });
+    expect(screen.getByRole("status", { name: "Loading clients" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.queryByPlaceholderText(/search/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the empty state when loaded with no clients, and the search list when populated", () => {
+    const { unmount } = renderList({ clients: [] });
+    expect(screen.getByRole("button", { name: /add/i })).toBeInTheDocument();
+    unmount();
+    renderList({ clients: [{ id: "c1", name: "Alice", email: null, phone: null }] });
+    expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 });

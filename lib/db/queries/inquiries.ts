@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, type InquiryDoc, type BookingDoc } from "@/lib/db/models";
 import { INQUIRY_STATUSES } from "@/lib/db/models/Inquiry";
 import { getInquiryStatusFilter } from "@/lib/inquiries/status";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -48,7 +49,7 @@ export async function listInquiries(
   const base = Inquiry.find(query).sort({ createdAt: -1 });
 
   if (pagination) {
-    const { page = 1, limit = 25 } = pagination;
+    const { page = 1, limit = DEFAULT_PAGE_SIZE } = pagination;
     const skip = (page - 1) * limit;
     const [rows, total] = await Promise.all([
       base.skip(skip).limit(limit).lean(),

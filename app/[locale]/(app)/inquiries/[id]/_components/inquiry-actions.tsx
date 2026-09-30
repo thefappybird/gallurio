@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { Button } from "@/components/ui/button";
 import { archiveInquiryAction, declineInquiryAction } from "../../_actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
@@ -17,7 +17,7 @@ type WorkingAction = "decline" | "archive" | null;
 
 export function InquiryActions({ inquiryId, status }: Props) {
   const t = useTranslations("app.inquiries.detail.actions");
-  const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const [workingAction, setWorkingAction] = useState<WorkingAction>(null);
 
   const canArchive = !isBookedInquiryStatus(status) && status !== "archived";
@@ -37,7 +37,8 @@ export function InquiryActions({ inquiryId, status }: Props) {
         return;
       }
       toast.success(successMsg);
-      router.refresh();
+      // decline/archive actions revalidate the inquiry routes.
+      invalidateFor({ type: "inquiry.updated", inquiryId });
     } catch {
       toast.error(t("errorToast"));
     } finally {

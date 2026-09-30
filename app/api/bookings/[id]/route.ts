@@ -6,10 +6,14 @@ import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBookin
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { sendNotification } from "@/lib/notifications/send";
 import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
+import { z } from "zod";
+import { loadBookingActivityPage } from "@/lib/bookings/activity-page";
+import { getShiftsOnDates, formatHHMM } from "@/lib/bookings/shift-conflicts";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
 import { resolveFxFreeze } from "@/lib/pricing/fxRates";
@@ -17,6 +21,8 @@ import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
 export const runtime = "nodejs";
+
+const ACTIVITY_INCLUDE_PAGE_SIZE = 5;
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -41,7 +47,21 @@ async function buildClientBlock(
   };
 }
 
-export async function GET(_req: Request, { params }: Params) {
+function dateFmtInTz(d: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":");
+  return Number(h) * 60 + Number(m);
+}
+
+export async function GET(req: Request, { params }: Params) {
   const ctx = await requireOrg();
   const { id } = await params;
 
@@ -70,9 +90,19 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const client = await buildClientBlock(booking.clientId, ctx.workspace._id);
+  // `?include=activity` folds the first activity page (+ actor names) into the
+  // response so the detail modal needs one round-trip. The booking above is
+  // already workspace/team-scope checked, so no second existence query.
+  const includeActivity = new URL(req.url).searchParams.get("include") === "activity";
 
-  return NextResponse.json({ ...booking, client });
+  const [client, activity] = await Promise.all([
+    buildClientBlock(booking.clientId, ctx.workspace._id),
+    includeActivity
+      ? loadBookingActivityPage(ctx.workspace._id, id, 1, ACTIVITY_INCLUDE_PAGE_SIZE)
+      : undefined,
+  ]);
+
+  return NextResponse.json(activity ? { ...booking, client, activity } : { ...booking, client });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
@@ -83,7 +113,20 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
-  const json = await req.json().catch(() => ({}));
+  const rawJson = await req.json().catch(() => ({}));
+  // `rejectOnConflict` is a request-mode flag, not an editable booking field —
+  // peel it off before the strict field schema sees the body.
+  let json: unknown = rawJson;
+  let rejectOnConflict = false;
+  if (rawJson && typeof rawJson === "object" && !Array.isArray(rawJson) && "rejectOnConflict" in rawJson) {
+    const { rejectOnConflict: flag, ...rest } = rawJson as Record<string, unknown>;
+    const flagParsed = z.boolean().safeParse(flag);
+    if (!flagParsed.success) {
+      return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    }
+    rejectOnConflict = flagParsed.data;
+    json = rest;
+  }
   const parsed = bookingPatchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
@@ -196,6 +239,50 @@ export async function PATCH(req: Request, { params }: Params) {
         { error: "session_crosses_midnight", params: { index: tzCheck.sessionIndex } },
         { status: 400 }
       );
+    }
+  }
+
+  // Opt-in server-side conflict gate (calendar drag-and-drop). Only sessions
+  // whose start/end differ from the stored ones are checked; overlap is
+  // half-open on workspace-local minutes, and only the SAME booking + SAME
+  // session index is excluded (sibling sessions still conflict).
+  if (rejectOnConflict && parsed.data.sessions) {
+    const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+    const stored = existing.sessions ?? [];
+    const changed = parsed.data.sessions
+      .map((s, index) => ({ s, index }))
+      .filter(({ s, index }) => {
+        const old = stored[index];
+        return (
+          !old ||
+          new Date(old.startAt).getTime() !== s.startAt.getTime() ||
+          new Date(old.endAt).getTime() !== s.endAt.getTime()
+        );
+      })
+      .map(({ s, index }) => ({
+        index,
+        date: dateFmtInTz(s.startAt, tz),
+        start: hhmmToMinutes(formatHHMM(s.startAt, tz)),
+        end: hhmmToMinutes(formatHHMM(s.endAt, tz)),
+      }));
+    if (changed.length > 0) {
+      const byDate = await getShiftsOnDates(
+        ctx.workspace._id,
+        changed.map((c) => c.date),
+        tz,
+        { teamScope: scope }
+      );
+      const conflicts = changed.flatMap((c) =>
+        (byDate[c.date] ?? []).filter(
+          (h) =>
+            !(h.bookingId === id && h.sessionIndex === c.index) &&
+            c.start < hhmmToMinutes(h.shiftEnd) &&
+            hhmmToMinutes(h.shiftStart) < c.end
+        )
+      );
+      if (conflicts.length > 0) {
+        return NextResponse.json({ error: "conflict", conflicts }, { status: 409 });
+      }
     }
   }
 
@@ -554,6 +641,13 @@ export async function PATCH(req: Request, { params }: Params) {
     updated?.clientId as mongoose.Types.ObjectId | null | undefined,
     ctx.workspace._id
   );
+
+  emitDataChanged(ctx.workspace._id.toString(), {
+    type: "booking.updated",
+    bookingId: existing._id.toString(),
+    clientId: updated?.clientId ? String(updated.clientId) : null,
+    inquiryId: existing.createdFromInquiryId ? String(existing.createdFromInquiryId) : null,
+  });
 
   // --- Notifications ---
   const shouldNotifyTeamAssigned = teamReassignment !== null;

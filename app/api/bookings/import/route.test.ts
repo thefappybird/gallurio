@@ -39,6 +39,8 @@ const fx = vi.hoisted(() => ({
     base === target ? { rate: 1, target } : null
   ),
 }));
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
 vi.mock("@/lib/pricing/fxRates", () => ({
   resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
 }));
@@ -55,6 +57,7 @@ beforeEach(async () => {
   // without this the suite exhausts its own window part-way through.
   const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
   __resetRateLimitForTests();
+  emit.mockClear();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   fx.resolveFxFreeze.mockReset();
@@ -404,6 +407,18 @@ describe("POST /api/bookings/import", () => {
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBe("jane@example.com");
     expect(client?.source).toBe("import");
+  });
+
+  it("emits bookings.imported once after a successful import", async () => {
+    await callImport([VALID_ROW]);
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenCalledWith(String(WS_ID), { type: "bookings.imported" });
+  });
+
+  it("does not emit when every row fails", async () => {
+    const missing = new Types.ObjectId().toHexString();
+    await callImport([{ ...VALID_ROW, bookingId: missing, sessionIndex: "0" }]);
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("strips the exporter's formula guard so a round-trip is lossless", async () => {

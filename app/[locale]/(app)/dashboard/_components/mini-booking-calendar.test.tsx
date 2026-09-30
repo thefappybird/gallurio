@@ -144,6 +144,24 @@ describe("MiniBookingCalendar", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("shows an error with a retry button that refetches the month", async () => {
+    const rows = [{ date: "2026-06-05", count: 2 }];
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve([]) })
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+    renderWithProviders(
+      <MiniBookingCalendar month={new Date(2026, 4, 15)} days={[]} locale="en" title="Calendar" teams={[]} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    const retry = await screen.findByRole("button", { name: "Retry" }, { timeout: 4000 });
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rows) }) as never
+    );
+    fireEvent.click(retry);
+    await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
+  });
+
   it("does not cache a failed month fetch as empty, so revisiting it re-fetches", async () => {
     const rows = [{ date: "2026-06-05", count: 2 }];
     type MonthFetchResponse = {
@@ -161,9 +179,12 @@ describe("MiniBookingCalendar", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // Wait for the settled error (after the provider's single retry): nav is
+    // disabled while a fetch is in flight.
+    await screen.findByRole("button", { name: /retry/i }, { timeout: 5_000 });
+    const failedCalls = fetchMock.mock.calls.length;
 
-    // The first fetch for June failed; a second visit to June must re-fetch
+    // The fetch for June failed; a second visit to June must re-fetch
     // rather than serve a poisoned "[]" cache entry.
     fetchMock.mockImplementation(() =>
       Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rows) })
@@ -171,7 +192,7 @@ describe("MiniBookingCalendar", () => {
     fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(failedCalls + 1));
     await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0));
   });
 });

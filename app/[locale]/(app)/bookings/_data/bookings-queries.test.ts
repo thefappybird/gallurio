@@ -5,10 +5,10 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
+import { countQueries } from "@/test-utils/query-counter";
 import { Booking, ActivityLog } from "@/lib/db/models";
 import {
   listBookings,
-  getBookingById,
   getBookingActivity,
 } from "./bookings-queries";
 
@@ -64,6 +64,17 @@ async function seedBooking(
 }
 
 describe("listBookings", () => {
+it("table page load is exactly one find + one count, both on bookings", async () => {
+await seedBooking(workspaceId);
+const { queries } = await countQueries(() =>
+listBookings(workspaceId, {}, { page: 1, limit: 10 })
+);
+expect(queries.map((q) => `${q.collection}.${q.method}`).sort()).toEqual([
+"bookings.countDocuments",
+"bookings.find",
+]);
+});
+
   it("returns bookings sorted ascending by firstSessionStart", async () => {
     await seedBooking(workspaceId, { startAt: days(5) });
     await seedBooking(workspaceId, { startAt: days(1) });
@@ -331,49 +342,6 @@ describe("listBookings", () => {
   });
 });
 
-describe("getBookingById", () => {
-  it("returns the doc when the workspace matches", async () => {
-    const b = await seedBooking(workspaceId, { title: "T" });
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found?.title).toBe("T");
-  });
-
-  it("returns null for a doc belonging to another workspace (tenant isolation)", async () => {
-    const b = await seedBooking(otherWorkspaceId);
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found).toBeNull();
-  });
-
-  it("returns null for a non-existent id", async () => {
-    const found = await getBookingById(workspaceId, new Types.ObjectId());
-    expect(found).toBeNull();
-  });
-
-  it("returns the doc when its team is in allowedTeamIds", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamA, title: "Mine" });
-    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
-    expect(found?.title).toBe("Mine");
-  });
-
-  it("returns null when the booking's team is NOT in allowedTeamIds (member cannot fetch another team's booking)", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamB });
-    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
-    expect(found).toBeNull();
-  });
-
-  it("returns null for an empty allowedTeamIds array (member with no teams)", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamA });
-    const found = await getBookingById(workspaceId, b._id, []);
-    expect(found).toBeNull();
-  });
-
-  it("owner (allowedTeamIds undefined) fetches regardless of team", async () => {
-    const b = await seedBooking(workspaceId, { teamId: teamB });
-    const found = await getBookingById(workspaceId, b._id);
-    expect(found).not.toBeNull();
-  });
-});
-
 describe("getBookingActivity", () => {
   it("returns booking-scoped activity sorted newest first", async () => {
     const b = await seedBooking(workspaceId);
@@ -411,5 +379,43 @@ describe("getBookingActivity", () => {
     expect(log).toHaveLength(2);
     expect(log[0].action).toBe("updated");
     expect(log[1].action).toBe("created");
+  });
+});
+
+describe("listBookings range filter", () => {
+  const H = 3_600_000;
+  const rangeStart = new Date("2026-10-01T00:00:00Z");
+  const rangeEnd = new Date("2026-11-01T00:00:00Z");
+
+  async function seedSpan(title: string, startAt: Date, endAt: Date, wid = workspaceId) {
+    return Booking.create({
+      workspaceId: wid,
+      teamId: teamA,
+      clientId,
+      clientName: "C",
+      title,
+      status: "booked",
+      sessions: [{ startAt, endAt }],
+      firstSessionStart: startAt,
+      lastSessionEnd: endAt,
+      location: { address: "" },
+      amount: { total: 1, deposit: 0, currency: "PHP" },
+    });
+  }
+
+  it("returns only bookings overlapping the range (incl. straddling/overnight), tenant-scoped", async () => {
+    const at = (iso: string) => new Date(iso);
+    await seedSpan("inside", at("2026-10-10T09:00:00Z"), at("2026-10-10T17:00:00Z"));
+    await seedSpan("straddle-start", at("2026-09-30T20:00:00Z"), at("2026-10-01T04:00:00Z"));
+    await seedSpan("straddle-end", at("2026-10-31T20:00:00Z"), new Date(rangeEnd.getTime() + 4 * H));
+    await seedSpan("before", at("2026-09-01T09:00:00Z"), at("2026-09-01T17:00:00Z"));
+    await seedSpan("after", at("2026-11-05T09:00:00Z"), at("2026-11-05T17:00:00Z"));
+    await seedSpan("other-ws", at("2026-10-10T09:00:00Z"), at("2026-10-10T17:00:00Z"), otherWorkspaceId);
+
+    const { rows } = await listBookings(workspaceId, {
+      includePast: true,
+      range: { start: rangeStart, end: rangeEnd },
+    });
+    expect(rows.map((r) => r.title).sort()).toEqual(["inside", "straddle-end", "straddle-start"]);
   });
 });

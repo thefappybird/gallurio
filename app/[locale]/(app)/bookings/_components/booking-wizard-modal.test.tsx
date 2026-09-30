@@ -5,11 +5,27 @@
  * same date, set 10:00–17:00. Expect: conflict warning visible, Next disabled.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent, waitFor, act, type RenderOptions } from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
+import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { differenceInCalendarDays, addDays, format } from "date-fns";
 import enMessages from "@/messages/en.json";
 import { BookingWizardModal } from "./booking-wizard-modal";
+
+// Every wizard now reads react-query (clients picker, shifts, edit load).
+function QueryWrapper({ children }: { children: ReactNode }) {
+  return <AppQueryProvider workspaceId="ws-test">{children}</AppQueryProvider>;
+}
+function render(ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) {
+  return rtlRender(ui, { wrapper: QueryWrapper, ...options });
+}
+
+/** Batched shifts-on-date contract: same hits for every requested date. */
+function shiftsBody(url: string, shifts: unknown[]) {
+  const dates = (new URL(url, "http://localhost").searchParams.get("dates") ?? "").split(",").filter(Boolean);
+  return { shifts, byDate: Object.fromEntries(dates.map((d) => [d, shifts])) };
+}
 
 const findClientMatchesAction = vi.fn().mockResolvedValue({ matches: [] });
 const updateClientAction = vi.fn().mockResolvedValue({ ok: true });
@@ -51,12 +67,12 @@ function mockFetchWithConflict() {
       if (url.includes("/api/bookings/shifts-on-date")) {
         return {
           ok: true,
-          json: async () => ({ shifts: [CONFLICT_SHIFT] }),
+          json: async () => (shiftsBody(url, [CONFLICT_SHIFT])),
         };
       }
       // Client search endpoint used by ClientStep
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       return { ok: false, json: async () => ({}) };
     })
@@ -159,7 +175,7 @@ describe("BookingWizardModal — client step: name-length validation is not a si
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -288,10 +304,10 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
   it("re-fetches shifts-on-date for the new date when startDate changes", async () => {
     const mockFetch = vi.fn(async (url: string) => {
       if (url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       return { ok: false, json: async () => ({}) };
     });
@@ -315,7 +331,7 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
     // Wait for the initial fetch for TARGET_DATE to complete.
     await waitFor(() => {
       const initialCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
-        url.includes("/api/bookings/shifts-on-date") && url.includes(`date=${TARGET_DATE}`)
+        url.includes("/api/bookings/shifts-on-date") && url.includes(`dates=${TARGET_DATE}`)
       );
       expect(initialCalls.length).toBeGreaterThan(0);
     });
@@ -334,7 +350,7 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
     // A new conflict-check fetch must have fired for the new date.
     await waitFor(() => {
       const newDateCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
-        url.includes("/api/bookings/shifts-on-date") && url.includes(`date=${NEW_DATE}`)
+        url.includes("/api/bookings/shifts-on-date") && url.includes(`dates=${NEW_DATE}`)
       );
       expect(newDateCalls.length).toBeGreaterThan(0);
     });
@@ -475,11 +491,11 @@ describe("BookingWizardModal — Issue 1A: conflict fires immediately on date ch
         if (url.includes("/api/bookings/shifts-on-date")) {
           return {
             ok: true,
-            json: async () => ({ shifts: [CONFLICT_SHIFT] }),
+            json: async () => (shiftsBody(url, [CONFLICT_SHIFT])),
           };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -531,12 +547,12 @@ describe("BookingWizardModal — Issue 1B: warning clears when date has no confl
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
           // First call (TARGET_DATE) returns a conflict; second call (CLEAR_DATE) returns none
-          const date = new URL(url, "http://localhost").searchParams.get("date");
-          const shifts = date === TARGET_DATE ? [CONFLICT_SHIFT] : [];
-          return { ok: true, json: async () => ({ shifts }) };
+          const dates = (new URL(url, "http://localhost").searchParams.get("dates") ?? "").split(",");
+          const byDate = Object.fromEntries(dates.map((d) => [d, d === TARGET_DATE ? [CONFLICT_SHIFT] : []]));
+          return { ok: true, json: async () => ({ byDate }) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -599,10 +615,10 @@ describe("BookingWizardModal — Issue 1C: loading state during fetch", () => {
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
           await fetchPromise;
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -660,10 +676,10 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
   it("sends PATCH with updated startAt when startTime changes from 10:00 to 11:00", async () => {
     const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       if (init?.method === "PATCH") {
         return { ok: true, json: async () => ({}) };
@@ -767,10 +783,10 @@ describe("BookingWizardModal — Item 5: add-session prefills next day", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -847,6 +863,15 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
 
   function mockFetchForEdit() {
     const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (typeof url === "string" && url.includes("/api/clients")) {
+        return {
+          ok: true,
+          json: async () => [
+            { id: OLD_CLIENT_ID, name: "Emma Carter", email: "emma@example.com", phone: null },
+            { id: NEW_CLIENT_ID, name: "Liam Carter", email: "liam@example.com", phone: null },
+          ],
+        };
+      }
       if (typeof url === "string" && url.includes(`/api/bookings/${BOOKING_ID}`)) {
         if (!init || init.method === "GET" || !init.method) {
           return {
@@ -870,7 +895,7 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
         }
       }
       if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       return { ok: true, json: async () => ({}) };
     });
@@ -888,10 +913,6 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
           bookingId={BOOKING_ID}
           defaultCurrency="PHP"
           locale="en"
-          clients={[
-            { id: OLD_CLIENT_ID, name: "Emma Carter", email: "emma@example.com", phone: null },
-            { id: NEW_CLIENT_ID, name: "Liam Carter", email: "liam@example.com", phone: null },
-          ]}
         />
       </NextIntlClientProvider>
     );
@@ -899,7 +920,7 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
     // Wait for loading to complete (booking fetch).
     await waitFor(
       () => {
-        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/loading booking/i)).not.toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -908,6 +929,40 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
     expect(screen.queryByText(/re-assigning a booking/i)).not.toBeInTheDocument();
     // Should show the client search tab buttons (picker is active).
     expect(screen.getByRole("button", { name: /existing client/i })).toBeInTheDocument();
+  });
+
+  it("edit-mode eye button swaps ?edit for ?detail via history.pushState", async () => {
+    mockFetchForEdit();
+    window.history.replaceState(null, "", `/bookings?view=table&edit=${BOOKING_ID}`);
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={BOOKING_ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "View booking" }));
+
+    expect(pushState).toHaveBeenCalledWith(
+      window.history.state,
+      "",
+      `/bookings?view=table&detail=${BOOKING_ID}`
+    );
+    pushState.mockRestore();
+  });
+
+  it("closing the edit wizard strips ?edit once the dialog finishes closing", async () => {
+    mockFetchForEdit();
+    window.history.replaceState(null, "", `/bookings?view=table&edit=${BOOKING_ID}`);
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={BOOKING_ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => expect(window.location.search).toBe("?view=table"));
   });
 
   it("single-session edit: PATCH body includes clientId when client is changed", async () => {
@@ -920,17 +975,13 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
           bookingId={BOOKING_ID}
           defaultCurrency="PHP"
           locale="en"
-          clients={[
-            { id: OLD_CLIENT_ID, name: "Emma Carter", email: "emma@example.com", phone: null },
-            { id: NEW_CLIENT_ID, name: "Liam Carter", email: "liam@example.com", phone: null },
-          ]}
         />
       </NextIntlClientProvider>
     );
 
     await waitFor(
       () => {
-        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/loading booking/i)).not.toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -978,10 +1029,10 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
   it("fires conflict fetch with excludeId when date changes in edit mode (initialValues path)", async () => {
     const mockFetch = vi.fn(async (url: string) => {
       if (url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [CONFLICT_SHIFT] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [CONFLICT_SHIFT])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       return { ok: false, json: async () => ({}) };
     });
@@ -1030,7 +1081,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
     await waitFor(() => {
       const initialCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
         url.includes("/api/bookings/shifts-on-date") &&
-        url.includes("date=2026-09-01") &&
+        url.includes("dates=2026-09-01") &&
         url.includes(`excludeId=${EDIT_BOOKING_ID}`)
       );
       expect(initialCalls.length).toBeGreaterThan(0);
@@ -1051,7 +1102,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
     await waitFor(() => {
       const newCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
         url.includes("/api/bookings/shifts-on-date") &&
-        url.includes(`date=${EDIT_DATE}`) &&
+        url.includes(`dates=${EDIT_DATE}`) &&
         url.includes(`excludeId=${EDIT_BOOKING_ID}`)
       );
       expect(newCalls.length).toBeGreaterThan(0);
@@ -1068,13 +1119,13 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          const date = new URL(url, "http://localhost").searchParams.get("date");
+          const dates = (new URL(url, "http://localhost").searchParams.get("dates") ?? "").split(",");
           // Only return conflict for the new date, not the initial date.
-          const shifts = date === EDIT_DATE ? [CONFLICT_SHIFT] : [];
-          return { ok: true, json: async () => ({ shifts }) };
+          const byDate = Object.fromEntries(dates.map((x) => [x, x === EDIT_DATE ? [CONFLICT_SHIFT] : []]));
+          return { ok: true, json: async () => ({ byDate }) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -1166,10 +1217,10 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -1371,10 +1422,10 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
       if (url.includes("/api/bookings/shifts-on-date")) {
         // Hang indefinitely — simulates an in-flight fetch that never resolves.
         await fetchNeverResolves;
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       if (init?.method === "PATCH") {
         return { ok: true, json: async () => ({}) };
@@ -1437,7 +1488,7 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
         return { ok: false, json: async () => ({}) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       if (init?.method === "PATCH") {
         return { ok: true, json: async () => ({}) };
@@ -1500,10 +1551,10 @@ describe("BookingWizardModal — Task 14: location required on Event & Pricing s
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -1718,10 +1769,10 @@ describe("BookingWizardModal — Payments step ordering", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -1762,10 +1813,10 @@ describe("BookingWizardModal — payments payload", () => {
   it("includes payments array in POST body when a payment is added", async () => {
     const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       if (init?.method === "POST") {
         return { ok: true, json: async () => ({}) };
@@ -1846,10 +1897,10 @@ describe("BookingWizardModal — payments edit diff", () => {
   it("sends an updated payments array in the PATCH body when a price changes", async () => {
     const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes("/api/bookings/shifts-on-date")) {
-        return { ok: true, json: async () => ({ shifts: [] }) };
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
       }
       if (url.includes("/api/clients")) {
-        return { ok: true, json: async () => ({ clients: [] }) };
+        return { ok: true, json: async () => ([]) };
       }
       if (init?.method === "PATCH") {
         return { ok: true, json: async () => ({}) };
@@ -1948,7 +1999,10 @@ describe("BookingWizardModal — payments loaded from fetch in edit mode", () =>
           }
         }
         if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
+        }
+        if (typeof url === "string" && url.includes("/api/clients")) {
+          return { ok: true, json: async () => [] };
         }
         return { ok: true, json: async () => ({}) };
       })
@@ -1962,7 +2016,7 @@ describe("BookingWizardModal — payments loaded from fetch in edit mode", () =>
 
     await waitFor(
       () => {
-        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/loading booking/i)).not.toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -2017,7 +2071,10 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
           }
         }
         if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
+        }
+        if (typeof url === "string" && url.includes("/api/clients")) {
+          return { ok: true, json: async () => [] };
         }
         return { ok: true, json: async () => ({}) };
       })
@@ -2040,7 +2097,7 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
 
     await waitFor(
       () => {
-        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/loading booking/i)).not.toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -2068,7 +2125,7 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
 
     await waitFor(
       () => {
-        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/loading booking/i)).not.toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -2102,10 +2159,10 @@ describe("BookingWizardModal — inline Save visibility across steps (edit mode)
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => (shiftsBody(url, [])) };
         }
         if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
+          return { ok: true, json: async () => ([]) };
         }
         return { ok: false, json: async () => ({}) };
       })
@@ -2305,5 +2362,16 @@ describe("BookingWizardModal — client step contact validation", () => {
       expect(screen.queryByText(/invalid email/i)).not.toBeInTheDocument();
     });
     expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+  });
+});
+
+describe("BookingWizardModal — step list a11y", () => {
+  it("marks only the current step with aria-current=step", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    const items = await screen.findAllByRole("listitem");
+    const current = items.filter((li) => li.getAttribute("aria-current") === "step");
+    expect(current).toHaveLength(1);
+    expect(items[0]).toHaveAttribute("aria-current", "step");
   });
 });

@@ -3,9 +3,12 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
-import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 
 export const runtime = "nodejs";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_DATES = 31;
 
 /**
  * Returns shifts in the workspace that touch the given date. A shift "touches"
@@ -16,8 +19,17 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const ctx = await requireOrg();
   const url = new URL(req.url);
-  const dateParam = url.searchParams.get("date");
-  if (!dateParam || !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+  const datesParam = url.searchParams.get("dates");
+
+  // `dates` is required: comma-separated YYYY-MM-DD, batched into one query.
+  if (datesParam === null) {
+    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+  }
+  const dates = [...new Set(datesParam.split(","))];
+  if (dates.length > MAX_DATES) {
+    return NextResponse.json({ error: "Too many dates" }, { status: 400 });
+  }
+  if (!dates.every((d) => DATE_RE.test(d))) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
@@ -37,11 +49,10 @@ export async function GET(req: Request) {
       return FALLBACK_TZ;
     })();
 
-  const shifts = await getShiftsOnDate(ctx.workspace._id, dateParam, tz, {
+  const byDate = await getShiftsOnDates(ctx.workspace._id, dates, tz, {
     excludeId,
     excludeShiftKey,
     teamScope: scope,
   });
-
-  return NextResponse.json({ shifts });
+  return NextResponse.json({ byDate });
 }

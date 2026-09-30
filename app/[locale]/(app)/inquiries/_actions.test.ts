@@ -17,6 +17,11 @@ vi.mock("@/lib/notifications/send", () => ({
   sendNotification: (...args: unknown[]) => sendNotificationMock(...args),
 }));
 
+const emitMock = vi.fn();
+vi.mock("@/lib/sockets/emitDataChanged", () => ({
+  emitDataChanged: (...args: unknown[]) => emitMock(...args),
+}));
+
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
 let mockCtx: {
@@ -49,7 +54,7 @@ vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/bookings/shift-conflicts")>();
   return {
     ...actual,
-    getShiftsOnDate: vi.fn().mockResolvedValue([]),
+    getShiftsOnDates: vi.fn().mockResolvedValue({}),
   };
 });
 
@@ -70,7 +75,7 @@ import {
   getInquiryDetailAction,
   resolveInquiryClientAction,
 } from "./_actions";
-import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
 
 beforeAll(async () => {
@@ -86,6 +91,7 @@ beforeEach(async () => {
   sendBookingConfirmedOwnerMock.mockReset();
   sendNotificationMock.mockReset();
   sendInquiryDeclineClientMock.mockReset();
+  emitMock.mockReset();
   sendBookingConfirmedClientMock.mockResolvedValue(undefined);
   sendBookingConfirmedOwnerMock.mockResolvedValue(undefined);
   sendNotificationMock.mockResolvedValue(undefined);
@@ -213,6 +219,60 @@ describe("getInquiryDetailAction", () => {
   });
 });
 
+describe("getInquiryDetailAction clientMatches", () => {
+  it("folds matching clients into the detail for an owner on an open inquiry", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    const match = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com",
+      source: "form",
+    });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail.clientMatches?.map((m) => m._id)).toEqual([String(match._id)]);
+  });
+
+  it("omits clientMatches for a non-owner", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({ workspaceId, name: "Someone Else", email: "emma@example.com", source: "form" });
+    mockCtx = { ...mockCtx, role: "staff" };
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail).not.toHaveProperty("clientMatches");
+  });
+
+  it("omits clientMatches once the inquiry is booked", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({ workspaceId, name: "Someone Else", email: "emma@example.com", source: "form" });
+    await Inquiry.updateOne({ _id: inquiry._id, workspaceId }, { status: "booked" });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail).not.toHaveProperty("clientMatches");
+  });
+
+  it("never returns a matching client from another workspace", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({
+      workspaceId: otherWorkspaceId,
+      name: "Emma Carter",
+      email: "emma@example.com",
+      source: "form",
+    });
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.detail.clientMatches).toEqual([]);
+  });
+});
+
 describe("approveInquiryBookingAction", () => {
   it("promotes the draft, applies edits, and marks the inquiry booked", async () => {
     const { booking, inquiry, client } = await seedDraft(workspaceId);
@@ -239,6 +299,30 @@ describe("approveInquiryBookingAction", () => {
     const freshClient = await Client.findById(client._id).lean();
     expect(freshClient?.totalSpent).toBe(25000);
     expect(freshClient?.bookingsCount).toBe(1);
+  });
+
+  it("emits inquiry.updated + booking.updated after a successful approval", async () => {
+    const { booking, inquiry, client } = await seedDraft(workspaceId);
+    await approveInquiryBookingAction(String(inquiry._id), { total: 100, deposit: 10 });
+    const ws = String(workspaceId);
+    expect(emitMock).toHaveBeenCalledWith(ws, {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
+    expect(emitMock).toHaveBeenCalledWith(ws, {
+      type: "booking.updated",
+      bookingId: String(booking._id),
+      clientId: String(client._id),
+      inquiryId: String(inquiry._id),
+    });
+  });
+
+  it("does not emit when approval is refused", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    mockCtx.role = "staff";
+    await approveInquiryBookingAction(String(inquiry._id));
+    expect(emitMock).not.toHaveBeenCalled();
   });
 
   it("is idempotent — re-approving does not double-count", async () => {
@@ -525,6 +609,26 @@ describe("resolveInquiryClientAction", () => {
     expect(freshTarget?.email).toBe("emma@example.com");
   });
 
+  it("emits inquiry.updated, booking.updated and client.updated after relinking", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    const target = await Client.create({ workspaceId, name: "Emma C.", source: "manual" });
+    await resolveInquiryClientAction(String(inquiry._id), { clientId: String(target._id), picks: {} });
+    const ws = String(workspaceId);
+    expect(emitMock).toHaveBeenCalledWith(ws, {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
+    expect(emitMock).toHaveBeenCalledWith(ws, { type: "client.updated", clientId: String(target._id) });
+  });
+
+  it("does not emit when the target client is not in the workspace", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    const foreign = await Client.create({ workspaceId: otherWorkspaceId, name: "Zed", source: "manual" });
+    await resolveInquiryClientAction(String(inquiry._id), { clientId: String(foreign._id), picks: {} });
+    expect(emitMock).not.toHaveBeenCalled();
+  });
+
   it("applies the caller's pick when a reconciled field genuinely conflicts", async () => {
     const { inquiry } = await seedDraft(workspaceId); // inquiry.phone is null in this fixture
     await Inquiry.updateOne({ _id: inquiry._id }, { $set: { phone: "0917 000 1111" } });
@@ -705,6 +809,18 @@ describe("saveDraftBookingFieldsAction", () => {
     expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("inquiry");
   });
 
+  it("emits inquiry.updated + booking.updated after saving draft fields, none on failure", async () => {
+    const { booking, inquiry } = await seedDraft(workspaceId);
+    await saveDraftBookingFieldsAction(String(inquiry._id), { deposit: 1000 });
+    expect(emitMock).not.toHaveBeenCalled();
+    await saveDraftBookingFieldsAction(String(inquiry._id), { total: 5000 });
+    expect(emitMock).toHaveBeenCalledWith(String(workspaceId), {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
+  });
+
   it("is owner-only", async () => {
     const { inquiry } = await seedDraft(workspaceId);
     mockCtx.role = "staff";
@@ -733,6 +849,18 @@ describe("archiveInquiryAction", () => {
     const res = await archiveInquiryAction(String(inquiry._id));
     expect(res).toEqual({ ok: true });
     expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("archived");
+  });
+
+  it("emits inquiry.updated + booking.updated on archive, none when refused", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    await archiveInquiryAction(String(new Types.ObjectId()));
+    expect(emitMock).not.toHaveBeenCalled();
+    await archiveInquiryAction(String(inquiry._id));
+    expect(emitMock).toHaveBeenCalledWith(String(workspaceId), {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
   });
 
   it("refuses to archive a booked inquiry", async () => {
@@ -771,6 +899,20 @@ describe("declineInquiryAction", () => {
     expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("archived");
     const freshBooking = await Booking.findById(booking._id).lean();
     expect(freshBooking?.status).toBe("cancelled");
+  });
+
+  it("emits inquiry.updated on decline, none when refused", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
+    await declineInquiryAction(String(inquiry._id));
+    expect(emitMock).not.toHaveBeenCalled();
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "inquiry" } });
+    await declineInquiryAction(String(inquiry._id));
+    expect(emitMock).toHaveBeenCalledWith(String(workspaceId), {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
   });
 
   it("calls the decline email sender with the client email", async () => {
@@ -860,8 +1002,8 @@ async function seedInquiryWithDraft(
 
 describe("editInquirySessionsAction", () => {
   beforeEach(() => {
-    // Reset getShiftsOnDate mock to return no shifts by default
-    vi.mocked(getShiftsOnDate).mockResolvedValue([]);
+    // Reset getShiftsOnDates mock to return no shifts by default
+    vi.mocked(getShiftsOnDates).mockReset().mockResolvedValue({});
   });
 
   it("returns not_found when inquiry does not exist", async () => {
@@ -870,6 +1012,20 @@ describe("editInquirySessionsAction", () => {
       sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
     });
     expect(res).toEqual({ error: "not_found" });
+  });
+
+  it("emits inquiry.updated + booking.updated after editing sessions, none when locked", async () => {
+    const locked = await seedInquiryWithDraft(workspaceId, { status: "booked" });
+    const sessions = [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }];
+    await editInquirySessionsAction(String(locked.inquiry._id), { sessions });
+    expect(emitMock).not.toHaveBeenCalled();
+    const { inquiry, booking } = await seedInquiryWithDraft(workspaceId);
+    await editInquirySessionsAction(String(inquiry._id), { sessions });
+    expect(emitMock).toHaveBeenCalledWith(String(workspaceId), {
+      type: "inquiry.updated",
+      inquiryId: String(inquiry._id),
+      bookingId: String(booking._id),
+    });
   });
 
   it("returns locked when inquiry status is booked", async () => {
@@ -904,23 +1060,27 @@ describe("editInquirySessionsAction", () => {
     expect(res).toEqual({ error: "alter_only" });
   });
 
-  it("returns conflict when getShiftsOnDate returns an overlapping shift", async () => {
+  it("returns conflict when getShiftsOnDates returns an overlapping shift", async () => {
     const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const date = futureDateStr(10);
     // Mock an overlapping shift: 08:00–18:00 overlaps 09:00–17:00
-    vi.mocked(getShiftsOnDate).mockResolvedValue([
-      {
-        id: "other",
-        bookingId: "other",
-        sessionIndex: 0,
-        title: "Other Booking",
-        shiftStart: "08:00",
-        shiftEnd: "18:00",
-      },
-    ]);
+    vi.mocked(getShiftsOnDates).mockResolvedValue({
+      [date]: [
+        {
+          id: "other",
+          bookingId: "other",
+          sessionIndex: 0,
+          title: "Other Booking",
+          shiftStart: "08:00",
+          shiftEnd: "18:00",
+        },
+      ],
+    });
     const res = await editInquirySessionsAction(String(inquiry._id), {
-      sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
+      sessions: [{ startDate: date, startTime: "09:00", endTime: "17:00" }],
     });
     expect(res).toEqual({ error: "conflict" });
+    expect(getShiftsOnDates).toHaveBeenCalledTimes(1);
   });
 
   it("returns ok and updates inquiry sessions and phone on success", async () => {

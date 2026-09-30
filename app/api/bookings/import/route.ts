@@ -1,3 +1,4 @@
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -739,6 +740,10 @@ export async function POST(req: Request) {
     } finally {
       await session.endSession();
     }
+  }
+
+  if (created.length + updated.length > 0) {
+    emitDataChanged(ctx.workspace._id.toString(), { type: "bookings.imported" });
   }
 
   const skipped = skippedRows;

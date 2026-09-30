@@ -141,7 +141,8 @@ export async function getClientById(
       count: number;
       lastStart: Date | null;
     }>([
-      { $match: { workspaceId, clientId: c._id } },
+      // Same draft exclusion as listClients so a ?client= deep link agrees.
+      { $match: { workspaceId, status: { $ne: "draft" }, clientId: c._id } },
       {
         $group: {
           _id: "$clientId",
@@ -160,6 +161,21 @@ export async function getClientById(
     bookingsCount: stats[0]?.count ?? 0,
     lastBookingAt: stats[0]?.lastStart ?? null,
   };
+}
+
+/**
+ * Deep-link (?client=) resolver. A client already on the listed page carries
+ * the same stats + converted totals, so reuse the row instead of re-running
+ * findOne + booking aggregate + totals lookup.
+ */
+export async function resolveDetailClient(
+  workspaceId: WorkspaceId,
+  clientId: string,
+  listed: ClientListItem[],
+  fx: WorkspaceRates | Promise<WorkspaceRates> = NO_CONVERSION
+): Promise<ClientListItem | null> {
+  const onPage = listed.find((c) => String(c._id) === clientId);
+  return onPage ?? getClientById(workspaceId, clientId, fx);
 }
 
 export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string[]> {

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useActionError } from "@/lib/i18n/actionError";
 
@@ -52,6 +53,7 @@ export function ClientsPageClient({
 }: Props) {
   const t = useTranslations("app.clients");
   const errMsg = useActionError();
+  const invalidateFor = useInvalidateFor();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -95,12 +97,6 @@ export function ClientsPageClient({
     // Run once on mount for the incoming deep-link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function refreshPage() {
-    startTransition(() => {
-      router.refresh();
-    });
-  }
 
   // Remove the ?client= param so closing the modal (or transitioning to
   // edit/deactivate) doesn't reopen it on a hard refresh or back-navigation.
@@ -188,7 +184,8 @@ export function ClientsPageClient({
         toast.success(t("form.updateSuccess"), { id: toastId });
         setDetailOpen(false);
         stripClientParam();
-        refreshPage();
+        // reactivateClientAction revalidates /clients.
+        invalidateFor({ type: "client.updated", clientId: client.id });
       } finally {
         setReactivatingId(null);
       }
@@ -272,7 +269,6 @@ export function ClientsPageClient({
         open={formOpen}
         onOpenChange={setFormOpen}
         initialData={editTarget ?? undefined}
-        onSuccess={refreshPage}
         onDirtyChange={setFormDirty}
         onView={editTarget ? returnToDetailFromEdit : undefined}
       />
@@ -311,7 +307,6 @@ export function ClientsPageClient({
           clientName={deactivateTarget.name}
           open={deactivateOpen}
           onOpenChange={setDeactivateOpen}
-          onSuccess={refreshPage}
         />
       )}
     </>

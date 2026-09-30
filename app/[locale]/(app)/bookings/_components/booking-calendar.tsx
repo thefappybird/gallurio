@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import {
@@ -32,8 +32,9 @@ import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/book
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { escapeHtml } from "@/lib/email/escapeHtml";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { visibleGridRange } from "@/lib/bookings/calendar-window";
 import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
-import { toCalendarGridDate, fromCalendarGridDate } from "./_helpers/calendar-helpers";
+import { toCalendarGridDate, fromCalendarGridDate, workspaceNowAsLocal } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type OverflowEvent = {
@@ -59,7 +60,6 @@ export type CalendarEvent = {
   end: Date;
   status: BookingStatus;
   clientName: string;
-  clientEmail: string | null;
   /** First day of this session's date range. */
   rangeStart: Date;
   /** Last day of this session's date range. */
@@ -158,6 +158,13 @@ type Props = {
    *  candles), and as the timezone used to translate react-big-calendar's
    *  drag/resize grid positions back to a real UTC instant. */
   workspaceTimezone?: string;
+  /** Fired whenever navigation / a view switch changes which days are shown, so
+   *  the consumer can load data outside its server window. */
+  onVisibleChange?: (visible: { date: Date; view: View }) => void;
+  /** Localized "nothing in this period" text. Shown as a non-blocking overlay
+   *  pill when no candle falls in the visible range. Omit while data is still
+   *  loading so a refetch never flashes a false empty state. */
+  emptyMessage?: string;
 };
 
 /**
@@ -215,7 +222,7 @@ function buildDragGhost(args: {
 /** A single draggable row inside the overflow popover.
  *  Builds a candle-styled ghost on dragstart, points setDragImage at it,
  *  then schedules its removal after the browser has captured the bitmap. */
-function OverflowPopoverRow({
+const OverflowPopoverRow = memo(function OverflowPopoverRow({
   event: e,
   onSelectEvent,
   onExternalDragStart,
@@ -287,7 +294,7 @@ function OverflowPopoverRow({
       </span>
     </button>
   );
-}
+});
 
 /** Small "Past" badge shown at the inline end of a candle's title row. */
 function PastPill({ label }: { label: string }) {
@@ -328,8 +335,18 @@ function StatusPill({
   );
 }
 
+/** Screen-reader name for a candle: color is never the only conflict/past signal. */
+function buildCandleAriaLabel(
+  title: string,
+  status: string,
+  conflict: string | null,
+  past: string | null
+): string {
+  return [title, status, conflict, past].filter(Boolean).join(" · ");
+}
+
 /** Month view: three-line stacked — title / client / time range. */
-export function MonthBookingEvent({
+export const MonthBookingEvent = memo(function MonthBookingEvent({
   event,
   onSelectEvent,
   onExternalDragStart,
@@ -341,6 +358,7 @@ export function MonthBookingEvent({
 }) {
   const ev = event;
   const [open, setOpen] = useState(false);
+  const closePopover = useCallback(() => setOpen(false), []);
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
   const tStatus = useTranslations("app.bookings.statusValues");
@@ -372,7 +390,7 @@ export function MonthBookingEvent({
                 onSelectEvent={onSelectEvent}
                 onExternalDragStart={onExternalDragStart}
                 onExternalDragEnd={onExternalDragEnd}
-                onClose={() => setOpen(false)}
+                onClose={closePopover}
               />
             ))}
           </div>
@@ -392,7 +410,12 @@ export function MonthBookingEvent({
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status);
   const labelOverride = booking.kind === "inquiry" ? tInq("inquiry") : undefined;
-  const candleAriaLabel = `${booking.title} · ${labelOverride ?? statusLabel}${booking.hasConflict ? " · conflict" : ""}`;
+  const candleAriaLabel = buildCandleAriaLabel(
+    booking.title,
+    labelOverride ?? statusLabel,
+    booking.hasConflict ? t("conflict") : null,
+    isPast ? t("past") : null
+  );
 
   return (
     <span
@@ -433,10 +456,10 @@ export function MonthBookingEvent({
       />
     </span>
   );
-}
+});
 
 /** Week/day view: three-line stacked — title / client / time range. */
-export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+export const TimeBookingEvent = memo(function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
@@ -459,7 +482,12 @@ export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status);
   const labelOverride = ev.kind === "inquiry" ? tInq("inquiry") : undefined;
-  const candleAriaLabel = `${ev.title} · ${labelOverride ?? statusLabel}${ev.hasConflict ? " · conflict" : ""}`;
+  const candleAriaLabel = buildCandleAriaLabel(
+    ev.title,
+    labelOverride ?? statusLabel,
+    ev.hasConflict ? t("conflict") : null,
+    isPast ? t("past") : null
+  );
 
   return (
     <div
@@ -515,7 +543,7 @@ export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
       )}
     </div>
   );
-}
+});
 
 function slotTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:00`;
@@ -873,7 +901,7 @@ export function BookingCalendar({
   onExternalDragEnd,
   onDropFromOutside,
   dragFromOutsideItem,
-  messages,
+  messages: messagesProp,
   showPast = true,
   pendingIds,
   colorMode = "status",
@@ -881,8 +909,36 @@ export function BookingCalendar({
   toolbarTrailing,
   draggableAccessor,
   workspaceTimezone,
+  onVisibleChange,
+  emptyMessage,
 }: Props) {
   const isRtl = useIsRtl();
+  // Server-rendered `messages` is a fresh object on every RSC refresh; rebuild
+  // it only when a string actually changes so the toolbar context (and every
+  // candle reading it) stays referentially stable.
+  const messages = useMemo<Props["messages"]>(
+    () => ({
+      today: messagesProp.today,
+      previous: messagesProp.previous,
+      next: messagesProp.next,
+      day: messagesProp.day,
+      week: messagesProp.week,
+      month: messagesProp.month,
+      date: messagesProp.date,
+      time: messagesProp.time,
+      event: messagesProp.event,
+      noEventsInRange: messagesProp.noEventsInRange,
+      goTo: messagesProp.goTo,
+      scrollToTime: messagesProp.scrollToTime,
+      go: messagesProp.go,
+    }),
+    [
+      messagesProp.today, messagesProp.previous, messagesProp.next, messagesProp.day,
+      messagesProp.week, messagesProp.month, messagesProp.date, messagesProp.time,
+      messagesProp.event, messagesProp.noEventsInRange, messagesProp.goTo,
+      messagesProp.scrollToTime, messagesProp.go,
+    ]
+  );
   const [isCompactCalendar, setIsCompactCalendar] = useState(false);
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
@@ -894,7 +950,12 @@ export function BookingCalendar({
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
   const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
-  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? new Date());
+  // "Now" on the workspace wall clock (local-Date re-anchored), so Today / the
+  // today highlight / the time indicator follow the workspace tz. Past/dim logic
+  // elsewhere compares real instants and is intentionally left alone.
+  const wsTz = workspaceTimezone ?? FALLBACK_TZ;
+  const getNow = useCallback(() => workspaceNowAsLocal(new Date(), wsTz), [wsTz]);
+  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? getNow());
   const view = viewProp ?? internalView;
   const effectiveView = isCompactCalendar ? Views.DAY : view;
   const date = dateProp ?? internalDate;
@@ -943,14 +1004,28 @@ export function BookingCalendar({
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
+  const dateRef = useRef(date);
+  useEffect(() => {
+    dateRef.current = date;
+  });
   const handleViewChange = useCallback(
     (newView: View) => {
       setView(newView);
+      let nextDate = dateRef.current;
       if (newView === Views.WEEK || newView === Views.DAY) {
-        setDate(new Date());
+        nextDate = getNow();
+        setDate(nextDate);
       }
+      onVisibleChange?.({ date: nextDate, view: newView });
     },
-    [setView, setDate]
+    [setView, setDate, onVisibleChange, getNow]
+  );
+  const handleNavigate = useCallback(
+    (d: Date) => {
+      setDate(d);
+      onVisibleChange?.({ date: d, view: effectiveView });
+    },
+    [setDate, onVisibleChange, effectiveView]
   );
 
   // Keep the latest view in a ref so the matchMedia effect below can read it
@@ -1106,11 +1181,17 @@ export function BookingCalendar({
     [onDropFromOutside, workspaceTimezone]
   );
 
+  const isEmptyRange = useMemo(() => {
+    if (!emptyMessage) return false;
+    const range = visibleGridRange(date, effectiveView, workspaceTimezone ?? FALLBACK_TZ);
+    return !events.some((e) => e.start < range.end && e.end > range.start);
+  }, [emptyMessage, date, effectiveView, workspaceTimezone, events]);
+
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div
         ref={containerRef}
-        className="h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
+        className="relative h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
         style={calendarHeight === null ? undefined : { height: `${calendarHeight}px` }}
       >
         <DnDCalendar
@@ -1122,7 +1203,8 @@ export function BookingCalendar({
           view={effectiveView}
           onView={handleViewChange}
           date={date}
-          onNavigate={setDate}
+          getNow={getNow}
+          onNavigate={handleNavigate}
           views={availableViews}
           scrollToTime={scrollToTime}
           step={30}
@@ -1163,6 +1245,16 @@ export function BookingCalendar({
             };
           }}
         />
+        {isEmptyRange ? (
+          <div
+            role="status"
+            className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex justify-center px-4"
+          >
+            <span className="border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
+              {emptyMessage}
+            </span>
+          </div>
+        ) : null}
       </div>
     </CalendarToolbarCtx.Provider>
   );

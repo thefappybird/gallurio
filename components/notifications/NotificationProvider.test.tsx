@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { useContext } from "react";
 import { act, screen } from "@testing-library/react";
 import { io } from "socket.io-client";
+import { markLocalEvent } from "@/lib/query/invalidation";
+import { QueryClient } from "@tanstack/react-query";
 import { renderWithProviders } from "@/test-utils/render";
 import {
   NotificationContext,
@@ -27,6 +29,11 @@ vi.mock("socket.io-client", () => ({
   io: vi.fn(() => fakeSocket),
 }));
 
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
+}));
+
 function emit(event: string, payload?: unknown) {
   handlers[event]?.(payload);
 }
@@ -39,7 +46,7 @@ function LiveArrivalProbe() {
 describe("NotificationProvider liveArrivalTick", () => {
   it("uses a polling-first handshake with WebSocket fallback for tunnel compatibility", () => {
     renderWithProviders(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <LiveArrivalProbe />
       </NotificationProvider>,
     );
@@ -55,7 +62,7 @@ describe("NotificationProvider liveArrivalTick", () => {
 
   it("increments liveArrivalTick when a live notification:new socket event arrives", () => {
     renderWithProviders(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <LiveArrivalProbe />
       </NotificationProvider>,
     );
@@ -96,7 +103,7 @@ function LastEntityEventProbe() {
 describe("NotificationProvider lastEntityEvent", () => {
   it("bumps lastEntityEvent on notification:new even when silent/read (actor's own tab)", () => {
     renderWithProviders(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <LastEntityEventProbe />
       </NotificationProvider>,
     );
@@ -120,5 +127,73 @@ describe("NotificationProvider lastEntityEvent", () => {
     });
 
     expect(screen.getByTestId("entity-event").textContent).toBe("team:team1:1");
+  });
+});
+
+describe("NotificationProvider data:changed", () => {
+  it("invalidates mapped keys and skips refresh when the pathname is unaffected", () => {
+    vi.useFakeTimers();
+    const spy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <span />
+      </NotificationProvider>,
+    );
+    act(() => {
+      emit("data:changed", {
+        workspaceId: "ws-test",
+        event: { type: "inquiry.created", inquiryId: "i1" },
+        at: 1,
+      });
+      vi.advanceTimersByTime(300);
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["ws", "ws-test", "inquiries"] });
+    expect(refresh).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("refreshes the router when the pathname matches an affected route", () => {
+    vi.useFakeTimers();
+    window.history.pushState({}, "", "/fil/inquiries");
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <span />
+      </NotificationProvider>,
+    );
+    act(() => {
+      emit("data:changed", {
+        workspaceId: "ws-test",
+        event: { type: "inquiry.created", inquiryId: "i2" },
+        at: 1,
+      });
+      vi.advanceTimersByTime(300);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+    window.history.pushState({}, "", "/bookings");
+    vi.useRealTimers();
+  });
+
+  it("ignores other-workspace payloads and local echoes", () => {
+    const spy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    spy.mockClear();
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <span />
+      </NotificationProvider>,
+    );
+    act(() => {
+      emit("data:changed", {
+        workspaceId: "other",
+        event: { type: "inquiry.created", inquiryId: "i3" },
+        at: 1,
+      });
+      markLocalEvent({ type: "inquiry.created", inquiryId: "i4" });
+      emit("data:changed", {
+        workspaceId: "ws-test",
+        event: { type: "inquiry.created", inquiryId: "i4" },
+        at: 1,
+      });
+    });
+    expect(spy).not.toHaveBeenCalled();
   });
 });

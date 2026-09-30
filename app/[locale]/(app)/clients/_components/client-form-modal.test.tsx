@@ -5,12 +5,14 @@ import { ClientFormModal } from "./client-form-modal";
 import { updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 
 vi.mock("@/lib/actions/clients", () => ({
-  createClientAction: vi.fn().mockResolvedValue({ ok: true }),
+  createClientAction: vi.fn().mockResolvedValue({ ok: true, clientId: "c-new" }),
   updateClientAction: vi.fn().mockResolvedValue({ ok: true }),
   findClientMatchesAction: vi.fn().mockResolvedValue({ matches: [] }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn() }));
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
 
 const defaultProps = {
   open: true,
@@ -133,6 +135,28 @@ describe("ClientFormModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+  });
+
+  it("invalidates client.created with the new client id on successful create, without a redundant refresh", async () => {
+    invalidateFor.mockClear();
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "client.created", clientId: "c-new" }));
+  });
+
+  it("invalidates client.updated on edit, and nothing when the save fails", async () => {
+    invalidateFor.mockClear();
+    vi.mocked(updateClientAction).mockResolvedValueOnce({ error: "client_update_failed" });
+    renderWithProviders(<ClientFormModal {...defaultProps} initialData={{ id: "c7", name: "Old Name" }} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "New Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(updateClientAction).toHaveBeenCalledTimes(1));
+    expect(invalidateFor).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() =>
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c7" })
+    );
   });
 
   it("shows inline error on action failure", async () => {

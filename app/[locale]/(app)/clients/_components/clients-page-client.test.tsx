@@ -47,6 +47,9 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+const invalidateForMock = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateForMock }));
+
 // Stub server actions — only reactivate is invoked by these smoke tests.
 const reactivateMock = vi.fn();
 vi.mock("@/lib/actions/clients", () => ({
@@ -138,6 +141,7 @@ describe("ClientsPageClient", () => {
     routerRefresh.mockClear();
     routerReplace.mockClear();
     reactivateMock.mockReset();
+    invalidateForMock.mockClear();
     vi.mocked(toast.error).mockClear();
   });
 
@@ -228,7 +232,7 @@ describe("ClientsPageClient", () => {
     expect(routerPush).not.toHaveBeenCalled();
   });
 
-  it("reactivation calls server action and refreshes the list on success", async () => {
+  it("reactivation calls server action and invalidates client.updated (no direct router.refresh) on success", async () => {
     reactivateMock.mockResolvedValue({ ok: true });
     renderWithProviders(<ClientsPageClient {...build()} />);
 
@@ -240,7 +244,10 @@ describe("ClientsPageClient", () => {
     fireEvent.click(reactivateButtons[0]);
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalledWith("c-inactive"));
-    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(invalidateForMock).toHaveBeenCalledWith({ type: "client.updated", clientId: "c-inactive" })
+    );
+    expect(routerRefresh).not.toHaveBeenCalled();
   });
 
   it("reactivation surfaces an error toast and does not refresh on server error", async () => {
@@ -263,6 +270,7 @@ describe("ClientsPageClient", () => {
       )
     );
     expect(routerRefresh).not.toHaveBeenCalled();
+    expect(invalidateForMock).not.toHaveBeenCalled();
   });
 
   it("opens the detail modal on mount when initialDetailClient is provided", () => {

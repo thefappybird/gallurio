@@ -63,6 +63,38 @@ export function isoDateInTz(d: Date, timeZone: string): string {
 }
 
 /**
+ * Local-noon Date carrying the wall Y/M/D that `d` has in `tz`. The calendar's
+ * `?date` arrives as the workspace-tz noon instant, but react-big-calendar and
+ * `visibleGridRange` read LOCAL Y/M/D, so re-anchor before handing it to them.
+ */
+export function wallDateAsLocal(d: Date, tz: string): Date {
+  const [y, m, day] = isoDateInTz(d, tz).split("-").map(Number);
+  return new Date(y, m - 1, day, 12);
+}
+
+/**
+ * "Now" on the workspace wall clock, re-anchored as a LOCAL Date (hours and
+ * minutes kept) for react-big-calendar's `getNow`: Today button, today-cell
+ * highlight and the current-time indicator then follow the workspace tz, not
+ * the browser's. A wall time that doesn't exist in the browser tz (its own
+ * DST gap) shifts by an hour; harmless for display.
+ */
+export function workspaceNowAsLocal(now: Date, tz: string): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const n = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  return new Date(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second"));
+}
+
+/**
  * Return minutes-since-midnight for a UTC Date as seen in `timeZone`.
  * Used so the client-side overlap comparison uses the same TZ reference as the
  * server's shiftStart/shiftEnd HH:MM strings.

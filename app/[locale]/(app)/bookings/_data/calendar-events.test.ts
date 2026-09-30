@@ -1,0 +1,80 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { Types } from "mongoose";
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
+import { countQueries } from "@/test-utils/query-counter";
+import { Booking } from "@/lib/db/models";
+import { loadBookingsCalendarEvents, parseCalendarDate } from "./calendar-events";
+import { calendarWindow } from "@/lib/bookings/calendar-window";
+
+const workspaceId = new Types.ObjectId();
+const otherWorkspaceId = new Types.ObjectId();
+const teamA = new Types.ObjectId();
+const TZ = "Asia/Manila";
+
+beforeAll(startInMemoryMongo);
+afterAll(stopInMemoryMongo);
+beforeEach(clearCollections);
+
+async function seed(title: string, startAt: Date, endAt: Date, wid = workspaceId) {
+  return Booking.create({
+    workspaceId: wid,
+    teamId: teamA,
+    clientId: new Types.ObjectId(),
+    clientName: "C",
+    title,
+    status: "booked",
+    sessions: [{ startAt, endAt }],
+    firstSessionStart: startAt,
+    lastSessionEnd: endAt,
+    location: { address: "" },
+    amount: { total: 1, deposit: 0, currency: "PHP" },
+  });
+}
+
+describe("parseCalendarDate", () => {
+  it("reads YYYY-MM-DD as a wall date in a west-of-UTC workspace tz", () => {
+    const date = parseCalendarDate("2026-11-01", "America/New_York");
+    // Nov grid (Sun Nov 1 .. Sat Dec 5) + 37 pad days: must reach Jan 11, not stop at Dec 1.
+    expect(calendarWindow(date, "America/New_York")).toMatchObject({
+      startDate: "2026-09-25",
+      endDate: "2027-01-11",
+    });
+  });
+
+  it("reads YYYY-MM-DD as a wall date in an east-of-UTC workspace tz", () => {
+    const date = parseCalendarDate("2026-11-30", "Asia/Manila");
+    expect(calendarWindow(date, "Asia/Manila")).toMatchObject({
+      startDate: "2026-09-25",
+      endDate: "2027-01-11",
+    });
+  });
+
+  it("falls back on absent or invalid input", () => {
+    const fallback = new Date("2026-01-01T00:00:00Z");
+    expect(parseCalendarDate(undefined, "Asia/Manila", fallback)).toBe(fallback);
+    expect(parseCalendarDate("nope", "Asia/Manila", fallback)).toBe(fallback);
+  });
+});
+
+describe("loadBookingsCalendarEvents", () => {
+  it("issues exactly one booking query and returns only in-window, own-workspace events without emails", async () => {
+    await seed("inside", new Date("2026-09-10T01:00:00Z"), new Date("2026-09-10T09:00:00Z"));
+    await seed("overnight-in", new Date("2026-09-30T14:00:00Z"), new Date("2026-10-01T02:00:00Z"));
+    await seed("far-away", new Date("2027-03-10T01:00:00Z"), new Date("2027-03-10T09:00:00Z"));
+    await seed("other-ws", new Date("2026-09-10T01:00:00Z"), new Date("2026-09-10T09:00:00Z"), otherWorkspaceId);
+
+    const { result: events, queries } = await countQueries(() =>
+      loadBookingsCalendarEvents({
+        workspaceId,
+        tz: TZ,
+        date: new Date("2026-09-15T04:00:00Z"),
+        filters: { includePast: true, includeCancelled: false },
+      })
+    );
+
+    expect(queries).toHaveLength(1);
+    expect(queries[0].collection).toBe("bookings");
+    expect([...new Set(events.map((e) => e.title))].sort()).toEqual(["inside", "overnight-in"]);
+    expect(events.every((e) => !("clientEmail" in e))).toBe(true);
+  });
+});

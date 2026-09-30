@@ -17,6 +17,7 @@ import { FormField } from "@/components/ui/form-field";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { createClientAction, updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useActionError } from "@/lib/i18n/actionError";
 import { ClientMatchDialog, type ClientMatchCard, type ClientMatchResolution } from "@/components/app/client-match-dialog";
 import { reconcileClient } from "@/lib/clients/reconcile";
@@ -37,7 +38,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: ClientFormData;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   /** Edit mode only: discard any draft and return to the read-only client view. */
   onView?: () => void;
@@ -48,6 +49,7 @@ const SOURCES = ["form", "manual", "referral", "import"] as const;
 export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, onDirtyChange, onView }: Props) {
   const t = useTranslations("app.clients");
   const errMsg = useActionError();
+  const invalidateFor = useInvalidateFor();
   const isEdit = !!initialData?.id;
 
   const form = useForm<ClientFormInput>({
@@ -116,7 +118,9 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
       return;
     }
     toast.success(t("form.createSuccess"));
-    onSuccess();
+    // Client actions revalidate /clients: the response already carries fresh RSC.
+    invalidateFor({ type: "client.created", clientId: result.clientId });
+    onSuccess?.();
     onOpenChange(false);
   }
 
@@ -128,7 +132,8 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     }
     // Not "created" — this path attaches to an existing client.
     toast.success(t("form.linkSuccess"));
-    onSuccess();
+    invalidateFor({ type: "client.updated", clientId });
+    onSuccess?.();
     onOpenChange(false);
   }
 
@@ -140,7 +145,8 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         return;
       }
       toast.success(t("form.updateSuccess"));
-      onSuccess();
+      invalidateFor({ type: "client.updated", clientId: initialData!.id! });
+      onSuccess?.();
       onOpenChange(false);
       return;
     }
