@@ -63,6 +63,16 @@ export function isoDateInTz(d: Date, timeZone: string): string {
 }
 
 /**
+ * Local-noon Date carrying the wall Y/M/D that `d` has in `tz`. The calendar's
+ * `?date` arrives as the workspace-tz noon instant, but react-big-calendar and
+ * `visibleGridRange` read LOCAL Y/M/D, so re-anchor before handing it to them.
+ */
+export function wallDateAsLocal(d: Date, tz: string): Date {
+  const [y, m, day] = isoDateInTz(d, tz).split("-").map(Number);
+  return new Date(y, m - 1, day, 12);
+}
+
+/**
  * Return minutes-since-midnight for a UTC Date as seen in `timeZone`.
  * Used so the client-side overlap comparison uses the same TZ reference as the
  * server's shiftStart/shiftEnd HH:MM strings.

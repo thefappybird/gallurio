@@ -3,6 +3,7 @@ import { render, screen, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 
 const mockPush = vi.fn();
@@ -42,6 +43,7 @@ type CalProps = {
   draggableAccessor: unknown;
   onSelectEvent: unknown;
   emptyMessage?: string;
+  defaultDate?: Date;
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
 };
 let cal: CalProps;
@@ -98,6 +100,29 @@ describe("InquiriesCalendarManager window navigation", () => {
     expect(wrapper).toHaveAttribute("aria-busy", "true");
     expect(wrapper.className).toContain("opacity-60");
   });
+});
+
+describe("InquiriesCalendarManager ?date anchor", () => {
+  // Workspace tz far from the runner tz: one of the two is >12h away from any runner offset.
+  it.each(["Pacific/Kiritimati", "Pacific/Pago_Pago"])(
+    "hands the calendar the requested wall date (Jan 10) regardless of browser tz (%s)",
+    (tz) => {
+      const noon = dayBoundInTz("2027-01-10", tz, 12, 0, 0, 0);
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <InquiriesCalendarManager
+            events={[inquiryEvent()]}
+            locale="en"
+            workspaceTz={tz}
+            window={{ start: "2027-08-01T00:00:00.000Z", end: "2027-10-31T00:00:00.000Z" }}
+            defaultDate={noon}
+          />
+        </NextIntlClientProvider>
+      );
+      const d = cal.defaultDate!;
+      expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2027, 0, 10]);
+    }
+  );
 });
 
 describe("InquiriesCalendarManager reschedule", () => {

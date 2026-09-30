@@ -23,6 +23,7 @@ import {
   type ShiftHit,
   isoDate,
   isoDateInTz,
+  wallDateAsLocal,
   reconstructSessions,
   detectConflictIds,
 } from "./_helpers/calendar-helpers";
@@ -69,12 +70,6 @@ type Props = {
   /** Reports "window refetch in flight" so the shell can dim the grid. */
   onWindowPendingChange?: (pending: boolean) => void;
 };
-
-/** Local-noon Date carrying the wall Y/M/D that `d` has in `tz` (what RBC and visibleGridRange read). */
-function wallDateAsLocal(d: Date, tz: string): Date {
-  const [y, m, day] = isoDateInTz(d, tz).split("-").map(Number);
-  return new Date(y, m - 1, day, 12);
-}
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());

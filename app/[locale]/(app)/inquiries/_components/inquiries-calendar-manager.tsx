@@ -16,6 +16,7 @@ import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import {
   detectConflictIds,
   dateToTzWallClock,
+  wallDateAsLocal,
 } from "../../bookings/_components/_helpers/calendar-helpers";
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
@@ -370,7 +371,7 @@ export function InquiriesCalendarManager({
     >
     <BookingCalendarLazy
       events={eventsWithConflicts}
-      defaultDate={defaultDate}
+      defaultDate={defaultDate ? wallDateAsLocal(defaultDate, workspaceTz ?? FALLBACK_TZ) : undefined}
       onVisibleChange={onVisibleChange}
       workspaceTimezone={workspaceTz}
       emptyMessage={windowPending ? undefined : t("emptyPeriod")}
