@@ -226,6 +226,10 @@ Composed, app-specific shared components.
 |--------|--------|---------|
 | `lib/data-events.ts` | `DataEvent`, `DataChangedPayload`, `DATA_CHANGED_EVENT` | Isomorphic `data:changed` event types (type + opaque ids only, no entity data). Client imports for its invalidation map. |
 | `lib/sockets/emitDataChanged.ts` | `emitDataChanged(workspaceId, event)` | Server-only, fire-and-forget broadcast to room `workspace:<id>`. Call AFTER a mutation commits, with the server-resolved workspaceId. Never throws; no-op when io is unset. |
+| `components/app/app-query-provider.tsx` | `AppQueryProvider({ workspaceId })`, `useAppWorkspaceId()` | App-wide React Query client (staleTime 30s, focus/reconnect refetch). Mounted in `(app)/layout.tsx` with `key={workspaceId}` so a workspace switch drops the cache. Hook throws outside the provider. `GalleryQueryProvider` (editor) could be consolidated onto it later. |
+| `lib/query/keys.ts` | `queryKeys(workspaceId)`, `REFERENCE_STALE_TIME`, `EDITABLE_QUERY_OPTIONS` | Key factory; every key starts `["ws", workspaceId, <domain>, ...]`. Use for ALL app queries. Omit id args for a domain prefix. |
+| `lib/query/invalidation.ts` | `keysForEvent`, `routesForEvent`, `invalidateFor`, `markLocalEvent`, `isLocalEcho` | Single source of truth for "DataEvent -> stale keys/routes"; 2 s echo suppression for the actor's own socket echo. |
+| `hooks/use-data-events.ts` | `useInvalidateFor()`, `useApplyDataEvent()`, `stripLocale` | Mutation sites call `useInvalidateFor()(event)`: marks local, invalidates, debounced (250 ms) `router.refresh()` when the current path is affected. `useApplyDataEvent` = socket path (no local mark). |
 
 ### Other lib
 | Import | Export | Purpose |

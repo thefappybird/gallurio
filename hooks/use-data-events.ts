@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { DataEvent } from "@/lib/data-events";
 import { routing } from "@/lib/i18n/routing";
@@ -42,14 +42,14 @@ export function useApplyDataEvent(): (event: DataEvent) => void {
   const queryClient = useQueryClient();
   const workspaceId = useAppWorkspaceId();
   const router = useRouter();
-  const pathname = usePathname();
 
   return useCallback(
     (event: DataEvent) => {
       void invalidateFor(queryClient, workspaceId, event);
-      if (pathMatches(pathname ?? "", routesForEvent(event))) scheduleRefresh(() => router.refresh());
+      // Read at event time: always the current page, no stale closure.
+      if (pathMatches(window.location.pathname, routesForEvent(event))) scheduleRefresh(() => router.refresh());
     },
-    [queryClient, workspaceId, router, pathname],
+    [queryClient, workspaceId, router],
   );
 }
 

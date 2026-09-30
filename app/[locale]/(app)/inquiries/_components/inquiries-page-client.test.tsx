@@ -123,7 +123,7 @@ const baseProps = {
 
 function renderInquiriesPage(props: React.ComponentProps<typeof InquiriesPageClient>) {
   return renderWithProviders(
-    <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+    <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
       <InquiriesPageClient {...props} />
     </NotificationProvider>,
   );
@@ -162,7 +162,7 @@ describe("InquiriesPageClient", () => {
     expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
 
     view.rerender(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <InquiriesPageClient {...baseProps} />
       </NotificationProvider>
     );
@@ -207,7 +207,7 @@ describe("InquiriesPageClient", () => {
     expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
 
     view.rerender(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <InquiriesPageClient {...baseProps} initialDetail={nextDetail} />
       </NotificationProvider>
     );

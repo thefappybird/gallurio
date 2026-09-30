@@ -49,7 +49,7 @@ describe("useLiveRefresh", () => {
 
   it("refreshes only for matching entity types, never on mount", () => {
     renderWithProviders(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <Probe />
       </NotificationProvider>,
     );
@@ -100,7 +100,7 @@ describe("useLiveRefresh", () => {
 
   it("coalesces a burst of matching ticks within the debounce window into one refresh", () => {
     renderWithProviders(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <Probe />
       </NotificationProvider>,
     );

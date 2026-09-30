@@ -94,7 +94,7 @@ const TEAMS: TeamRow[] = [
 
 function renderTeamsPage(props: React.ComponentProps<typeof TeamsPageClient>) {
   return renderWithProviders(
-    <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+    <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
       <TeamsPageClient {...props} />
     </NotificationProvider>,
   );

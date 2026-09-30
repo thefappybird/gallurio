@@ -5,10 +5,8 @@ import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { useInvalidateFor } from "./use-data-events";
 
 const refresh = vi.fn();
-let pathname = "/fil/bookings/123";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh }),
-  usePathname: () => pathname,
 }));
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -19,7 +17,7 @@ describe("useInvalidateFor", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     refresh.mockClear();
-    pathname = "/fil/bookings/123";
+    window.history.pushState({}, "", "/fil/bookings/123");
   });
   afterEach(() => vi.useRealTimers());
 
@@ -35,7 +33,7 @@ describe("useInvalidateFor", () => {
   });
 
   it("does not refresh when the pathname is unaffected", () => {
-    pathname = "/settings";
+    window.history.pushState({}, "", "/settings");
     const { result } = renderHook(() => useInvalidateFor(), { wrapper });
     act(() => {
       result.current({ type: "booking.updated", bookingId: "b1" });
