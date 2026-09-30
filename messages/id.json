@@ -1210,8 +1210,7 @@
           "continue": "Lanjutkan",
           "reviewMapping": "Kolom dicocokkan otomatis",
           "reviewMappingAction": "Tinjau",
-          "committing": "Mengimpor pemesanan Anda",
-          "refreshing": "Menyegarkan pemesanan Anda"
+          "committing": "Mengimpor pemesanan Anda"
         }
       },
       "export": {

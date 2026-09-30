@@ -1210,8 +1210,7 @@
           "continue": "متابعة",
           "reviewMapping": "طوبقت الأعمدة تلقائيًا",
           "reviewMappingAction": "مراجعة",
-          "committing": "جارٍ استيراد حجوزاتك",
-          "refreshing": "جارٍ تحديث حجوزاتك"
+          "committing": "جارٍ استيراد حجوزاتك"
         }
       },
       "export": {

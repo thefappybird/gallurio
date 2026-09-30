@@ -1210,8 +1210,7 @@
           "continue": "ไปต่อ",
           "reviewMapping": "จับคู่คอลัมน์ให้อัตโนมัติแล้ว",
           "reviewMappingAction": "ตรวจทาน",
-          "committing": "กำลังนำเข้าการจองของคุณ",
-          "refreshing": "กำลังรีเฟรชการจองของคุณ"
+          "committing": "กำลังนำเข้าการจองของคุณ"
         }
       },
       "export": {

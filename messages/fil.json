@@ -1210,8 +1210,7 @@
           "continue": "Magpatuloy",
           "reviewMapping": "Awtomatikong naitugma ang mga column",
           "reviewMappingAction": "Suriin",
-          "committing": "Ini-import ang inyong mga booking",
-          "refreshing": "Nire-refresh ang inyong mga booking"
+          "committing": "Ini-import ang inyong mga booking"
         }
       },
       "export": {

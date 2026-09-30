@@ -1210,8 +1210,7 @@
           "continue": "Continue",
           "reviewMapping": "Columns matched automatically",
           "reviewMappingAction": "Review",
-          "committing": "Importing your bookings",
-          "refreshing": "Refreshing your bookings"
+          "committing": "Importing your bookings"
         }
       },
       "export": {
