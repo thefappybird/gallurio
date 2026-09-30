@@ -34,18 +34,18 @@ async function seed(title: string, startAt: Date, endAt: Date, wid = workspaceId
 describe("parseCalendarDate", () => {
   it("reads YYYY-MM-DD as a wall date in a west-of-UTC workspace tz", () => {
     const date = parseCalendarDate("2026-11-01", "America/New_York");
-    // Nov grid (Sun Nov 1 .. Sat Dec 5) + 31 pad days: must reach Jan 5, not stop at Dec 1.
+    // Nov grid (Sun Nov 1 .. Sat Dec 5) + 37 pad days: must reach Jan 11, not stop at Dec 1.
     expect(calendarWindow(date, "America/New_York")).toMatchObject({
-      startDate: "2026-10-01",
-      endDate: "2027-01-05",
+      startDate: "2026-09-25",
+      endDate: "2027-01-11",
     });
   });
 
   it("reads YYYY-MM-DD as a wall date in an east-of-UTC workspace tz", () => {
     const date = parseCalendarDate("2026-11-30", "Asia/Manila");
     expect(calendarWindow(date, "Asia/Manila")).toMatchObject({
-      startDate: "2026-10-01",
-      endDate: "2027-01-05",
+      startDate: "2026-09-25",
+      endDate: "2027-01-11",
     });
   });
 

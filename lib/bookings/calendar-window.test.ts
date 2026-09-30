@@ -11,13 +11,13 @@ describe("isRangeInsideWindow", () => {
 });
 
 describe("calendarWindow", () => {
-  it("pads the Sunday-aligned month grid by 31 days, day bounds in Manila", () => {
+  it("pads the Sunday-aligned month grid by 37 days, day bounds in Manila", () => {
     const w = calendarWindow(new Date("2026-09-15T04:00:00Z"), "Asia/Manila");
     // Sep 2026 grid = Sun Aug 30 .. Sat Oct 3; +/-31d.
-    expect(w.startDate).toBe("2026-07-30");
-    expect(w.endDate).toBe("2026-11-03");
-    expect(w.start.toISOString()).toBe("2026-07-29T16:00:00.000Z");
-    expect(w.end.toISOString()).toBe("2026-11-03T15:59:59.999Z");
+    expect(w.startDate).toBe("2026-07-24");
+    expect(w.endDate).toBe("2026-11-09");
+    expect(w.start.toISOString()).toBe("2026-07-23T16:00:00.000Z");
+    expect(w.end.toISOString()).toBe("2026-11-09T15:59:59.999Z");
   });
 
   it("covers every spill-over grid day with >= 15 days pad, across year edges and leap Feb", () => {
@@ -36,17 +36,33 @@ describe("calendarWindow", () => {
       }
     }
     const feb = calendarWindow(new Date("2028-02-29T12:00:00Z"), "UTC");
-    expect(feb.startDate).toBe("2027-12-30"); // grid starts Sun Jan 30, -31
-    expect(feb.endDate).toBe("2028-04-04"); // grid ends Sat Mar 4, +31
+    expect(feb.startDate).toBe("2027-12-24"); // grid starts Sun Jan 30, -37
+    expect(feb.endDate).toBe("2028-04-10"); // grid ends Sat Mar 4, +37
   });
 
   it("uses DST-correct day bounds in America/New_York", () => {
     const w = calendarWindow(new Date("2026-03-15T12:00:00Z"), "America/New_York");
-    // Mar 2026 grid = Sun Mar 1 .. Sat Apr 4; start Jan 29 (EST), end May 5 (EDT).
-    expect(w.startDate).toBe("2026-01-29");
-    expect(w.endDate).toBe("2026-05-05");
-    expect(w.start.toISOString()).toBe("2026-01-29T05:00:00.000Z");
-    expect(w.end.toISOString()).toBe("2026-05-06T03:59:59.999Z");
+    // Mar 2026 grid = Sun Mar 1 .. Sat Apr 4; start Jan 23 (EST), end May 11 (EDT).
+    expect(w.startDate).toBe("2026-01-23");
+    expect(w.endDate).toBe("2026-05-11");
+    expect(w.start.toISOString()).toBe("2026-01-23T05:00:00.000Z");
+    expect(w.end.toISOString()).toBe("2026-05-12T03:59:59.999Z");
+  });
+});
+
+describe("calendarWindow adjacent months", () => {
+  it("contains the previous and next month's full grid for Jan 2024..Dec 2030", () => {
+    for (const tz of ["Asia/Manila", "America/Los_Angeles"]) {
+      for (let y = 2024; y <= 2030; y++) {
+        for (let m = 0; m < 12; m++) {
+          const w = calendarWindow(new Date(Date.UTC(y, m, 1, 12)), tz);
+          const prev = visibleGridRange(new Date(y, m - 1, 15, 12), "month", tz);
+          const next = visibleGridRange(new Date(y, m + 1, 15, 12), "month", tz);
+          expect(isRangeInsideWindow(prev, w), `${tz} ${y}-${m + 1} prev`).toBe(true);
+          expect(isRangeInsideWindow(next, w), `${tz} ${y}-${m + 1} next`).toBe(true);
+        }
+      }
+    }
   });
 });
 

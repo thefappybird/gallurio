@@ -146,7 +146,7 @@ Composed, app-specific shared components.
 ### `lib/bookings/`
 | Import | Export | Purpose |
 |--------|--------|---------|
-| `lib/bookings/calendar-window.ts` | `calendarWindow`, `isRangeInsideWindow`, `CALENDAR_WINDOW_PAD_DAYS` | Visible month grid +/-31d window in workspace tz; drives server-windowed calendar loaders (`bookings/_data/calendar-events.ts`, `inquiries/_data/calendar-data.ts`) |
+| `lib/bookings/calendar-window.ts` | `calendarWindow`, `isRangeInsideWindow`, `CALENDAR_WINDOW_PAD_DAYS` | Visible month grid +/-37d window in workspace tz; drives server-windowed calendar loaders (`bookings/_data/calendar-events.ts`, `inquiries/_data/calendar-data.ts`) |
 | `lib/bookings/shift-conflicts.ts` | `getShiftsOnDates`, `getShiftsOnDate` | Shift/conflict hits per workspace-local date; batched form = ONE booking query for many dates |
 | `lib/bookings/activity-page.ts` | `loadBookingActivityPage` | One booking-activity page + actorNames; used by booking GET `?include=activity` and `/activity` |
 | `lib/users/actor-names.ts` | `resolveActorNames` | workosUserId -> name, tenant-guarded (workspace members only), cap 50 |

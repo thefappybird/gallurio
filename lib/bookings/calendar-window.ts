@@ -1,9 +1,10 @@
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { isoDateInTz } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 
-/** Days added beyond the visible month grid on each side (>= 15 so a prev/next
- *  click never needs a refetch even with a 2-week week-start mismatch). */
-export const CALENDAR_WINDOW_PAD_DAYS = 31;
+/** Days added beyond the visible month grid on each side. 37 = longest month (31)
+ *  + 6 spill-over days, so the adjacent month's full grid (prev or next) always
+ *  lies inside the window; also clears the >= 15-day floor for week-start mismatch. */
+export const CALENDAR_WINDOW_PAD_DAYS = 37;
 
 export type CalendarWindow = {
   start: Date;

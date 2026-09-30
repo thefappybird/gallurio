@@ -95,12 +95,12 @@ Target call budget. The executor re-measures the "today" column; the final table
 | Detail modal / wizard / draft card conflict preview | 1 GET `shifts-on-date` per unique session date | 1 GET (`dates=` batch) |
 | Detail → "Edit all" → wizard | GET booking again | 0 (shared key) |
 | Wizard create | Clients preloaded on every render | 1 lazy GET, cached |
-| Month nav | 0 (everything preloaded, unbounded) | 0 while the visible grid (incl. spill-over days) stays inside grid ± 31 days; 1 RSC fetch otherwise |
+| Month nav | 0 (everything preloaded, unbounded) | 0 while the visible grid (incl. spill-over days) stays inside grid ± 37 days; 1 RSC fetch otherwise |
 
 Work:
-- **Calendar window.** Add pure `lib/bookings/calendar-window.ts`: `calendarWindow(date, tz)` = the **visible grid** (the month padded to full weeks, so the ~1–6 spill-over days of the previous/next month are included) extended by `CALENDAR_WINDOW_PAD_DAYS = 31` on each side.
+- **Calendar window.** Add pure `lib/bookings/calendar-window.ts`: `calendarWindow(date, tz)` = the **visible grid** (the month padded to full weeks, so the ~1–6 spill-over days of the previous/next month are included) extended by `CALENDAR_WINDOW_PAD_DAYS = 37` on each side.
   - Spill-over days and drag targets into the adjacent month are always populated, never shown empty.
-  - The pad clears the "at least 15 days" floor with headroom, so a single prev/next click usually stays inside the window (0 requests).
+  - The pad clears the "at least 15 days" floor with headroom, and 37 (longest month + 6 spill-over days) guarantees the adjacent month's full grid in either direction, so a single prev/next click never fetches (0 requests).
   - Unit-test tz, DST and month edges; assert the grid's spill-over days are always inside the window and the pad is never < 15 days.
 - **Paged queries.**
   - `listBookings` gains a `range` overlap filter. Confirm with `explain` that it uses the existing `{workspaceId,lastSessionEnd,firstSessionStart}` index.
