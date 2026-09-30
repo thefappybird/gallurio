@@ -1,10 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { queryKeys } from "@/lib/query/keys";
+import type { ShiftHit } from "@/app/[locale]/(app)/bookings/_components/booking-wizard-steps/types";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
-import { useRouter, Link } from "@/lib/i18n/navigation";
+import { Link } from "@/lib/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -82,7 +87,8 @@ export function BookingDraftCard({
   const ts = useTranslations("app.inquiries.detail.sessionsEditor");
   const ter = useTranslations("app.inquiries.detail.eventRequest");
   const tTeam = useTranslations("app.bookings.teamPicker");
-  const router = useRouter();
+  const ws = useAppWorkspaceId();
+  const invalidateFor = useInvalidateFor();
   const timeMode = useTimeFormat();
   const errMsg = useActionError();
 
@@ -116,12 +122,8 @@ export function BookingDraftCard({
   // Sessions editor state
   const [editingSessions, setEditingSessions] = useState(false);
   const [draftSessions, setDraftSessions] = useState<InquirySessionView[]>(sessions);
-  const [sessionConflicts, setSessionConflicts] = useState<boolean[]>([]);
-  const [checkingSessionConflicts, setCheckingSessionConflicts] = useState(false);
   const [sessionsSaving, setSessionsSaving] = useState(false);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
-  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
-  const sessionConflictReqIdRef = useRef(0);
 
   function currentEdits() {
     return { total: Number(total) || 0, deposit: Number(deposit) || 0, notes, teamId };
@@ -134,33 +136,36 @@ export function BookingDraftCard({
       : d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
   }
 
-  async function checkSessionConflicts(next: InquirySessionView[]) {
-    const myId = ++sessionConflictReqIdRef.current;
-    setCheckingSessionConflicts(true);
-    const checks = next.map(async (s) => {
-      try {
-        const url = `/api/bookings/shifts-on-date?date=${s.startDate}${bookingId ? `&excludeId=${bookingId}` : ""}`;
-        const resp = await fetch(url);
-        if (!resp.ok) return false;
-        const { shifts } = await resp.json();
-        const aStart = toMinutes(s.startTime);
-        const aEnd = toMinutes(s.endTime);
-        if (aStart === null || aEnd === null) return false;
-        return overlappingShifts(shifts, aStart, aEnd).length > 0;
-      } catch { return false; }
-    });
-    const results = await Promise.all(checks);
-    // A newer check superseded this one — discard the stale result.
-    if (myId !== sessionConflictReqIdRef.current) return;
-    setSessionConflicts(results);
-    setCheckingSessionConflicts(false);
+  function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
+    setDraftSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
   }
 
-  async function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
-    const next = draftSessions.map((s, i) => i === idx ? { ...s, [field]: value } : s);
-    setDraftSessions(next);
-    await checkSessionConflicts(next);
-  }
+  // ONE batched request for every distinct session date. A changed date set is
+  // a new query key, so a superseded response can never overwrite a newer one.
+  const sortedDates = useMemo(
+    () => [...new Set(draftSessions.map((s) => s.startDate).filter(Boolean))].sort().slice(0, 31),
+    [draftSessions]
+  );
+  const shiftsQuery = useQuery({
+    queryKey: [...queryKeys(ws).shifts(sortedDates), bookingId],
+    queryFn: async (): Promise<Record<string, ShiftHit[]>> => {
+      const resp = await fetch(
+        `/api/bookings/shifts-on-date?dates=${sortedDates.join(",")}${bookingId ? `&excludeId=${bookingId}` : ""}`
+      );
+      if (!resp.ok) throw new Error(`shifts_load_failed_${resp.status}`);
+      return (await resp.json()).byDate;
+    },
+    enabled: editingSessions && sortedDates.length > 0,
+    retry: false,
+  });
+  const checkingSessionConflicts = editingSessions && shiftsQuery.isFetching;
+  // A failed check reads as "no conflict", as before; the server re-validates on save.
+  const sessionConflicts = draftSessions.map((s) => {
+    const aStart = toMinutes(s.startTime);
+    const aEnd = toMinutes(s.endTime);
+    if (!editingSessions || aStart === null || aEnd === null) return false;
+    return overlappingShifts(shiftsQuery.data?.[s.startDate] ?? [], aStart, aEnd).length > 0;
+  });
 
   const hasSessionConflict = sessionConflicts.some(Boolean);
   const hasInvalidSession = draftSessions.some(
@@ -181,6 +186,7 @@ export function BookingDraftCard({
           ? new Date(draftSessions[0].startDate).toISOString()
           : null,
       });
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -189,7 +195,6 @@ export function BookingDraftCard({
 
   function handleDiscardSessions() {
     setDraftSessions(sessions);
-    setSessionConflicts([]);
     setSessionsError(null);
     setEditingSessions(false);
   }
@@ -205,6 +210,7 @@ export function BookingDraftCard({
       setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
       // Propagate optimistic patch to the table row.
       onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
     } finally {
       setSaving(false);
     }
@@ -225,7 +231,10 @@ export function BookingDraftCard({
       setApproved(true);
       onConverted?.();
       toast.success(ta("approvedToast"));
-      if (!onConverted) router.refresh(); // standalone page only
+      // Also drops the cached inquiry detail so reopening shows the booked state.
+      const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId });
+      if (convertedBookingId) invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId });
     } catch {
       toast.error(t("approveError"));
     } finally {
