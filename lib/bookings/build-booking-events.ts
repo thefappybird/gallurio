@@ -20,8 +20,9 @@ export type BookingEventInput = {
 type BuildOptions = {
   /** Midnight of "today" in UTC — used by candle-split to mark past days. */
   today: Date;
-  /** Maps client._id.toString() → email (nullable). */
-  emailByClientId: Map<string, string | null>;
+  /** Maps client._id.toString() → email (nullable). Optional: calendar views
+   *  no longer load client emails (the field is never rendered) → null. */
+  emailByClientId?: Map<string, string | null>;
   /** Workspace IANA timezone — used to split sessions on the correct wall-clock
    *  day boundary and to format each candle's displayed time label correctly. */
   tz: string;
@@ -66,7 +67,7 @@ export function buildBookingCalendarEvents(
         end: candle.end,
         status: b.status as BookingStatus,
         clientName: b.clientName,
-        clientEmail: b.clientId
+        clientEmail: b.clientId && emailByClientId
           ? (emailByClientId.get(b.clientId.toString()) ?? null)
           : null,
         rangeStart: result.rangeStart,

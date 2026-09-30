@@ -2,13 +2,14 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client } from "@/lib/db/models";
+import { Client, type BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
 import { bookingRowAmount } from "./_data/booking-rows";
-import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
+import { getWorkspaceRateMap, NO_CONVERSION } from "@/lib/pricing/workspaceRates";
 import { parseBookingsToggleFilters } from "./_data/booking-filters";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { type BookingsView } from "./_components/view-toggle";
@@ -23,7 +24,6 @@ import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
-import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
@@ -164,23 +164,30 @@ export default async function BookingsPage({
     selectedTeamIds.length > 0,
   );
 
-  // These two reads are independent — run them together to save a round-trip.
-  //  - Calendar view: fetch all bookings (no pagination) for event splitting.
+  // These reads are independent — run them together to save a round-trip.
+  //  - Calendar view: candles for the month window only (one windowed query).
   //    Table view: fetch only one page of bookings.
   //  - All clients for the workspace power the booking wizard's client picker.
   //    Limit 1000 covers all realistic workspace sizes and avoids per-keystroke
   //    API calls in the modal.
-  const [{ rows: bookings, total: bookingsTotal }, allClients] = await Promise.all([
-    listBookings(
-      workspace._id,
-      filters,
-      view === "table" ? { page: tablePage, limit: tableLimit } : undefined
-    ),
+  const defaultDate = parseCalendarDate(sp.date);
+  const [{ rows: bookings, total: bookingsTotal }, allClients, events] = await Promise.all([
+    view === "calendar"
+      ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
+      : listBookings(workspace._id, filters, { page: tablePage, limit: tableLimit }),
     Client.find({ workspaceId: workspace._id })
       .select({ _id: 1, name: 1, email: 1, phone: 1 })
       .sort({ name: 1 })
       .limit(1000)
       .lean(),
+    view === "calendar"
+      ? loadBookingsCalendarEvents({
+          workspaceId: workspace._id,
+          tz: filters.workspaceTimezone,
+          date: defaultDate,
+          filters,
+        })
+      : Promise.resolve([] as CalendarEvent[]),
   ]);
 
   // If the requested table page lies past the end of a non-empty result set
@@ -209,31 +216,12 @@ export default async function BookingsPage({
     phone: c.phone ?? null,
   }));
 
-  // Build a lookup map for email by client id — used for calendar event enrichment.
-  const emailByClientId = new Map(
-    allClients.map((c) => [c._id.toString(), c.email ?? null])
-  );
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Each session of each booking generates per-day candles. A candle covers
-  // one calendar day within the session's date range, running at the session's
-  // shift-start → shift-end time. Candle id encodes booking + session index +
-  // date so each candle is unique and stable.
-  // Only the calendar view consumes candle events; skip the split work in table
-  // view (where `bookings` is a single page that would be discarded anyway).
-  const events: CalendarEvent[] =
-    view !== "calendar"
-      ? []
-      : buildBookingCalendarEvents(bookings, {
-          today,
-          emailByClientId,
-          tz: filters.workspaceTimezone,
-        });
-
   // List rows always read in the workspace currency — see bookingRowAmount.
-  const fx = await getWorkspaceRateMap(workspace._id, workspace.currency);
+  // Only table rows use the rate map; skip the lookup in calendar view.
+  const fx =
+    view === "calendar"
+      ? NO_CONVERSION
+      : await getWorkspaceRateMap(workspace._id, workspace.currency);
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
@@ -255,8 +243,6 @@ export default async function BookingsPage({
       ...bookingRowAmount(b.amount, fx.rates, fx.target),
     };
   });
-
-  const defaultDate = sp.date ? new Date(sp.date) : new Date();
 
   // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
   // `invoiceTheme` existed have no key at all (not the schema default) — fall

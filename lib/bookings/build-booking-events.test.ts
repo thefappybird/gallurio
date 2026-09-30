@@ -25,6 +25,15 @@ function makeBooking(
 }
 
 describe("buildBookingCalendarEvents", () => {
+  it("emits clientEmail null when emailByClientId is omitted", () => {
+    const booking = makeBooking("b1", [
+      { startAt: new Date("2026-08-15T01:00:00Z"), endAt: new Date("2026-08-15T09:00:00Z") },
+    ]);
+    const events = buildBookingCalendarEvents([booking], { today: TODAY, tz: TZ });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.every((e) => e.clientEmail === null)).toBe(true);
+  });
+
   it("returns empty array for empty bookings", () => {
     const result = buildBookingCalendarEvents([], { today: TODAY, emailByClientId: new Map(), tz: TZ });
     expect(result).toEqual([]);
