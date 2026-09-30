@@ -26,6 +26,31 @@ describe("TableSkeleton", () => {
     ).toBe(0);
   });
 
+  it("applies a custom rowHeight to each body row and keeps 41px by default", () => {
+    const { rerender } = renderWithProviders(
+      <TableSkeleton columns={2} rows={2} rowHeight={56} />
+    );
+    const rowsOf = () =>
+      screen.getByLabelText("Loading table data").querySelectorAll("tbody tr");
+    expect((rowsOf()[0] as HTMLElement).style.height).toBe("56px");
+
+    rerender(<TableSkeleton columns={2} rows={2} />);
+    expect((rowsOf()[0] as HTMLElement).style.height).toBe("41px");
+  });
+
+  it("renders cardFields label/value pairs per mobile card (default 4)", () => {
+    const { container, rerender } = renderWithProviders(
+      <TableSkeleton columns={2} rows={1} cardRows={1} cardFields={3} />
+    );
+    const fieldCount = () =>
+      container.querySelectorAll("[aria-label='Loading card data'] .border-t > div")
+        .length;
+    expect(fieldCount()).toBe(3);
+
+    rerender(<TableSkeleton columns={2} rows={1} cardRows={1} />);
+    expect(fieldCount()).toBe(4);
+  });
+
   it("uses a full-width fixed-layout table for desktop loading rows", () => {
     renderWithProviders(<TableSkeleton columns={4} rows={2} />);
 

@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
 import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
@@ -93,7 +94,7 @@ export default async function BookingsPage({
           {view === "calendar" ? (
             <CalendarSkeleton />
           ) : (
-            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} />
+            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} {...BOOKINGS_SKELETON} />
           )}
         </div>
       }

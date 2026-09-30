@@ -27,6 +27,7 @@ import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { InquiriesHeaderSkeleton } from "./_components/inquiries-page-skeleton";
 import { INQUIRIES_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
@@ -109,7 +110,7 @@ export default async function InquiriesPage({
           {view === "calendar" ? (
             <CalendarSkeleton />
           ) : (
-            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} />
+            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} {...INQUIRIES_SKELETON} />
           )}
         </div>
       }

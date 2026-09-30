@@ -8,6 +8,7 @@ import { BookingsTable, type BookingRow } from "./bookings-table";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 
 // BookingsTable columns: title, client, date, status, total, actions = 6
 const BOOKINGS_TABLE_COLUMNS = 6;
@@ -58,6 +59,7 @@ export function BookingsPageClient({
           columns={BOOKINGS_TABLE_COLUMNS}
           rows={limit}
           cardRows={Math.min(limit, 4)}
+          {...BOOKINGS_SKELETON}
         />
       ) : (
         <BookingsTable

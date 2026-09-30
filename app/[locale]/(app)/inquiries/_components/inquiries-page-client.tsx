@@ -7,6 +7,7 @@ import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
@@ -391,6 +392,7 @@ export function InquiriesPageClient({
               columns={INQUIRY_TABLE_COLUMNS}
               rows={Math.min(limit, 8)}
               cardRows={Math.min(limit, 4)}
+              {...INQUIRIES_SKELETON}
             />
           ) : (
             <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} onOpenInquiry={openInquiry} />
