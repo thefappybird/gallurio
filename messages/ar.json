@@ -2175,6 +2175,7 @@
       },
       "detail": {
         "inactive": "غير نشط",
+        "retry": "إعادة المحاولة",
         "tabs": {
           "overview": "نظرة عامة",
           "bookings": "الحجوزات",

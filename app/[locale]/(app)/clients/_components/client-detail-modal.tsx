@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { queryKeys } from "@/lib/query/keys";
 import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -70,60 +73,39 @@ function ClientDetailModalInner({
   const t = useTranslations("app.clients");
   const tBookingStatus = useTranslations("app.bookings.statusValues");
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const [bookings, setBookings] = useState<ClientBookingRow[] | null>(null);
-  const [bookingsError, setBookingsError] = useState<string | null>(null);
-  const [payments, setPayments] = useState<ClientPaymentRow[] | null>(null);
-  const [paymentsError, setPaymentsError] = useState<string | null>(null);
-  const [paymentsPage, setPaymentsPage] = useState(1);
-  const [paymentsHasMore, setPaymentsHasMore] = useState(false);
-  const [paymentsLoadingMore, setPaymentsLoadingMore] = useState(false);
+  const keys = queryKeys(useAppWorkspaceId());
 
-  // Lazy-load bookings on first activation of the bookings tab. The outer
-  // component re-keys this inner component on client.id and open, so all
-  // local state resets naturally when those change — no reset effect needed.
-  useEffect(() => {
-    if (!open || activeTab !== "bookings") return;
-    if (bookings !== null || bookingsError) return;
+  // Lazy per tab: `enabled` flips on first activation; the cache is shared
+  // across reopen. The action `{error}` convention is thrown so isError works.
+  const bookingsQuery = useQuery<ClientBookingRow[]>({
+    queryKey: keys.clientBookings(client.id),
+    queryFn: async () => {
+      const result = await getClientBookingsAction(client.id);
+      if ("error" in result) throw new Error(result.error);
+      return result;
+    },
+    enabled: open && activeTab === "bookings",
+  });
+  const bookings = bookingsQuery.data ?? null;
+  const bookingsError = bookingsQuery.isError;
+  const bookingsLoading = bookingsQuery.isPending && activeTab === "bookings";
 
-    let cancelled = false;
-    getClientBookingsAction(client.id).then((result) => {
-      if (cancelled) return;
-      if ("error" in result) {
-        setBookingsError(result.error);
-      } else {
-        setBookings(result);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, activeTab, client.id, bookings, bookingsError]);
-
-  useEffect(() => {
-    if (!open || activeTab !== "payments" || payments !== null || paymentsError) return;
-    let cancelled = false;
-    getClientPaymentsAction(client.id).then((result) => {
-      if (cancelled) return;
-      if ("error" in result) setPaymentsError(result.error);
-      else { setPayments(result.items); setPaymentsHasMore(result.hasMore); }
-    });
-    return () => { cancelled = true; };
-  }, [open, activeTab, client.id, payments, paymentsError]);
-
-  async function loadMorePayments() {
-    if (paymentsLoadingMore) return;
-    setPaymentsLoadingMore(true);
-    const nextPage = paymentsPage + 1;
-    const result = await getClientPaymentsAction(client.id, nextPage);
-    if ("error" in result) setPaymentsError(result.error);
-    else { setPayments((current) => [...(current ?? []), ...result.items]); setPaymentsPage(nextPage); setPaymentsHasMore(result.hasMore); }
-    setPaymentsLoadingMore(false);
-  }
-
-  // Loading is derived: the bookings tab is loading whenever we're on it for
-  // this client and we haven't resolved into either bookings or an error yet.
-  const bookingsLoading =
-    activeTab === "bookings" && bookings === null && bookingsError === null;
+  const paymentsQuery = useInfiniteQuery({
+    queryKey: keys.clientPayments(client.id),
+    queryFn: async ({ pageParam }) => {
+      const result = await getClientPaymentsAction(client.id, pageParam);
+      if ("error" in result) throw new Error(result.error);
+      return result;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last, pages) => (last.hasMore ? pages.length + 1 : undefined),
+    enabled: open && activeTab === "payments",
+  });
+  const payments: ClientPaymentRow[] | null = paymentsQuery.data
+    ? paymentsQuery.data.pages.flatMap((p) => p.items)
+    : null;
+  const paymentsError = paymentsQuery.isError;
+  const paymentsHasMore = paymentsQuery.hasNextPage;
 
   const lastBookingDate = client.lastBookingAt
     ? new Date(client.lastBookingAt).toLocaleDateString(locale, {
@@ -240,7 +222,12 @@ function ClientDetailModalInner({
               </div>
             )}
             {bookingsError && (
-              <p className="text-sm text-destructive">{t("detail.bookings.error")}</p>
+              <div role="alert" className="flex items-center justify-between gap-2">
+                <p className="text-sm text-destructive">{t("detail.bookings.error")}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => void bookingsQuery.refetch()} loading={bookingsQuery.isFetching}>
+                  {t("detail.retry")}
+                </Button>
+              </div>
             )}
             {!bookingsLoading && !bookingsError && bookings !== null && (
               bookings.length === 0 ? (
@@ -293,8 +280,21 @@ function ClientDetailModalInner({
 
           {/* Payments Tab */}
           <TabsPanel value="payments" className="overflow-y-auto px-4 py-4">
-            {payments === null && !paymentsError ? <Skeleton className="h-16 w-full" /> : null}
-            {paymentsError ? <p className="text-sm text-destructive">{t("form.error")}</p> : null}
+            {paymentsQuery.isPending && activeTab === "payments" ? <Skeleton className="h-16 w-full" /> : null}
+            {paymentsError ? (
+              <div role="alert" className="flex items-center justify-between gap-2">
+                <p className="text-sm text-destructive">{t("form.error")}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void (payments ? paymentsQuery.fetchNextPage() : paymentsQuery.refetch())}
+                  loading={paymentsQuery.isFetching}
+                >
+                  {t("detail.retry")}
+                </Button>
+              </div>
+            ) : null}
             {payments?.length === 0 ? <p className="text-sm text-muted-foreground">{t("detail.payments.empty")}</p> : null}
             {payments && payments.length > 0 ? (
               <div className="flex flex-col gap-2">
@@ -335,7 +335,7 @@ function ClientDetailModalInner({
                     </div>
                   </div>
                 ))}
-                {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={loadMorePayments} loading={paymentsLoadingMore}>{t("table.pagination.next")}</Button> : null}
+                {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={() => void paymentsQuery.fetchNextPage()} loading={paymentsQuery.isFetchingNextPage}>{t("table.pagination.next")}</Button> : null}
               </div>
             ) : null}
           </TabsPanel>

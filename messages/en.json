@@ -2175,6 +2175,7 @@
       },
       "detail": {
         "inactive": "Inactive",
+        "retry": "Retry",
         "tabs": {
           "overview": "Overview",
           "bookings": "Bookings",

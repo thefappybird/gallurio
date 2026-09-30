@@ -2175,6 +2175,7 @@
       },
       "detail": {
         "inactive": "ไม่ใช้งาน",
+        "retry": "ลองอีกครั้ง",
         "tabs": {
           "overview": "ภาพรวม",
           "bookings": "การจอง",

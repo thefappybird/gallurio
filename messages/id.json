@@ -2175,6 +2175,7 @@
       },
       "detail": {
         "inactive": "Tidak aktif",
+        "retry": "Coba lagi",
         "tabs": {
           "overview": "Ringkasan",
           "bookings": "Booking",
