@@ -18,6 +18,8 @@ vi.mock("@/lib/db/mongoose", () => ({
 
 const emit = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+const evict = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/sockets/evictUserFromWorkspace", () => ({ evictUserFromWorkspace: evict }));
 vi.mock("@/lib/notifications/send", () => ({ sendNotification: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("next-intl/server", () => ({ getLocale: vi.fn().mockResolvedValue("en") }));
 
@@ -46,6 +48,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   emit.mockClear();
+  evict.mockClear();
 });
 
 async function makeTeam() {
@@ -181,15 +184,18 @@ describe("member actions — data:changed", () => {
     const res = await removeMemberFromTeamAndWorkspaceAction({ workosUserId: "user_m4", teamId: String(team._id) });
     expect(res.ok).toBe(true);
     expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+    expect(evict).toHaveBeenCalledWith(String(WORKSPACE_ID), "user_m4");
   });
 
   it("removeMemberFromWorkspace emits team.updated on success, none when removing the owner", async () => {
     const { removeMemberFromWorkspaceAction } = await import("./_member-action");
     await removeMemberFromWorkspaceAction({ workosUserId: OWNER_USER_ID });
     expect(emit).not.toHaveBeenCalled();
+    expect(evict).not.toHaveBeenCalled();
     await seedMemberUser("user_m5");
     await removeMemberFromWorkspaceAction({ workosUserId: "user_m5" });
     expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: null });
+    expect(evict).toHaveBeenCalledWith(String(WORKSPACE_ID), "user_m5");
   });
 });
 

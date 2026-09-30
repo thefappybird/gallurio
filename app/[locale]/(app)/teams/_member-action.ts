@@ -18,6 +18,7 @@ import { ActivityLog } from "@/lib/db/models/ActivityLog";
 import { connectDB } from "@/lib/db/mongoose";
 import { sendNotification } from "@/lib/notifications/send";
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
+import { evictUserFromWorkspace } from "@/lib/sockets/evictUserFromWorkspace";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -285,6 +286,7 @@ export async function removeMemberFromTeamAndWorkspaceAction(
     await session.endSession();
   }
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
+  await evictUserFromWorkspace(ctx.workspaceId, workosUserId);
   emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
@@ -418,6 +420,7 @@ export async function removeMemberFromWorkspaceAction(
     memberships.map((m) => releaseTeamSeat(m.teamId, ctx.workspace._id)),
   );
 
+  await evictUserFromWorkspace(ctx.workspaceId, workosUserId);
   emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: null });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
