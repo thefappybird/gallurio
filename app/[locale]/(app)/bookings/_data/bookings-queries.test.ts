@@ -413,3 +413,41 @@ describe("getBookingActivity", () => {
     expect(log[1].action).toBe("created");
   });
 });
+
+describe("listBookings range filter", () => {
+  const H = 3_600_000;
+  const rangeStart = new Date("2026-10-01T00:00:00Z");
+  const rangeEnd = new Date("2026-11-01T00:00:00Z");
+
+  async function seedSpan(title: string, startAt: Date, endAt: Date, wid = workspaceId) {
+    return Booking.create({
+      workspaceId: wid,
+      teamId: teamA,
+      clientId,
+      clientName: "C",
+      title,
+      status: "booked",
+      sessions: [{ startAt, endAt }],
+      firstSessionStart: startAt,
+      lastSessionEnd: endAt,
+      location: { address: "" },
+      amount: { total: 1, deposit: 0, currency: "PHP" },
+    });
+  }
+
+  it("returns only bookings overlapping the range (incl. straddling/overnight), tenant-scoped", async () => {
+    const at = (iso: string) => new Date(iso);
+    await seedSpan("inside", at("2026-10-10T09:00:00Z"), at("2026-10-10T17:00:00Z"));
+    await seedSpan("straddle-start", at("2026-09-30T20:00:00Z"), at("2026-10-01T04:00:00Z"));
+    await seedSpan("straddle-end", at("2026-10-31T20:00:00Z"), new Date(rangeEnd.getTime() + 4 * H));
+    await seedSpan("before", at("2026-09-01T09:00:00Z"), at("2026-09-01T17:00:00Z"));
+    await seedSpan("after", at("2026-11-05T09:00:00Z"), at("2026-11-05T17:00:00Z"));
+    await seedSpan("other-ws", at("2026-10-10T09:00:00Z"), at("2026-10-10T17:00:00Z"), otherWorkspaceId);
+
+    const { rows } = await listBookings(workspaceId, {
+      includePast: true,
+      range: { start: rangeStart, end: rangeEnd },
+    });
+    expect(rows.map((r) => r.title).sort()).toEqual(["inside", "straddle-end", "straddle-start"]);
+  });
+});

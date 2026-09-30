@@ -41,6 +41,10 @@ export type BookingListFilters = {
   // so pagination counts reflect the filtered set. Callers pass the workspace tz.
   includePast?: boolean;
   workspaceTimezone?: string;
+  // Overlap window (calendar views): firstSessionStart < end AND
+  // lastSessionEnd >= start. Merged with from/to and includePast — never
+  // replaces them. Backed by { workspaceId, lastSessionEnd, firstSessionStart }.
+  range?: { start: Date; end: Date };
 };
 
 export type BookingListPagination = {
@@ -103,6 +107,14 @@ export async function listBookings(
     const todayStr = isoDateInTz(new Date(), tz);
     const todayStart = dayBoundInTz(todayStr, tz, 0, 0, 0, 0);
     query.lastSessionEnd = { $gte: todayStart };
+  }
+
+  if (filters.range) {
+    const first = (query.firstSessionStart ?? {}) as Record<string, Date>;
+    query.firstSessionStart = { ...first, $lt: filters.range.end };
+    const last = (query.lastSessionEnd ?? {}) as Record<string, Date>;
+    const floor = last.$gte && last.$gte > filters.range.start ? last.$gte : filters.range.start;
+    query.lastSessionEnd = { ...last, $gte: floor };
   }
 
   const baseQuery = Booking.find(query).sort({ firstSessionStart: 1 });
