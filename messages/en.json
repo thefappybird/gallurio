@@ -1415,6 +1415,7 @@
           "cancel": "Go back",
           "invalidError": "Some changes have errors — fix them before submitting."
         },
+        "unconfirmedEdits": "{count, plural, one {# change isn't confirmed yet} other {# changes aren't confirmed yet}} — press ✓ to keep or ✕ to discard.",
         "incompleteBusiness": {
           "title": "Business info incomplete",
           "bodyInvoice": "Your business address and contact email are not configured in your settings page. Your invoice will contain incomplete data.",

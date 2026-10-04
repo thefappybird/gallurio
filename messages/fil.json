@@ -1415,6 +1415,7 @@
           "cancel": "Bumalik",
           "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
         },
+        "unconfirmedEdits": "{count, plural, one {# pagbabago ay hindi pa kumpirmado} other {# pagbabago ay hindi pa kumpirmado}} — pindutin ang ✓ para itago o ✕ para itapon.",
         "incompleteBusiness": {
           "title": "Hindi kumpleto ang impormasyon ng negosyo",
           "bodyInvoice": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa invoice mo.",

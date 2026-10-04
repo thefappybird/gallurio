@@ -685,6 +685,22 @@ describe("Issue 2 — session edits are deferred (pendingSessionEdits)", () => {
     expect(patchCalls).toHaveLength(0);
   });
 
+  it("flags an edited-but-unconfirmed session in the footer and clears it after confirm", async () => {
+    vi.stubGlobal("fetch", makeFetch());
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    expect(screen.queryByRole("status")).toBeNull();
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 5);
+    expect(await screen.findByRole("status")).toHaveTextContent("1 change isn't confirmed yet");
+
+    await clickConfirm();
+    await waitFor(() => {
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+  });
+
   it("fires a single PATCH with sessions payload when Save changes is clicked", async () => {
     const fetchMock = makeFetch();
     vi.stubGlobal("fetch", fetchMock);
@@ -1560,6 +1576,23 @@ describe("Event tab — event-type field", () => {
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
     expect(screen.getByRole("combobox")).toHaveTextContent("Wedding");
+  });
+
+  it("shows an unconfirmed-edits status in the footer only while an inline editor is dirty", async () => {
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: /payments/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^edit total$/i }));
+    expect(screen.queryByText(/isn't confirmed yet|aren't confirmed yet/i)).toBeNull();
+
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "99999" } });
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("1 change isn't confirmed yet");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/isn't confirmed yet/i)).toBeNull();
+    });
   });
 
   it("does NOT render an event-type control in the header", async () => {

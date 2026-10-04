@@ -1415,6 +1415,7 @@
           "cancel": "Kembali",
           "invalidError": "Beberapa perubahan memiliki kesalahan — perbaiki sebelum mengirim."
         },
+        "unconfirmedEdits": "{count, plural, other {# perubahan belum dikonfirmasi}} — tekan ✓ untuk menyimpan atau ✕ untuk membuang.",
         "incompleteBusiness": {
           "title": "Informasi bisnis belum lengkap",
           "bodyInvoice": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Invoice Anda akan berisi data yang tidak lengkap.",
