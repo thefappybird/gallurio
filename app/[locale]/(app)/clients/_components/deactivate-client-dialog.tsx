@@ -44,7 +44,7 @@ export function DeactivateClientDialog({
       }
       toast.success(t("form.updateSuccess"), { id: id_toast });
       // deactivateClientAction revalidates /clients.
-      invalidateFor({ type: "client.updated", clientId });
+      invalidateFor({ type: "client.updated", clientId }, { refresh: false });
       onSuccess?.();
       onOpenChange(false);
     }

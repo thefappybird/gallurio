@@ -245,7 +245,7 @@ describe("ClientsPageClient", () => {
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalledWith("c-inactive"));
     await waitFor(() =>
-      expect(invalidateForMock).toHaveBeenCalledWith({ type: "client.updated", clientId: "c-inactive" })
+      expect(invalidateForMock).toHaveBeenCalledWith({ type: "client.updated", clientId: "c-inactive" }, { refresh: false })
     );
     expect(routerRefresh).not.toHaveBeenCalled();
   });
