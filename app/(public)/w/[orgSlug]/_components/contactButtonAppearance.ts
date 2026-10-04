@@ -1,5 +1,3 @@
-"use client";
-
 import type { CSSProperties } from "react";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
