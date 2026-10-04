@@ -40,6 +40,10 @@ export function useTableFitCookie<T extends HTMLElement>(
   useEffect(() => {
     if (remainingHeight === null) return;
     if (!window.matchMedia("(min-width: 1024px)").matches) return;
+    const node = ref.current;
+    // Scrolled page or empty table (no pagination sibling) overstates the fit.
+    if (!node || node.getBoundingClientRect().top < 0) return;
+    if (!node.querySelector("tbody tr")) return;
     const rows = calculateTableSkeletonRows({
       availableHeight: remainingHeight,
       headerHeight,
@@ -47,7 +51,7 @@ export function useTableFitCookie<T extends HTMLElement>(
     });
     const cookie = nextFitCookie(table, rows, document.cookie);
     if (cookie) document.cookie = cookie;
-  }, [remainingHeight, table, rowHeight, headerHeight]);
+  }, [ref, remainingHeight, table, rowHeight, headerHeight]);
 
   return ref;
 }
