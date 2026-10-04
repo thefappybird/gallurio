@@ -219,11 +219,12 @@ export async function submitInquiry(
   // dashboard count; a bump failure is caught above and never suppresses these.
   const wsIdStr = String(workspaceId);
   emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
-  emitDataChanged(wsIdStr, {
-    type: "booking.created",
-    bookingId: String(draftBookingId),
-    clientId: String(clientId),
-  });
+  // The draft booking has no team yet: owners get the full event, staff only a client-stats refresh.
+  emitDataChanged(
+    wsIdStr,
+    { type: "booking.created", bookingId: String(draftBookingId), clientId: String(clientId) },
+    { teamIds: [null] }
+  );
   if (clientIsNew) {
     emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
   }

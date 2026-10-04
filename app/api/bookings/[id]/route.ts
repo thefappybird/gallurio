@@ -689,6 +689,9 @@ export async function PATCH(req: Request, { params }: Params) {
     bookingId: existing._id.toString(),
     clientId: updated?.clientId ? String(updated.clientId) : null,
     inquiryId: existing.createdFromInquiryId ? String(existing.createdFromInquiryId) : null,
+  }, {
+    // Old + new team: the previous team must still learn the booking left it.
+    teamIds: [existing.teamId ? String(existing.teamId) : null, updated?.teamId ? String(updated.teamId) : null],
   });
 
   // --- Notifications ---

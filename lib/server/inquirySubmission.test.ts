@@ -207,11 +207,11 @@ describe("submitInquiry", () => {
     if (!res.ok) throw new Error("expected ok");
     const wsId = String(ws._id);
     expect(emit).toHaveBeenCalledWith(wsId, { type: "inquiry.created", inquiryId: res.inquiryId });
-    expect(emit).toHaveBeenCalledWith(wsId, {
-      type: "booking.created",
-      bookingId: res.draftBookingId,
-      clientId: res.clientId,
-    });
+    expect(emit).toHaveBeenCalledWith(
+      wsId,
+      { type: "booking.created", bookingId: res.draftBookingId, clientId: res.clientId },
+      { teamIds: [null] }
+    );
     expect(emit).toHaveBeenCalledWith(wsId, { type: "client.created", clientId: res.clientId });
   });
 

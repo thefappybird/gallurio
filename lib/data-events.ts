@@ -13,6 +13,9 @@ export type DataEvent =
       inquiryId?: string | null;
     }
   | { type: "bookings.imported" }
+  // Sent instead of a booking event to staff who cannot see that booking: clients
+  // list shows workspace-wide booking counts/totals, so they still refetch clients.
+  | { type: "client.statsChanged"; clientId?: string | null }
   | { type: "inquiry.created"; inquiryId: string }
   | { type: "inquiry.updated"; inquiryId: string; bookingId?: string | null }
   | { type: "client.created" | "client.updated"; clientId: string }

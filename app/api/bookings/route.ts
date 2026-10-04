@@ -226,7 +226,7 @@ export async function POST(req: Request) {
     type: "booking.created",
     bookingId: bookingId!.toString(),
     clientId: committedClientId!.toString(),
-  });
+  }, { teamIds: [String(team._id)] });
   if (client.mode === "new") {
     emitDataChanged(wsId, { type: "client.created", clientId: committedClientId!.toString() });
   }

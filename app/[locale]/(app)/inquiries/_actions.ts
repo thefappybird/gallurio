@@ -330,18 +330,25 @@ function emitInquiryWrite(
   workspaceId: mongoose.Types.ObjectId,
   inquiryId: string,
   bookingId?: mongoose.Types.ObjectId | string | null,
-  clientId?: mongoose.Types.ObjectId | string | null
+  clientId?: mongoose.Types.ObjectId | string | null,
+  /** Teams that may see the booking. Omit when unsure: omitted = broadcast to the whole workspace. */
+  teamIds?: Array<mongoose.Types.ObjectId | string | null | undefined>
 ) {
   const ws = String(workspaceId);
   const bId = bookingId ? String(bookingId) : null;
   emitDataChanged(ws, { type: "inquiry.updated", inquiryId, bookingId: bId });
   if (bId) {
-    emitDataChanged(ws, {
+    const event = {
       type: "booking.updated",
       bookingId: bId,
       clientId: clientId ? String(clientId) : null,
       inquiryId,
-    });
+    } as const;
+    if (teamIds) {
+      emitDataChanged(ws, event, { teamIds: teamIds.map((t) => (t ? String(t) : null)) });
+    } else {
+      emitDataChanged(ws, event);
+    }
   }
 }
 
@@ -585,7 +592,7 @@ export async function approveInquiryBookingAction(
     }
   })();
 
-  emitInquiryWrite(workspaceId, inquiryId, booking._id, booking.clientId);
+  emitInquiryWrite(workspaceId, inquiryId, booking._id, booking.clientId, [booking.teamId]);
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
   revalidatePath("/dashboard");
@@ -643,6 +650,12 @@ export async function saveDraftBookingFieldsAction(
     }
   }
 
+  // A team change moves the draft between teams: both must hear about it.
+  const previousTeamId =
+    set.teamId !== undefined
+      ? (await Booking.findOne({ _id: inquiry.draftBookingId, workspaceId }, { teamId: 1 }).lean())?.teamId
+      : undefined;
+
   if (Object.keys(set).length > 0) {
     const written = await Booking.updateOne(
       { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
@@ -661,7 +674,13 @@ export async function saveDraftBookingFieldsAction(
     });
   }
 
-  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
+  emitInquiryWrite(
+    workspaceId,
+    inquiryId,
+    inquiry.draftBookingId,
+    inquiry.clientId,
+    set.teamId !== undefined ? [previousTeamId, set.teamId as mongoose.Types.ObjectId | null] : undefined
+  );
   revalidateInquiry(inquiryId);
   return { ok: true };
 }

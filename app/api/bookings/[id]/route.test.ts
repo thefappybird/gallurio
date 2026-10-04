@@ -282,7 +282,25 @@ describe("PATCH /api/bookings/[id]", () => {
       bookingId: String(b._id),
       clientId: String(c._id),
       inquiryId: null,
+    }, { teamIds: [String(teamId), String(teamId)] });
+  });
+
+  it("scopes the broadcast to BOTH the old and the new team on reassignment", async () => {
+    const newTeamId = new Types.ObjectId();
+    await Team.create({
+      _id: newTeamId, workspaceId, name: "Second", color: TEAM_COLOR_PALETTE[1] ?? TEAM_COLOR_PALETTE[0],
+      isDefault: false, isActive: true, memberCount: 0, createdByWorkosUserId: userId,
     });
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(newTeamId) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(emit).toHaveBeenCalledWith(
+      String(workspaceId),
+      expect.objectContaining({ type: "booking.updated" }),
+      { teamIds: [String(teamId), String(newTeamId)] }
+    );
   });
 
   it("applies a multi-field patch and writes ONE activity entry with all changes", async () => {

@@ -59,7 +59,7 @@ vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
 });
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Inquiry, Booking, Client, ActivityLog } from "@/lib/db/models";
+import { Inquiry, Booking, Client, ActivityLog, Team, TEAM_COLOR_PALETTE } from "@/lib/db/models";
 const sendInquiryDeclineClientMock = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/email/booking/inquiryDecline", () => ({
   sendInquiryDeclineClient: (...args: unknown[]) => sendInquiryDeclineClientMock(...args),
@@ -315,7 +315,7 @@ describe("approveInquiryBookingAction", () => {
       bookingId: String(booking._id),
       clientId: String(client._id),
       inquiryId: String(inquiry._id),
-    });
+    }, { teamIds: [null] });
   });
 
   it("does not emit when approval is refused", async () => {
@@ -819,6 +819,22 @@ describe("saveDraftBookingFieldsAction", () => {
       inquiryId: String(inquiry._id),
       bookingId: String(booking._id),
     });
+  });
+
+  it("scopes the booking broadcast to the draft's old and new team when the team changes", async () => {
+    const { booking, inquiry } = await seedDraft(workspaceId);
+    const oldTeam = new Types.ObjectId();
+    const newTeam = await Team.create({
+      workspaceId, name: "Crew B", color: TEAM_COLOR_PALETTE[0], isDefault: false, isActive: true,
+      memberCount: 0, createdByWorkosUserId: "user_test",
+    });
+    await Booking.updateOne({ _id: booking._id }, { $set: { teamId: oldTeam } });
+    await saveDraftBookingFieldsAction(String(inquiry._id), { teamId: String(newTeam._id) });
+    expect(emitMock).toHaveBeenCalledWith(
+      String(workspaceId),
+      expect.objectContaining({ type: "booking.updated" }),
+      { teamIds: [String(oldTeam), String(newTeam._id)] }
+    );
   });
 
   it("returns not_draft, logs nothing and emits nothing when the booking is no longer a draft", async () => {

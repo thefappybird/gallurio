@@ -145,7 +145,7 @@ describe("POST /api/bookings", () => {
       type: "booking.created",
       bookingId: id,
       clientId: String(client?._id),
-    });
+    }, { teamIds: [String(teamId)] });
     expect(emit).toHaveBeenCalledWith(String(workspaceId), {
       type: "client.created",
       clientId: String(client?._id),
