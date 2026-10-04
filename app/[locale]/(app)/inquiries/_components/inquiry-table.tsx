@@ -307,18 +307,18 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   </span>
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
-                  <span className="flex min-w-0 max-w-[11rem] items-center gap-1.5">
-                    <span
-                      className="min-w-0 truncate"
-                      title={row.eventTitle ?? undefined}
-                    >
-                      {row.eventTitle ?? t("table.noTitle")}
-                    </span>
-                    <SourcePill source={row.source} fallback={t("table.directSource")} />
+                  <span
+                    className="block max-w-[9rem] truncate"
+                    title={row.eventTitle ?? undefined}
+                  >
+                    {row.eventTitle ?? t("table.noTitle")}
                   </span>
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
-                  {eventTypeLabel(row.eventType)}
+                  <span className="flex flex-col items-start gap-1">
+                    {eventTypeLabel(row.eventType)}
+                    <SourcePill source={row.source} fallback={t("table.directSource")} />
+                  </span>
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 align-middle xl:px-3">
                   {fmtDate(row.eventDate)}

@@ -74,15 +74,17 @@ describe("InquiryTable", () => {
     expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
   });
 
-  it("desktop table has no Source column; source pill sits in the title cell", () => {
+  it("desktop table has no Source column; source pill sits under the type, not in the title cell", () => {
     renderTable();
     const table = screen.getByRole("table");
     expect(table.querySelectorAll("th[aria-sort]")).toHaveLength(7);
     const pill = table.querySelector('tbody [data-testid="source-pill"]');
     expect(pill).toHaveTextContent("portfolio");
     expect(pill).toHaveClass("shrink-0", "capitalize");
-    expect(pill?.parentElement).toHaveClass("flex", "min-w-0");
-    expect(pill?.closest("td")).toHaveTextContent("Santos Wedding");
+    expect(pill?.parentElement).toHaveClass("flex", "flex-col", "items-start", "gap-1");
+    const title = table.querySelector('tbody [title="Santos Wedding"]');
+    expect(title).toHaveClass("block", "max-w-[9rem]", "truncate");
+    expect(pill?.closest("td")).not.toContainElement(title as HTMLElement);
   });
 
   it("desktop name cell truncates and exposes the full name", () => {
