@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client } from "@/lib/db/models";
+import { Client, Booking } from "@/lib/db/models";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
@@ -125,15 +125,33 @@ export async function updateClientAction(
       return { error: "invalid_input" };
     }
 
-    const updated = await Client.findOneAndUpdate(
-      { _id: clientId, workspaceId: ctx.workspace._id },
-      { $set: parsed.data },
-      { new: true }
-    );
+    // Booking.clientName is a denormalized copy of the client's name, so a
+    // rename must rewrite it in the same transaction as the Client update.
+    const found: { id: string | null } = { id: null };
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const before = await Client.findOneAndUpdate(
+          { _id: clientId, workspaceId: ctx.workspace._id },
+          { $set: parsed.data },
+          { new: false, session, projection: { name: 1 } }
+        );
+        found.id = before ? String(before._id) : null;
+        if (before && before.name !== parsed.data.name) {
+          await Booking.updateMany(
+            { workspaceId: ctx.workspace._id, clientId: before._id },
+            { $set: { clientName: parsed.data.name } },
+            { session }
+          );
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
 
-    if (!updated) return { error: "client_not_found" };
+    if (!found.id) return { error: "client_not_found" };
 
-    emitDataChanged(String(ctx.workspace._id), { type: "client.updated", clientId: String(updated._id) });
+    emitDataChanged(String(ctx.workspace._id), { type: "client.updated", clientId: found.id });
     revalidatePath("/clients");
     return { ok: true };
   } catch {

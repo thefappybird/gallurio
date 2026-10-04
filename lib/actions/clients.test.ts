@@ -339,3 +339,38 @@ describe("findClientMatchesAction", () => {
     expect(result.matches[0].source).toBe("referral");
   });
 });
+
+describe("updateClientAction name propagation", () => {
+  async function seedBookingFor(wid: Types.ObjectId, clientId: Types.ObjectId, clientName: string) {
+    const at = new Date("2026-08-15T10:00:00Z");
+    return Booking.create({
+      workspaceId: wid,
+      teamId: new Types.ObjectId(),
+      clientId,
+      clientName,
+      title: "Shoot",
+      status: "booked",
+      sessions: [{ startAt: at, endAt: at }],
+      firstSessionStart: at,
+      lastSessionEnd: at,
+      amount: { total: 100, deposit: 0, currency: "PHP" },
+    });
+  }
+
+  it("renames denormalized Booking.clientName for that client only, within the workspace", async () => {
+    mockOrg();
+    const client = await Client.create({ workspaceId, name: "Old Name", source: "manual" });
+    const sameIdOtherWs = await seedBookingFor(otherWorkspaceId, client._id, "Old Name");
+    const mine = await seedBookingFor(workspaceId, client._id, "Old Name");
+    const otherClient = await Client.create({ workspaceId, name: "Bob", source: "manual" });
+    const bobs = await seedBookingFor(workspaceId, otherClient._id, "Bob");
+
+    const result = await updateClientAction(String(client._id), { ...validInput, name: "New Name" });
+
+    expect(result).toEqual({ ok: true });
+    expect((await Booking.findById(mine._id).lean())?.clientName).toBe("New Name");
+    expect((await Booking.findById(bobs._id).lean())?.clientName).toBe("Bob");
+    expect((await Booking.findById(sameIdOtherWs._id).lean())?.clientName).toBe("Old Name");
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), { type: "client.updated", clientId: String(client._id) });
+  });
+});
