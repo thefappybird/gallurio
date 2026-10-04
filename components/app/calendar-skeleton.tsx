@@ -6,20 +6,33 @@ import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-heigh
 const WEEKDAY_COLS = 7;
 const WEEK_ROWS = 6;
 
+/** Default pre-measure height; desktop variants below match each page's real offset. */
+const DEFAULT_CALENDAR_FALLBACK = "h-[calc(100dvh-14rem)]";
+/** Full literal strings so Tailwind sees them. Desktop top 164 + 24 gap. */
+export const BOOKINGS_CALENDAR_FALLBACK =
+  "h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-188px)]";
+/** Desktop top 96 + 24 gap. */
+export const INQUIRIES_CALENDAR_FALLBACK =
+  "h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-120px)]";
+
 /**
  * Placeholder for the bookings/inquiries calendar: toolbar row + a 6x7 month
  * grid at the calendar's real height (same class + measured height as
  * BookingCalendar's container) so swapping in the real calendar never shifts
  * the layout.
  */
-export function CalendarSkeleton() {
+export function CalendarSkeleton({
+  fallbackClassName = DEFAULT_CALENDAR_FALLBACK,
+}: {
+  fallbackClassName?: string;
+}) {
   const { ref, remainingHeight } = useViewportRemainingHeight<HTMLDivElement>();
   return (
     <div
       ref={ref}
       aria-busy="true"
       aria-label="Loading calendar"
-      className="flex h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0 flex-col gap-2"
+      className={`flex ${fallbackClassName} min-h-0 w-full min-w-0 flex-col gap-2`}
       style={remainingHeight === null ? undefined : { height: `${remainingHeight}px` }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">

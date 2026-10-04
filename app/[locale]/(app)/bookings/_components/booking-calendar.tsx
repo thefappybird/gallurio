@@ -104,6 +104,8 @@ const DnDCalendar = withDragAndDrop<AnyCalendarEvent>(Calendar);
 
 type Props = {
   events: CalendarEvent[];
+  /** Static height classes used until the viewport measure lands. */
+  fallbackClassName?: string;
   defaultDate?: Date;
   defaultView?: View;
   /** Controlled view. When provided alongside `onViewChange`, the parent owns
@@ -889,6 +891,7 @@ export function groupEventsForMonth(
 
 export function BookingCalendar({
   events,
+  fallbackClassName = "h-[calc(100dvh-14rem)]",
   defaultDate,
   defaultView = Views.MONTH,
   view: viewProp,
@@ -1193,7 +1196,7 @@ export function BookingCalendar({
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div
         ref={containerRef}
-        className="relative h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
+        className={`relative ${fallbackClassName} min-h-0 w-full min-w-0`}
         style={calendarHeight === null ? undefined : { height: `${calendarHeight}px` }}
       >
         <DnDCalendar

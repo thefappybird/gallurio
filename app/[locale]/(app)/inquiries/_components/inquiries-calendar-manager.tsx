@@ -20,6 +20,7 @@ import {
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { INQUIRIES_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
 
@@ -399,6 +400,7 @@ export function InquiriesCalendarManager({
       className={cn("transition-opacity", windowPending && "pointer-events-none opacity-60")}
     >
     <BookingCalendarLazy
+      fallbackClassName={INQUIRIES_CALENDAR_FALLBACK}
       events={eventsWithConflicts}
       defaultDate={defaultDate ? wallDateAsLocal(defaultDate, workspaceTz ?? FALLBACK_TZ) : undefined}
       onVisibleChange={onVisibleChange}
