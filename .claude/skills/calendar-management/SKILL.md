@@ -101,10 +101,11 @@ consumer runs it in an `eventsWithConflicts` useMemo over its visible events and
    `isInquiryCandleDraggable` (kind inquiry + `colorOverride` defined + `end >= now`) so booked
    and past candles can't be dragged.
 3. **Reschedule action.** Bookings: `patchBookingSessions` → ONE `PATCH /api/bookings/:id` with
-   `rejectOnConflict: true` (server checks overlaps and answers 409 with no write; there is no
-   client pre-flight). Inquiries: `rescheduleInquirySessionAction` (inquiries/_actions.ts)
+   `rejectOnConflict: true` plus `expectedUpdatedAt` (server checks overlaps and answers 409
+   `conflict` with no write, or 409 `stale` + current booking if it changed underneath; there is
+   no client pre-flight). Inquiries: `rescheduleInquirySessionAction` (inquiries/_actions.ts)
    — does a **server-side** conflict check and atomically syncs the Inquiry + its draft Booking
-   in a transaction.
+   in a transaction; it also sets `Inquiry.eventDate` (earliest session start in the workspace tz).
 
 The optimistic state handling around those actions is the part that's easy to get wrong —
 see **optimistic-rendering** (the inquiries calendar had a snap-back bug from clearing the

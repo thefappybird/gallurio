@@ -92,6 +92,14 @@ hand-invalidate keys at a call site; extend the map.
   bug.
 - `toast.promise` for the loading/success/error story; build the error message in the `error`
   callback so you can both revert and explain.
+- **Stale-write guard**: booking edits send `expectedUpdatedAt`; a `409 {error:"stale", booking}`
+  means rebase on `body.booking`, drop the optimistic edit and show
+  `app.bookings.detail.staleConflict` (`lib/bookings/stale-booking.ts`). Detail modal, wizard
+  edit and calendar drag all do this.
+- **In-flight override**: calendars keep optimistic overrides for in-flight ids through
+  unrelated refreshes; inquiry reschedule overrides are held until the server shows the new
+  position (max 15 s). A clean detail modal re-seeds from a newer server copy; a dirty one
+  keeps edits and shows `staleNotice`.
 
 ## Verify
 The reconcile logic is unit-testable (apply patch → expected rows; prune when server matches).

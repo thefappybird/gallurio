@@ -84,6 +84,16 @@ entityId, entityType, read, readAt, silent?, createdAt }`.
   (react-query invalidation + debounced `router.refresh()`), skipping the actor's own echo.
   This replaced the old `useLiveRefresh` hook (removed). Payloads carry only a type and opaque
   ids, never entity data.
+- **Scoped audience**: `emitDataChanged(ws, event, { teamIds })` for `booking.created/updated`
+  sends the full event only to owners + members of the booking's old/new teams (`user:<id>`
+  rooms) and `client.statsChanged` to everyone else (staff still see client stats on /clients).
+  Any resolution error falls back to a full workspace broadcast (fail open); events without
+  `teamIds` stay workspace-wide.
+- **Echo suppression is order-safe**: remote arrivals are recorded, so a late local mark never
+  swallows a teammate's identical event.
+- **Reconnect catch-up**: the socket reconnects without limit (backoff); after a gap
+  (reconnect, or tab visible while disconnected) the client invalidates all workspace queries
+  and refreshes.
 
 ## Types & triggers
 

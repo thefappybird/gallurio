@@ -32,8 +32,18 @@ Bookings, clients, calendar, teams, notifications, and audit trail — the day-t
 - **URL-driven modals**: `?detail`/`?edit` are mounted client-side by `BookingUrlModals` and changed with `setUrlParams` (`lib/utils/url-params.ts`), History API, 0 RSC fetches. Gotcha: pass `null` as history state; passing `window.history.state` (carries `__NA`) makes Next skip syncing `useSearchParams`.
 - **Call budgets (browser-verified)**: booking detail open = 1 GET (`?include=activity`) + 1 batched `shifts-on-date`. Drag = 1 PATCH with `rejectOnConflict` (409 rolls back only the dragged booking). Month +/-1 = 0 fetches; leaving the window = 1 RSC. Inquiry open = 1 action (client matches folded in via `lib/inquiries/detail-data.ts`), reopen = 0. Wizard client picker = 1 lazy GET, cached (`useWorkspaceClients`).
 
+### Data integrity
+
+- **Stale-write guard**: `PATCH /api/bookings/[id]` accepts optional `expectedUpdatedAt` (ISO), placed in the atomic update filter. Mismatch -> `409 {error:"stale", booking}` (current booking, GET shape); `rejectOnConflict` keeps `409 {error:"conflict"}`. Booking update + client payment sync + activity log run in one transaction. Detail modal, wizard edit and calendar drag all send the token (`lib/bookings/stale-booking.ts`); on stale they rebase on `body.booking`, drop the edit and show `app.bookings.detail.staleConflict`. A clean detail modal re-seeds from a newer server copy; a dirty one keeps edits and shows `staleNotice`.
+- **Inquiry draft card** re-syncs untouched fields from server props, warns (`changedUnderneath`) when dirty; Save/Approve send only changed fields. `saveDraftBookingFieldsAction` returns `not_draft` when nothing was written.
+- Renaming a client updates denormalized `Booking.clientName` in the same transaction. `Inquiry.eventDate` = earliest session start instant in the workspace tz (submission, session edit, calendar drag alike); inquiry table/detail format instants with `workspaceTz`.
+- **Scoped realtime**: `emitDataChanged(ws, event, { teamIds })` for `booking.created/updated` sends the full event to owners + members of the booking's old/new teams (`user:<id>` rooms) and `client.statsChanged` to everyone else (staff still see client stats on /clients). Any resolution error falls back to a full workspace broadcast; events without `teamIds` stay workspace-wide.
+- **Client freshness**: echo suppression is order-safe (remote arrivals are recorded, so a late local mark never swallows a teammate's identical event). Socket reconnects are unlimited with backoff; after a gap (reconnect, or tab visible while disconnected) the client invalidates all workspace queries and refreshes.
+- **Back/forward**: Next reuses cached RSC payloads on history navigation. `lib/query/dirty-routes.ts` marks routes affected by an event that were not refreshed now (all of them with `refresh:false`); `HistoryRefreshGuard` (in `(app)/layout.tsx`) refreshes from the `popstate` tick when history lands on a dirty route. `router.refresh()` stales the whole client router cache, so any refresh clears the dirty set.
+- **Invalidation map**: booking events also refresh `/inquiries` and `/teams`; client events also hit dashboard; member activity is invalidated by booking/inquiry/client events.
+- Verified end to end by `e2e/data-integrity.spec.ts` (two contexts = two sockets; staff audience probed with a minted socket token via `e2e/fixtures/realtime-probe.ts`).
+
 ## Known gaps
 
-- Deferred: every mutation refreshes all connected tabs, including staff who cannot see the booking. Cost only, not a correctness issue; fix would scope events by team.
 - `inquiries/_components/inquiry-table.tsx` maps rows without a ceiling of its own. It is safe only while the server pages it.
 - `dashboard/_components/event-type-donut.tsx` and `portfolio-views-chart.tsx` have no live consumer outside their tests (dead-code candidates, not removed).
