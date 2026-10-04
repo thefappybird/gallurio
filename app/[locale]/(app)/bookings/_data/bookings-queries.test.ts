@@ -45,6 +45,8 @@ async function seedBooking(
     startAt: Date;
     location: { address: string };
     teamId: Types.ObjectId;
+    bookedAt: Date | null;
+    total: number;
   }> = {}
 ) {
   const start = overrides.startAt ?? days(1);
@@ -55,11 +57,12 @@ async function seedBooking(
     clientName: overrides.clientName ?? "Demo Client",
     title: overrides.title ?? "Demo Booking",
     status: overrides.status ?? "booked",
+    bookedAt: overrides.bookedAt ?? null,
     sessions: [{ startAt: start, endAt: start }],
     firstSessionStart: start,
     lastSessionEnd: start,
     location: overrides.location ?? { address: "" },
-    amount: { total: 50_000, deposit: 10_000, currency: "PHP" },
+    amount: { total: overrides.total ?? 50_000, deposit: 10_000, currency: "PHP" },
   });
 }
 
@@ -85,6 +88,71 @@ expect(queries.map((q) => `${q.collection}.${q.method}`).sort()).toEqual([
     expect(total).toBe(3);
     expect(rows[0].firstSessionStart.getTime()).toBeLessThan(rows[1].firstSessionStart.getTime());
     expect(rows[1].firstSessionStart.getTime()).toBeLessThan(rows[2].firstSessionStart.getTime());
+  });
+
+  it("sorts by bookedAt desc when a sort is given", async () => {
+    await seedBooking(workspaceId, { title: "old", bookedAt: days(-5) });
+    await seedBooking(workspaceId, { title: "new", bookedAt: days(-1) });
+    await seedBooking(workspaceId, { title: "mid", bookedAt: days(-3) });
+
+    const { rows } = await listBookings(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "bookedAt", dir: "desc" } }
+    );
+    expect(rows.map((r) => r.title)).toEqual(["new", "mid", "old"]);
+  });
+
+  it("text sort is case-insensitive via collation", async () => {
+    await seedBooking(workspaceId, { title: "banana" });
+    await seedBooking(workspaceId, { title: "Cherry" });
+    await seedBooking(workspaceId, { title: "apple" });
+
+    const { rows } = await listBookings(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "title", dir: "asc", text: true } }
+    );
+    expect(rows.map((r) => r.title)).toEqual(["apple", "banana", "Cherry"]);
+  });
+
+  it("sorts by amount.total asc", async () => {
+    await seedBooking(workspaceId, { title: "b", total: 300 });
+    await seedBooking(workspaceId, { title: "a", total: 100 });
+    await seedBooking(workspaceId, { title: "c", total: 200 });
+
+    const { rows } = await listBookings(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "amount.total", dir: "asc" } }
+    );
+    expect(rows.map((r) => r.title)).toEqual(["a", "c", "b"]);
+  });
+
+  it("_id tie-break keeps pages disjoint and complete when sort values tie", async () => {
+    const tied = days(-2);
+    for (let i = 0; i < 5; i++) await seedBooking(workspaceId, { title: `t${i}`, bookedAt: tied });
+    const sort = { field: "bookedAt", dir: "desc" as const };
+
+    const p1 = await listBookings(workspaceId, {}, { page: 1, limit: 2, sort });
+    const p2 = await listBookings(workspaceId, {}, { page: 2, limit: 2, sort });
+    const p3 = await listBookings(workspaceId, {}, { page: 3, limit: 2, sort });
+    const ids = [...p1.rows, ...p2.rows, ...p3.rows].map((r) => String(r._id));
+    expect(new Set(ids).size).toBe(5);
+    expect(p1.total).toBe(5);
+  });
+
+  it("sorted listing never returns another workspace's rows", async () => {
+    await seedBooking(workspaceId, { title: "mine", bookedAt: days(-1) });
+    await seedBooking(otherWorkspaceId, { title: "theirs", bookedAt: days(-1) });
+
+    const { rows, total } = await listBookings(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "bookedAt", dir: "desc" } }
+    );
+    expect(rows.map((r) => r.title)).toEqual(["mine"]);
+    expect(total).toBe(1);
   });
 
   it("excludes cancelled by default", async () => {

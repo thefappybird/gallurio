@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { Booking, ActivityLog, type BookingDoc, type ActivityLogDoc } from "@/lib/db/models";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import type { SortDir } from "@/lib/tables/sort";
 
 /** Returns YYYY-MM-DD for `d` as seen in `timeZone`. */
 function isoDateInTz(d: Date, timeZone: string): string {
@@ -50,6 +51,9 @@ export type BookingListFilters = {
 export type BookingListPagination = {
   page?: number;
   limit?: number;
+  // Table sort (see lib/tables/sort.ts). Absent keeps firstSessionStart asc,
+  // which calendar/export callers rely on.
+  sort?: { field: string; dir: SortDir; text?: boolean };
 };
 
 export type BookingListResult = {
@@ -117,7 +121,15 @@ export async function listBookings(
     query.lastSessionEnd = { ...last, $gte: floor };
   }
 
-  const baseQuery = Booking.find(query).sort({ firstSessionStart: 1 });
+  const sort = pagination?.sort;
+  let baseQuery = Booking.find(query);
+  if (sort) {
+    const d = sort.dir === "asc" ? 1 : -1;
+    baseQuery = baseQuery.sort({ [sort.field]: d, _id: d });
+    if (sort.text) baseQuery = baseQuery.collation({ locale: "en", strength: 2 });
+  } else {
+    baseQuery = baseQuery.sort({ firstSessionStart: 1 });
+  }
 
   if (pagination) {
     const { page = 1, limit = 10 } = pagination;

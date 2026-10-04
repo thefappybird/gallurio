@@ -33,6 +33,7 @@ async function seedInquiry(
     status: string;
     eventType: string;
     createdAt: Date;
+    bookedAt: Date | null;
   }> = {}
 ) {
   // Insert via the raw driver so we control createdAt exactly — Mongoose's
@@ -44,6 +45,7 @@ async function seedInquiry(
     email: overrides.email ?? "emma@example.com",
     status: overrides.status ?? "inquiry",
     eventType: overrides.eventType ?? "wedding",
+    bookedAt: overrides.bookedAt ?? null,
     createdAt,
     updatedAt: createdAt,
   });
@@ -51,6 +53,21 @@ async function seedInquiry(
 }
 
 describe("listInquiries", () => {
+  it("sorts by bookedAt desc and never leaks another workspace", async () => {
+    const d = (n: number) => new Date(Date.now() + n * 86_400_000);
+    await seedInquiry(workspaceId, { name: "old", bookedAt: d(-5) });
+    await seedInquiry(workspaceId, { name: "new", bookedAt: d(-1) });
+    await seedInquiry(otherWorkspaceId, { name: "theirs", bookedAt: d(-0.5) });
+
+    const { rows, total } = await listInquiries(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "bookedAt", dir: "desc" } }
+    );
+    expect(rows.map((r) => r.name)).toEqual(["new", "old"]);
+    expect(total).toBe(2);
+  });
+
   it("returns inquiries newest-first", async () => {
     await seedInquiry(workspaceId, { createdAt: new Date("2026-01-01") });
     await seedInquiry(workspaceId, { createdAt: new Date("2026-03-01") });
