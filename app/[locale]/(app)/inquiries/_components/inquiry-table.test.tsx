@@ -74,20 +74,20 @@ describe("InquiryTable", () => {
     expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
   });
 
-  it("desktop source th and td are hidden below 2xl", () => {
+  it("desktop table has no Source column; source pill sits in the title cell", () => {
     renderTable();
     const table = screen.getByRole("table");
-    const th = table.querySelector("th[aria-sort]:nth-of-type(8)");
-    expect(th).toHaveClass("hidden", "2xl:table-cell");
-    expect(table.querySelector('tbody td [title="portfolio"]')?.closest("td")).toHaveClass(
-      "hidden",
-      "2xl:table-cell"
-    );
+    expect(table.querySelectorAll("th[aria-sort]")).toHaveLength(7);
+    const pill = table.querySelector('tbody [data-testid="source-pill"]');
+    expect(pill).toHaveTextContent("portfolio");
+    expect(pill).toHaveClass("shrink-0", "capitalize");
+    expect(pill?.parentElement).toHaveClass("flex", "min-w-0");
+    expect(pill?.closest("td")).toHaveTextContent("Santos Wedding");
   });
 
   it("desktop name cell truncates and exposes the full name", () => {
     renderTable();
-    expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate", "max-w-[11rem]");
+    expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate", "max-w-[10rem]");
   });
 
   it("renders empty state when rows is empty", () => {
@@ -106,24 +106,12 @@ describe("InquiryTable", () => {
     expect(screen.getByTestId("inquiries-card-list")).toBeInTheDocument();
   });
 
-  it("applies capitalize class to the desktop source cell", () => {
-    const { container } = renderTable();
-    const cells = container.querySelectorAll("td");
-    const sourceCell = Array.from(cells).find(
-      (cell) => cell.textContent?.trim() === "portfolio"
-    );
-    expect(sourceCell).toBeDefined();
-    expect(sourceCell?.className).toMatch(/capitalize/);
-  });
-
-  it("renders Direct fallback with capitalize class when source is null", () => {
-    const { container } = renderTable([rowNoSource]);
-    const cells = container.querySelectorAll("td");
-    const sourceCell = Array.from(cells).find(
-      (cell) => cell.textContent?.trim() === "Direct"
-    );
-    expect(sourceCell).toBeDefined();
-    expect(sourceCell?.className).toMatch(/capitalize/);
+  it("shows source pill in the mobile card pill row, Direct when null", () => {
+    renderTable([baseRow, rowNoSource]);
+    const pills = screen.getByTestId("inquiries-card-list").querySelectorAll('[data-testid="source-pill"]');
+    expect(pills[0]).toHaveTextContent("portfolio");
+    expect(pills[0].parentElement).toContainElement(screen.getAllByText("Inquiry")[0]);
+    expect(pills[1]).toHaveTextContent("Direct");
   });
 
   it("renders View icon buttons for the card and table variants", () => {
@@ -155,7 +143,7 @@ describe("InquiryTable", () => {
     );
     const ths = Array.from(container.querySelectorAll("thead th"));
     expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
-      "none", "none", "none", "none", "none", "descending", "none", "none", null,
+      "none", "none", "none", "none", "none", "descending", "none", null,
     ]);
   });
 

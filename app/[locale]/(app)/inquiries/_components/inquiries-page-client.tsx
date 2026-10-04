@@ -26,8 +26,8 @@ import type { CalendarEvent } from "../../bookings/_components/booking-calendar"
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import { getInquiryDetailAction } from "../_actions";
 
-// InquiryTable columns: status, client, title, type, event date, submitted, booked, source, actions = 9
-const INQUIRY_TABLE_COLUMNS = 9;
+// InquiryTable columns: status, client, title, type, event date, submitted, booked, actions = 8
+const INQUIRY_TABLE_COLUMNS = 8;
 
 const SORT_OPTION_KEYS = [
   ["submitted", "submitted"],

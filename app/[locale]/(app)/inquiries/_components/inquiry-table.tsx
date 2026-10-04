@@ -24,7 +24,6 @@ const COLUMNS = [
   { col: "eventDate", key: "eventDate" },
   { col: "submitted", key: "submitted" },
   { col: "booked", key: "bookedAt" },
-  { col: "source", key: "source" },
 ] as const;
 
 export type InquiryRow = {
@@ -75,6 +74,18 @@ function getDateFormatter(locale: string, tz: string): Intl.DateTimeFormat {
     dateFormatters.set(key, formatter);
   }
   return formatter;
+}
+
+function SourcePill({ source, fallback }: { source: string | null; fallback: string }) {
+  return (
+    <span
+      data-testid="source-pill"
+      title={source ?? undefined}
+      className="inline-flex shrink-0 items-center border border-border px-1.5 py-0.5 text-[11px] leading-none capitalize text-muted-foreground"
+    >
+      {source ?? fallback}
+    </span>
+  );
 }
 
 function CardField({
@@ -173,6 +184,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                         {t("table.conflict")}
                       </span>
                     ) : null}
+                    <SourcePill source={row.source} fallback={t("table.directSource")} />
                   </div>
                   <p className="mt-3 font-semibold leading-snug">{row.name}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -208,15 +220,9 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 <CardField
                   label={t("table.col.submitted")}
                   value={
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <span>{fmtDateTime(row.submittedAt)}</span>
-                      <span aria-hidden>-</span>
-                      <span className="capitalize">
-                        {row.source ?? t("table.directSource")}
-                      </span>
-                    </span>
+                    fmtDateTime(row.submittedAt)
                   }
-                  valueClassName="capitalize text-muted-foreground"
+                  valueClassName="text-muted-foreground"
                 />
               </dl>
             </article>
@@ -235,9 +241,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                     key={col}
                     scope="col"
                     aria-sort={ariaSortFor(sorted)}
-                    className={`px-2 py-2 font-medium xl:px-3 text-start${
-                      col === "source" ? " hidden 2xl:table-cell" : ""
-                    }`}
+                    className="px-2 py-2 font-medium xl:px-3 text-start"
                   >
                     <SortHeaderButton
                       label={t(`table.col.${col}`)}
@@ -289,13 +293,13 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 <td className="px-2 py-2.5 align-middle xl:px-3">
                   <span className="flex flex-col">
                     <span
-                      className="block max-w-[11rem] truncate font-semibold leading-snug"
+                      className="block max-w-[10rem] truncate font-semibold leading-snug"
                       title={row.name}
                     >
                       {row.name}
                     </span>
                     <span
-                      className="block max-w-[11rem] truncate text-xs text-muted-foreground"
+                      className="block max-w-[10rem] truncate text-xs text-muted-foreground"
                       title={row.email}
                     >
                       {row.email}
@@ -303,11 +307,14 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   </span>
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
-                  <span
-                    className="block max-w-[9rem] truncate"
-                    title={row.eventTitle ?? undefined}
-                  >
-                    {row.eventTitle ?? t("table.noTitle")}
+                  <span className="flex min-w-0 max-w-[11rem] items-center gap-1.5">
+                    <span
+                      className="min-w-0 truncate"
+                      title={row.eventTitle ?? undefined}
+                    >
+                      {row.eventTitle ?? t("table.noTitle")}
+                    </span>
+                    <SourcePill source={row.source} fallback={t("table.directSource")} />
                   </span>
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
@@ -321,14 +328,6 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
                   {row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
-                </td>
-                <td className="hidden px-2 py-2.5 align-middle xl:px-3 2xl:table-cell capitalize text-muted-foreground">
-                  <span
-                    className="block max-w-[6rem] truncate"
-                    title={row.source ?? undefined}
-                  >
-                    {row.source ?? t("table.directSource")}
-                  </span>
                 </td>
                 <td
                   className="px-2 py-2.5 align-middle xl:px-3"
