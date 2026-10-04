@@ -118,3 +118,27 @@ describe("EditableField localized labels", () => {
     expect(screen.getByRole("button", { name: "Kanselahin" })).toBeInTheDocument();
   });
 });
+
+describe("EditableField dirty reporting", () => {
+  it("reports dirty true when edited and false after cancel, with green confirm only when committable", () => {
+    const onDirtyChange = vi.fn();
+    render(
+      <EditableField
+        label="Title"
+        value="Original"
+        type="text"
+        editKey="title"
+        onDirtyChange={onDirtyChange}
+        onCommit={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit Title" }));
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+    expect(confirm.className).not.toContain("--success-bg");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Changed" } });
+    expect(onDirtyChange).toHaveBeenLastCalledWith("title", true);
+    expect(confirm.className).toContain("--success-bg");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onDirtyChange).toHaveBeenLastCalledWith("title", false);
+  });
+});

@@ -90,6 +90,11 @@ type Props = {
    */
   onEditingChange?: (editKey: string, editing: boolean) => void;
   /**
+   * Reports `editing && isDirty` (true while the editor holds an unconfirmed
+   * change; false on cancel/commit/unmount). Lets the modal warn the user.
+   */
+  onDirtyChange?: (editKey: string, dirty: boolean) => void;
+  /**
    * Called on mount with a stable `FieldHandle` (and on unmount with `null`).
    * The parent stores the handle in a Map and uses it to programmatically
    * commit or cancel the in-progress edit.
@@ -114,6 +119,7 @@ export function EditableField({
   readOnly,
   editKey,
   onEditingChange,
+  onDirtyChange,
   registerHandle,
 }: Props) {
   const timeMode = useTimeFormat();
@@ -189,6 +195,20 @@ export function EditableField({
   useEffect(() => {
     liveRef.current = { editing, draft, isDirty, canCommit, cancelEdit };
   });
+
+  const reportedDirty = editing && isDirty;
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  useEffect(() => {
+    onDirtyChangeRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    if (!editKey) return;
+    onDirtyChangeRef.current?.(editKey, reportedDirty);
+  }, [editKey, reportedDirty]);
+  useEffect(() => {
+    if (!editKey) return;
+    return () => onDirtyChangeRef.current?.(editKey, false);
+  }, [editKey]);
 
   // Register / unregister the stable FieldHandle on mount / unmount.
   // The handle itself is created once (stable object identity) and always reads
@@ -419,6 +439,11 @@ export function EditableField({
                   onClick={commit}
                   aria-label={tFields("confirmEdit")}
                   disabled={!canCommit}
+                  className={
+                    canCommit
+                      ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+                      : undefined
+                  }
                 >
                   <CheckIcon className="size-4" />
                 </Button>
