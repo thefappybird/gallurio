@@ -382,6 +382,8 @@ export async function POST(req: Request) {
       existingBooking = await Booking.findOne({
         _id: group.bookingId,
         workspaceId: ctx.workspace._id,
+        // Drafts are promoted only by the approve flow, never by import.
+        status: { $ne: "draft" },
       })
         // amount comes along so an edit to it can be refused rather than
         // silently dropped by the $set below.
