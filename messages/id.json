@@ -1401,6 +1401,8 @@
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
         "notFound": "Pemesanan tidak ditemukan.",
         "loadFailed": "Pemesanan ini tidak dapat dimuat.",
+        "staleConflict": "Pemesanan ini diubah oleh orang lain. Perubahan Anda tidak tersimpan — tinjau versi terbaru lalu coba lagi.",
+        "staleNotice": "Diperbarui oleh orang lain — perubahan Anda yang belum disimpan didasarkan pada versi yang lebih lama.",
         "retry": "Coba lagi",
         "editAll": "Edit semua",
         "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",

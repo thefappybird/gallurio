@@ -1401,6 +1401,8 @@
         "actionFailed": "Something went wrong. Try again.",
         "notFound": "Booking not found.",
         "loadFailed": "Couldn't load this booking.",
+        "staleConflict": "This booking was changed by someone else. Your edit wasn't saved — review the latest version and try again.",
+        "staleNotice": "Updated by someone else — your unsaved edit is based on an older version.",
         "retry": "Retry",
         "editAll": "Edit all",
         "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",

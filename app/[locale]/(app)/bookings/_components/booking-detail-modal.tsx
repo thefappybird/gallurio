@@ -16,6 +16,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useAppWorkspaceId } from "@/components/app/app-query-provider";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { queryKeys } from "@/lib/query/keys";
+import { StaleBookingError, isNewerUpdatedAt, throwIfStale } from "@/lib/bookings/stale-booking";
 import { BookingNotFoundError, useBookingQuery, type BookingActivityBlock } from "./use-booking-query";
 import {
   ArrowUpRightIcon,
@@ -157,6 +158,8 @@ type BookingDoc = {
     fxAt?: string | null;
   }[];
   notes: string;
+  /** Optimistic-concurrency token (ISO); sent back as `expectedUpdatedAt`. */
+  updatedAt?: string;
 };
 
 function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
@@ -428,6 +431,31 @@ export function BookingDetailModal({
     });
   }
 
+  /**
+   * 409 stale: the server booking replaces our baseline + the shared cache, the
+   * optimistic change is dropped (caller reverts activity), no retry.
+   */
+  function handleStale(err: StaleBookingError) {
+    const server = err.booking as (BookingDoc & { activity?: BookingActivityBlock }) | null;
+    if (server) {
+      setBooking(normalizeBookingDoc(server));
+      queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
+        ...server,
+        activity: old?.activity,
+      }));
+      invalidateFor({
+        type: "booking.updated",
+        bookingId,
+        clientId: server.clientId ?? null,
+        inquiryId: server.createdFromInquiryId ?? null,
+      });
+    } else {
+      void bookingQuery.refetch();
+    }
+    setSaveError(t("staleConflict"));
+    toast.error(t("staleConflict"));
+  }
+
   async function handleViewClient() {
     if (!booking?.client) return;
     setViewClientLoading(true);
@@ -697,6 +725,40 @@ export function BookingDetailModal({
   const hasUndrafted = undraftedCount > 0;
   const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
 
+  /** Editors that live in child-local state (header title, payment row, client
+   *  reassign) — not counted in `undraftedCount`, but they block a re-seed. */
+  const [openLocalEditors, setOpenLocalEditors] = useState<Set<string>>(new Set());
+  const onLocalEditingChange = useCallback((key: string, isEditing: boolean) => {
+    setOpenLocalEditors((prev) => {
+      if (isEditing === prev.has(key)) return prev;
+      const next = new Set(prev);
+      if (isEditing) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
+
+  // A teammate's newer version arrived. Clean modal -> adopt it (so the next
+  // save never sends arrays built from an old copy). Mid-edit -> keep the
+  // user's work, show a notice; the 409 `stale` guard still protects the write.
+  const hasLocalEdits =
+    hasPending ||
+    hasUndrafted ||
+    saving ||
+    sessionActionBusyIdx !== null ||
+    openLocalEditors.size > 0 ||
+    pendingSessionEditDialog !== null ||
+    reassignedClient !== null;
+  const remoteIsNewer =
+    seededFor === bookingId &&
+    !!booking &&
+    !!queryData &&
+    isNewerUpdatedAt(queryData.updatedAt, booking.updatedAt);
+  if (remoteIsNewer && !hasLocalEdits && queryData) {
+    setBooking(normalizeBookingDoc(queryData));
+  }
+  const showStaleNotice = remoteIsNewer && hasLocalEdits;
+
   function commitField(key: EditableKey, value: string | number | null) {
     setPending((prev) => {
       const next = { ...prev };
@@ -909,8 +971,9 @@ export function BookingDetailModal({
       const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(errMsg(data.error, data.params));
@@ -936,6 +999,13 @@ export function BookingDetailModal({
       setReassignedClient(null);
       toast.success(t("savedToast"));
     } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        discardAll();
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -985,8 +1055,9 @@ export function BookingDetailModal({
       const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sessions: newSessions }),
+        body: JSON.stringify({ sessions: newSessions, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(errMsg(data.error, data.params));
@@ -996,6 +1067,12 @@ export function BookingDetailModal({
       afterSave(updated, previous.client);
       toast.success(t("savedToast"));
     } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -1269,8 +1346,9 @@ export function BookingDetailModal({
       const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) throw new Error("Action failed");
       const updated: BookingDoc = await res.json();
       setBooking(normalizeBookingDoc(updated));
@@ -1278,7 +1356,13 @@ export function BookingDetailModal({
       toast.success(
         newStatus === "cancelled" ? t("cancelledToast") : t("restoredToast")
       );
-    } catch {
+    } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -1337,6 +1421,7 @@ export function BookingDetailModal({
           readOnly={readOnly}
           onCommit={commitField}
           onDiscard={discardField}
+          onLocalEditingChange={onLocalEditingChange}
           onEditAll={() =>
             setUrlParams((p) => {
               p.delete("detail");
@@ -1345,6 +1430,15 @@ export function BookingDetailModal({
           }
           onClose={() => attemptClose(false)}
         />
+
+        {showStaleNotice ? (
+          <p
+            role="status"
+            className="border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground"
+          >
+            {t("staleNotice")}
+          </p>
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
@@ -1448,6 +1542,7 @@ export function BookingDetailModal({
               onDraftDateChange={handleDraftDateChange}
               registerFieldHandle={registerFieldHandle}
               onFieldEditingChange={onFieldEditingChange}
+              onLocalEditingChange={onLocalEditingChange}
             />
           )}
         </div>
@@ -1622,6 +1717,7 @@ function DialogHeaderBar({
   onDiscard,
   onEditAll,
   onClose,
+  onLocalEditingChange,
 }: {
   booking: BookingDoc | null;
   pending: PendingChanges;
@@ -1636,6 +1732,7 @@ function DialogHeaderBar({
   onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
   onClose: () => void;
+  onLocalEditingChange: (key: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
@@ -1644,6 +1741,10 @@ function DialogHeaderBar({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    onLocalEditingChange("title", editingTitle);
+    return () => onLocalEditingChange("title", false);
+  }, [editingTitle, onLocalEditingChange]);
   let outstanding = 0;
   let currency = "PHP";
   if (booking) {
@@ -1901,6 +2002,7 @@ function BookingTabs({
   onToggleRemovePayment,
   registerFieldHandle,
   onFieldEditingChange,
+  onLocalEditingChange,
 }: {
   booking: BookingDoc;
   bookingId: string;
@@ -1957,6 +2059,7 @@ function BookingTabs({
   onToggleRemovePayment: (idx: number) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
   onFieldEditingChange: (editKey: string, editing: boolean) => void;
+  onLocalEditingChange: (key: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tPayments = useTranslations("app.bookings.payments");
@@ -1983,6 +2086,11 @@ function BookingTabs({
   const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
   const [editPaymentTitle, setEditPaymentTitle] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState<"cash" | "card" | "remit">("cash");
+  const paymentEditorOpen = editingPaymentIndex !== null;
+  useEffect(() => {
+    onLocalEditingChange("payment", paymentEditorOpen);
+    return () => onLocalEditingChange("payment", false);
+  }, [paymentEditorOpen, onLocalEditingChange]);
   const effectivePaymentBalance = Math.max(
     0,
     remainingBalance(
@@ -2030,6 +2138,10 @@ function BookingTabs({
     : upcomingSessions;
 
   const [reassignOpen, setReassignOpen] = useState(false);
+  useEffect(() => {
+    onLocalEditingChange("reassign", reassignOpen);
+    return () => onLocalEditingChange("reassign", false);
+  }, [reassignOpen, onLocalEditingChange]);
 
   // H2: The contact block shows the staged reassigned client when a clientId
   // change is pending, otherwise falls back to booking.client.

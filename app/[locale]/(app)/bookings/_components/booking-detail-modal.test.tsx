@@ -26,6 +26,8 @@ import {
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import type { TimeMode } from "@/lib/utils/time-format";
+import { act } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { BookingDetailModal } from "./booking-detail-modal";
 import { formatMoney } from "@/lib/utils/format-currency";
@@ -3117,5 +3119,110 @@ describe("BookingDetailModal — save reconciliation", () => {
       })
     );
     expect(refreshSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("BookingDetailModal — optimistic concurrency", () => {
+  const T1 = "2026-03-01T10:00:00.000Z";
+  const T2 = "2026-03-01T11:00:00.000Z";
+
+  it("sends the loaded updatedAt as expectedUpdatedAt on Save", async () => {
+    const booking = { ...MOCK_BOOKING, updatedAt: T1 };
+    const fetchMock = makeFetch({
+      booking: booking as unknown as typeof MOCK_BOOKING,
+      patchResponse: { ...booking, updatedAt: T2 } as unknown as typeof MOCK_BOOKING,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find((c) => c[1]?.method === "PATCH");
+      expect(patch).toBeTruthy();
+      expect(JSON.parse(patch![1].body).expectedUpdatedAt).toBe(T1);
+    });
+  });
+
+  function renderWithServer(getServer: () => Record<string, unknown>, patch?: () => Response | Record<string, unknown>) {
+    let qc!: import("@tanstack/react-query").QueryClient;
+    function Grab() {
+      qc = useQueryClient();
+      return null;
+    }
+    const base = makeFetch();
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+        return {
+          ok: true,
+          json: async () => ({ ...getServer(), activity: { entries: [], total: 0, page: 1, pageSize: 5, actorNames: {} } }),
+        };
+      }
+      if (init?.method === "PATCH" && patch) {
+        const r = patch();
+        return r instanceof Response ? r : { ok: true, status: 200, json: async () => r };
+      }
+      return base(url, init);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AppQueryProvider workspaceId="ws-test">
+          <Grab />
+          <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+        </AppQueryProvider>
+      </NextIntlClientProvider>
+    );
+    return { getQc: () => qc, fetchMock };
+  }
+
+  it("re-seeds from a newer server copy when the modal has no edits", async () => {
+    let server: Record<string, unknown> = { ...MOCK_BOOKING, updatedAt: T1 };
+    const { getQc } = renderWithServer(() => server);
+    await waitForLoad();
+    server = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    await act(async () => {
+      await getQc().invalidateQueries();
+    });
+    expect(await screen.findByRole("heading", { name: "Changed Elsewhere" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("keeps in-progress edits and shows a status notice when a newer copy arrives", async () => {
+    let server: Record<string, unknown> = { ...MOCK_BOOKING, updatedAt: T1 };
+    const { getQc } = renderWithServer(() => server);
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    server = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    await act(async () => {
+      await getQc().invalidateQueries();
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent(/Updated by someone else/);
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+  });
+
+  it("on 409 stale swaps in the server booking, drops the edit and shows the stale copy", async () => {
+    const newer = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    const { fetchMock } = renderWithServer(
+      () => ({ ...MOCK_BOOKING, updatedAt: T1 }),
+      () => new Response(JSON.stringify({ error: "stale", booking: newer }), { status: 409 })
+    );
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    expect(await screen.findByRole("heading", { name: "Changed Elsewhere" })).toBeInTheDocument();
+    expect(screen.queryByText("Unsaved")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/changed by someone else/i).length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.filter((c) => c[1]?.method === "PATCH")).toHaveLength(1);
   });
 });

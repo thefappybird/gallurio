@@ -1401,6 +1401,8 @@
         "actionFailed": "May naganap na mali. Subukan muli.",
         "notFound": "Hindi natagpuan ang booking.",
         "loadFailed": "Hindi ma-load ang booking na ito.",
+        "staleConflict": "Binago ng iba ang booking na ito. Hindi na-save ang iyong pagbabago — suriin ang pinakabagong bersyon at subukan muli.",
+        "staleNotice": "Na-update ng iba — ang hindi pa nase-save mong pagbabago ay batay sa mas lumang bersyon.",
         "retry": "Subukan muli",
         "editAll": "I-edit lahat",
         "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
