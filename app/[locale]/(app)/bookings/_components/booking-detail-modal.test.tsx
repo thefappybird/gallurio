@@ -3259,3 +3259,54 @@ describe("BookingDetailModal — optimistic concurrency", () => {
     expect(fetchMock.mock.calls.filter((c) => c[1]?.method === "PATCH")).toHaveLength(1);
   });
 });
+
+describe("SessionCard end time follows start time", () => {
+  it("moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+
+  it("snaps end to start + 1h on blur when end is at or before start", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(start, { target: { value: "10:00" } });
+    fireEvent.change(end, { target: { value: "09:00" } });
+    fireEvent.blur(end);
+
+    expect(end.value).toBe("11:00");
+  });
+
+  it("leaves end alone when start moves but end is still later", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "17:00" } });
+    fireEvent.change(start, { target: { value: "12:00" } });
+
+    expect(end.value).toBe("17:00");
+  });
+
+  it("DraftSessionCard moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+});

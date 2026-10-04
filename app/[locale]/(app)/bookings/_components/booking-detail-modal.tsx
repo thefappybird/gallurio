@@ -92,7 +92,7 @@ import {
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { FxSubtitle } from "@/components/app/fx-subtitle";
-import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, syncEndTime, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
@@ -3457,7 +3457,11 @@ function SessionCard({
                 type="time"
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftStartTime}
-                onChange={(e) => setDraftStartTime(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDraftStartTime(val);
+                  setDraftEndTime((end) => syncEndTime(val, end));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3473,6 +3477,7 @@ function SessionCard({
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
+                onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3807,7 +3812,9 @@ function DraftSessionCard({
               lang={TIME_INPUT_LANG[timeMode]}
               value={draftStartTime}
               onChange={(e) => {
-                setDraftStartTime(e.target.value);
+                const val = e.target.value;
+                setDraftStartTime(val);
+                setDraftEndTime((end) => syncEndTime(val, end));
                 setError(null);
               }}
               onKeyDown={(e) => {
@@ -3829,6 +3836,7 @@ function DraftSessionCard({
                 setDraftEndTime(e.target.value);
                 setError(null);
               }}
+              onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
                 if (e.key === "Escape") onDiscard();
