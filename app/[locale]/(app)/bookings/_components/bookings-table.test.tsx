@@ -32,6 +32,7 @@ const futureRow: BookingRow = {
   status: "booked",
   total: 75_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const pastRow: BookingRow = {
@@ -43,6 +44,7 @@ const pastRow: BookingRow = {
   status: "completed",
   total: 25_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const cancelledRow: BookingRow = {
@@ -54,6 +56,7 @@ const cancelledRow: BookingRow = {
   status: "cancelled",
   total: 10_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const partiallyPastRow: BookingRow = {
@@ -68,6 +71,7 @@ const partiallyPastRow: BookingRow = {
   status: "booked",
   total: 50_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 describe("BookingsTable", () => {
@@ -325,6 +329,8 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
       />
     );
     const ths = Array.from(container.querySelectorAll("thead th"));
@@ -332,28 +338,47 @@ describe("BookingsTable", () => {
     expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
       "none",
       "none",
-      "ascending",
+      "none",
+      "descending",
       "none",
       "none",
       null,
     ]);
   });
 
-  it("makes the sort trigger a button that toggles aria-sort", () => {
+  it("fires onSortChange with the column's natural dir when a new header is clicked", () => {
+    const onSortChange = vi.fn();
     const { container } = renderWithProviders(
       <BookingsTable
         rows={[futureRow]}
         locale="en"
         empty="No rows"
         workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
+        onSortChange={onSortChange}
       />
     );
     const table = container.querySelector("table") as HTMLElement;
     const dateTh = within(table).getByRole("columnheader", { name: /date/i });
     fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
-    expect(dateTh).toHaveAttribute("aria-sort", "none");
-    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
-    expect(dateTh).toHaveAttribute("aria-sort", "descending");
+    expect(onSortChange).toHaveBeenCalledWith("date", "desc");
+  });
+
+  it("shows the booked date in the workspace timezone and a dash when missing", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[
+          { ...futureRow, id: "a", bookedAt: "2026-01-05T20:00:00.000Z" },
+          { ...pastRow, id: "b", bookedAt: null },
+        ]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone="Asia/Manila"
+      />
+    );
+    expect(screen.getAllByText("Jan 6, 2026").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("renders a row action trigger", () => {
