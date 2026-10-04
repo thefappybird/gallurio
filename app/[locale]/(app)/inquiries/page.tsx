@@ -90,9 +90,9 @@ function compactSource(source: {
   return null;
 }
 
-// InquiryTable columns: status, client, title, type, event date, submitted, booked, source, actions = 9
+// InquiryTable columns: status, client, title (with source pill), type, event date, submitted, booked, actions = 8
 // (matches INQUIRY_TABLE_COLUMNS in inquiries-page-client.tsx)
-const INQUIRY_TABLE_COLUMNS = 9;
+const INQUIRY_TABLE_COLUMNS = 8;
 
 export default async function InquiriesPage({
   params,
