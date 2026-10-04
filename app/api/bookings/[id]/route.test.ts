@@ -1314,3 +1314,99 @@ describe("GET /api/bookings/[id]?include=activity", () => {
     expect(json.activity).toBeUndefined();
   });
 });
+
+describe("PATCH /api/bookings/[id] expectedUpdatedAt", () => {
+  it("409 stale with the current booking and leaves the DB unchanged", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch(
+        { title: "Mine", expectedUpdatedAt: new Date(b.updatedAt.getTime() - 5000).toISOString() },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe("stale");
+    expect(json.booking.title).toBe("Carter Wedding");
+    expect(json.booking.updatedAt).toBe(b.updatedAt.toISOString());
+    expect(json.booking.client).toMatchObject({ name: "Emma Carter" });
+    const after = await Booking.findById(b._id).lean();
+    expect(after?.title).toBe("Carter Wedding");
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("200 with a fresh updatedAt when the token matches", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "Mine", expectedUpdatedAt: b.updatedAt.toISOString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.title).toBe("Mine");
+    const after = await Booking.findById(b._id).lean();
+    expect(json.updatedAt).toBe(after?.updatedAt.toISOString());
+    expect(new Date(json.updatedAt).getTime()).toBeGreaterThan(b.updatedAt.getTime());
+  });
+
+  it("second write with the now-stale token is rejected (no lost update)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const token = b.updatedAt.toISOString();
+    const { PATCH } = await load();
+    const first = await PATCH(makePatch({ title: "A", expectedUpdatedAt: token }, b._id.toString()), ctx(b._id.toString()));
+    expect(first.status).toBe(200);
+    const second = await PATCH(makePatch({ title: "B", expectedUpdatedAt: token }, b._id.toString()), ctx(b._id.toString()));
+    expect(second.status).toBe(409);
+    expect((await second.json()).booking.title).toBe("A");
+    expect((await Booking.findById(b._id).lean())?.title).toBe("A");
+  });
+
+  it("stale client reassignment rolls back and 409s", async () => {
+    const c = await seedClient(workspaceId);
+    const c2 = await seedClient(workspaceId, { name: "Other", email: "o@example.com" });
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch(
+        { clientId: c2._id.toString(), expectedUpdatedAt: new Date(b.updatedAt.getTime() - 1).toISOString() },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(409);
+    expect((await Booking.findById(b._id).lean())?.clientId.toString()).toBe(c._id.toString());
+  });
+
+  it("rejects a malformed expectedUpdatedAt with 400", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "x", expectedUpdatedAt: "yesterday" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(400);
+  });
+
+  it("other-workspace booking still 404s even with a matching token", async () => {
+    const c = await seedClient(otherWorkspaceId);
+    const b = await seedBooking(otherWorkspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "x", expectedUpdatedAt: b.updatedAt.toISOString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("GET returns updatedAt as ISO", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { GET } = await load();
+    const json = await (await GET(makeGet(b._id.toString()), ctx(b._id.toString()))).json();
+    expect(json.updatedAt).toBe(b.updatedAt.toISOString());
+  });
+});

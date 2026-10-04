@@ -15,6 +15,8 @@ export type BookingEventInput = {
   teamId?: { toString(): string } | null;
   status: string;
   sessions: { startAt: Date; endAt: Date }[];
+  /** Booking.updatedAt — lets drag send `expectedUpdatedAt` for optimistic concurrency. */
+  updatedAt?: Date | string | null;
 };
 
 type BuildOptions = {
@@ -44,6 +46,7 @@ export function buildBookingCalendarEvents(
   return bookings.flatMap((b) => {
     const bookingId = b._id.toString();
     const sessions = b.sessions as { startAt: Date; endAt: Date }[];
+    const updatedAtIso = b.updatedAt ? new Date(b.updatedAt).toISOString() : undefined;
 
     return sessions.flatMap((session, sessionIdx) => {
       const sessionStart = new Date(session.startAt);
@@ -72,6 +75,7 @@ export function buildBookingCalendarEvents(
         sessionDayCount: result.totalShiftDays,
         sessionPastDayCount: result.pastShiftDays,
         workspaceTz: tz,
+        updatedAt: updatedAtIso,
       }));
     });
   });

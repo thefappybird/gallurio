@@ -60,6 +60,8 @@ export type CalendarEvent = {
   end: Date;
   status: BookingStatus;
   clientName: string;
+  /** Booking.updatedAt (ISO) — sent as `expectedUpdatedAt` on PATCH for stale-write detection. */
+  updatedAt?: string;
   /** First day of this session's date range. */
   rangeStart: Date;
   /** Last day of this session's date range. */

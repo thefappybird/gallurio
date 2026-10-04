@@ -89,3 +89,15 @@ describe("buildBookingCalendarEvents", () => {
     expect(events[1].sessionIndex).toBe(1);
   });
 });
+
+describe("buildBookingCalendarEvents updatedAt", () => {
+  it("carries the booking updatedAt as an ISO string on every candle", () => {
+    const booking = makeBooking(
+      "b1",
+      [{ startAt: new Date("2026-08-15T01:00:00Z"), endAt: new Date("2026-08-15T09:00:00Z") }],
+      { updatedAt: new Date("2026-08-01T12:00:00.123Z") }
+    );
+    const events = buildBookingCalendarEvents([booking], { today: TODAY, tz: TZ });
+    expect(events[0].updatedAt).toBe("2026-08-01T12:00:00.123Z");
+  });
+});

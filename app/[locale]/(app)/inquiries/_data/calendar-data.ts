@@ -44,7 +44,7 @@ export async function loadInquiriesCalendarData(args: {
       firstSessionStart: { $lt: window.end },
       lastSessionEnd: { $gte: window.start },
     })
-      .select({ title: 1, clientName: 1, clientId: 1, teamId: 1, status: 1, sessions: 1 })
+      .select({ title: 1, clientName: 1, clientId: 1, teamId: 1, status: 1, sessions: 1, updatedAt: 1 })
       .lean(),
   ]);
 
