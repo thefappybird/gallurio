@@ -142,6 +142,8 @@ Composed, app-specific shared components.
 | `lib/utils/get-user-time-format.ts` | `getUserTimeFormat` | `() => Promise<TimeMode>` | Read user time-format pref from cookie (fallback 24h) |
 | `lib/utils/iso-week.ts` | `addDaysStr`, `weekStartMonday`, `isoWeekStartDate`, `isoWeekOf` | `("YYYY-MM-DD", n) => str`; `(str) => Monday str`; `(isoYear, isoWeek) => Monday str`; `(str) => {isoYear, isoWeek}` | Pure ISO-8601 week-string arithmetic, no tz — safe for both server and client (`"use client"`) files |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
+| `lib/tables/page-fit.ts` | `TABLE_FIT_COOKIE`, `parseFitCookie`, `resolvePageSize`, `resolveLimit` | cookie-fit page size | Viewport-fit rows persisted in a cookie; server pages resolve limit + options before Suspense |
+| `lib/tables/sort.ts` | `parseSort`, `SORT_CONFIG`, `SortDir` | server table sort | Allowlisted `?sort&dir` per table (bookings, inquiries) -> Mongo field + text collation flag |
 
 ### `lib/validators/`
 | Import | Export | Purpose |
