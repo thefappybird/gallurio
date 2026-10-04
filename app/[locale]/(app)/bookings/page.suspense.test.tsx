@@ -4,6 +4,13 @@ import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 
 let mockView = "calendar";
+let mockFit: string | undefined;
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "gw_table_fit_bookings" && mockFit ? { value: mockFit } : undefined,
+  }),
+}));
 vi.mock("next-intl/server", () => ({ setRequestLocale: vi.fn(), getTranslations: vi.fn() }));
 vi.mock("@/lib/view-preferences.server", () => ({
   resolveStoredCollectionView: async () => mockView,
@@ -28,11 +35,14 @@ vi.mock("@/lib/invoices/theme", () => ({ INVOICE_THEME_PRESETS: {} }));
 
 import BookingsPage from "./page";
 
-async function render(view: string): Promise<ReactElement<{ fallback: ReactElement }>> {
+async function render(
+  view: string,
+  searchParams: Record<string, string> = {}
+): Promise<ReactElement<{ fallback: ReactElement }>> {
   mockView = view;
   const el = await BookingsPage({
     params: Promise.resolve({ locale: "en" }),
-    searchParams: Promise.resolve({}),
+    searchParams: Promise.resolve(searchParams),
   });
   expect(isValidElement(el)).toBe(true);
   return el as ReactElement<{ fallback: ReactElement }>;
@@ -54,5 +64,23 @@ describe("BookingsPage Suspense structure", () => {
     const kids = (el.props.fallback.props as { children: unknown[] }).children.flat();
     const table = kids.find((k) => isValidElement(k) && k.type === TableSkeleton) as ReactElement<{ rows: number }>;
     expect(table.props.rows).toBe(10);
+  });
+
+  it("table view: skeleton rows come from the fit cookie, and ?limit when it is a valid option", async () => {
+    mockFit = "14";
+    try {
+      const fallbackRows = async (sp: Record<string, string>) => {
+        const el = await render("table", sp);
+        const kids = (el.props.fallback.props as { children: unknown[] }).children.flat();
+        return (
+          kids.find((k) => isValidElement(k) && k.type === TableSkeleton) as ReactElement<{ rows: number }>
+        ).props.rows;
+      };
+      expect(await fallbackRows({})).toBe(14);
+      expect(await fallbackRows({ limit: "30" })).toBe(30);
+      expect(await fallbackRows({ limit: "10" })).toBe(14);
+    } finally {
+      mockFit = undefined;
+    }
   });
 });
