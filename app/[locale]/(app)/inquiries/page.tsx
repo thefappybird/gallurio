@@ -32,7 +32,7 @@ import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { buildInquiryDetail } from "@/lib/inquiries/detail-data";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
-import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { CalendarSkeleton, INQUIRIES_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { InquiriesHeaderSkeleton } from "./_components/inquiries-page-skeleton";
@@ -123,7 +123,7 @@ export default async function InquiriesPage({
         <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
           <InquiriesHeaderSkeleton />
           {view === "calendar" ? (
-            <CalendarSkeleton />
+            <CalendarSkeleton fallbackClassName={INQUIRIES_CALENDAR_FALLBACK} />
           ) : (
             <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={limit} cardRows={4} {...INQUIRIES_SKELETON} />
           )}

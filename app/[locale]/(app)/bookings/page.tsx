@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { BOOKINGS_CALENDAR_FALLBACK, CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
@@ -105,7 +105,7 @@ export default async function BookingsPage({
         <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
           <BookingsHeaderSkeleton />
           {view === "calendar" ? (
-            <CalendarSkeleton />
+            <CalendarSkeleton fallbackClassName={BOOKINGS_CALENDAR_FALLBACK} />
           ) : (
             <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={limit} cardRows={4} {...BOOKINGS_SKELETON} />
           )}
