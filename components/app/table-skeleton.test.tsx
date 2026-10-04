@@ -1,5 +1,5 @@
-import { screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
 import { calculateTableSkeletonRows, TableSkeleton } from "./table-skeleton";
 
@@ -49,6 +49,22 @@ describe("TableSkeleton", () => {
 
     rerender(<TableSkeleton columns={2} rows={1} cardRows={1} />);
     expect(fieldCount()).toBe(4);
+  });
+
+  it("renders exactly the requested rows regardless of viewport height", async () => {
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(100);
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 800, height: 100, top: 0, left: 0, right: 800, bottom: 100, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+    renderWithProviders(<TableSkeleton columns={2} rows={8} />);
+    await act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    expect(
+      screen.getByLabelText("Loading table data").querySelectorAll("tbody tr")
+    ).toHaveLength(8);
+    vi.restoreAllMocks();
   });
 
   it("uses a full-width fixed-layout table for desktop loading rows", () => {
