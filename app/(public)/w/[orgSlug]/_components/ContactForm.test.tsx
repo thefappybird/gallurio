@@ -179,7 +179,36 @@ describe("ContactForm", () => {
     expect(sessionCard?.className).not.toContain("text-card-foreground");
   });
 
-  it("adds and removes session rows", () => {
+  it("moves end to start + 1h when start is changed past end", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("End time"), { target: { value: "11:00" } });
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "14:00" } });
+
+  expect(screen.getByLabelText("End time")).toHaveValue("15:00");
+});
+
+it("snaps end to start + 1h on blur when end is at or before start", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "10:00" } });
+  const end = screen.getByLabelText("End time");
+  fireEvent.change(end, { target: { value: "09:00" } });
+  fireEvent.blur(end);
+
+  expect(end).toHaveValue("11:00");
+});
+
+it("leaves end alone when start moves but end is still later", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("End time"), { target: { value: "17:00" } });
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "12:00" } });
+
+  expect(screen.getByLabelText("End time")).toHaveValue("17:00");
+});
+
+it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     goToEventDetails();
     expect(screen.getAllByLabelText("Date")).toHaveLength(1);
