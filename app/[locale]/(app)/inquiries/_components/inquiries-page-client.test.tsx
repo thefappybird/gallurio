@@ -34,9 +34,14 @@ vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
 // Expose the rendered rows so tests can inspect optimistic patches.
 let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: ({ rows, onOpenInquiry }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void }) => {
+  InquiryTable: ({ rows, onOpenInquiry, onSortChange }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void; onSortChange?: (key: string, dir: "asc" | "desc") => void }) => {
     lastRenderedRows = rows;
-    return <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />;
+    return (
+      <>
+        <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />
+        <button type="button" data-testid="sort-client" onClick={() => onSortChange?.("client", "asc")} />
+      </>
+    );
   },
 }));
 
@@ -85,6 +90,7 @@ const row: InquiryRow = {
   eventType: "wedding",
   submittedAt: "2026-01-01T00:00:00.000Z",
   source: null,
+  bookedAt: null,
 };
 
 const detail: InquiryDetailModalData = {
@@ -113,6 +119,9 @@ const baseProps = {
   total: 1,
   page: 1,
   limit: 20,
+  pageSizeOptions: [20, 30, 50],
+  sortKey: "submitted",
+  sortDir: "desc" as const,
   locale: "en",
   status: "all",
   counts: { all: 1, inquiry: 1, booked: 0, archived: 0 },
@@ -287,5 +296,12 @@ describe("InquiriesPageClient", () => {
     // Row shows booked optimistically
     const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
     expect(patchedRow?.status).toBe("booked");
+  });
+
+  it("pushes sort, dir and page=1 when the table reports a sort change", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-client"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1&sort=client&dir=asc");
   });
 });

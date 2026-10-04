@@ -6,7 +6,10 @@ import { useTranslations } from "next-intl";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { MobileSortControl } from "@/components/app/table-sort";
+import { useTableFitCookie } from "@/hooks/use-table-fit-cookie";
 import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
+import type { SortDir } from "@/lib/tables/sort";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
@@ -23,7 +26,19 @@ import type { CalendarEvent } from "../../bookings/_components/booking-calendar"
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import { getInquiryDetailAction } from "../_actions";
 
-const INQUIRY_TABLE_COLUMNS = 6;
+// InquiryTable columns: status, client, title, type, event date, submitted, booked, source, actions = 9
+const INQUIRY_TABLE_COLUMNS = 9;
+
+const SORT_OPTION_KEYS = [
+  ["submitted", "submitted"],
+  ["bookedAt", "booked"],
+  ["eventDate", "eventDate"],
+  ["status", "status"],
+  ["client", "client"],
+  ["eventTitle", "eventTitle"],
+  ["eventType", "eventType"],
+  ["source", "source"],
+] as const;
 
 const TABS = ["all", "inquiry", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
@@ -33,6 +48,9 @@ type Props = {
   total: number;
   page: number;
   limit: number;
+  pageSizeOptions: number[];
+  sortKey: string;
+  sortDir: SortDir;
   locale: string;
   status: string;
   counts: InquiryStatusCounts;
@@ -55,6 +73,9 @@ export function InquiriesPageClient({
   total,
   page,
   limit,
+  pageSizeOptions,
+  sortKey,
+  sortDir,
   locale,
   status,
   counts,
@@ -75,6 +96,7 @@ export function InquiriesPageClient({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const fitRef = useTableFitCookie<HTMLDivElement>("inquiries", INQUIRIES_SKELETON.rowHeight);
   const ws = useAppWorkspaceId();
   const [selectedId, setSelectedId] = useState<string | null>(initialDetail?.inquiryId ?? null);
   const [syncedInitialDetailId, setSyncedInitialDetailId] = useState(
@@ -239,6 +261,14 @@ export function InquiriesPageClient({
     pushParams((params) => params.set("page", String(p)));
   }
 
+  function changeSort(key: string, dir: SortDir) {
+    pushParams((params) => {
+      params.set("sort", key);
+      params.set("dir", dir);
+      params.set("page", "1");
+    });
+  }
+
   function stripInquiryParam() {
     const params = readCurrentParams();
     if (!params.has("inquiryId")) return;
@@ -374,16 +404,31 @@ export function InquiriesPageClient({
             </Popover>
           </div>
 
-          {isPending ? (
-            <TableSkeleton
-              columns={INQUIRY_TABLE_COLUMNS}
-              rows={Math.min(limit, 8)}
-              cardRows={Math.min(limit, 4)}
-              {...INQUIRIES_SKELETON}
+          {total > 0 && (
+            <MobileSortControl
+              table="inquiries"
+              options={SORT_OPTION_KEYS.map(([key, col]) => ({
+                key,
+                label: t(`table.col.${col}`),
+              }))}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSortChange={changeSort}
             />
-          ) : (
-            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} />
           )}
+
+          <div ref={fitRef} className="min-w-0">
+            {isPending ? (
+              <TableSkeleton
+                columns={INQUIRY_TABLE_COLUMNS}
+                rows={limit}
+                cardRows={Math.min(limit, 4)}
+                {...INQUIRIES_SKELETON}
+              />
+            ) : (
+              <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} sortKey={sortKey} sortDir={sortDir} onSortChange={changeSort} />
+            )}
+          </div>
 
           {total > 0 && (
             <Pagination
@@ -396,7 +441,7 @@ export function InquiriesPageClient({
               className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
               actionsClassName="flex min-w-0 flex-wrap items-center gap-2"
             >
-              <PageSizeSelect value={limit} />
+              <PageSizeSelect value={limit} options={pageSizeOptions} />
             </Pagination>
           )}
         </>
