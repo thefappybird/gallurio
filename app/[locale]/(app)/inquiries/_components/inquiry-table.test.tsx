@@ -80,8 +80,8 @@ describe("InquiryTable", () => {
     expect(table.querySelectorAll("th[aria-sort]")).toHaveLength(7);
     const pill = table.querySelector('tbody [data-testid="source-pill"]');
     expect(pill).toHaveTextContent("portfolio");
-    expect(pill).toHaveClass("shrink-0", "capitalize");
-    expect(pill?.parentElement).toHaveClass("flex", "flex-col", "items-start", "gap-1");
+    expect(pill).toHaveClass("shrink-0", "capitalize", "py-px");
+    expect(pill?.parentElement).toHaveClass("flex", "flex-col", "items-start", "gap-0.5", "leading-tight");
     const title = table.querySelector('tbody [title="Santos Wedding"]');
     expect(title).toHaveClass("block", "max-w-[9rem]", "truncate");
     expect(pill?.closest("td")).not.toContainElement(title as HTMLElement);

@@ -81,7 +81,7 @@ function SourcePill({ source, fallback }: { source: string | null; fallback: str
     <span
       data-testid="source-pill"
       title={source ?? undefined}
-      className="inline-flex shrink-0 items-center border border-border px-1.5 py-0.5 text-[11px] leading-none capitalize text-muted-foreground"
+      className="inline-flex shrink-0 items-center border border-border px-1.5 py-px text-[11px] leading-none capitalize text-muted-foreground"
     >
       {source ?? fallback}
     </span>
@@ -315,7 +315,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   </span>
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
-                  <span className="flex flex-col items-start gap-1">
+                  <span className="flex flex-col items-start gap-0.5 leading-tight">
                     {eventTypeLabel(row.eventType)}
                     <SourcePill source={row.source} fallback={t("table.directSource")} />
                   </span>
