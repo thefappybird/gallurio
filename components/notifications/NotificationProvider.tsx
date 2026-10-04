@@ -2,8 +2,12 @@
 
 import { createContext, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
+import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { DATA_CHANGED_EVENT, type DataChangedPayload } from '@/lib/data-events'
 import { isLocalEcho } from '@/lib/query/invalidation'
+import { queryKeys } from '@/lib/query/keys'
+import { clearDirtyRoutes } from '@/lib/query/dirty-routes'
 import { useApplyDataEvent } from '@/hooks/use-data-events'
 import {
   markNotificationReadAction,
@@ -74,6 +78,18 @@ export function NotificationProvider({
   useEffect(() => {
     applyRef.current = applyDataEvent
   }, [applyDataEvent])
+  const queryClient = useQueryClient()
+  const router = useRouter()
+  // Events emitted while disconnected are lost: on reconnect / tab return, refetch
+  // everything under the workspace and refresh the server-rendered page once.
+  const catchUpRef = useRef(() => {})
+  useEffect(() => {
+    catchUpRef.current = () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys(workspaceId).root })
+      router.refresh()
+      clearDirtyRoutes()
+    }
+  }, [queryClient, router, workspaceId])
 
   useEffect(() => {
     // Use socket.io's async auth callback so a fresh token is fetched on every
@@ -98,20 +114,35 @@ export function NotificationProvider({
       transports: ['polling', 'websocket'],
       tryAllTransports: true,
       timeout: 5_000,
-      // Notifications persist to Mongo, so a temporary socket outage should
-      // not cause an endless background reconnect loop or console spam.
-      reconnectionAttempts: 3,
+      // Never give up: realtime must come back after any outage. Backoff is
+      // capped so a long outage retries at most every 30 s (the jittered delay
+      // keeps a recovering server from a reconnect stampede).
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1_000,
-      reconnectionDelayMax: 5_000,
+      reconnectionDelayMax: 30_000,
     })
     socketRef.current = socket
 
+    // True once the socket has been down: the next successful connect must catch up.
+    let missedEvents = false
     socket.on('connect', () => {
       console.log('[notifications] connected', socket.id)
+      if (missedEvents) {
+        missedEvents = false
+        catchUpRef.current()
+      }
     })
     socket.on('disconnect', (reason: string) => {
       console.log('[notifications] disconnected', reason)
+      missedEvents = true
     })
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || socket.connected) return
+      // Not connected on return: catch up over HTTP now, and again on the connect that follows.
+      missedEvents = true
+      catchUpRef.current()
+    }
+    document.addEventListener('visibilitychange', onVisible)
     // Do not surface a transport outage as an application error. Socket.IO
     // performs the bounded reconnect attempts above; persisted notifications
     // remain the fallback if it cannot reconnect.
@@ -157,6 +188,7 @@ export function NotificationProvider({
     })
 
     return () => {
+      document.removeEventListener('visibilitychange', onVisible)
       socket.disconnect()
       socketRef.current = null
     }

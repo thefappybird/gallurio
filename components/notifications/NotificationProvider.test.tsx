@@ -197,3 +197,56 @@ describe("NotificationProvider data:changed", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe("NotificationProvider reconnection catch-up", () => {
+  const mount = () =>
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <span />
+      </NotificationProvider>,
+    );
+
+  it("never gives up reconnecting, with a capped backoff", () => {
+    mount();
+    expect(vi.mocked(io)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reconnectionAttempts: Infinity, reconnectionDelayMax: 30_000 }),
+    );
+  });
+
+  it("invalidates the whole workspace and refreshes once on a connect that follows a disconnect", () => {
+    const spy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    spy.mockClear();
+    refresh.mockClear();
+    mount();
+    act(() => emit("connect")); // first connect: nothing missed
+    expect(refresh).not.toHaveBeenCalled();
+
+    act(() => {
+      emit("disconnect", "transport close");
+      emit("connect");
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["ws", "ws-test"] });
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("catches up on tab return only while the socket is not connected", () => {
+    const spy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    spy.mockClear();
+    refresh.mockClear();
+    mount();
+    const socket = fakeSocket as unknown as { connected?: boolean };
+
+    socket.connected = true;
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(refresh).not.toHaveBeenCalled();
+
+    socket.connected = false;
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["ws", "ws-test"] });
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+});
