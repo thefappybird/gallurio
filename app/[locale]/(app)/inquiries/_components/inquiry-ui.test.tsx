@@ -25,6 +25,7 @@ const rows: InquiryRow[] = [
     eventType: "wedding",
     submittedAt: "2026-05-30T10:00:00.000Z",
     source: "portfolio",
+    bookedAt: null,
   },
 ];
 

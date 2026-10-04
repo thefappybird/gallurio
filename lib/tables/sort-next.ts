@@ -8,6 +8,9 @@ export function nextSortDir(
   clickedKey: string
 ): SortDir {
   if (clickedKey === activeKey) return activeDir === "asc" ? "desc" : "asc";
-  const columns: Record<string, { defaultDir?: SortDir }> = SORT_CONFIG[table].columns;
+  const columns: Record<
+    string,
+    { field: string; text?: boolean; defaultDir?: SortDir }
+  > = SORT_CONFIG[table].columns;
   return columns[clickedKey]?.defaultDir ?? "asc";
 }

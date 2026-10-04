@@ -123,6 +123,7 @@ function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>
     total: 2,
     page: 1,
     limit: 25,
+    pageSizeOptions: [10, 20, 30, 50],
     locale: "en",
     availableTags: ["vip", "wedding"],
     empty: "No clients",
