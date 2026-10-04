@@ -31,16 +31,36 @@ beforeEach(() => {
   declineInquiryAction.mockClear();
   archiveInquiryAction.mockClear();
   refresh.mockReset();
+  invalidateSpy.mockClear();
 });
 
 describe("InquiryActions", () => {
-  it("announces inquiry.updated (not router.refresh) after archiving", async () => {
+  it("announces the server's exact event key sets, without a second refresh, after archiving", async () => {
+    renderWithProviders(<InquiryActions inquiryId="inq-1" status="new" bookingId="bk-1" clientId="cl-1" />);
+    fireEvent.click(screen.getByRole("button", { name: /^archive$/i }));
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        { type: "inquiry.updated", inquiryId: "inq-1", bookingId: "bk-1" },
+        { refresh: false }
+      )
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "booking.updated", bookingId: "bk-1", clientId: "cl-1", inquiryId: "inq-1" },
+      { refresh: false }
+    );
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("sends bookingId: null explicitly and no booking event when there is no draft", async () => {
     renderWithProviders(<InquiryActions inquiryId="inq-1" status="new" />);
     fireEvent.click(screen.getByRole("button", { name: /^archive$/i }));
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1" })
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        { type: "inquiry.updated", inquiryId: "inq-1", bookingId: null },
+        { refresh: false }
+      )
     );
-    expect(refresh).not.toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledTimes(1);
   });
 
   it("shows a spinner only on the clicked button while the other stays disabled without one", async () => {

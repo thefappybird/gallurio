@@ -11,11 +11,14 @@ import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 type Props = {
   inquiryId: string;
   status: string;
+  /** The inquiry's draft booking / client, when known; only used to match the server's socket echo. */
+  bookingId?: string | null;
+  clientId?: string | null;
 };
 
 type WorkingAction = "decline" | "archive" | null;
 
-export function InquiryActions({ inquiryId, status }: Props) {
+export function InquiryActions({ inquiryId, status, bookingId = null, clientId = null }: Props) {
   const t = useTranslations("app.inquiries.detail.actions");
   const invalidateFor = useInvalidateFor();
   const [workingAction, setWorkingAction] = useState<WorkingAction>(null);
@@ -38,7 +41,11 @@ export function InquiryActions({ inquiryId, status }: Props) {
       }
       toast.success(successMsg);
       // decline/archive actions revalidate the inquiry routes.
-      invalidateFor({ type: "inquiry.updated", inquiryId });
+      // Same key sets the server emits, so the socket echo is suppressed.
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId }, { refresh: false });
+      if (bookingId) {
+        invalidateFor({ type: "booking.updated", bookingId, clientId, inquiryId }, { refresh: false });
+      }
     } catch {
       toast.error(t("errorToast"));
     } finally {

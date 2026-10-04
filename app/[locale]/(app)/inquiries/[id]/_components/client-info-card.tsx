@@ -30,6 +30,8 @@ type Props = {
   preferredContact: string;
   status: string;
   readOnly?: boolean;
+  /** The inquiry's draft booking, when known; only used to match the server's socket echo. */
+  bookingId?: string | null;
   /** The inquiry's message, reconciled against the target client's notes. */
   message?: string;
   /** Increments when a conversion attempt detects a duplicate. */
@@ -48,7 +50,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged, initialMatches }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, bookingId = null, message = "", clientResolutionRequest = 0, onInquiryChanged, initialMatches }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
   const ws = useAppWorkspaceId();
@@ -98,8 +100,18 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     }
     toast.success(tMatch("resolvedToast"));
     queryClient.setQueryData(matchesKey, []);
-    invalidateFor({ type: "inquiry.updated", inquiryId });
-    if (res.clientId) invalidateFor({ type: "client.updated", clientId: res.clientId });
+    // Mirror the server's emissions exactly (inquiry write + draft booking + client).
+    // This action does not revalidate, so the default refresh stays on.
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
+    if (bookingId && res.clientId) {
+      invalidateFor({ type: "booking.updated", bookingId, clientId: res.clientId, inquiryId });
+    }
+    if (res.clientId) {
+      invalidateFor({
+        type: "createNew" in resolution ? "client.created" : "client.updated",
+        clientId: res.clientId,
+      });
+    }
   }
 
   const [editingPhone, setEditingPhone] = useState(false);
@@ -117,8 +129,8 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     toast.success(t("savedToast"));
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
-    // updateInquiryPhoneAction revalidates the inquiry routes.
-    invalidateFor({ type: "inquiry.updated", inquiryId });
+    // updateInquiryPhoneAction revalidates the inquiry routes and emits bookingId: null.
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: null }, { refresh: false });
   }
 
   function handleCancelPhone() {

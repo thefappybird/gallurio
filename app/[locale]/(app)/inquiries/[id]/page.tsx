@@ -69,7 +69,12 @@ export default async function InquiryDetailPage({
               {t("submittedOn", { date: submittedLabel })}
             </p>
           </div>
-          <InquiryActions inquiryId={String(inquiry._id)} status={inquiry.status} />
+          <InquiryActions
+            inquiryId={String(inquiry._id)}
+            status={inquiry.status}
+            bookingId={booking ? String(booking._id) : null}
+            clientId={inquiry.clientId ? String(inquiry.clientId) : null}
+          />
         </div>
       </div>
 
@@ -83,6 +88,7 @@ export default async function InquiryDetailPage({
             preferredContact={inquiry.preferredContact ?? "email"}
             status={inquiry.status}
             message={inquiry.message ?? ""}
+            bookingId={booking ? String(booking._id) : null}
             initialMatches={initialMatches}
           />
           <EventRequestCard

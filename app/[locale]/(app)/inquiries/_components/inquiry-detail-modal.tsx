@@ -134,7 +134,7 @@ export function InquiryDetailModal({
               {t("submittedOn", { date: submittedLabel })}
             </p>
           </div>
-          {!readOnly && <InquiryActions inquiryId={detail.inquiryId} status={detail.status} />}
+          {!readOnly && <InquiryActions inquiryId={detail.inquiryId} status={detail.status} bookingId={detail.booking?.id ?? null} />}
         </div>
 
         {detail.hasConflict && (
@@ -156,6 +156,7 @@ export function InquiryDetailModal({
                 preferredContact={detail.preferredContact}
                 status={detail.status}
                 readOnly={readOnly}
+                bookingId={detail.booking?.id ?? null}
                 message={detail.message}
                 clientResolutionRequest={clientResolutionRequest}
                 onInquiryChanged={readOnly ? undefined : onInquiryChanged}
