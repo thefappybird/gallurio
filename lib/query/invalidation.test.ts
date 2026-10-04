@@ -21,6 +21,33 @@ describe("echo suppression", () => {
   });
 });
 
+describe("echo suppression ordering", () => {
+  afterEach(() => vi.useRealTimers());
+  const ev: DataEvent = { type: "booking.updated", bookingId: "ord1" };
+
+  it("mark -> echo -> teammate: echo skipped, teammate applied", () => {
+    markLocalEvent(ev);
+    expect(isLocalEcho(ev)).toBe(true);
+    expect(isLocalEcho(ev)).toBe(false);
+  });
+
+  it("echo -> mark -> teammate: the late mark must not swallow the teammate's event", () => {
+    const ev2: DataEvent = { type: "booking.updated", bookingId: "ord2" };
+    expect(isLocalEcho(ev2)).toBe(false); // actor's echo arrived before the mark
+    markLocalEvent(ev2);
+    expect(isLocalEcho(ev2)).toBe(false); // teammate's identical event is applied
+  });
+
+  it("a remote arrival older than the window does not block a later mark", () => {
+    vi.useFakeTimers();
+    const ev3: DataEvent = { type: "booking.updated", bookingId: "ord3" };
+    expect(isLocalEcho(ev3)).toBe(false);
+    vi.advanceTimersByTime(2_100);
+    markLocalEvent(ev3);
+    expect(isLocalEcho(ev3)).toBe(true);
+  });
+});
+
 const W = "w1";
 const p = (...rest: unknown[]) => ["ws", W, ...rest];
 
@@ -42,8 +69,9 @@ const table: Array<{
       p("clients"),
       p("client"),
       p("shifts"),
+      p("memberActivity"),
     ],
-    routes: ["/bookings", "/dashboard", "/clients"],
+    routes: ["/bookings", "/dashboard", "/clients", "/inquiries", "/teams"],
   },
   {
     name: "booking.updated with inquiryId",
@@ -57,10 +85,11 @@ const table: Array<{
       p("clients"),
       p("client"),
       p("shifts"),
+      p("memberActivity"),
       p("inquiries"),
       p("inquiry", "i1"),
     ],
-    routes: ["/bookings", "/dashboard", "/clients", "/inquiries"],
+    routes: ["/bookings", "/dashboard", "/clients", "/inquiries", "/teams"],
   },
   {
     name: "bookings.imported",
@@ -74,19 +103,20 @@ const table: Array<{
       p("clients"),
       p("client"),
       p("shifts"),
+      p("memberActivity"),
     ],
-    routes: ["/bookings", "/dashboard", "/clients"],
+    routes: ["/bookings", "/dashboard", "/clients", "/inquiries", "/teams"],
   },
   {
     name: "inquiry.created",
     event: { type: "inquiry.created", inquiryId: "i1" },
-    keys: [p("inquiries"), p("calendar"), p("dashboard")],
+    keys: [p("inquiries"), p("calendar"), p("dashboard"), p("memberActivity")],
     routes: ["/inquiries", "/dashboard"],
   },
   {
     name: "inquiry.updated without booking",
     event: { type: "inquiry.updated", inquiryId: "i1" },
-    keys: [p("inquiries"), p("inquiry", "i1"), p("calendar"), p("dashboard")],
+    keys: [p("inquiries"), p("inquiry", "i1"), p("calendar"), p("dashboard"), p("memberActivity")],
     routes: ["/inquiries", "/dashboard"],
   },
   {
@@ -97,24 +127,31 @@ const table: Array<{
       p("inquiry", "i1"),
       p("calendar"),
       p("dashboard"),
+      p("memberActivity"),
       p("booking", "b1"),
       p("bookings"),
       p("client"),
       p("shifts"),
     ],
-    routes: ["/inquiries", "/dashboard", "/bookings"],
+    routes: ["/inquiries", "/dashboard", "/bookings", "/teams"],
   },
   {
     name: "client.created",
     event: { type: "client.created", clientId: "c1" },
-    keys: [p("clients"), p("client", "c1"), p("bookings"), p("booking"), p("calendar"), p("inquiries")],
-    routes: ["/clients", "/bookings", "/inquiries"],
+    keys: [p("clients"), p("client", "c1"), p("bookings"), p("booking"), p("calendar"), p("inquiries"), p("dashboard"), p("memberActivity")],
+    routes: ["/clients", "/bookings", "/inquiries", "/dashboard"],
   },
   {
     name: "client.updated",
     event: { type: "client.updated", clientId: "c2" },
-    keys: [p("clients"), p("client", "c2"), p("bookings"), p("booking"), p("calendar"), p("inquiries")],
-    routes: ["/clients", "/bookings", "/inquiries"],
+    keys: [p("clients"), p("client", "c2"), p("bookings"), p("booking"), p("calendar"), p("inquiries"), p("dashboard"), p("memberActivity")],
+    routes: ["/clients", "/bookings", "/inquiries", "/dashboard"],
+  },
+  {
+    name: "client.statsChanged",
+    event: { type: "client.statsChanged", clientId: "c1" },
+    keys: [p("clients"), p("client")],
+    routes: ["/clients"],
   },
   {
     name: "team.updated",
