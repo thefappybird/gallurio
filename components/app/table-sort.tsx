@@ -31,7 +31,7 @@ export function SortHeaderButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      className="inline-flex items-center gap-1 whitespace-nowrap font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     >
       {label}
       {sorted === "asc" ? (

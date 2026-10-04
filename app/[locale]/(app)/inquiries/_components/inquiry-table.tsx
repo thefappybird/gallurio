@@ -225,7 +225,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
       </div>
 
       <div className="hidden min-w-0 max-w-full overflow-x-auto border border-border bg-card lg:block">
-        <table className="w-full min-w-max text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground">
               {COLUMNS.map(({ col, key }) => {
@@ -235,7 +235,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                     key={col}
                     scope="col"
                     aria-sort={ariaSortFor(sorted)}
-                    className="px-3 py-2 font-medium text-start"
+                    className="px-2 py-2 font-medium xl:px-3 text-start"
                   >
                     <SortHeaderButton
                       label={t(`table.col.${col}`)}
@@ -250,7 +250,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   </th>
                 );
               })}
-              <th scope="col" className="px-3 py-2 font-medium text-start">
+              <th scope="col" className="px-2 py-2 font-medium xl:px-3 text-start">
                 <span className="sr-only">{t("table.col.actions")}</span>
               </th>
             </tr>
@@ -273,7 +273,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   }
                 }}
               >
-                <td className="px-3 py-2.5 align-middle">
+                <td className="px-2 py-2.5 align-middle xl:px-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <InquiryStatusBadge status={row.status} />
                     {row.hasConflict ? (
@@ -284,36 +284,52 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                     ) : null}
                   </div>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
+                <td className="px-2 py-2.5 align-middle xl:px-3">
                   <span className="flex flex-col">
-                    <span className="font-semibold leading-snug">
+                    <span
+                      className="block max-w-[12rem] truncate font-semibold leading-snug"
+                      title={row.name}
+                    >
                       {row.name}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span
+                      className="block max-w-[12rem] truncate text-xs text-muted-foreground"
+                      title={row.email}
+                    >
                       {row.email}
                     </span>
                   </span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
-                  {row.eventTitle ?? t("table.noTitle")}
+                <td className="px-2 py-2.5 align-middle xl:px-3">
+                  <span
+                    className="block max-w-[10rem] truncate"
+                    title={row.eventTitle ?? undefined}
+                  >
+                    {row.eventTitle ?? t("table.noTitle")}
+                  </span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
+                <td className="px-2 py-2.5 align-middle xl:px-3">
                   {eventTypeLabel(row.eventType)}
                 </td>
-                <td className="px-3 py-2.5 align-middle">
+                <td className="whitespace-nowrap px-2 py-2.5 align-middle xl:px-3">
                   {fmtDate(row.eventDate)}
                 </td>
-                <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
                   {fmtDateTime(row.submittedAt)}
                 </td>
-                <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
                   {row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
                 </td>
-                <td className="px-3 py-2.5 align-middle capitalize text-muted-foreground">
-                  {row.source ?? t("table.directSource")}
+                <td className="px-2 py-2.5 align-middle xl:px-3 capitalize text-muted-foreground">
+                  <span
+                    className="block max-w-[6rem] truncate"
+                    title={row.source ?? undefined}
+                  >
+                    {row.source ?? t("table.directSource")}
+                  </span>
                 </td>
                 <td
-                  className="px-3 py-2.5 align-middle"
+                  className="px-2 py-2.5 align-middle xl:px-3"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex justify-end">

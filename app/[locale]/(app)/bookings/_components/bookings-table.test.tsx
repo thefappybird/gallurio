@@ -89,6 +89,21 @@ describe("BookingsTable", () => {
     expect(screen.getAllByText(/75,000/).length).toBeGreaterThan(0);
   });
 
+  it("desktop table does not force max-content width", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
+  });
+
+  it("desktop title cell truncates and exposes the full title", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const cell = within(screen.getByRole("table")).getByTitle("Carter Wedding");
+    expect(cell).toHaveClass("truncate");
+  });
+
   it("opens a card's detail with history.pushState, not a router push", () => {
     window.history.replaceState(null, "", "/en/bookings?view=table");
     const pushState = vi.spyOn(window.history, "pushState");

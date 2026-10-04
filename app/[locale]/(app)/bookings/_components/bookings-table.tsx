@@ -154,11 +154,12 @@ export function BookingsTable({
         : "-";
       const extra = sessions.length - 1;
       return (
-        <span className="flex flex-wrap items-center gap-1.5">
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
           <span>{firstDate}</span>
           {extra > 0 ? (
             <span className="inline-block border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
-              +{extra} sessions
+              <span aria-hidden="true">+{extra}</span>
+              <span className="sr-only">+{extra} sessions</span>
             </span>
           ) : null}
         </span>
@@ -171,7 +172,7 @@ export function BookingsTable({
     (status: BookingStatus, lastSessionEnd: string) => {
       const isPast = computeIsPast(lastSessionEnd, workspaceTimezone);
       return (
-        <span className="flex flex-wrap items-center gap-1.5">
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
           <span
             className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-white"
             style={{
@@ -199,12 +200,25 @@ export function BookingsTable({
         accessorKey: "title",
         header: () => t("col.title"),
         cell: (info) => (
-          <span className="font-medium">{info.getValue<string>()}</span>
+          <span
+            className="block max-w-[14rem] truncate font-medium"
+            title={info.getValue<string>()}
+          >
+            {info.getValue<string>()}
+          </span>
         ),
       },
       {
         accessorKey: "clientName",
         header: () => t("col.client"),
+        cell: (info) => (
+          <span
+            className="block max-w-[10rem] truncate"
+            title={info.getValue<string>()}
+          >
+            {info.getValue<string>()}
+          </span>
+        ),
       },
       {
         accessorKey: "sessions",
@@ -233,7 +247,7 @@ export function BookingsTable({
         accessorKey: "total",
         header: () => <span className="block text-end">{t("col.total")}</span>,
         cell: (info) => (
-          <span className="tabular-nums">
+          <span className="block whitespace-nowrap text-end tabular-nums">
             {formatMoney(
               info.getValue<number>(),
               info.row.original.currency,
@@ -429,7 +443,7 @@ export function BookingsTable({
       </div>
 
       <div className="hidden min-w-0 max-w-full overflow-x-auto border border-border bg-card lg:block">
-        <table className="w-full min-w-max text-sm">
+        <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr
@@ -506,7 +520,7 @@ export function BookingsTable({
                     <td
                       key={cell.id}
                       className={cn(
-                        "px-3 py-2.5 align-middle",
+                        "whitespace-nowrap px-3 py-2.5 align-middle",
                         (cancelled || isPast) &&
                           (cell.column.id === "title" ||
                             cell.column.id === "sessions") &&

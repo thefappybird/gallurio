@@ -69,6 +69,16 @@ describe("InquiryTable", () => {
     }
   });
 
+  it("desktop table does not force max-content width", () => {
+    renderTable();
+    expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
+  });
+
+  it("desktop name cell truncates and exposes the full name", () => {
+    renderTable();
+    expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate");
+  });
+
   it("renders empty state when rows is empty", () => {
     renderTable([]);
     expect(screen.getByText("No inquiries yet.")).toBeInTheDocument();
@@ -176,6 +186,6 @@ describe("InquiryTable", () => {
     const table = container.querySelector("table");
     expect(wrapper?.className).toMatch(/min-w-0/);
     expect(wrapper?.className).toMatch(/max-w-full/);
-    expect(table?.className).toMatch(/min-w-max/);
+    expect(table?.className).not.toMatch(/min-w-max/);
   });
 });
