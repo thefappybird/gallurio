@@ -217,6 +217,15 @@ describe("getInquiryDetailAction", () => {
       },
     });
   });
+
+  it("carries the server-resolved workspace timezone", async () => {
+    mockCtx.timezone = "America/New_York";
+    const { inquiry } = await seedDraft(workspaceId);
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    expect(result).toMatchObject({ ok: true, detail: { workspaceTz: "America/New_York" } });
+  });
 });
 
 describe("getInquiryDetailAction clientMatches", () => {

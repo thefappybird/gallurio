@@ -37,6 +37,7 @@ import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detai
 const detail: InquiryDetailModalData = {
   inquiryId: "inq-1",
   locale: "en",
+  workspaceTz: "Asia/Manila",
   name: "Alice",
   email: "alice@example.com",
   phone: null,

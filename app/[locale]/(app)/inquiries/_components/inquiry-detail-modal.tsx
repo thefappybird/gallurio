@@ -27,6 +27,8 @@ type InquiryBookingSummary = {
 export type InquiryDetailModalData = {
   inquiryId: string;
   locale: string;
+  /** Server-resolved workspace.timezone ?? FALLBACK_TZ; never client input. */
+  workspaceTz: string;
   name: string;
   email: string;
   phone: string | null;

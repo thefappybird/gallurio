@@ -108,6 +108,7 @@ export async function buildInquiryDetail(args: {
   return {
     inquiryId: detailId,
     locale,
+    workspaceTz: tz,
     name: inquiry.name,
     email: inquiry.email,
     phone: inquiry.phone ?? null,
