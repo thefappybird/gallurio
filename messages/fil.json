@@ -3634,7 +3634,8 @@
     "tableSort": {
       "sortBy": "Ayusin ayon sa",
       "ascending": "Pataas",
-      "descending": "Pababa"
+      "descending": "Pababa",
+      "direction": "Direksyon ng pag-aayos: {dir}"
     },
     "pagination": {
       "showing": "Ipinapakita ang {from}–{to} ng {total}",

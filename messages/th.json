@@ -3634,7 +3634,8 @@
     "tableSort": {
       "sortBy": "เรียงตาม",
       "ascending": "น้อยไปมาก",
-      "descending": "มากไปน้อย"
+      "descending": "มากไปน้อย",
+      "direction": "ทิศทางการเรียง: {dir}"
     },
     "pagination": {
       "showing": "แสดง {from}–{to} จาก {total}",

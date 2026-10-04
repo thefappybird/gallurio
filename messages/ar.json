@@ -3634,7 +3634,8 @@
     "tableSort": {
       "sortBy": "ترتيب حسب",
       "ascending": "تصاعدي",
-      "descending": "تنازلي"
+      "descending": "تنازلي",
+      "direction": "اتجاه الترتيب: {dir}"
     },
     "pagination": {
       "showing": "عرض {from}–{to} من {total}",

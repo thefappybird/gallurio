@@ -15,7 +15,7 @@ describe("MobileSortControl", () => {
         onSortChange={onChange}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ascending" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sort direction: Ascending" }));
     expect(onChange).toHaveBeenCalledWith("title", "desc");
   });
 });

@@ -3634,7 +3634,8 @@
     "tableSort": {
       "sortBy": "Urutkan berdasarkan",
       "ascending": "Naik",
-      "descending": "Turun"
+      "descending": "Turun",
+      "direction": "Arah urutan: {dir}"
     },
     "pagination": {
       "showing": "Menampilkan {from}–{to} dari {total}",

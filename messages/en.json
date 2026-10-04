@@ -3634,7 +3634,8 @@
     "tableSort": {
       "sortBy": "Sort by",
       "ascending": "Ascending",
-      "descending": "Descending"
+      "descending": "Descending",
+      "direction": "Sort direction: {dir}"
     },
     "pagination": {
       "showing": "Showing {from}–{to} of {total}",

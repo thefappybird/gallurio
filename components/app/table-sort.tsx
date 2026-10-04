@@ -66,7 +66,9 @@ export function MobileSortControl({
   const t = useTranslations("common.tableSort");
   const labelFor = (key: string) =>
     options.find((o) => o.key === key)?.label ?? key;
-  const dirLabel = sortDir === "asc" ? t("ascending") : t("descending");
+  const dirLabel = t("direction", {
+    dir: sortDir === "asc" ? t("ascending") : t("descending"),
+  });
 
   return (
     <div className="flex items-center gap-2 lg:hidden">
