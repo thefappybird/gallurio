@@ -11,6 +11,21 @@ import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import type { SortDir } from "@/lib/tables/sort";
+import { nextSortDir } from "@/lib/tables/sort-next";
+import { ariaSortFor, SortHeaderButton } from "@/components/app/table-sort";
+
+// Desktop columns in render order; `key` is the server sort key (null = unsortable).
+const COLUMNS = [
+  { col: "status", key: "status" },
+  { col: "client", key: "client" },
+  { col: "eventTitle", key: "eventTitle" },
+  { col: "eventType", key: "eventType" },
+  { col: "eventDate", key: "eventDate" },
+  { col: "submitted", key: "submitted" },
+  { col: "booked", key: "bookedAt" },
+  { col: "source", key: "source" },
+] as const;
 
 export type InquiryRow = {
   id: string;
@@ -21,6 +36,8 @@ export type InquiryRow = {
   eventDate: string | null;
   eventType: string;
   submittedAt: string;
+  /** ISO string; null when never booked or predates bookedAt. */
+  bookedAt: string | null;
   source: string | null;
   hasConflict?: boolean;
 };
@@ -35,6 +52,11 @@ type Props = {
   /** Lets the page own URL navigation so opening a row shares the same
    * transition as filters and pagination. */
   onOpenInquiry?: (inquiryId: string) => void;
+  /** Server sort state (URL `sort` / `dir`). */
+  sortKey?: string;
+  sortDir?: SortDir;
+  /** Fires with the next sort when a header is clicked. */
+  onSortChange?: (key: string, dir: SortDir) => void;
 };
 
 // One Intl.DateTimeFormat per locale|tz, built once (construction is expensive).
@@ -74,7 +96,7 @@ function CardField({
   );
 }
 
-export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry }: Props) {
+export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry, sortKey = "submitted", sortDir = "desc", onSortChange }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
@@ -180,6 +202,10 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   value={fmtDate(row.eventDate)}
                 />
                 <CardField
+                  label={t("table.col.booked")}
+                  value={row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
+                />
+                <CardField
                   label={t("table.col.submitted")}
                   value={
                     <span className="flex flex-wrap items-center gap-1.5">
@@ -202,27 +228,28 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
         <table className="w-full min-w-max text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground">
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.status")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.client")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventTitle")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventType")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventDate")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.submitted")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.source")}
-              </th>
+              {COLUMNS.map(({ col, key }) => {
+                const sorted = sortKey === key && sortDir;
+                return (
+                  <th
+                    key={col}
+                    scope="col"
+                    aria-sort={ariaSortFor(sorted)}
+                    className="px-3 py-2 font-medium text-start"
+                  >
+                    <SortHeaderButton
+                      label={t(`table.col.${col}`)}
+                      sorted={sorted}
+                      onClick={() =>
+                        onSortChange?.(
+                          key,
+                          nextSortDir("inquiries", sortKey, sortDir, key)
+                        )
+                      }
+                    />
+                  </th>
+                );
+              })}
               <th scope="col" className="px-3 py-2 font-medium text-start">
                 <span className="sr-only">{t("table.col.actions")}</span>
               </th>
@@ -278,6 +305,9 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 </td>
                 <td className="px-3 py-2.5 align-middle text-muted-foreground">
                   {fmtDateTime(row.submittedAt)}
+                </td>
+                <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                  {row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
                 </td>
                 <td className="px-3 py-2.5 align-middle capitalize text-muted-foreground">
                   {row.source ?? t("table.directSource")}

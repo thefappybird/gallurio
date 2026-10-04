@@ -13,6 +13,7 @@ const baseRow: InquiryRow = {
   eventType: "wedding",
   submittedAt: "2026-06-01T10:00:00.000Z",
   source: "portfolio",
+  bookedAt: null,
 };
 
 const rowNoSource: InquiryRow = {
@@ -118,6 +119,55 @@ describe("InquiryTable", () => {
     renderTable();
     const viewButtons = screen.getAllByRole("button", { name: "View" });
     expect(() => fireEvent.click(viewButtons[0])).not.toThrow();
+  });
+
+  it("marks the active sort column with aria-sort and leaves actions unsortable", () => {
+    const { container } = renderWithProviders(
+      <InquiryTable
+        rows={[baseRow]}
+        locale="en"
+        empty="x"
+        emptyHint="y"
+        sortKey="submitted"
+        sortDir="desc"
+      />
+    );
+    const ths = Array.from(container.querySelectorAll("thead th"));
+    expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
+      "none", "none", "none", "none", "none", "descending", "none", "none", null,
+    ]);
+  });
+
+  it("fires onSortChange with the flipped dir when the active header is clicked", () => {
+    const onSortChange = vi.fn();
+    const { container } = renderWithProviders(
+      <InquiryTable
+        rows={[baseRow]}
+        locale="en"
+        empty="x"
+        emptyHint="y"
+        sortKey="submitted"
+        sortDir="desc"
+        onSortChange={onSortChange}
+      />
+    );
+    const th = container.querySelectorAll("thead th")[5] as HTMLElement;
+    fireEvent.click(th.querySelector("button") as HTMLElement);
+    expect(onSortChange).toHaveBeenCalledWith("submitted", "asc");
+  });
+
+  it("shows the booked date, or a dash when never booked", () => {
+    renderWithProviders(
+      <InquiryTable
+        rows={[{ ...baseRow, bookedAt: "2026-07-04T10:00:00.000Z" }, { ...rowNoSource, bookedAt: null }]}
+        locale="en"
+        workspaceTz="UTC"
+        empty="x"
+        emptyHint="y"
+      />
+    );
+    expect(screen.getAllByText("Jul 4, 2026").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("keeps horizontal overflow scoped to the desktop table wrapper", () => {
