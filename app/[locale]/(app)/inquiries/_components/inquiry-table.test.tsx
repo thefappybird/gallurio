@@ -74,6 +74,17 @@ describe("InquiryTable", () => {
     expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
   });
 
+  it("desktop source th and td are hidden below 2xl", () => {
+    renderTable();
+    const table = screen.getByRole("table");
+    const th = table.querySelector("th[aria-sort]:nth-of-type(8)");
+    expect(th).toHaveClass("hidden", "2xl:table-cell");
+    expect(table.querySelector('tbody td [title="portfolio"]')?.closest("td")).toHaveClass(
+      "hidden",
+      "2xl:table-cell"
+    );
+  });
+
   it("desktop name cell truncates and exposes the full name", () => {
     renderTable();
     expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate");

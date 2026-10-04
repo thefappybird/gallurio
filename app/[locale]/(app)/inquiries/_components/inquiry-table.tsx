@@ -235,7 +235,9 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                     key={col}
                     scope="col"
                     aria-sort={ariaSortFor(sorted)}
-                    className="px-2 py-2 font-medium xl:px-3 text-start"
+                    className={`px-2 py-2 font-medium xl:px-3 text-start${
+                      col === "source" ? " hidden 2xl:table-cell" : ""
+                    }`}
                   >
                     <SortHeaderButton
                       label={t(`table.col.${col}`)}
@@ -320,7 +322,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
                   {row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
                 </td>
-                <td className="px-2 py-2.5 align-middle xl:px-3 capitalize text-muted-foreground">
+                <td className="hidden px-2 py-2.5 align-middle xl:px-3 2xl:table-cell capitalize text-muted-foreground">
                   <span
                     className="block max-w-[6rem] truncate"
                     title={row.source ?? undefined}
