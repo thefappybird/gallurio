@@ -154,7 +154,7 @@ export async function POST(req: Request) {
             title,
             eventType,
             status,
-            bookedAt: status === "draft" ? null : now,
+            bookedAt: now,
             sessions,
             firstSessionStart,
             lastSessionEnd,
