@@ -131,6 +131,7 @@ export function BookingWizardModal({
   const invalidateFor = useInvalidateFor();
   const t = useTranslations("app.bookings.wizard");
   const tDnd = useTranslations("app.bookings.dnd");
+  const tCommon = useTranslations("common");
   const errMsg = useActionError();
 
   const [open, setOpen] = useState(true);
@@ -872,7 +873,12 @@ export function BookingWizardModal({
             ) : null}
             <DialogClose
               render={
-                <Button variant="ghost" size="icon-sm" onClick={() => attemptClose(false)}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={tCommon("close")}
+                  onClick={() => attemptClose(false)}
+                >
                   <XIcon className="size-4" />
                 </Button>
               }

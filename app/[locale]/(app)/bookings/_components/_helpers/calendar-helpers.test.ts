@@ -36,6 +36,19 @@ describe("workspaceNowAsLocal", () => {
     expect([est.getDate(), est.getHours(), est.getMinutes()]).toEqual([1, 1, 30]);
   });
 
+  it("snaps a wall time inside the browser's own DST gap to the gap's end, same day", () => {
+    // Browser in New York: 02:00-03:00 on 2026-03-08 does not exist locally.
+    // Manila is at 02:30 that day (18:30Z on Mar 7).
+    const prevTz = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    try {
+      const d = workspaceNowAsLocal(new Date("2026-03-07T18:30:00Z"), "Asia/Manila");
+      expect([d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2, 8, 3, 0]);
+    } finally {
+      process.env.TZ = prevTz;
+    }
+  });
+
   it("does not render midnight as hour 24", () => {
     const d = workspaceNowAsLocal(new Date("2026-09-30T16:00:00Z"), "Asia/Manila");
     expect([d.getDate(), d.getHours()]).toEqual([1, 0]);

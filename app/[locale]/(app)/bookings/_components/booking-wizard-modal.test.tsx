@@ -206,6 +206,11 @@ describe("BookingWizardModal — client step: name-length validation is not a si
     expect(nameInput).toHaveAttribute("aria-invalid", "true");
   });
 
+  it("gives the header close button an accessible name", () => {
+    renderWizard();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+  });
+
   it("still advances past the client step with a valid new-client name", async () => {
     renderWizard();
 

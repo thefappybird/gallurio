@@ -77,7 +77,8 @@ export function wallDateAsLocal(d: Date, tz: string): Date {
  * minutes kept) for react-big-calendar's `getNow`: Today button, today-cell
  * highlight and the current-time indicator then follow the workspace tz, not
  * the browser's. A wall time that doesn't exist in the browser tz (its own
- * DST gap) shifts by an hour; harmless for display.
+ * DST gap) has no slot in the grid; it snaps to the gap's end on the same day
+ * instead of running ahead by the gap length.
  */
 export function workspaceNowAsLocal(now: Date, tz: string): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -91,7 +92,11 @@ export function workspaceNowAsLocal(now: Date, tz: string): Date {
     hourCycle: "h23",
   }).formatToParts(now);
   const n = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
-  return new Date(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second"));
+  const local = new Date(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second"));
+  // Gap: the engine rolled forward past the missing wall time. Pin to the top of
+  // the hour it landed in (the gap's end) so the time indicator isn't an hour early.
+  if (local.getHours() !== n("hour")) local.setMinutes(0, 0, 0);
+  return local;
 }
 
 /**
