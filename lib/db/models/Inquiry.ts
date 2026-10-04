@@ -71,8 +71,9 @@ const inquirySchema = new Schema(
 );
 
 inquirySchema.index({ workspaceId: 1, status: 1, createdAt: -1 });
-inquirySchema.index({ workspaceId: 1, createdAt: -1 });
-inquirySchema.index({ workspaceId: 1, bookedAt: -1 });
+// List queries sort { field, _id }, so the tie-break lives in the index.
+inquirySchema.index({ workspaceId: 1, createdAt: -1, _id: -1 });
+inquirySchema.index({ workspaceId: 1, bookedAt: -1, _id: -1 });
 
 export type InquiryDoc = InferSchemaType<typeof inquirySchema> & {
   _id: mongoose.Types.ObjectId;

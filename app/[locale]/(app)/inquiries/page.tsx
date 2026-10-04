@@ -122,6 +122,8 @@ export default async function InquiriesPage({
       fallback={
         <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
           <InquiriesHeaderSkeleton />
+          {/* Reserves MobileSortControl's slot so the list doesn't jump on stream-in. */}
+          {view !== "calendar" && <div className="h-11 lg:hidden" aria-hidden="true" />}
           {view === "calendar" ? (
             <CalendarSkeleton fallbackClassName={INQUIRIES_CALENDAR_FALLBACK} />
           ) : (
