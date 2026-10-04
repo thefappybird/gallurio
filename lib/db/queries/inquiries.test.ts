@@ -68,6 +68,32 @@ describe("listInquiries", () => {
     expect(total).toBe(2);
   });
 
+  it("sorts text fields case-insensitively when sort.text is set", async () => {
+    await seedInquiry(workspaceId, { name: "bravo" });
+    await seedInquiry(workspaceId, { name: "Alpha" });
+    await seedInquiry(workspaceId, { name: "charlie" });
+
+    const { rows } = await listInquiries(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "name", dir: "asc", text: true } }
+    );
+    expect(rows.map((r) => r.name)).toEqual(["Alpha", "bravo", "charlie"]);
+  });
+
+  it("breaks sort ties by _id so pages never repeat or skip rows", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      ids.push((await seedInquiry(workspaceId, { name: "Same" }))._id.toString());
+    }
+    const sort = { field: "name", dir: "asc" as const, text: true };
+    const p1 = await listInquiries(workspaceId, {}, { page: 1, limit: 2, sort });
+    const p2 = await listInquiries(workspaceId, {}, { page: 2, limit: 2, sort });
+    const p3 = await listInquiries(workspaceId, {}, { page: 3, limit: 2, sort });
+    const seen = [...p1.rows, ...p2.rows, ...p3.rows].map((r) => r._id.toString());
+    expect(seen).toEqual(ids);
+  });
+
   it("returns inquiries newest-first", async () => {
     await seedInquiry(workspaceId, { createdAt: new Date("2026-01-01") });
     await seedInquiry(workspaceId, { createdAt: new Date("2026-03-01") });
