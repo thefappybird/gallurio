@@ -82,6 +82,10 @@ export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
   );
 }
 
+// A stale-copy override is held at most this long after the drop, so a refresh that
+// never carries the new position cannot pin the candle forever.
+const OVERRIDE_MAX_HOLD_MS = 15_000;
+
 // Stable default so the memoized toolbar isn't rebuilt every render.
 const NO_TEAMS: BookingTeamOption[] = [];
 
@@ -128,17 +132,40 @@ export function InquiriesCalendarManager({
   // Prevents concurrent drops on the same inquiry session.
   const inFlightRef = useRef<Set<string>>(new Set());
 
-  // When fresh server events arrive (after router.refresh()), clear any pending
-  // optimistic overrides so mergedEvents reflects authoritative positions without
-  // a gap where the stale server data would flash the old position.
+  // Where each dropped candle started, to tell a stale server copy (still the old
+  // position) from an authoritative one when events refresh.
+  const originRef = useRef<Map<string, { start: number; end: number; at: number }>>(new Map());
+
+  // When fresh server events arrive, drop an override only once the incoming copy
+  // is authoritative: it shows the override's position, shows some other position
+  // than the pre-drop one (a teammate moved it), or the candle is gone. An
+  // unrelated refresh that still carries the pre-drop position is stale, so the
+  // override stays (bounded) instead of snapping the candle back.
   const prevEventsRef = useRef(events);
   useEffect(() => {
     if (events !== prevEventsRef.current) {
       prevEventsRef.current = events;
-      // Keep overrides for sessions still mid-request; clear the rest.
       setOptimisticOverrides((prev) => {
         if (!prev.size) return prev;
-        const kept = new Map([...prev].filter(([id]) => inFlightRef.current.has(id)));
+        const incoming = new Map(events.map((e) => [e.id, e]));
+        const now = Date.now();
+        const kept = new Map(
+          [...prev].filter(([id, ov]) => {
+            if (inFlightRef.current.has(id)) return true; // mid-request
+            const inc = incoming.get(id);
+            if (!inc) return false;
+            if (inc.start.getTime() === ov.start.getTime() && inc.end.getTime() === ov.end.getTime()) {
+              return false; // server caught up
+            }
+            const origin = originRef.current.get(id);
+            return (
+              !!origin &&
+              now - origin.at < OVERRIDE_MAX_HOLD_MS &&
+              inc.start.getTime() === origin.start &&
+              inc.end.getTime() === origin.end
+            );
+          })
+        );
         return kept.size === prev.size ? prev : kept;
       });
     }
@@ -249,6 +276,7 @@ export function InquiriesCalendarManager({
           sessionStartAt: candleStart,
           sessionEndAt: candleEnd,
         };
+        originRef.current.set(ev.id, { start: ev.start.getTime(), end: ev.end.getTime(), at: Date.now() });
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
 
         // Own the promise: toast.promise's return value isn't awaitable, and the

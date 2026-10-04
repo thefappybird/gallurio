@@ -200,6 +200,24 @@ describe("InquiriesCalendarManager reschedule", () => {
     });
   });
 
+  it("after success, an unrelated refresh still showing the old position keeps the override until the new position arrives", async () => {
+    mockReschedule.mockResolvedValue({ ok: true });
+    const view = render(ui([inquiryEvent()]));
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    // Unrelated refresh lands first: the server copy still has the old position.
+    view.rerender(ui([inquiryEvent(), inquiryEvent({ id: "inq2_s0_2027-09-15", inquiryId: "inq2", title: "Reyes" })]));
+    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    // The reschedule's own refresh lands with the new position: override can go.
+    view.rerender(ui([inquiryEvent({ start: droppedStart, end: droppedEnd })]));
+    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    // A later teammate move is shown as-is (the override must not resurrect).
+    const teammateStart = new Date("2027-09-20T02:00:00Z");
+    view.rerender(ui([inquiryEvent({ start: teammateStart, end: new Date("2027-09-20T04:00:00Z") })]));
+    expect(screen.getByText(`Cruz@${teammateStart.toISOString()}`)).toBeInTheDocument();
+  });
+
   it("conflict error: reverts the candle and shows the conflict toast", async () => {
     mockReschedule.mockResolvedValue({ error: "conflict" });
     render(ui([inquiryEvent()]));
