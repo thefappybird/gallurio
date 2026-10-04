@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useMemo } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PageSizeSelect } from "@/components/app/page-size-select";
@@ -116,42 +116,31 @@ export function InquiriesPageClient({
   // can skip router.refresh() when nothing changed.
   const hasChanges = useRef(false);
 
-  // Prune-on-match: derive the active patch map by dropping entries whose fields
-  // the server row now reflects. Using useMemo instead of useEffect+setState avoids
-  // the react-hooks/set-state-in-effect rule and prevents cascading renders.
-  // The raw optimisticUpdates state is still the write-target; prunedUpdates is the
-  // read-only view used for rendering and for the applyOptimisticPatch call below.
-  const prunedUpdates = useMemo<Record<string, InquiryOptimisticPatch>>(() => {
-    const keys = Object.keys(optimisticUpdates);
-    if (keys.length === 0) return optimisticUpdates;
-
+  // Prune-on-match: drop entries whose fields the server row now reflects, from the
+  // state itself (render-phase compare against the server rows). A patch must never
+  // outlive the first server row that matches it, or a later teammate change to the
+  // same field would be overwritten by the stale patch.
+  let prunedUpdates = optimisticUpdates;
+  if (Object.keys(optimisticUpdates).length > 0) {
     const rowMap = new Map(rows.map((r) => [r.id, r]));
-    let changed = false;
     const next: Record<string, InquiryOptimisticPatch> = {};
-
-    for (const id of keys) {
+    let changed = false;
+    for (const id of Object.keys(optimisticUpdates)) {
       const patch = optimisticUpdates[id];
       const serverRow = rowMap.get(id) as Record<string, unknown> | undefined;
-
-      if (!serverRow) {
-        next[id] = patch;
-        continue;
-      }
-
-      const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
-        (field) => !(field in serverRow) || serverRow[field] === patch[field]
-      );
-
-      if (allCaughtUp) {
-        changed = true;
-      } else {
-        next[id] = patch;
-      }
+      const allCaughtUp =
+        !!serverRow &&
+        (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
+          (field) => !(field in serverRow) || serverRow[field] === patch[field]
+        );
+      if (allCaughtUp) changed = true;
+      else next[id] = patch;
     }
-
-    // Return the same reference when nothing was pruned — stable identity for deps.
-    return changed ? next : optimisticUpdates;
-  }, [rows, optimisticUpdates]);
+    if (changed) {
+      prunedUpdates = next;
+      setOptimisticUpdates(next);
+    }
+  }
 
   const localRows = applyOptimisticPatch(rows, prunedUpdates);
 

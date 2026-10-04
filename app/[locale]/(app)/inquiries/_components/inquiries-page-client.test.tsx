@@ -245,6 +245,24 @@ describe("InquiriesPageClient", () => {
     expect(patchedRow?.eventDate).toBe("2099-12-31T00:00:00.000Z");
   });
 
+  it("a caught-up patch never resurrects when a teammate later changes the same field", () => {
+    const wrap = (r: InquiryRow) => (
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <InquiriesPageClient {...baseProps} rows={[r]} />
+      </NotificationProvider>
+    );
+    const view = renderInquiriesPage(baseProps);
+    act(() => {
+      (capturedProps.onInquiryChanged as (id: string, patch: object) => void)("inq-1", { status: "archived" });
+    });
+    expect(lastRenderedRows[0].status).toBe("archived");
+
+    view.rerender(wrap({ ...row, status: "archived" })); // server caught up
+    view.rerender(wrap({ ...row, status: "inquiry" })); // teammate reverts it
+
+    expect(lastRenderedRows[0].status).toBe("inquiry");
+  });
+
   it("onConverted closes the modal, strips inquiryId param, and marks row booked optimistically", () => {
     renderInquiriesPage(baseProps);
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
