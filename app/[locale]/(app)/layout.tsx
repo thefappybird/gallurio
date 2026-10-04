@@ -8,6 +8,7 @@ import { TimeFormatProvider } from "@/lib/time-format/context";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
+import { HistoryRefreshGuard } from "@/components/app/history-refresh-guard";
 import { BetaEndingBanner } from "@/components/app/beta-ending-banner";
 import { getBetaProgramAnnouncement, shouldShowBetaEndingWarning } from "@/lib/billing/betaProgram";
 import {
@@ -67,6 +68,7 @@ export default async function AppLayout({
               initialNotifications={initialNotifications}
               initialUnreadCount={unreadCount}
             >
+              <HistoryRefreshGuard />
               <AppSidebar
                 role={role}
                 workspaceName={workspace.name}

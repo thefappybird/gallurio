@@ -4,8 +4,8 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { DataEvent } from "@/lib/data-events";
-import { routing } from "@/lib/i18n/routing";
 import { invalidateFor, markLocalEvent, routesForEvent } from "@/lib/query/invalidation";
+import { clearDirtyRoutes, markRoutesDirty, pathMatches } from "@/lib/query/dirty-routes";
 import { useAppWorkspaceId } from "@/components/app/app-query-provider";
 
 const REFRESH_DEBOUNCE_MS = 250;
@@ -26,18 +26,6 @@ function scheduleRefresh(refresh: () => void) {
   }, REFRESH_DEBOUNCE_MS);
 }
 
-/** Drop a leading locale segment (`/fil/bookings` -> `/bookings`). Default locale has no prefix. */
-export function stripLocale(pathname: string): string {
-  const [, first, ...rest] = pathname.split("/");
-  if (first && (routing.locales as readonly string[]).includes(first)) return "/" + rest.join("/");
-  return pathname;
-}
-
-function pathMatches(pathname: string, routes: string[]): boolean {
-  const path = stripLocale(pathname);
-  return routes.some((r) => r === "/" || path === r || path.startsWith(r + "/"));
-}
-
 /**
  * Invalidate client queries for `event` and, when the current page's
  * server-rendered data is affected, debounced `router.refresh()`. Does NOT mark
@@ -52,7 +40,18 @@ export function useApplyDataEvent(): (event: DataEvent, options?: InvalidateOpti
     (event: DataEvent, { refresh = true }: InvalidateOptions = {}) => {
       void invalidateFor(queryClient, workspaceId, event);
       // Read at event time: always the current page, no stale closure.
-      if (refresh && pathMatches(window.location.pathname, routesForEvent(event))) scheduleRefresh(() => router.refresh());
+      const routes = routesForEvent(event);
+      const pathname = window.location.pathname;
+      const refreshing = refresh && pathMatches(pathname, routes);
+      // Back/forward reuses cached payloads: remember routes not refreshed now.
+      markRoutesDirty(routes, pathname, refreshing);
+      if (refreshing) {
+        scheduleRefresh(() => {
+          router.refresh();
+          // refresh() stales the whole client router cache, so nothing is dirty after it.
+          clearDirtyRoutes();
+        });
+      }
     },
     [queryClient, workspaceId, router],
   );
