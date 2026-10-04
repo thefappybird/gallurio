@@ -1124,6 +1124,40 @@ describe("editInquirySessionsAction", () => {
     expect(fresh?.phone).toBe("+63 900 111 2222");
   });
 
+  it("sets eventDate to the earliest session start instant even when it is not sessions[0]", async () => {
+    const d1 = futureDateStr(10);
+    const d2 = futureDateStr(14);
+    const { inquiry } = await seedInquiryWithDraft(workspaceId, {
+      sessions: [
+        { startDate: d1, startTime: "09:00", endTime: "17:00" },
+        { startDate: d2, startTime: "09:00", endTime: "17:00" },
+      ],
+    });
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [
+        { startDate: d2, startTime: "09:00", endTime: "17:00" },
+        { startDate: d1, startTime: "10:00", endTime: "17:00" },
+      ],
+    });
+    expect(res).toEqual({ ok: true });
+    const fresh = await Inquiry.findById(inquiry._id).lean();
+    expect(fresh?.eventDate).toEqual(new Date(wallTimeInTzToUtc(d1, "10:00", "Asia/Manila")));
+  });
+
+  it("eventDate falls on the session startDate in a workspace tz behind UTC", async () => {
+    mockCtx.timezone = "America/Los_Angeles";
+    const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const newDate = futureDateStr(15);
+    await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: newDate, startTime: "10:00", endTime: "16:00" }],
+    });
+    const fresh = await Inquiry.findById(inquiry._id).lean();
+    const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(
+      fresh?.eventDate
+    );
+    expect(localDate).toBe(newDate);
+  });
+
   it("regenerates draft booking with updated firstSessionStart after successful edit", async () => {
     const { inquiry, booking } = await seedInquiryWithDraft(workspaceId);
     const newDate = futureDateStr(20);

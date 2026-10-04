@@ -915,7 +915,7 @@ export async function editInquirySessionsAction(
         {
           $set: {
             sessions: parsed.data.sessions,
-            eventDate: new Date(parsed.data.sessions[0].startDate),
+            eventDate: firstSessionStart,
             ...phoneUpdate,
           },
         },
@@ -1083,8 +1083,8 @@ export async function rescheduleInquirySessionAction(
             [`sessions.${sessionIndex}.startDate`]: startDate,
             [`sessions.${sessionIndex}.startTime`]: startTime,
             [`sessions.${sessionIndex}.endTime`]: endTime,
-            // Same derivation as editInquirySessionsAction: first session's date.
-            eventDate: new Date(updatedSessions[0].startDate),
+            // Same derivation as submission: earliest session start instant (workspace tz).
+            eventDate: firstSessionStart,
           },
         },
         { session: mongoSession }

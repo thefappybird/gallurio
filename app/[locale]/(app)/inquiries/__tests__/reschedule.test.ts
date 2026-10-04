@@ -133,7 +133,7 @@ describe("rescheduleInquirySessionAction", () => {
     expect(fresh?.sessions?.[0]?.endTime).toBe("18:00");
   });
 
-  it("keeps Inquiry.eventDate in step with sessions[0] (same derivation as editInquirySessionsAction)", async () => {
+  it("sets Inquiry.eventDate to the earliest session start instant in the workspace tz", async () => {
     const { inquiry } = await seedInquiry(workspaceId);
     await rescheduleInquirySessionAction({
       inquiryId: String(inquiry._id),
@@ -143,7 +143,7 @@ describe("rescheduleInquirySessionAction", () => {
       endTime: "18:00",
     });
     const fresh = await Inquiry.findById(inquiry._id).lean();
-    expect(fresh?.eventDate).toEqual(new Date("2035-03-15"));
+    expect(fresh?.eventDate).toEqual(new Date("2035-03-15T02:00:00Z"));
   });
 
   it("emits inquiry.updated + booking.updated on success and nothing on conflict", async () => {
