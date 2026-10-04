@@ -64,6 +64,15 @@ test.describe("public contact form time sync", () => {
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth
         );
         expect(overflow, `${width}: no horizontal overflow`).toBeLessThanOrEqual(1);
+        // All three tabs fully visible (the modal clips overflow silently).
+        const tabFit = await page.getByRole("tablist").first().evaluate((list) => {
+          const tabs = Array.from(list.querySelectorAll('[role="tab"]'));
+          const box = (list.parentElement ?? list).getBoundingClientRect();
+          const last = tabs[tabs.length - 1]?.getBoundingClientRect();
+          return { overflowRight: last ? Math.round(last.right - box.right) : 999, listScroll: list.scrollWidth - list.clientWidth };
+        });
+        expect(tabFit.overflowRight, `${width}: third tab not clipped`).toBeLessThanOrEqual(1);
+        expect(tabFit.listScroll, `${width}: tab row does not overflow`).toBeLessThanOrEqual(1);
         await page.screenshot({ path: `test-results/contact-sync/${scheme}-${width}.png` });
       }
       // 23:30 clamps to 23:59, never wraps.
@@ -72,10 +81,7 @@ test.describe("public contact form time sync", () => {
       await context.close();
     });
 
-    // fixme: /portfolio-preview?zone=contact 500s before this branch —
-    // contactButtonAppearance.ts is "use client" but the server page calls
-    // resolveSubmitAppearance(). Re-enable once that is fixed.
-    test.fixme(`5 form locales render time labels @ 375 (${scheme})`, async ({ browser }) => {
+    test(`5 form locales render time labels @ 375 (${scheme})`, async ({ browser }) => {
       test.setTimeout(180_000);
       const context = await browser.newContext({ storageState: "e2e/.auth/owner.json", colorScheme: scheme, viewport: { width: 375, height: 812 } });
       const page = await context.newPage();

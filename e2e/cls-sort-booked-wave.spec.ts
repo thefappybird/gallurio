@@ -184,6 +184,14 @@ test.describe.serial("CLS / booked date / sort wave", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("table thead th").filter({ hasText: "Booked on" })).toHaveCount(1);
     expect(await tableOverflow(), "inquiries table overflow at 1280").toBeLessThanOrEqual(1);
+    // Rows without a Conflict badge must match INQUIRIES_SKELETON.rowHeight (56).
+    const plainRowHeights = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("table tbody tr"))
+        .filter((tr) => !/conflict/i.test(tr.textContent ?? ""))
+        .map((tr) => Math.round(tr.getBoundingClientRect().height))
+    );
+    console.log(`inquiry plain row heights: ${JSON.stringify(plainRowHeights)}`);
+    for (const h of plainRowHeights) expect(Math.abs(h - 56), `row height ${h}`).toBeLessThanOrEqual(1);
     await page.screenshot({ path: "test-results/cls-wave/1280-inquiries-table.png" });
   });
 });

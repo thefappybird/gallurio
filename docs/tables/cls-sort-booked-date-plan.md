@@ -36,7 +36,8 @@ Branch `fix/further-cls-bug-fixes`. Summary of what shipped and why; durable beh
 - First visit (no cookie): 10 rows for both skeleton and table. The fit applies from the next navigation.
 - Pagination pins `limit` in the URL, so a later fit change can't shift what `?page=N` means mid-session.
 - Clients moved from `loading.tsx` to an in-page Suspense fallback, so the skeleton can see `?limit`.
-- Desktop tables fit 1280px with the sidebar open: cells truncate/nowrap so rows stay one line. Inquiries hides Source below `2xl` (still on cards).
+- Desktop tables fit 1280px with the sidebar open: cells truncate/nowrap so rows stay one line. Inquiry source is a neutral pill under the event type (table) and in the card pill row, not its own column.
+- The public contact form's three tabs share the row and wrap to two lines, so none clip at 375px in any locale.
 
 ## Calendar CLS
 - The cause was found with a browser probe. Every container first painted at the CSS fallback `calc(100dvh-14rem)` (676px at 900px tall). It grew to the measured height later:
@@ -66,6 +67,8 @@ Branch `fix/further-cls-bug-fixes`. Summary of what shipped and why; durable beh
   - `e2e/cls-sort-booked-wave.spec.ts` (1280 + 375 sort control)
   - `e2e/contact-form-time-sync.spec.ts` (public form at 375/768/1280 × light/dark)
 
+## Also fixed
+- `/portfolio-preview?zone=contact` returned 500 (this predated the branch). `contactButtonAppearance.ts` was marked `"use client"` but the server preview page calls `resolveSubmitAppearance()`. It is a pure helper, so the directive was removed; a regression test guards it.
+
 ## Known gaps / follow-ups
-- `/portfolio-preview?zone=contact` 500s, and this predates the branch. `contactButtonAppearance.ts` is `"use client"` but the server page calls `resolveSubmitAppearance()`. The 5-locale preview check in the contact spec is `fixme` until that is fixed.
 - Inquiry rows with a Conflict badge are ~69px vs the 56px skeleton/fit metric (also predates the branch).
