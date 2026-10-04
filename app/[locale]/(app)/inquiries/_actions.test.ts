@@ -59,7 +59,7 @@ vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
 });
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Inquiry, Booking, Client } from "@/lib/db/models";
+import { Inquiry, Booking, Client, ActivityLog } from "@/lib/db/models";
 const sendInquiryDeclineClientMock = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/email/booking/inquiryDecline", () => ({
   sendInquiryDeclineClient: (...args: unknown[]) => sendInquiryDeclineClientMock(...args),
@@ -819,6 +819,17 @@ describe("saveDraftBookingFieldsAction", () => {
       inquiryId: String(inquiry._id),
       bookingId: String(booking._id),
     });
+  });
+
+  it("returns not_draft, logs nothing and emits nothing when the booking is no longer a draft", async () => {
+    const { booking, inquiry } = await seedDraft(workspaceId);
+    await Booking.updateOne({ _id: booking._id }, { $set: { status: "booked" } });
+    const logsBefore = await ActivityLog.countDocuments({});
+    const res = await saveDraftBookingFieldsAction(String(inquiry._id), { total: 5000 });
+    expect(res).toEqual({ error: "not_draft" });
+    expect(await ActivityLog.countDocuments({})).toBe(logsBefore);
+    expect(emitMock).not.toHaveBeenCalled();
+    expect((await Booking.findById(booking._id).lean())?.amount?.total).not.toBe(5000);
   });
 
   it("is owner-only", async () => {

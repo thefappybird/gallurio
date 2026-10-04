@@ -644,10 +644,13 @@ export async function saveDraftBookingFieldsAction(
   }
 
   if (Object.keys(set).length > 0) {
-    await Booking.updateOne(
+    const written = await Booking.updateOne(
       { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
       { $set: set }
     );
+    // The booking was approved/removed since the form loaded: nothing was
+    // saved, so don't log or broadcast a phantom edit.
+    if (written.matchedCount === 0) return { error: "not_draft" };
     await ActivityLog.create({
       workspaceId,
       actorUserId: ctx.userId,
