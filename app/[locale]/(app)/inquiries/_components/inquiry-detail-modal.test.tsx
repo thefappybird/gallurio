@@ -64,6 +64,27 @@ describe("InquiryDetailModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("formats the submitted instant in the workspace timezone", () => {
+    const instant = "2026-01-01T00:00:00.000Z";
+    const { unmount } = renderWithProviders(
+      <InquiryDetailModal
+        detail={{ ...detail, submittedAt: instant, workspaceTz: "Asia/Manila" }}
+        open
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText(/January 1, 2026/).length).toBeGreaterThan(0);
+    unmount();
+    renderWithProviders(
+      <InquiryDetailModal
+        detail={{ ...detail, submittedAt: instant, workspaceTz: "Pacific/Pago_Pago" }}
+        open
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText(/December 31, 2025/).length).toBeGreaterThan(0);
+  });
+
   it("shows a loading state, then an error with Retry, while there is no detail", () => {
     const onRetry = vi.fn();
     const { rerender } = renderWithProviders(

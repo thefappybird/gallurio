@@ -14,6 +14,7 @@ import { InquiryActions } from "./_components/inquiry-actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { canResolveClientMatches, findClientMatchesForInquiry } from "@/lib/inquiries/detail-data";
 import { getBookingTeamOptions } from "../../bookings/_data/team-options";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 export default async function InquiryDetailPage({
   params,
@@ -36,7 +37,9 @@ export default async function InquiryDetailPage({
 
   const { inquiry, booking } = result;
   const submittedAt = new Date(inquiry.createdAt);
+  const tz = (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
   const submittedLabel = submittedAt.toLocaleDateString(locale, {
+    timeZone: tz,
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -132,6 +135,7 @@ export default async function InquiryDetailPage({
                     <span>{t("history.booked")}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(inquiry.updatedAt).toLocaleDateString(locale, {
+                        timeZone: tz,
                         month: "long",
                         day: "numeric",
                         year: "numeric",

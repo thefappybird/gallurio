@@ -113,6 +113,7 @@ export function InquiryDetailModal({
 
   const readOnly = detail.readOnly ?? false;
   const submittedLabel = new Date(detail.submittedAt).toLocaleDateString(detail.locale, {
+    timeZone: detail.workspaceTz,
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -209,6 +210,7 @@ export function InquiryDetailModal({
                         <span>{t("history.booked")}</span>
                         <span className="shrink-0 text-xs text-muted-foreground">
                           {new Date(detail.updatedAt).toLocaleDateString(detail.locale, {
+                            timeZone: detail.workspaceTz,
                             month: "long",
                             day: "numeric",
                             year: "numeric",
