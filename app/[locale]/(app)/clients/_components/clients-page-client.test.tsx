@@ -176,6 +176,14 @@ describe("ClientsPageClient", () => {
     expect(String(routerPush.mock.calls[0][0])).toMatch(/page=2/);
   });
 
+  it("pagination pins the current limit in the URL", () => {
+    renderWithProviders(
+      <ClientsPageClient {...build({ total: 60, page: 1, limit: 25 })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(String(routerPush.mock.calls[0][0])).toMatch(/limit=25/);
+  });
+
   it("Previous button is disabled on page 1", () => {
     renderWithProviders(<ClientsPageClient {...build()} />);
     expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();

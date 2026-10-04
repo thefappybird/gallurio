@@ -258,7 +258,10 @@ export function InquiriesPageClient({
   }
 
   function goToPage(p: number) {
-    pushParams((params) => params.set("page", String(p)));
+    pushParams((params) => {
+      params.set("page", String(p));
+      params.set("limit", String(limit));
+    });
   }
 
   function changeSort(key: string, dir: SortDir) {

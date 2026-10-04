@@ -304,4 +304,11 @@ describe("InquiriesPageClient", () => {
     fireEvent.click(screen.getByTestId("sort-client"));
     expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1&sort=client&dir=asc");
   });
+
+  it("pins the current limit in the URL when paging", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=1");
+    renderInquiriesPage({ ...baseProps, initialDetail: null, total: 60 });
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(push.mock.calls.at(-1)?.[0]).toMatch(/limit=20/);
+  });
 });

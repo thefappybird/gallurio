@@ -217,6 +217,7 @@ export function ClientsPageClient({
   function goToPage(p: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(p));
+    params.set("limit", String(limit));
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
     });

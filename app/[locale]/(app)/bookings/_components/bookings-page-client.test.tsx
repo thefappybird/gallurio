@@ -48,4 +48,24 @@ describe("BookingsPageClient", () => {
     );
     expect(screen.getByText("Carter Wedding", { selector: "td span" })).toBeInTheDocument();
   });
+
+  it("pins the current limit in the URL when paging", () => {
+    renderWithProviders(
+      <BookingsPageClient
+        rows={[]}
+        total={40}
+        page={3}
+        limit={10}
+        pageSizeOptions={[10, 20, 30]}
+        sortKey="bookedAt"
+        sortDir="desc"
+        locale="en"
+        empty="none"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(mockPush).toHaveBeenLastCalledWith(
+      "/bookings?status=booked&page=4&limit=10"
+    );
+  });
 });
