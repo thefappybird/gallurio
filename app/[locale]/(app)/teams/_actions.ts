@@ -13,6 +13,7 @@ import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { User } from "@/lib/db/models/User";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import {
   createTeamSchema,
   renameTeamSchema,
@@ -77,6 +78,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
       ctx.workspace.plan,
     );
 
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
     revalidatePath("/[locale]/teams", "page");
     return {
       ok: true,
@@ -119,6 +121,7 @@ export async function renameTeamAction(input: RenameTeamInput): Promise<ActionRe
     throw err;
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(objectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -141,6 +144,7 @@ export async function setTeamColorAction(input: SetTeamColorInput): Promise<Acti
   );
   if (!team) return { error: "Team not found" };
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -173,6 +177,7 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
       { _id: objectId, workspaceId: ctx.workspace._id },
       { $set: { isActive: false, deactivatedAt: new Date() } },
     );
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
 
     const memberships = await TeamMembership.find(
       { teamId: team._id, workspaceId: ctx.workspace._id },
@@ -240,6 +245,7 @@ export async function reactivateTeamAction(input: ReactivateTeamInput): Promise<
       { _id: objectId, workspaceId: ctx.workspace._id },
       { $set: { isActive: true, deactivatedAt: null } },
     );
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
   }
 
   revalidatePath("/[locale]/teams", "page");

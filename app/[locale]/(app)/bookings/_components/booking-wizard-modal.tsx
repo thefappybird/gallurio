@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { useWorkspaceClients } from "@/hooks/use-workspace-clients";
+import { queryKeys } from "@/lib/query/keys";
+import { useBookingQuery } from "./use-booking-query";
+import { StaleBookingError, throwIfStale } from "@/lib/bookings/stale-booking";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -47,12 +53,9 @@ import {
 } from "./_helpers/today-snap";
 import { wallTimeInTzToUtc, FALLBACK_TZ } from "@/lib/utils/timezone";
 
-type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
+// The GET /api/bookings/:id body is untyped JSON on the wire (was `any` before).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditBookingDoc = any;
 
 type NewBookingClient = Extract<WizardValues["client"], { mode: "new" }>;
 
@@ -78,10 +81,6 @@ type Props = {
   locale: string;
   /** IANA timezone for the workspace — used to convert wall-clock inputs to UTC. */
   workspaceTimezone?: string;
-  /** Pre-fetched client list — avoids per-keystroke API calls in ClientStep. */
-  clients?: ClientHit[];
-  /** Called after a new client is successfully created via this wizard. */
-  onClientCreated?: () => void;
   /** Called on every close path (cancel, save, backdrop, Escape).
    *  When provided, the parent owns the "is open" gate — the modal still
    *  manages its own animation state via Dialog's open/onOpenChange. */
@@ -124,27 +123,27 @@ export function BookingWizardModal({
   initialValues,
   locale,
   workspaceTimezone,
-  clients,
-  onClientCreated,
   onClose,
   teamId,
   teams,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const workspaceIdForQueries = useAppWorkspaceId();
+  const queryClient = useQueryClient();
+  const invalidateFor = useInvalidateFor();
   const t = useTranslations("app.bookings.wizard");
   const tDnd = useTranslations("app.bookings.dnd");
+  const tDetail = useTranslations("app.bookings.detail");
+  const tCommon = useTranslations("common");
   const errMsg = useActionError();
-  const [, startTransition] = useTransition();
 
   const [open, setOpen] = useState(true);
+  // Client picker list: fetched lazily once the wizard is open, cached as reference data.
+  const clientsQuery = useWorkspaceClients({ enabled: open });
   const [stepIndex, setStepIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(mode === "edit" && !initialValues);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [conflictCheckError, setConflictCheckError] = useState(false);
   const [editClientName, setEditClientName] = useState<string | undefined>(
     initialValues?.client?.mode === "existing"
       ? initialValues.client.clientName
@@ -156,8 +155,6 @@ export function BookingWizardModal({
   const [editSessionCount, setEditSessionCount] = useState<number>(
     initialValues?.sessions?.length ?? 1
   );
-  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
-  const reqIdRef = useRef(0);
   /** Steps that have failed validation since the user last interacted with
    *  them. Drives the red-asterisk + shake markers in the header. */
   const [stepErrors, setStepErrors] = useState<Set<number>>(new Set());
@@ -175,16 +172,6 @@ export function BookingWizardModal({
   /** Contact values that have either produced no matches or been explicitly
    * resolved in the match dialog. Editing name, email, or phone invalidates it. */
   const [resolvedClientMatchSignature, setResolvedClientMatchSignature] = useState<string | null>(null);
-  /** Raw shifts keyed by YYYY-MM-DD date string. Treated as a cache — entries
-   *  are added on demand and never evicted (harmless small footprint). */
-  const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
-  /** Mirror of rawShiftsByDate in a ref so the fetch effect can read cached keys
-   *  without adding rawShiftsByDate to its dependency array (which would re-trigger
-   *  the effect on every cache write, defeating the cache). */
-  const rawShiftsByDateRef = useRef<Record<string, ShiftHit[]>>({});
-  /** Dates currently being fetched — only in-flight (uncached) dates appear here.
-   *  Used to disable Next and show inline loaders. */
-  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
   // Effective IANA timezone for wall-clock → UTC conversion. Falls back to
   // the launch-market default when the workspace has not set a TZ yet.
   const tz = workspaceTimezone || FALLBACK_TZ;
@@ -213,114 +200,106 @@ export function BookingWizardModal({
    * any other async callback below without stale-closure issues.
    */
   const clearWizardUrlParams = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    let changed = false;
-    if (params.has("edit")) { params.delete("edit"); changed = true; }
-    if (params.has("detail")) { params.delete("detail"); changed = true; }
-    if (changed) {
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-      });
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("edit") || params.has("detail")) {
+      setUrlParams((p) => {
+        p.delete("edit");
+        p.delete("detail");
+      }, "replace");
     }
-  }, [router, pathname, searchParams]);
+  }, []);
 
-  // Edit mode: fetch the booking and reset the form with its values.
+  // Edit mode: booking comes from the shared react-query cache (same key as
+  // the detail modal, so detail -> "Edit all" is a cache hit). The form is
+  // seeded ONCE per booking from the first settled result; later refetches
+  // (e.g. after a save elsewhere) never overwrite the user's in-progress edits.
+  const editEnabled = mode === "edit" && !!bookingId && !initialValues;
+  const bookingQuery = useBookingQuery<EditBookingDoc>(bookingId ?? "", editEnabled);
+  const fetchedBooking = bookingQuery.data;
+  const bookingSettled = !bookingQuery.isFetching;
+  const bookingLoadFailed = bookingQuery.isError && !fetchedBooking;
+  const seededBookingRef = useRef<string | null>(null);
+  /** `updatedAt` of the booking the form was seeded from — the PATCH concurrency token. */
+  const baseUpdatedAtRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (mode !== "edit" || !bookingId || initialValues) return;
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/bookings/${bookingId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b) => {
-        if (cancelled) return;
-        if (!b) {
-          // API returned a non-ok status (404, 403, etc.) — treat as load error.
-          setLoading(false);
-          setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
-          if (!onClose) clearWizardUrlParams();
-          return;
-        }
-        const rawSessions: { startAt: string; endAt: string }[] =
-          Array.isArray(b.sessions) && b.sessions.length > 0
-            ? b.sessions
-            : [];
-        const today = new Date().toISOString().slice(0, 10);
-        // In edit mode: order existing sessions chronologically so they read
-        // top-to-bottom by date. Create mode keeps insertion order because
-        // the user's workflow may have implicit meaning.
-        const sessionsForForm = [...rawSessions].sort(
-          (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-        );
-        const wizardSessions = sessionsForForm.map((s) => {
-          const sd = new Date(s.startAt);
-          const ed = new Date(s.endAt);
-          const startDate = sd.toISOString().slice(0, 10);
-          const startTime = `${String(sd.getHours()).padStart(2, "0")}:${String(sd.getMinutes()).padStart(2, "0")}`;
-          const endTime = `${String(ed.getHours()).padStart(2, "0")}:${String(ed.getMinutes()).padStart(2, "0")}`;
-          return {
-            startDate,
-            startTime,
-            endTime,
-            allowPastDate: startDate < today,
-          };
-        });
-        const next: WizardValues = {
-          client: {
-            mode: "existing",
-            clientId: String(b.clientId ?? ""),
-            clientName: b.clientName ?? "",
-          },
-          title: b.title ?? "",
-          eventType: b.eventType ?? "other",
-          status: b.status ?? "booked",
-          sessions:
-            wizardSessions.length > 0
-              ? wizardSessions
-              : [{ startDate: "", startTime: "10:00", endTime: "17:00", allowPastDate: false }],
-          location: {
-            address: b.location?.address ?? "",
-            lat: b.location?.lat ?? null,
-            lng: b.location?.lng ?? null,
-          },
-          amount: {
-            total: b.amount?.total ?? 0,
-            deposit: b.amount?.deposit ?? 0,
-            currency: b.amount?.currency ?? defaultCurrency,
-          },
-          payments: Array.isArray(b.payments)
-            ? b.payments.map((payment: { method?: "cash" | "card" | "remit" }) => ({ ...payment, method: payment.method ?? "cash" }))
-            : [],
-          notes: b.notes ?? "",
-          teamId: b.teamId ?? "",
-        };
-        form.reset(next);
-        // Sync the baseline so buildEditDiff compares against fetched values,
-        // not the empty defaults computed before the fetch resolved.
-        defaultsRef.current = next;
-        setEditClientName(b.clientName ?? undefined);
-        setEditClientEmail(b.clientEmail ?? null);
-        setEditSessionCount(rawSessions.length);
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error("[booking-wizard] failed to load booking", { bookingId, err });
-        setLoading(false);
-        setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
-        // Strip the stale ?edit= param so it can't block a fresh open attempt.
-        if (!onClose) {
-          clearWizardUrlParams();
-        }
-      });
-    return () => {
-      cancelled = true;
+    if (!editEnabled) return;
+    if (bookingLoadFailed) {
+      console.error("[booking-wizard] failed to load booking", { bookingId, err: bookingQuery.error });
+      setLoading(false);
+      setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
+      // Strip the stale ?edit= param so it can't block a fresh open attempt.
+      if (!onClose) clearWizardUrlParams();
+      return;
+    }
+    if (!fetchedBooking || !bookingSettled || seededBookingRef.current === bookingId) return;
+    seededBookingRef.current = bookingId ?? null;
+    const b = fetchedBooking;
+    baseUpdatedAtRef.current = b.updatedAt;
+    const rawSessions: { startAt: string; endAt: string }[] =
+      Array.isArray(b.sessions) && b.sessions.length > 0
+        ? b.sessions
+        : [];
+    const today = new Date().toISOString().slice(0, 10);
+    // In edit mode: order existing sessions chronologically so they read
+    // top-to-bottom by date. Create mode keeps insertion order because
+    // the user's workflow may have implicit meaning.
+    const sessionsForForm = [...rawSessions].sort(
+      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+    );
+    const wizardSessions = sessionsForForm.map((s) => {
+      const sd = new Date(s.startAt);
+      const ed = new Date(s.endAt);
+      const startDate = sd.toISOString().slice(0, 10);
+      const startTime = `${String(sd.getHours()).padStart(2, "0")}:${String(sd.getMinutes()).padStart(2, "0")}`;
+      const endTime = `${String(ed.getHours()).padStart(2, "0")}:${String(ed.getMinutes()).padStart(2, "0")}`;
+      return {
+        startDate,
+        startTime,
+        endTime,
+        allowPastDate: startDate < today,
+      };
+    });
+    const next: WizardValues = {
+      client: {
+        mode: "existing",
+        clientId: String(b.clientId ?? ""),
+        clientName: b.clientName ?? "",
+      },
+      title: b.title ?? "",
+      eventType: b.eventType ?? "other",
+      status: b.status ?? "booked",
+      sessions:
+        wizardSessions.length > 0
+          ? wizardSessions
+          : [{ startDate: "", startTime: "10:00", endTime: "17:00", allowPastDate: false }],
+      location: {
+        address: b.location?.address ?? "",
+        lat: b.location?.lat ?? null,
+        lng: b.location?.lng ?? null,
+      },
+      amount: {
+        total: b.amount?.total ?? 0,
+        deposit: b.amount?.deposit ?? 0,
+        currency: b.amount?.currency ?? defaultCurrency,
+      },
+      payments: Array.isArray(b.payments)
+        ? b.payments.map((payment: { method?: "cash" | "card" | "remit" }) => ({ ...payment, method: payment.method ?? "cash" }))
+        : [],
+      notes: b.notes ?? "",
+      teamId: b.teamId ?? "",
     };
-  // clearWizardUrlParams and onClose are stable across the booking's lifetime.
-  // They're intentionally excluded from the dep array — the effect should only
-  // re-run when the booking identity changes (mode/bookingId), not when URL state
-  // or parent callbacks update. The `cancelled` flag guards against stale closures.
+    form.reset(next);
+    // Sync the baseline so buildEditDiff compares against fetched values,
+    // not the empty defaults computed before the fetch resolved.
+    defaultsRef.current = next;
+    setEditClientName(b.clientName ?? undefined);
+    setEditClientEmail(b.clientEmail ?? b.client?.email ?? null);
+    setEditSessionCount(rawSessions.length);
+    setLoading(false);
+  // clearWizardUrlParams and onClose are stable across the booking's lifetime and
+  // intentionally excluded; seeding is guarded by seededBookingRef.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, bookingId, initialValues, defaultCurrency, form, t]);
+  }, [editEnabled, bookingId, fetchedBooking, bookingSettled, bookingLoadFailed, defaultCurrency, form, t]);
 
   const {
     control,
@@ -343,76 +322,40 @@ export function BookingWizardModal({
     [watchedSessions]
   );
 
-  // Fetch shifts for new startDates only. Uses rawShiftsByDateRef as a read-only
-  // cache key-check so we don't re-fetch already-known dates. Only new (uncached)
-  // dates are marked loading. Results are merged into the existing cache rather
-  // than replacing it. An incrementing request id discards stale responses.
-  useEffect(() => {
-    const uniqueDates = [...new Set(sessionDates.filter(isValidDateString))];
-    if (uniqueDates.length === 0) return;
-
-    // Skip dates already in the cache — only fetch genuinely new ones.
-    const datesToFetch = uniqueDates.filter(
-      (d) => !(d in rawShiftsByDateRef.current)
-    );
-    if (datesToFetch.length === 0) return;
-
-    const myId = ++reqIdRef.current;
-    let cancelled = false;
-
-    // Mark only in-flight (uncached) dates as loading.
-    setLoadingDates(new Set(datesToFetch));
-
-    Promise.all(
-      datesToFetch.map(async (date) => {
-        const params = new URLSearchParams({ date });
-        if (mode === "edit" && bookingId) params.set("excludeId", bookingId);
-        try {
-          const r = await fetch(
-            `/api/bookings/shifts-on-date?${params.toString()}`
-          );
-          if (!r.ok) {
-            // Non-2xx treated as check unavailable — return null sentinel.
-            return [date, null] as const;
-          }
-          const data: { shifts: ShiftHit[] } = await r.json();
-          return [date, data.shifts ?? []] as const;
-        } catch {
-          return [date, null] as const;
-        }
-      })
-    ).then((entries) => {
-      if (cancelled || myId !== reqIdRef.current) return;
-      const hasError = entries.some(([, v]) => v === null);
-      if (hasError) {
-        // A new date failed — set the error flag. Cached good dates remain.
-        setConflictCheckError(true);
-      } else {
-        setConflictCheckError(false);
-        // Merge new results into the existing cache rather than overwriting.
-        setRawShiftsByDate((prev) => {
-          const next = {
-            ...prev,
-            ...Object.fromEntries(
-              entries.map(([date, shifts]) => [date, shifts as ShiftHit[]])
-            ),
-          };
-          // Keep the ref in sync so the next effect run can read the latest cache.
-          rawShiftsByDateRef.current = next;
-          return next;
-        });
-      }
-      setLoadingDates(new Set());
-    });
-
-    return () => {
-      cancelled = true;
-      setLoadingDates(new Set());
-    };
-  // rawShiftsByDateRef is intentionally omitted — it's a ref, not reactive state.
-  // rawShiftsByDate is omitted to avoid re-running the effect on every cache write.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(sessionDates), mode, bookingId]);
+  // ONE batched request for every valid session date (was one per date). The
+  // previous result stays as placeholder while the next date set loads. No
+  // retry: a failed check must surface immediately as "conflict check failed".
+  const conflictDates = useMemo(
+    () => [...new Set(sessionDates.filter(isValidDateString))].sort(),
+    [sessionDates]
+  );
+  const shiftsExcludeId = mode === "edit" && bookingId ? bookingId : "";
+  const shiftsQuery = useQuery({
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), shiftsExcludeId],
+    queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
+      const params = new URLSearchParams({ dates: conflictDates.join(",") });
+      if (shiftsExcludeId) params.set("excludeId", shiftsExcludeId);
+      const res = await fetch(`/api/bookings/shifts-on-date?${params.toString()}`);
+      if (!res.ok) throw new Error("shifts_load_failed");
+      return res.json();
+    },
+    enabled: conflictDates.length > 0,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+  const rawShiftsByDate = useMemo(
+    () => shiftsQuery.data?.byDate ?? ({} as Record<string, ShiftHit[]>),
+    [shiftsQuery.data]
+  );
+  /** Only dates still awaiting a result — disables Next and shows inline loaders. */
+  const loadingDates = useMemo(
+    () =>
+      shiftsQuery.isFetching
+        ? new Set(conflictDates.filter((d) => !(d in rawShiftsByDate)))
+        : new Set<string>(),
+    [shiftsQuery.isFetching, conflictDates, rawShiftsByDate]
+  );
+  const conflictCheckError = shiftsQuery.isError;
 
   // For each session, filter the fetched shifts to only those overlapping the
   // session's time window. This is the array EventStep renders as warnings,
@@ -446,29 +389,31 @@ export function BookingWizardModal({
       onClose();
       return;
     }
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("add");
-    params.delete("date");
-    params.delete("time");
-    params.delete("edit");
-    params.delete("detail");
-    const qs = params.toString();
-    startTransition(() => {
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    });
-  }, [router, pathname, searchParams, onClose]);
+    // URL params are stripped in onOpenChangeComplete, after the exit animation.
+  }, [onClose]);
+
+  // Replace mode; guarded so a booking opened meanwhile (?edit=other) survives.
+  const stripUrlAfterClose = useCallback(() => {
+    if (onClose) return;
+    const cur = new URLSearchParams(window.location.search);
+    if (bookingId && cur.get("edit") !== bookingId) return;
+    setUrlParams((p) => {
+      for (const k of ["add", "date", "time", "edit", "detail"]) p.delete(k);
+    }, "replace");
+  }, [onClose, bookingId]);
 
   // Defensive unmount cleanup: if the component unmounts without close() having
   // run (e.g. error boundary, parent re-render, browser back), strip the params.
   useEffect(() => {
     return () => {
-      // Only clean up if we actually own the URL (no onClose parent handler).
-      if (!onClose) {
+      // Only clean up if we actually own the URL (no onClose parent handler) and
+      // the URL still points at THIS booking's edit: a switch to ?detail (eye
+      // button) or another ?edit id must survive this unmount.
+      if (!onClose && new URLSearchParams(window.location.search).get("edit") === bookingId) {
         clearWizardUrlParams();
       }
     };
-    // clearWizardUrlParams captures router/pathname/searchParams at effect
-    // creation time — that's intentional; we only need to run on unmount.
+    // Captured at effect creation time — intentional; we only need to run on unmount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -597,6 +542,7 @@ export function BookingWizardModal({
       setClientFormError(errMsg(updateResult.error));
       return;
     }
+    invalidateFor({ type: "client.updated", clientId: card.id });
     form.setValue("client", { mode: "existing", clientId: card.id, clientName: card.name }, { shouldDirty: true });
     setClientMatchState(null);
     clearStepInvalid(0);
@@ -673,11 +619,17 @@ export function BookingWizardModal({
           const data = await res.json().catch(() => ({}));
           throw new Error(errMsg(data.error, data.params));
         }
+        const created: { id?: string; clientId?: string } = await res.json().catch(() => ({}));
         toast.success(t("createdToast"));
-        // If a new client was created, notify the parent so it can refresh
-        // its client list without a full page reload.
-        if (values.client.mode === "new") {
-          onClientCreated?.();
+        // Existing client: we know its id. New client: the server returns it as
+        // clientId (echo suppression needs the same ids the server broadcasts).
+        const createdClientId =
+          values.client.mode === "existing" ? values.client.clientId : created.clientId;
+        if (created.id) {
+          invalidateFor({ type: "booking.created", bookingId: created.id, clientId: createdClientId ?? null });
+        }
+        if (values.client.mode === "new" && createdClientId) {
+          invalidateFor({ type: "client.created", clientId: createdClientId });
         }
       } else {
         if (!bookingId) throw new Error("Missing booking id");
@@ -699,21 +651,55 @@ export function BookingWizardModal({
           close();
           return;
         }
-        const res = await fetch(`/api/bookings/${bookingId}`, {
+        const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(diff),
+          body: JSON.stringify({ ...diff, expectedUpdatedAt: baseUpdatedAtRef.current }),
         });
+        await throwIfStale(res);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(errMsg(data.error, data.params));
         }
+        const updated: { clientId?: string; createdFromInquiryId?: string | null } = await res.json().catch(() => ({}));
         toast.success(t("savedToast"));
+        // The PATCH body has no client block: keep the cached one unless the
+        // client was reassigned (then drop the entry so it refetches whole).
+        const bookingKey = queryKeys(workspaceIdForQueries).booking(bookingId);
+        if (diff.clientId) {
+          queryClient.removeQueries({ queryKey: bookingKey });
+        } else {
+          queryClient.setQueryData(bookingKey, (old: Record<string, unknown> | undefined) => ({
+            ...old,
+            ...updated,
+          }));
+        }
+        invalidateFor({
+          type: "booking.updated",
+          bookingId,
+          clientId: updated.clientId ?? null,
+          inquiryId: updated.createdFromInquiryId ?? null,
+        });
       }
-      startTransition(() => router.refresh());
-      // Success path: close() strips URL params before the router refresh lands.
+      // Success path: close() strips URL params; invalidateFor schedules the page refresh.
       close();
     } catch (err) {
+      if (err instanceof StaleBookingError && bookingId) {
+        // Keep the wizard open: swap the cache for the server copy (the seeding
+        // effect re-runs and rebases the form + diff baseline) and explain.
+        const server = err.booking as Record<string, unknown> | null;
+        const key = queryKeys(workspaceIdForQueries).booking(bookingId);
+        if (server) {
+          seededBookingRef.current = null;
+          queryClient.setQueryData(key, (old: Record<string, unknown> | undefined) => ({
+            ...server,
+            activity: old?.activity,
+          }));
+        }
+        void queryClient.invalidateQueries({ queryKey: key });
+        setSubmitError(tDetail("staleConflict"));
+        return;
+      }
       setSubmitError(err instanceof Error ? err.message : errMsg(null));
       // Failed submit: strip URL params so the stale ?edit= doesn't persist if
       // the user navigates away after seeing the error.
@@ -723,7 +709,7 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz, errMsg]);
+  }, [mode, bookingId, t, close, isMultiSessionEdit, onClose, clearWizardUrlParams, tz, errMsg, invalidateFor, queryClient, workspaceIdForQueries, tDetail]);
 
   const eventStepIndex = STEPS.findIndex((s) => s.id === "sessionsLocation");
 
@@ -810,7 +796,13 @@ export function BookingWizardModal({
   const values = watch();
 
   return (
-    <Dialog open={open} onOpenChange={attemptClose}>
+    <Dialog
+      open={open}
+      onOpenChange={attemptClose}
+      onOpenChangeComplete={(isOpen) => {
+        if (!isOpen) stripUrlAfterClose();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex max-h-[calc(100vh-4em)] w-full max-w-2xl flex-col gap-0 p-0 transition-[max-height,width] duration-200 ease-out sm:max-w-2xl"
@@ -840,7 +832,7 @@ export function BookingWizardModal({
                 const hasError = stepErrors.has(i);
                 const isCurrent = i === stepIndex;
                 return (
-                  <li key={s.id} className="flex items-center gap-1.5">
+                  <li key={s.id} className="flex items-center gap-1.5" aria-current={isCurrent ? "step" : undefined}>
                     <button
                       type="button"
                       onClick={() => jumpToStep(i)}
@@ -870,7 +862,7 @@ export function BookingWizardModal({
                       {hasError ? (
                         <span
                           className="text-destructive"
-                          aria-label="Has validation errors"
+                          aria-label={t("hasErrors")}
                         >
                           *
                         </span>
@@ -890,20 +882,25 @@ export function BookingWizardModal({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="View booking"
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.delete("edit");
-                  params.set("detail", bookingId);
-                  router.push(`${pathname}?${params.toString()}`);
-                }}
+                aria-label={t("viewBooking")}
+                onClick={() =>
+                  setUrlParams((p) => {
+                    p.delete("edit");
+                    p.set("detail", bookingId);
+                  })
+                }
               >
                 <EyeIcon className="size-4" />
               </Button>
             ) : null}
             <DialogClose
               render={
-                <Button variant="ghost" size="icon-sm" onClick={() => attemptClose(false)}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={tCommon("close")}
+                  onClick={() => attemptClose(false)}
+                >
                   <XIcon className="size-4" />
                 </Button>
               }
@@ -943,7 +940,10 @@ export function BookingWizardModal({
                     showExistingError={stepErrors.has(stepIndex)}
                     readOnly={isReadOnlyClient}
                     readOnlyClientName={editClientName}
-                    clients={clients}
+                    clients={clientsQuery.data}
+                    clientsLoading={clientsQuery.isPending}
+                    clientsError={clientsQuery.isError}
+                    onRetryClients={() => void clientsQuery.refetch()}
                     newClientFormError={clientFormError}
                   />
                 ) : null}

@@ -62,7 +62,7 @@ export function InquiryViewToggle({ view }: Props) {
     <SegmentedToggle
       value={view}
       onChange={setView}
-      ariaLabel="Inquiries view toggle"
+      ariaLabel={t("inquiriesToggle")}
       options={[
         {
           key: "table",

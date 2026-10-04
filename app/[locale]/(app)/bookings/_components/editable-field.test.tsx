@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders as render } from "@/test-utils/render";
+import filMessages from "@/messages/fil.json";
 import { EditableField } from "./editable-field";
 
 describe("EditableField validation a11y", () => {
@@ -102,5 +104,17 @@ describe("EditableField validation a11y", () => {
     const timeInput = document.querySelector('input[type="time"]') as HTMLInputElement;
     expect(timeInput).toHaveAttribute("aria-invalid", "true");
     expect(timeInput.getAttribute("aria-describedby")).toBe(error.id);
+  });
+});
+
+describe("EditableField localized labels", () => {
+  it("uses the active locale for the confirm / cancel buttons", () => {
+    render(<EditableField label="Title" value="Original" type="text" onCommit={vi.fn()} />, {
+      locale: "fil",
+      messages: filMessages as never,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit Title" }));
+    expect(screen.getByRole("button", { name: "Kumpirmahin" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Kanselahin" })).toBeInTheDocument();
   });
 });

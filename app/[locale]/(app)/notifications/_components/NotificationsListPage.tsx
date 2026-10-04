@@ -49,7 +49,28 @@ export function NotificationsListPage({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [markAllPending, setMarkAllPending] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { liveArrivalTick } = useNotifications();
+  const { liveArrivalTick, notifications: live = [] } = useNotifications();
+
+  // Re-sync when the server list changes (router.refresh / revalidation).
+  const serverKey = initialItems.map((n) => `${n._id}:${n.read ? 1 : 0}`).join(",");
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  if (serverKey !== syncedKey) {
+    setSyncedKey(serverKey);
+    setItems(initialItems);
+    setNextCursor(initialNextCursor);
+  }
+
+  // Live arrivals from the NotificationProvider: prepend what this list has not seen.
+  // Only inside the loaded window, so older rows of an unloaded page never jump in.
+  const known = new Set(items.map((n) => n._id));
+  const windowStart = nextCursor && items.length > 0 ? items[items.length - 1].createdAt : null;
+  const fresh = live.filter(
+    (n) => !n.silent && !known.has(n._id) && (windowStart === null || n.createdAt >= windowStart),
+  );
+  if (fresh.length > 0) setItems((prev) => [...fresh, ...prev]);
+  // Reads done from the popover / another tab arrive through the provider.
+  const liveRead = new Set(live.filter((n) => n.read).map((n) => n._id));
+  const shownItems = items.map((n) => (!n.read && liveRead.has(n._id) ? { ...n, read: true } : n));
   const { showToast: showArrivalToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
 
   function handleMarkRead(item: SerializedNotification) {
@@ -86,12 +107,15 @@ export function NotificationsListPage({
         setLoadError(result.error);
         return;
       }
-      setItems((prev) => [...prev, ...result.items]);
+      setItems((prev) => {
+        const seen = new Set(prev.map((n) => n._id));
+        return [...prev, ...result.items.filter((n) => !seen.has(n._id))];
+      });
       setNextCursor(result.nextCursor);
     });
   }
 
-  const hasUnread = items.some((n) => !n.read);
+  const hasUnread = shownItems.some((n) => !n.read);
 
   return (
     <div className="flex flex-col gap-0">
@@ -116,11 +140,11 @@ export function NotificationsListPage({
         )}
       </div>
 
-      {items.length === 0 ? (
+      {shownItems.length === 0 ? (
         <EmptyState icon={Bell} title={messages.empty} className="border-0 p-16" />
       ) : (
         <ul className="divide-y">
-          {items.map((item) => {
+          {shownItems.map((item) => {
             const hasParams = !!item.params && Object.keys(item.params).length > 0;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const displayTitle = hasParams ? (tt as any)(`${item.type}.title`, item.params) as string : item.title;
@@ -163,7 +187,7 @@ export function NotificationsListPage({
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                       {formatRelativeTime(item.createdAt, locale)}
                     </span>
                     {!item.read && (

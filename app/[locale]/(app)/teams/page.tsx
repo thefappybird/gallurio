@@ -42,14 +42,10 @@ export default async function TeamsPage({
 
   await connectDB();
 
-  const rawTeams = await Team.find({ workspaceId: workspace._id })
-    .sort({ isActive: -1, isDefault: -1, createdAt: 1 })
-    .lean<TeamDoc[]>();
-
   // A month is bucketed in the workspace's timezone. Drafts are inquiry
   // placeholders rather than confirmed bookings, so they do not affect this
   // team activity metric.
-  const monthlyBookingRows = await Booking.aggregate<{
+  const monthlyBookingRowsQuery = Booking.aggregate<{
     _id: { toString(): string };
     average: number;
   }>([
@@ -77,6 +73,24 @@ export default async function TeamsPage({
     },
     { $group: { _id: "$_id.teamId", average: { $avg: "$bookings" } } },
   ]);
+
+  // All independent of each other: one round-trip of latency instead of four.
+  const [rawTeams, monthlyBookingRows, memberUsers, memberships, rawPendingInvites] =
+    await Promise.all([
+      Team.find({ workspaceId: workspace._id })
+        .sort({ isActive: -1, isDefault: -1, createdAt: 1 })
+        .lean<TeamDoc[]>(),
+      monthlyBookingRowsQuery.exec(),
+      User.find({ "memberships.workspaceId": workspace._id })
+        .select({ workosUserId: 1, email: 1, name: 1, avatarUrl: 1 })
+        .lean<UserDoc[]>(),
+      TeamMembership.find({ workspaceId: workspace._id })
+        .select({ workosUserId: 1, teamId: 1, role: 1 })
+        .lean<TeamMembershipDoc[]>(),
+      Invitation.find({ workspaceId: workspace._id, status: "pending" })
+        .sort({ createdAt: -1 })
+        .lean<InvitationDoc[]>(),
+    ]);
   const monthlyAverageByTeam = new Map(
     monthlyBookingRows.map((row) => [
       String(row._id),
@@ -97,18 +111,6 @@ export default async function TeamsPage({
   const { maxTeams, maxMembersPerTeam } = planEntitlements(
     workspace.plan as "free" | "pro" | "beta",
   );
-
-  const [memberUsers, memberships, rawPendingInvites] = await Promise.all([
-    User.find({ "memberships.workspaceId": workspace._id })
-      .select({ workosUserId: 1, email: 1, name: 1, avatarUrl: 1 })
-      .lean<UserDoc[]>(),
-    TeamMembership.find({ workspaceId: workspace._id })
-      .select({ workosUserId: 1, teamId: 1, role: 1 })
-      .lean<TeamMembershipDoc[]>(),
-    Invitation.find({ workspaceId: workspace._id, status: "pending" })
-      .sort({ createdAt: -1 })
-      .lean<InvitationDoc[]>(),
-  ]);
 
   const membershipsByUser = new Map<
     string,

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Booking, Transaction } from "@/lib/db/models";
-import { listClients, getWorkspaceTags, getClientBookings, getClientById } from "./clients-queries";
+import { countQueries } from "@/test-utils/query-counter";
+import { listClients, getWorkspaceTags, getClientBookings, getClientById, resolveDetailClient } from "./clients-queries";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -283,6 +284,17 @@ describe("getWorkspaceTags", () => {
 // ─── getClientById ────────────────────────────────────────────────────────────
 
 describe("getClientById", () => {
+  it("excludes draft bookings, agreeing with listClients", async () => {
+    const client = await seedClient(workspaceId, { name: "Drafty2" });
+    await seedBooking(workspaceId, client._id, { status: "booked" });
+    await seedBooking(workspaceId, client._id, { status: "draft" });
+
+    const byId = await getClientById(workspaceId, client._id.toString());
+    const { items } = await listClients({ workspaceId });
+    expect(byId?.bookingsCount).toBe(1);
+    expect(byId?.bookingsCount).toBe(items.find((c) => c.name === "Drafty2")?.bookingsCount);
+  });
+
   it("returns the client with derived bookingsCount and lastBookingAt", async () => {
     const client = await seedClient(workspaceId, { name: "Ana Reyes" });
     const start = new Date("2025-03-10T09:00:00Z");
@@ -493,5 +505,19 @@ describe("listClients — multi-currency totalSpent", () => {
     const found = await getClientById(workspaceId, String(client._id), { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(found?.totalSpent).toBe(100 * 58);
+  });
+
+  describe("resolveDetailClient", () => {
+    it("reuses the listed row and issues no queries when the deep-linked client is on the page", async () => {
+      const client = await seedClient(workspaceId, { name: "On Page" });
+      const { items } = await listClients({ workspaceId });
+
+      const { result, queries } = await countQueries(() =>
+        resolveDetailClient(workspaceId, String(client._id), items)
+      );
+
+      expect(result?.name).toBe("On Page");
+      expect(queries).toHaveLength(0);
+    });
   });
 });

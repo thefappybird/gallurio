@@ -13,7 +13,7 @@ type Props = ComponentProps<typeof TeamPerformanceCardsComponent>;
 // boundary makes the code-split real. ssr stays true: only the client chunk
 // boundary moves, the cards still server-render on first paint.
 const TeamPerformanceCards = dynamic(
-  () => import("./team-performance-cards").then((module) => module.TeamPerformanceCards),
+  () => import("./dashboard-charts").then((module) => module.TeamPerformanceCards),
   {
     ssr: true,
     loading: () => (

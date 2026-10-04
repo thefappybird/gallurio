@@ -1,25 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  BookingCalendar,
-  type CalendarEvent,
-  type AnyCalendarEvent,
+import type {
+  CalendarEvent,
+  AnyCalendarEvent,
 } from "../../bookings/_components/booking-calendar";
+import { BookingCalendarLazy } from "../../bookings/_components/booking-calendar-dynamic";
 import { TeamFilterControl } from "../../bookings/_components/team-filter-control";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import {
   detectConflictIds,
   dateToTzWallClock,
+  wallDateAsLocal,
 } from "../../bookings/_components/_helpers/calendar-helpers";
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
 
 type Props = {
   events: CalendarEvent[];
@@ -28,6 +30,12 @@ type Props = {
   isOwner?: boolean;
   /** IANA workspace timezone -- used to convert dropped Date back to wall-clock parts. */
   workspaceTz?: string;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window?: { start: string; end: string };
+  /** Calendar's initial date (the `?date` the server windowed around). */
+  defaultDate?: Date;
+  /** Opens an inquiry candle through the page client (pushState + cached detail read). */
+  onOpenInquiry?: (inquiryId: string) => void;
 };
 
 /**
@@ -74,6 +82,17 @@ export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
   );
 }
 
+// A stale-copy override is held at most this long after the drop, so a refresh that
+// never carries the new position cannot pin the candle forever.
+const OVERRIDE_MAX_HOLD_MS = 15_000;
+
+// Stable default so the memoized toolbar isn't rebuilt every render.
+const NO_TEAMS: BookingTeamOption[] = [];
+
+function isDraggableEvent(ev: AnyCalendarEvent): boolean {
+  return "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent);
+}
+
 /**
  * Calendar view for the inquiries page. New inquiry candles are draggable;
  * booking candles are not. On drop, persists via rescheduleInquirySessionAction
@@ -82,15 +101,21 @@ export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
 export function InquiriesCalendarManager({
   events,
   locale: _locale,
-  teams = [],
+  teams = NO_TEAMS,
   isOwner = false,
   workspaceTz,
+  window,
+  defaultDate,
+  onOpenInquiry,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const invalidateFor = useInvalidateFor();
   const tCal = useTranslations("app.calendar");
   const t = useTranslations("app.inquiries.calendar");
+
+  const { onVisibleChange, isPending: windowPending } = useCalendarWindowNav({
+    window,
+    tz: workspaceTz ?? FALLBACK_TZ,
+  });
 
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const showTeamFilter = teams.length > 1;
@@ -107,14 +132,42 @@ export function InquiriesCalendarManager({
   // Prevents concurrent drops on the same inquiry session.
   const inFlightRef = useRef<Set<string>>(new Set());
 
-  // When fresh server events arrive (after router.refresh()), clear any pending
-  // optimistic overrides so mergedEvents reflects authoritative positions without
-  // a gap where the stale server data would flash the old position.
+  // Where each dropped candle started, to tell a stale server copy (still the old
+  // position) from an authoritative one when events refresh.
+  const originRef = useRef<Map<string, { start: number; end: number; at: number }>>(new Map());
+
+  // When fresh server events arrive, drop an override only once the incoming copy
+  // is authoritative: it shows the override's position, shows some other position
+  // than the pre-drop one (a teammate moved it), or the candle is gone. An
+  // unrelated refresh that still carries the pre-drop position is stale, so the
+  // override stays (bounded) instead of snapping the candle back.
   const prevEventsRef = useRef(events);
   useEffect(() => {
     if (events !== prevEventsRef.current) {
       prevEventsRef.current = events;
-      setOptimisticOverrides((prev) => (prev.size ? new Map() : prev));
+      setOptimisticOverrides((prev) => {
+        if (!prev.size) return prev;
+        const incoming = new Map(events.map((e) => [e.id, e]));
+        const now = Date.now();
+        const kept = new Map(
+          [...prev].filter(([id, ov]) => {
+            if (inFlightRef.current.has(id)) return true; // mid-request
+            const inc = incoming.get(id);
+            if (!inc) return false;
+            if (inc.start.getTime() === ov.start.getTime() && inc.end.getTime() === ov.end.getTime()) {
+              return false; // server caught up
+            }
+            const origin = originRef.current.get(id);
+            return (
+              !!origin &&
+              now - origin.at < OVERRIDE_MAX_HOLD_MS &&
+              inc.start.getTime() === origin.start &&
+              inc.end.getTime() === origin.end
+            );
+          })
+        );
+        return kept.size === prev.size ? prev : kept;
+      });
     }
   }, [events]);
 
@@ -141,18 +194,19 @@ export function InquiriesCalendarManager({
     return filteredEvents.map((e) => mergeConflict(e, conflictIds));
   }, [filteredEvents]);
 
-  function handleSelectEvent(ev: CalendarEvent) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("view", "calendar");
+  const handleSelectEvent = useCallback((ev: CalendarEvent) => {
     if (ev.kind === "inquiry" && ev.inquiryId) {
-      params.set("inquiryId", ev.inquiryId);
-      params.delete("detail");
-    } else {
-      params.set("detail", ev.bookingId);
-      params.delete("inquiryId");
+      // Client path (pushState + react-query detail read), same as the table.
+      onOpenInquiry?.(ev.inquiryId);
+      return;
     }
-    router.push(pathname + "?" + params.toString());
-  }
+    // Booking candle: BookingUrlModals mounts on ?detail, no RSC round-trip.
+    setUrlParams((p) => {
+      p.set("view", "calendar");
+      p.set("detail", ev.bookingId);
+      p.delete("inquiryId");
+    });
+  }, [onOpenInquiry]);
 
   /**
    * Shared handler for onEventDrop and onEventResize on New inquiry candles.
@@ -222,39 +276,41 @@ export function InquiriesCalendarManager({
           sessionStartAt: candleStart,
           sessionEndAt: candleEnd,
         };
+        originRef.current.set(ev.id, { start: ev.start.getTime(), end: ev.end.getTime(), at: Date.now() });
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
 
-        await toast.promise(
-          (async () => {
-            const result = await rescheduleInquirySessionAction({
-              inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
-              sessionIndex: ev.sessionIndex,
-              startDate,
-              startTime,
-              endTime,
-            });
-            if ("error" in result) throw result.error;
-            // Success -- trigger a data refresh; the useEffect on `events` clears
-            // the optimistic override once the authoritative position arrives,
-            // preventing any snap-back to the stale server state.
-            router.refresh();
-          })(),
-          {
-            loading: t("updating"),
-            success: t("updated"),
-            error: (err: unknown) => {
-              setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
-              return typeof err === "string" && err === "conflict"
-                ? t("rescheduleConflict")
-                : t("rescheduleFailed");
-            },
-          }
-        );
+        // Own the promise: toast.promise's return value isn't awaitable, and the
+        // in-flight guard must outlive the whole round-trip.
+        const request = (async () => {
+          const result = await rescheduleInquirySessionAction({
+            inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
+            sessionIndex: ev.sessionIndex,
+            startDate,
+            startTime,
+            endTime,
+          });
+          if ("error" in result) throw result.error;
+          // Success -- the action's revalidatePath is locale-less, so refresh via
+          // invalidateFor. The useEffect on `events` clears the optimistic override
+          // only once the authoritative position arrives, preventing any snap-back.
+          invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: result.draftBookingId ?? null });
+        })();
+        toast.promise(request, {
+          loading: t("updating"),
+          success: t("updated"),
+          error: (err: unknown) => {
+            setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
+            return typeof err === "string" && err === "conflict"
+              ? t("rescheduleConflict")
+              : t("rescheduleFailed");
+          },
+        });
+        await request.catch(() => undefined);
       } finally {
         inFlightRef.current.delete(sessionKey);
       }
     },
-    [workspaceTz, t, router]
+    [workspaceTz, t, invalidateFor]
   );
 
   const chipClass = (active: boolean) =>
@@ -265,7 +321,7 @@ export function InquiriesCalendarManager({
         : "border-border bg-card text-muted-foreground opacity-50"
     );
 
-  const toolbarTrailing = (
+  const toolbarTrailing = useMemo(() => (
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
@@ -315,34 +371,47 @@ export function InquiriesCalendarManager({
         />
       )}
     </div>
+  ), [showNew, showBooked, showConflicted, showTeamFilter, teams, selectedTeams, isOwner, t]);
+
+  const calendarMessages = useMemo(
+    () => ({
+      today: tCal("today"),
+      previous: tCal("previous"),
+      next: tCal("next"),
+      day: tCal("views.day"),
+      week: tCal("views.week"),
+      month: tCal("views.month"),
+      date: tCal("date"),
+      time: tCal("time"),
+      event: tCal("event"),
+      noEventsInRange: tCal("noEventsInRange"),
+      goTo: tCal("goTo"),
+      scrollToTime: tCal("scrollToTime"),
+      go: tCal("go"),
+    }),
+    [tCal]
   );
 
   return (
-    <BookingCalendar
+    // Keep the old candles up (dimmed) while a window refetch is in flight.
+    <div
+      aria-busy={windowPending}
+      className={cn("transition-opacity", windowPending && "pointer-events-none opacity-60")}
+    >
+    <BookingCalendarLazy
       events={eventsWithConflicts}
+      defaultDate={defaultDate ? wallDateAsLocal(defaultDate, workspaceTz ?? FALLBACK_TZ) : undefined}
+      onVisibleChange={onVisibleChange}
+      workspaceTimezone={workspaceTz}
+      emptyMessage={windowPending ? undefined : t("emptyPeriod")}
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
       showPast={true}
-      draggableAccessor={(ev: AnyCalendarEvent) =>
-        "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent)
-      }
+      draggableAccessor={isDraggableEvent}
       toolbarTrailing={toolbarTrailing}
-      messages={{
-        today: tCal("today"),
-        previous: tCal("previous"),
-        next: tCal("next"),
-        day: tCal("views.day"),
-        week: tCal("views.week"),
-        month: tCal("views.month"),
-        date: tCal("date"),
-        time: tCal("time"),
-        event: tCal("event"),
-        noEventsInRange: tCal("noEventsInRange"),
-        goTo: tCal("goTo"),
-        scrollToTime: tCal("scrollToTime"),
-        go: tCal("go"),
-      }}
+      messages={calendarMessages}
     />
+    </div>
   );
 }

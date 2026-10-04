@@ -889,7 +889,9 @@
         "prevMonth": "Previous month",
         "nextMonth": "Next month",
         "jumpToToday": "Jump to current month",
-        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}"
+        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}",
+        "loadError": "Couldn't load this month.",
+        "retry": "Retry"
       },
       "calendarTeam": {
         "label": "Filter by team",
@@ -994,7 +996,8 @@
       "view": {
         "table": "Table",
         "card": "Card Mode",
-        "calendar": "Calendar"
+        "calendar": "Calendar",
+        "inquiriesToggle": "Inquiries view toggle"
       },
       "toolbar": {
         "search": "Search bookings",
@@ -1018,6 +1021,8 @@
         "formatLabel": "Format",
         "csv": "CSV",
         "xlsx": "Excel",
+        "preparing": "Preparing...",
+        "error": "Export failed. Check your selection and try again.",
         "listFiltersApply": "The list's status and search filters apply to this export too.",
         "download": "Download",
         "cancel": "Cancel"
@@ -1028,7 +1033,9 @@
         "label": "Filter by team",
         "inactive": "Inactive",
         "teams": "Teams",
-        "countLabel": "{count, plural, one {# team} other {# teams}}"
+        "countLabel": "{count, plural, one {# team} other {# teams}}",
+        "previousPage": "Previous page",
+        "nextPage": "Next page"
       },
       "import": {
         "title": "Import bookings",
@@ -1046,6 +1053,7 @@
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
+        "previewMore": "{count} more rows not shown",
         "groupBlocked": "Another row sharing this booking_id has an error, so the whole booking is held back.",
         "columns": {
           "row": "#",
@@ -1061,6 +1069,7 @@
           "kindServer": "Server",
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
+        "showAll": "Show all {count}",
           "untitled": "Untitled booking",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them.",
@@ -1201,8 +1210,7 @@
           "continue": "Continue",
           "reviewMapping": "Columns matched automatically",
           "reviewMappingAction": "Review",
-          "committing": "Importing your bookings",
-          "refreshing": "Refreshing your bookings"
+          "committing": "Importing your bookings"
         }
       },
       "export": {
@@ -1212,6 +1220,7 @@
       "table": {
         "empty": "No bookings match your filters.",
         "listEmpty": "No bookings yet.",
+        "listEmptyHint": "Bookings you create or accept from inquiries will show up here.",
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",
@@ -1319,6 +1328,14 @@
           "endBeforeStart": "End can't be before start.",
           "conflictsLabel": "Shifts already on {date}:",
           "draftHint": "Adjust the times below, then click Save changes to add this session.",
+          "confirmEdit": "Confirm",
+          "editField": "Edit {label}",
+          "checkingConflicts": "Checking for conflicts…",
+          "cancelEdit": "Cancel",
+          "discardEdit": "Discard edit",
+          "unsavedChange": "Unsaved change",
+          "confirmDraftSession": "Confirm draft session",
+          "removeDraftSession": "Remove draft session",
           "email": "Email",
           "phone": "Phone",
           "openClient": "Open client",
@@ -1349,6 +1366,8 @@
           "title": "Booking history",
           "totalCount": "{count} entries",
           "pageOf": "Page {page} of {total}",
+          "loadError": "Couldn't load the history.",
+          "retry": "Retry",
           "previous": "Previous page",
           "next": "Next page",
           "actions": {
@@ -1381,6 +1400,10 @@
         "restoredToast": "Booking restored.",
         "actionFailed": "Something went wrong. Try again.",
         "notFound": "Booking not found.",
+        "loadFailed": "Couldn't load this booking.",
+        "staleConflict": "This booking was changed by someone else. Your edit wasn't saved — review the latest version and try again.",
+        "staleNotice": "Updated by someone else — your unsaved edit is based on an older version.",
+        "retry": "Retry",
         "editAll": "Edit all",
         "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
         "unconfirmedDrafts": {
@@ -1442,7 +1465,9 @@
         "filterByStatus": "Filter by status",
         "filterActive": "Filtering by {status} — tap again to clear",
         "teamsLegend": "Teams",
-        "inactiveTeam": "Inactive team"
+        "inactiveTeam": "Inactive team",
+        "conflict": "Conflict",
+        "emptyPeriod": "No bookings in this period"
       },
       "sessions": {
         "label": "Session {n}",
@@ -1494,6 +1519,8 @@
         "savedToast": "Booking updated.",
         "depositExceedsTotal": "Deposit can't exceed total.",
         "unsavedConfirm": "You'll lose your progress if you exit now. Are you sure?",
+        "hasErrors": "Has validation errors",
+        "viewBooking": "View booking",
         "unsaved": {
           "title": "Discard your changes?",
           "body": "You'll lose anything you've entered in this booking if you leave now. Your changes haven't been saved.",
@@ -1521,6 +1548,9 @@
           "searchPlaceholder": "Search by name or email",
           "noResults": "No clients match. Try a different search.",
           "selectRequired": "Pick a client to continue.",
+          "loadingClients": "Loading clients",
+          "loadError": "Couldn't load clients.",
+          "retry": "Retry",
           "name": "Name",
           "namePlaceholder": "e.g. Emma Carter",
           "email": "Email",
@@ -2071,7 +2101,9 @@
           "loadingHistory": "Loading activity history",
           "loading": "Loading…",
           "loadMore": "Load more",
-          "noActivity": "No activity found."
+          "noActivity": "No activity found.",
+          "loadError": "Couldn't load activity.",
+          "retry": "Retry"
         },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
@@ -2173,6 +2205,7 @@
       },
       "detail": {
         "inactive": "Inactive",
+        "retry": "Retry",
         "tabs": {
           "overview": "Overview",
           "bookings": "Bookings",
@@ -2298,6 +2331,10 @@
       "detail": {
         "back": "Back to inquiries",
         "conflictBanner": "One or more sessions conflict with existing bookings.",
+        "loadingTitle": "Inquiry",
+        "loading": "Loading inquiry...",
+        "loadError": "Couldn't load this inquiry.",
+        "retry": "Retry",
         "submittedOn": "Submitted {date}",
         "notFound": "Inquiry not found.",
         "clientInfo": {
@@ -2346,7 +2383,9 @@
           "savedToast": "Draft saved.",
           "ownerOnly": "Only the workspace owner can convert bookings.",
           "conflictBlocks": "Resolve the scheduling conflict above before converting.",
-          "team": "Team"
+          "team": "Team",
+          "changedUnderneath": "This draft was changed by someone else. Your edits are kept; review the other fields before saving.",
+          "notDraft": "This booking was already approved. Reload to see the latest."
         },
         "actions": {
           "decline": "Decline & notify",
@@ -2399,7 +2438,8 @@
         "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
         "rescheduleFailed": "Could not reschedule — please try again",
         "updating": "Rescheduling…",
-        "updated": "Session rescheduled"
+        "updated": "Session rescheduled",
+        "emptyPeriod": "No inquiries in this period"
       }
     },
     "pageBuilder": {

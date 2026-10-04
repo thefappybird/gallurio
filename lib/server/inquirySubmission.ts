@@ -1,5 +1,6 @@
 import "server-only";
 import mongoose from "mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { isWorkspaceGated } from "@/lib/billing/access";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
@@ -102,6 +103,7 @@ export async function submitInquiry(
   let inquiryId: mongoose.Types.ObjectId | null = null;
   let draftBookingId: mongoose.Types.ObjectId | null = null;
   let clientId: mongoose.Types.ObjectId | null = null;
+  let clientIsNew = false;
 
   try {
     await session.withTransaction(async () => {
@@ -127,6 +129,7 @@ export async function submitInquiry(
         );
         resolvedClientId = created._id;
         resolvedClientName = created.name;
+        clientIsNew = true;
       }
 
       const [inquiry] = await Inquiry.create(
@@ -210,6 +213,20 @@ export async function submitInquiry(
     );
   } catch (err) {
     console.error("[inquiry] rollup inquiry counter failed (non-fatal):", err);
+  }
+
+  // Emitted after the (non-fatal) counter bump so a teammate's refetch sees the
+  // dashboard count; a bump failure is caught above and never suppresses these.
+  const wsIdStr = String(workspaceId);
+  emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
+  // The draft booking has no team yet: owners get the full event, staff only a client-stats refresh.
+  emitDataChanged(
+    wsIdStr,
+    { type: "booking.created", bookingId: String(draftBookingId), clientId: String(clientId) },
+    { teamIds: [null] }
+  );
+  if (clientIsNew) {
+    emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
   }
 
   const recipient =

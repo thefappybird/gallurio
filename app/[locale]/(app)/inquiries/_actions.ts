@@ -14,7 +14,7 @@ import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
 import { DEPOSIT_REQUIRES_TOTAL_MESSAGE } from "@/lib/validators/booking";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
-import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
@@ -23,7 +23,13 @@ import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { resolveTeamRecipients } from "@/lib/notifications/recipients";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { getInquiryWithDraft } from "@/lib/db/queries/inquiries";
+import {
+  buildInquiryDetail,
+  findClientMatchesForInquiry,
+  type InquiryClientMatch as InquiryClientMatchShape,
+} from "@/lib/inquiries/detail-data";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 
 // The status a draft is promoted to on approval. Approval skips the old
@@ -76,75 +82,19 @@ export async function getInquiryDetailAction(
   const result = await getInquiryWithDraft(ctx.workspace._id, inquiryId);
   if (!result) return { error: "not_found" };
 
-  const { inquiry, booking } = result;
-  const detailId = String(inquiry._id);
-  const timezone = ctx.workspace.timezone ?? FALLBACK_TZ;
-  const hasConflict = isBookedInquiryStatus(inquiry.status)
-    ? false
-    : (
-        await computeInquiryConflicts(
-          ctx.workspace._id,
-          [
-            {
-              _id: detailId,
-              sessions: (inquiry.sessions ?? []).map((session) => ({
-                startDate: (session as { startDate: string }).startDate,
-                startTime: (session as { startTime: string }).startTime,
-                endTime: (session as { endTime: string }).endTime,
-              })),
-            },
-          ],
-          timezone
-        )
-      ).has(detailId);
-
   return {
     ok: true,
-    detail: {
-      inquiryId: detailId,
+    detail: await buildInquiryDetail({
+      workspace: ctx.workspace,
+      tz: ctx.workspace.timezone ?? FALLBACK_TZ,
+      role: ctx.role,
       locale,
-      name: inquiry.name,
-      email: inquiry.email,
-      phone: inquiry.phone ?? null,
-      preferredContact: inquiry.preferredContact ?? "email",
-      status: inquiry.status,
-      eventType: inquiry.eventType ?? "other",
-      guestCount: inquiry.guestCount ?? null,
-      location: inquiry.location ?? null,
-      message: inquiry.message ?? "",
-      sessions: inquiry.sessions ?? [],
-      submittedAt: inquiry.createdAt.toISOString(),
-      updatedAt: inquiry.updatedAt.toISOString(),
-      bookingMissing: booking === null,
-      booking: booking
-        ? {
-            id: String(booking._id),
-            currency: booking.amount?.currency ?? ctx.workspace.currency ?? "PHP",
-            total: booking.amount?.total ?? 0,
-            deposit: booking.amount?.deposit ?? 0,
-            notes: booking.notes ?? "",
-            teamId: booking.teamId ? String(booking.teamId) : null,
-          }
-        : null,
-      isOwner: ctx.role === "owner",
-      hasConflict,
-    },
+      data: result,
+    }),
   };
 }
 
-export type InquiryClientMatch = {
-  _id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  /** Carried so the resolve dialog can surface a notes conflict, not just email/phone. */
-  notes: string | null;
-  tags: string[];
-  source: "form" | "manual" | "referral" | "import";
-  bookingsCount: number;
-  totalSpent: number;
-  createdAt: string;
-};
+export type InquiryClientMatch = InquiryClientMatchShape;
 
 /**
  * Clients that plausibly describe the same person as the inquiry's typed
@@ -168,37 +118,7 @@ export async function findInquiryClientMatchesAction(
   ).lean();
   if (!inquiry) return { error: "not_found" };
 
-  // The reversed-name ordering isn't expressible as a Mongo query — fetch
-  // active clients and filter in memory.
-  const candidates = await Client.find(
-    { workspaceId, isActive: true },
-    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, source: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
-  )
-    .limit(5000)
-    .lean();
-
-  const matches: InquiryClientMatch[] = candidates
-    .filter((c) => String(c._id) !== String(inquiry.clientId ?? ""))
-    .filter((c) =>
-      isClientMatch(
-        { name: inquiry.name, email: inquiry.email, phone: inquiry.phone },
-        { name: c.name, email: c.email, phone: c.phone }
-      )
-    )
-    .map((c) => ({
-      _id: String(c._id),
-      name: c.name,
-      email: c.email ?? null,
-      phone: c.phone ?? null,
-      notes: c.notes ?? null,
-      tags: c.tags ?? [],
-      source: c.source ?? "manual",
-      bookingsCount: c.bookingsCount ?? 0,
-      totalSpent: c.totalSpent ?? 0,
-      createdAt: c.createdAt.toISOString(),
-    }));
-
-  return { ok: true, matches };
+  return { ok: true, matches: await findClientMatchesForInquiry(workspaceId, inquiry) };
 }
 
 const clientIdSchema = z.string().refine((v) => mongoose.isValidObjectId(v), {
@@ -245,6 +165,7 @@ export async function resolveInquiryClientAction(
 
   let targetClientId: mongoose.Types.ObjectId | undefined;
   let targetClientName: string | undefined;
+  let createdNewClient = false;
 
   const session = await mongoose.startSession();
   try {
@@ -290,6 +211,7 @@ export async function resolveInquiryClientAction(
         );
         targetClientId = created._id;
         targetClientName = created.name;
+        createdNewClient = true;
       }
 
       await Inquiry.updateOne(
@@ -373,6 +295,12 @@ export async function resolveInquiryClientAction(
 
   if (!targetClientId) return { error: "resolve_failed" };
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, targetClientId);
+  emitDataChanged(String(workspaceId), {
+    type: createdNewClient ? "client.created" : "client.updated",
+    clientId: targetClientId.toString(),
+  });
+
   return { ok: true, clientId: targetClientId.toString() };
 }
 
@@ -393,6 +321,36 @@ export type DraftEdits = z.infer<typeof draftEditsSchema>;
 // Reusable phone validator — matches the phone rule in inquirySessionsEditSchema
 // (min 7, max 30, or empty string).
 const phoneSchema = z.string().trim().min(7).max(30).or(z.literal(""));
+
+/**
+ * Broadcast an inquiry write (and its draft/converted booking, when one was
+ * written) to the workspace room. Call only after the write has committed.
+ */
+function emitInquiryWrite(
+  workspaceId: mongoose.Types.ObjectId,
+  inquiryId: string,
+  bookingId?: mongoose.Types.ObjectId | string | null,
+  clientId?: mongoose.Types.ObjectId | string | null,
+  /** Teams that may see the booking. Omit when unsure: omitted = broadcast to the whole workspace. */
+  teamIds?: Array<mongoose.Types.ObjectId | string | null | undefined>
+) {
+  const ws = String(workspaceId);
+  const bId = bookingId ? String(bookingId) : null;
+  emitDataChanged(ws, { type: "inquiry.updated", inquiryId, bookingId: bId });
+  if (bId) {
+    const event = {
+      type: "booking.updated",
+      bookingId: bId,
+      clientId: clientId ? String(clientId) : null,
+      inquiryId,
+    } as const;
+    if (teamIds) {
+      emitDataChanged(ws, event, { teamIds: teamIds.map((t) => (t ? String(t) : null)) });
+    } else {
+      emitDataChanged(ws, event);
+    }
+  }
+}
 
 function revalidateInquiry(id: string) {
   revalidatePath("/inquiries");
@@ -634,6 +592,7 @@ export async function approveInquiryBookingAction(
     }
   })();
 
+  emitInquiryWrite(workspaceId, inquiryId, booking._id, booking.clientId, [booking.teamId]);
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
   revalidatePath("/dashboard");
@@ -691,11 +650,20 @@ export async function saveDraftBookingFieldsAction(
     }
   }
 
+  // A team change moves the draft between teams: both must hear about it.
+  const previousTeamId =
+    set.teamId !== undefined
+      ? (await Booking.findOne({ _id: inquiry.draftBookingId, workspaceId }, { teamId: 1 }).lean())?.teamId
+      : undefined;
+
   if (Object.keys(set).length > 0) {
-    await Booking.updateOne(
+    const written = await Booking.updateOne(
       { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
       { $set: set }
     );
+    // The booking was approved/removed since the form loaded: nothing was
+    // saved, so don't log or broadcast a phantom edit.
+    if (written.matchedCount === 0) return { error: "not_draft" };
     await ActivityLog.create({
       workspaceId,
       actorUserId: ctx.userId,
@@ -706,6 +674,13 @@ export async function saveDraftBookingFieldsAction(
     });
   }
 
+  emitInquiryWrite(
+    workspaceId,
+    inquiryId,
+    inquiry.draftBookingId,
+    inquiry.clientId,
+    set.teamId !== undefined ? [previousTeamId, set.teamId as mongoose.Types.ObjectId | null] : undefined
+  );
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -768,6 +743,7 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
 
   if (!archived) return { error: "not_found" };
 
+  emitInquiryWrite(ctx.workspace._id, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -838,6 +814,8 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
   // not_found without emailing (this call did not decline it).
   if (!declined) return { error: "not_found" };
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
+
   // Best-effort decline email — never throws, never rolls back.
   const ownerEmail = ctx.workspace.contact?.email ?? null;
   void (async () => {
@@ -907,17 +885,12 @@ export async function editInquirySessionsAction(
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
   const excludeId = inquiry.draftBookingId ? String(inquiry.draftBookingId) : null;
 
-  // Batch shift lookups: fetch shifts once per unique date instead of once per
-  // session. For a 20-session inquiry that all share the same date this collapses
-  // 20 queries into 1; for n distinct dates it runs n queries (one each).
+  // One batched lookup for all unique session dates.
   const uniqueDates = [...new Set(parsed.data.sessions.map((s) => s.startDate))];
-  const shiftsByDate = new Map<string, Awaited<ReturnType<typeof getShiftsOnDate>>>();
-  for (const date of uniqueDates) {
-    shiftsByDate.set(date, await getShiftsOnDate(workspaceId, date, tz, { excludeId }));
-  }
+  const shiftsByDate = await getShiftsOnDates(workspaceId, uniqueDates, tz, { excludeId });
 
   for (const s of parsed.data.sessions) {
-    const shifts = shiftsByDate.get(s.startDate)!;
+    const shifts = shiftsByDate[s.startDate] ?? [];
     const aStart = toMinutes(s.startTime);
     const aEnd = toMinutes(s.endTime);
     if (aStart !== null && aEnd !== null && overlappingShifts(shifts, aStart, aEnd).length > 0) {
@@ -942,7 +915,7 @@ export async function editInquirySessionsAction(
         {
           $set: {
             sessions: parsed.data.sessions,
-            eventDate: new Date(parsed.data.sessions[0].startDate),
+            eventDate: firstSessionStart,
             ...phoneUpdate,
           },
         },
@@ -978,6 +951,7 @@ export async function editInquirySessionsAction(
     await mongoSession.endSession();
   }
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -1013,6 +987,7 @@ export async function updateInquiryPhoneAction(
     diff: { phone: sanitized || null },
   });
 
+  emitInquiryWrite(workspaceId, inquiryId);
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
@@ -1047,7 +1022,7 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
  */
 export async function rescheduleInquirySessionAction(
   input: RescheduleSessionInput
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; draftBookingId: string | null } | { error: string }> {
   const ctx = await requireOrg();
 
   const parsed = rescheduleSessionSchema.safeParse(input);
@@ -1108,6 +1083,8 @@ export async function rescheduleInquirySessionAction(
             [`sessions.${sessionIndex}.startDate`]: startDate,
             [`sessions.${sessionIndex}.startTime`]: startTime,
             [`sessions.${sessionIndex}.endTime`]: endTime,
+            // Same derivation as submission: earliest session start instant (workspace tz).
+            eventDate: firstSessionStart,
           },
         },
         { session: mongoSession }
@@ -1128,6 +1105,10 @@ export async function rescheduleInquirySessionAction(
     await mongoSession.endSession();
   }
 
+  emitInquiryWrite(workspaceId, inquiryId, inquiry.draftBookingId, inquiry.clientId);
   revalidatePath("/inquiries");
-  return { ok: true };
+  return {
+    ok: true,
+    draftBookingId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
+  };
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
@@ -32,7 +32,42 @@ function renderTable(rows: InquiryRow[] = [baseRow]) {
   );
 }
 
+const preloadSpy = vi.hoisted(() => vi.fn());
+vi.mock("./inquiry-detail-dynamic", () => ({ preloadInquiryDetailModal: preloadSpy }));
+
 describe("InquiryTable", () => {
+  it("warms the detail modal chunk on row pointer-enter and focus", () => {
+    renderTable();
+    const row = screen.getAllByRole("button", { name: /open.*maria santos/i })[0];
+    fireEvent.pointerEnter(row);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    fireEvent.focus(row);
+    expect(preloadSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["Asia/Manila", "Oct 9, 2026"],
+    ["Pacific/Pago_Pago", "Oct 8, 2026"],
+  ])("formats the event date in workspace tz %s regardless of runner TZ", (tz, expected) => {
+    const prev = process.env.TZ;
+    process.env.TZ = "UTC";
+    try {
+      renderWithProviders(
+        <InquiryTable
+          rows={[{ ...baseRow, eventDate: "2026-10-08T23:30:00Z" }]}
+          locale="en"
+          workspaceTz={tz}
+          empty="x"
+          emptyHint="y"
+        />
+      );
+      expect(screen.getAllByText(expected).length).toBeGreaterThan(0);
+    } finally {
+      if (prev === undefined) delete process.env.TZ;
+      else process.env.TZ = prev;
+    }
+  });
+
   it("renders empty state when rows is empty", () => {
     renderTable([]);
     expect(screen.getByText("No inquiries yet.")).toBeInTheDocument();

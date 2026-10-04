@@ -889,7 +889,9 @@
         "prevMonth": "Bulan sebelumnya",
         "nextMonth": "Bulan berikutnya",
         "jumpToToday": "Lompat ke bulan ini",
-        "dayBookingCount": "{count, plural, other {# pemesanan}}"
+        "dayBookingCount": "{count, plural, other {# pemesanan}}",
+        "loadError": "Gagal memuat bulan ini.",
+        "retry": "Coba lagi"
       },
       "calendarTeam": {
         "label": "Filter berdasarkan tim",
@@ -994,7 +996,8 @@
       "view": {
         "table": "Tabel",
         "card": "Mode kartu",
-        "calendar": "Kalender"
+        "calendar": "Kalender",
+        "inquiriesToggle": "Pengalih tampilan permintaan"
       },
       "toolbar": {
         "search": "Cari pemesanan",
@@ -1018,6 +1021,8 @@
         "formatLabel": "Format",
         "csv": "CSV",
         "xlsx": "Excel",
+        "preparing": "Menyiapkan...",
+        "error": "Ekspor gagal. Periksa pilihan Anda lalu coba lagi.",
         "listFiltersApply": "Filter status dan pencarian pada daftar juga berlaku untuk ekspor ini.",
         "download": "Unduh",
         "cancel": "Batal"
@@ -1028,7 +1033,9 @@
         "label": "Filter berdasarkan tim",
         "inactive": "Tidak aktif",
         "teams": "Tim",
-        "countLabel": "{count, plural, other {# tim}}"
+        "countLabel": "{count, plural, other {# tim}}",
+        "previousPage": "Halaman sebelumnya",
+        "nextPage": "Halaman berikutnya"
       },
       "import": {
         "title": "Impor pemesanan",
@@ -1046,6 +1053,7 @@
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
+        "previewMore": "{count} baris lainnya tidak ditampilkan",
         "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh pemesanan ditahan.",
         "columns": {
           "row": "#",
@@ -1061,6 +1069,7 @@
           "kindServer": "Server",
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
+        "showAll": "Tampilkan semua {count}",
           "untitled": "Pemesanan tanpa judul",
           "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
           "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",
@@ -1201,8 +1210,7 @@
           "continue": "Lanjutkan",
           "reviewMapping": "Kolom dicocokkan otomatis",
           "reviewMappingAction": "Tinjau",
-          "committing": "Mengimpor pemesanan Anda",
-          "refreshing": "Menyegarkan pemesanan Anda"
+          "committing": "Mengimpor pemesanan Anda"
         }
       },
       "export": {
@@ -1212,6 +1220,7 @@
       "table": {
         "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
         "listEmpty": "Belum ada pemesanan.",
+        "listEmptyHint": "Pemesanan yang Anda buat atau terima dari pertanyaan akan muncul di sini.",
         "past": "Lalu",
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
@@ -1319,6 +1328,14 @@
           "endBeforeStart": "Selesai tidak boleh sebelum mulai.",
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
           "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini.",
+          "confirmEdit": "Konfirmasi",
+          "editField": "Ubah {label}",
+          "checkingConflicts": "Memeriksa bentrok jadwal…",
+          "cancelEdit": "Batal",
+          "discardEdit": "Buang perubahan",
+          "unsavedChange": "Perubahan belum disimpan",
+          "confirmDraftSession": "Konfirmasi sesi draf",
+          "removeDraftSession": "Hapus sesi draf",
           "email": "Email",
           "phone": "Telepon",
           "openClient": "Buka klien",
@@ -1349,6 +1366,8 @@
           "title": "Riwayat pemesanan",
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
+          "loadError": "Riwayat tidak dapat dimuat.",
+          "retry": "Coba lagi",
           "previous": "Halaman sebelumnya",
           "next": "Halaman berikutnya",
           "actions": {
@@ -1381,6 +1400,10 @@
         "restoredToast": "Pemesanan dipulihkan.",
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
         "notFound": "Pemesanan tidak ditemukan.",
+        "loadFailed": "Pemesanan ini tidak dapat dimuat.",
+        "staleConflict": "Pemesanan ini diubah oleh orang lain. Perubahan Anda tidak tersimpan — tinjau versi terbaru lalu coba lagi.",
+        "staleNotice": "Diperbarui oleh orang lain — perubahan Anda yang belum disimpan didasarkan pada versi yang lebih lama.",
+        "retry": "Coba lagi",
         "editAll": "Edit semua",
         "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
         "unconfirmedDrafts": {
@@ -1442,7 +1465,9 @@
         "filterByStatus": "Filter berdasarkan status",
         "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
         "teamsLegend": "Tim",
-        "inactiveTeam": "Tim tidak aktif"
+        "inactiveTeam": "Tim tidak aktif",
+        "conflict": "Konflik",
+        "emptyPeriod": "Tidak ada pemesanan pada periode ini"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -1494,6 +1519,8 @@
         "savedToast": "Pemesanan diperbarui.",
         "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
         "unsavedConfirm": "Kemajuan Anda akan hilang jika keluar sekarang. Yakin?",
+        "hasErrors": "Ada kesalahan validasi",
+        "viewBooking": "Lihat pemesanan",
         "unsaved": {
           "title": "Buang perubahan Anda?",
           "body": "Semua yang Anda masukkan dalam pemesanan ini akan hilang jika Anda pergi sekarang. Perubahan Anda belum disimpan.",
@@ -1521,6 +1548,9 @@
           "searchPlaceholder": "Cari berdasarkan nama atau email",
           "noResults": "Tidak ada klien yang cocok. Coba pencarian lain.",
           "selectRequired": "Pilih klien untuk melanjutkan.",
+          "loadingClients": "Memuat klien",
+          "loadError": "Klien tidak dapat dimuat.",
+          "retry": "Coba lagi",
           "name": "Nama",
           "namePlaceholder": "mis. Emma Carter",
           "email": "Email",
@@ -2066,7 +2096,9 @@
           "loadingHistory": "Memuat riwayat aktivitas",
           "loading": "Memuat…",
           "loadMore": "Muat lebih banyak",
-          "noActivity": "Tidak ada aktivitas ditemukan."
+          "noActivity": "Tidak ada aktivitas ditemukan.",
+          "loadError": "Gagal memuat aktivitas.",
+          "retry": "Coba lagi"
         },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
@@ -2173,6 +2205,7 @@
       },
       "detail": {
         "inactive": "Tidak aktif",
+        "retry": "Coba lagi",
         "tabs": {
           "overview": "Ringkasan",
           "bookings": "Booking",
@@ -2298,6 +2331,10 @@
       "detail": {
         "back": "Kembali ke pertanyaan",
         "conflictBanner": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+        "loadingTitle": "Permintaan",
+        "loading": "Memuat permintaan...",
+        "loadError": "Tidak dapat memuat permintaan ini.",
+        "retry": "Coba lagi",
         "submittedOn": "Dikirim {date}",
         "notFound": "Pertanyaan tidak ditemukan.",
         "clientInfo": {
@@ -2346,7 +2383,9 @@
           "savedToast": "Draf disimpan.",
           "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
           "conflictBlocks": "Selesaikan konflik jadwal di atas sebelum mengonversi.",
-          "team": "Tim"
+          "team": "Tim",
+          "changedUnderneath": "Draf ini diubah oleh orang lain. Perubahan Anda tetap disimpan; periksa kolom lain sebelum menyimpan.",
+          "notDraft": "Pemesanan ini sudah disetujui. Muat ulang untuk melihat yang terbaru."
         },
         "actions": {
           "decline": "Tolak & beritahu",
@@ -2399,7 +2438,8 @@
         "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
         "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
         "updating": "Menjadwalkan ulang…",
-        "updated": "Sesi dijadwalkan ulang"
+        "updated": "Sesi dijadwalkan ulang",
+        "emptyPeriod": "Tidak ada pertanyaan pada periode ini"
       }
     },
     "pageBuilder": {

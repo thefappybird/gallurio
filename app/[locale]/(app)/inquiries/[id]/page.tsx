@@ -12,7 +12,9 @@ import { EventRequestCard, type InquirySessionView } from "./_components/event-r
 import { BookingDraftCard } from "./_components/booking-draft-card";
 import { InquiryActions } from "./_components/inquiry-actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { canResolveClientMatches, findClientMatchesForInquiry } from "@/lib/inquiries/detail-data";
 import { getBookingTeamOptions } from "../../bookings/_data/team-options";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 export default async function InquiryDetailPage({
   params,
@@ -35,7 +37,9 @@ export default async function InquiryDetailPage({
 
   const { inquiry, booking } = result;
   const submittedAt = new Date(inquiry.createdAt);
+  const tz = (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
   const submittedLabel = submittedAt.toLocaleDateString(locale, {
+    timeZone: tz,
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -43,6 +47,9 @@ export default async function InquiryDetailPage({
 
   const sessions = (inquiry.sessions ?? []) as InquirySessionView[];
   const isBooked = isBookedInquiryStatus(inquiry.status);
+  const initialMatches = canResolveClientMatches(role, inquiry.status)
+    ? await findClientMatchesForInquiry(workspace._id, inquiry)
+    : undefined;
 
   return (
     <div className="flex flex-col gap-5">
@@ -65,7 +72,12 @@ export default async function InquiryDetailPage({
               {t("submittedOn", { date: submittedLabel })}
             </p>
           </div>
-          <InquiryActions inquiryId={String(inquiry._id)} status={inquiry.status} />
+          <InquiryActions
+            inquiryId={String(inquiry._id)}
+            status={inquiry.status}
+            bookingId={booking ? String(booking._id) : null}
+            clientId={inquiry.clientId ? String(inquiry.clientId) : null}
+          />
         </div>
       </div>
 
@@ -79,6 +91,8 @@ export default async function InquiryDetailPage({
             preferredContact={inquiry.preferredContact ?? "email"}
             status={inquiry.status}
             message={inquiry.message ?? ""}
+            bookingId={booking ? String(booking._id) : null}
+            initialMatches={initialMatches}
           />
           <EventRequestCard
             eventType={inquiry.eventType ?? "other"}
@@ -95,6 +109,7 @@ export default async function InquiryDetailPage({
             isConverted={isBooked}
             bookingMissing={booking === null}
             bookingId={booking ? String(booking._id) : null}
+            clientId={inquiry.clientId ? String(inquiry.clientId) : null}
             currency={booking?.amount?.currency ?? workspace.currency ?? "PHP"}
             initialTotal={booking?.amount?.total ?? 0}
             initialDeposit={booking?.amount?.deposit ?? 0}
@@ -120,6 +135,7 @@ export default async function InquiryDetailPage({
                     <span>{t("history.booked")}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(inquiry.updatedAt).toLocaleDateString(locale, {
+                        timeZone: tz,
                         month: "long",
                         day: "numeric",
                         year: "numeric",

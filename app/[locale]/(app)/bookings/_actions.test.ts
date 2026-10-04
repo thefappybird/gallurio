@@ -4,6 +4,10 @@ const requireOrgMock = vi.fn();
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: () => requireOrgMock(),
 }));
+const emitMock = vi.fn();
+vi.mock("@/lib/sockets/emitDataChanged", () => ({
+  emitDataChanged: (...args: unknown[]) => emitMock(...args),
+}));
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
@@ -18,6 +22,7 @@ vi.mock("@/lib/db/models", () => ({
 beforeEach(() => {
   requireOrgMock.mockReset();
   updateOneMock.mockClear();
+  emitMock.mockClear();
 });
 
 describe("updateInvoiceThemeAction", () => {
@@ -45,6 +50,16 @@ describe("updateInvoiceThemeAction", () => {
       { _id: "ws1" },
       { $set: { invoiceTheme: { preset: "slate", main: "#1E293B", accent: "#0EA5A4" } } }
     );
+  });
+
+  it("emits workspace.updated after a successful save and nothing for a non-owner", async () => {
+    const { updateInvoiceThemeAction } = await import("./_actions");
+    requireOrgMock.mockResolvedValue({ role: "staff", workspace: { _id: "ws1" } });
+    await updateInvoiceThemeAction({ preset: "slate", main: "#000000", accent: "#000000" });
+    expect(emitMock).not.toHaveBeenCalled();
+    requireOrgMock.mockResolvedValue({ role: "owner", workspace: { _id: "ws1" } });
+    await updateInvoiceThemeAction({ preset: "slate", main: "#000000", accent: "#000000" });
+    expect(emitMock).toHaveBeenCalledWith("ws1", { type: "workspace.updated" });
   });
 
   it("persists client-sent colors for the custom preset", async () => {

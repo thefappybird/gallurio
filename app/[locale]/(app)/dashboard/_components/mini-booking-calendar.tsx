@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { queryKeys } from "@/lib/query/keys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
@@ -20,6 +23,8 @@ type Props = {
   teams: BookingTeamOption[];
 };
 
+const EMPTY_DAYS: CalendarDayCount[] = [];
+
 function isoDate(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -38,69 +43,31 @@ export function MiniBookingCalendar({
   const [month, setMonth] = useState<Date>(
     new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1)
   );
-  const [days, setDays] = useState<CalendarDayCount[]>(initialDays);
-  const [loading, setLoading] = useState(false);
   // "" = all teams (the server first-paint).
   const [teamId, setTeamId] = useState("");
+  const workspaceId = useAppWorkspaceId();
 
   const initialKey = `${initialMonth.getFullYear()}-${initialMonth.getMonth()}`;
   const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
-  const isInitial = monthKey === initialKey;
+  // The server first-paint covers only the initial month with all teams.
+  const useServerPaint = monthKey === initialKey && teamId === "";
 
-  // Component-scoped cache: `${year}-${mon}-${teamId}` -> already-fetched rows,
-  // so navigating back to a month/team combo we've seen serves cache instead
-  // of re-fetching.
-  const cacheRef = useRef<Map<string, CalendarDayCount[]>>(new Map());
-
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    // The server first-paint covers only the initial month with all teams.
-    const useServerPaint = isInitial && teamId === "";
-    const days0 = initialDays;
-    const year = month.getFullYear();
-    const mon = month.getMonth();
-    const cacheKey = `${year}-${mon}-${teamId}`;
-    Promise.resolve().then(() => {
-      if (cancelled) return;
-      if (useServerPaint) {
-        setDays(days0);
-        return;
-      }
-      const cached = cacheRef.current.get(cacheKey);
-      if (cached) {
-        setDays(cached);
-        return;
-      }
-      setLoading(true);
+  const query = useQuery<CalendarDayCount[]>({
+    queryKey: queryKeys(workspaceId).dashboardMiniCalendar(monthKey, teamId ? [teamId] : []),
+    queryFn: async ({ signal }) => {
       const teamParam = teamId ? `&team=${encodeURIComponent(teamId)}` : "";
-      fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`, {
-        signal: controller.signal,
-      })
-        .then((r) => {
-          if (!r.ok) throw new Error(`bookings-by-day request failed: ${r.status}`);
-          return r.json();
-        })
-        .then((rows: CalendarDayCount[]) => {
-          if (cancelled) return;
-          const resolved = rows ?? [];
-          cacheRef.current.set(cacheKey, resolved);
-          setDays(resolved);
-          setLoading(false);
-        })
-        .catch((err: unknown) => {
-          if (cancelled) return;
-          if (!(err instanceof DOMException && err.name === "AbortError")) {
-            console.error(err);
-          }
-          setLoading(false);
-        });
-    });
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [monthKey, isInitial, initialDays, month, teamId]);
+      const r = await fetch(
+        `/api/bookings/by-day?year=${month.getFullYear()}&month=${month.getMonth()}${teamParam}`,
+        { signal }
+      );
+      if (!r.ok) throw new Error(`bookings-by-day request failed: ${r.status}`);
+      return ((await r.json()) as CalendarDayCount[] | null) ?? [];
+    },
+    initialData: useServerPaint ? initialDays : undefined,
+    placeholderData: keepPreviousData,
+  });
+  const days = query.data ?? EMPTY_DAYS;
+  const loading = query.isPending || query.isPlaceholderData;
 
   const counts = useMemo(() => new Map(days.map((d) => [d.date, d.count])), [days]);
   const today = isoDate(new Date());
@@ -203,6 +170,23 @@ export function MiniBookingCalendar({
             ))}
           </select>
         )}
+        {query.isError ? (
+          <div
+            role="alert"
+            className="mb-2 flex items-center justify-between gap-2 text-[11px] text-destructive"
+          >
+            <span>{t("miniCalendar.loadError")}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => void query.refetch()}
+              disabled={query.isFetching}
+            >
+              {t("miniCalendar.retry")}
+            </Button>
+          </div>
+        ) : null}
         <div
           className={`grid grid-cols-7 gap-px bg-border transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
         >

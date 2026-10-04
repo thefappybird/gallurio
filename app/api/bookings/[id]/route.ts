@@ -6,10 +6,14 @@ import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBookin
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { sendNotification } from "@/lib/notifications/send";
 import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
+import { z } from "zod";
+import { loadBookingActivityPage } from "@/lib/bookings/activity-page";
+import { getShiftsOnDates, formatHHMM } from "@/lib/bookings/shift-conflicts";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
 import { resolveFxFreeze } from "@/lib/pricing/fxRates";
@@ -18,7 +22,12 @@ import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/ema
 
 export const runtime = "nodejs";
 
+const ACTIVITY_INCLUDE_PAGE_SIZE = 5;
+
 type Params = { params: Promise<{ id: string }> };
+
+/** Thrown inside a transaction when the `updatedAt` precondition matched nothing. */
+class StaleWriteError extends Error {}
 
 /** Fetches and shapes the client sub-document for a booking response. */
 async function buildClientBlock(
@@ -41,7 +50,21 @@ async function buildClientBlock(
   };
 }
 
-export async function GET(_req: Request, { params }: Params) {
+function dateFmtInTz(d: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":");
+  return Number(h) * 60 + Number(m);
+}
+
+export async function GET(req: Request, { params }: Params) {
   const ctx = await requireOrg();
   const { id } = await params;
 
@@ -70,9 +93,19 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const client = await buildClientBlock(booking.clientId, ctx.workspace._id);
+  // `?include=activity` folds the first activity page (+ actor names) into the
+  // response so the detail modal needs one round-trip. The booking above is
+  // already workspace/team-scope checked, so no second existence query.
+  const includeActivity = new URL(req.url).searchParams.get("include") === "activity";
 
-  return NextResponse.json({ ...booking, client });
+  const [client, activity] = await Promise.all([
+    buildClientBlock(booking.clientId, ctx.workspace._id),
+    includeActivity
+      ? loadBookingActivityPage(ctx.workspace._id, id, 1, ACTIVITY_INCLUDE_PAGE_SIZE)
+      : undefined,
+  ]);
+
+  return NextResponse.json(activity ? { ...booking, client, activity } : { ...booking, client });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
@@ -83,7 +116,32 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
-  const json = await req.json().catch(() => ({}));
+  const rawJson = await req.json().catch(() => ({}));
+  // `rejectOnConflict` is a request-mode flag, not an editable booking field —
+  // peel it off before the strict field schema sees the body.
+  let json: unknown = rawJson;
+  let rejectOnConflict = false;
+  // `expectedUpdatedAt` is the optimistic-concurrency token (the client's last
+  // seen Booking.updatedAt). Absent => legacy last-write-wins behaviour.
+  let expectedUpdatedAt: Date | undefined;
+  if (rawJson && typeof rawJson === "object" && !Array.isArray(rawJson)) {
+    const { rejectOnConflict: flag, expectedUpdatedAt: expected, ...rest } = rawJson as Record<string, unknown>;
+    if ("rejectOnConflict" in rawJson) {
+      const flagParsed = z.boolean().safeParse(flag);
+      if (!flagParsed.success) {
+        return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+      }
+      rejectOnConflict = flagParsed.data;
+    }
+    if ("expectedUpdatedAt" in rawJson) {
+      const expectedParsed = z.string().datetime().safeParse(expected);
+      if (!expectedParsed.success) {
+        return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+      }
+      expectedUpdatedAt = new Date(expectedParsed.data);
+    }
+    json = rest;
+  }
   const parsed = bookingPatchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
@@ -196,6 +254,50 @@ export async function PATCH(req: Request, { params }: Params) {
         { error: "session_crosses_midnight", params: { index: tzCheck.sessionIndex } },
         { status: 400 }
       );
+    }
+  }
+
+  // Opt-in server-side conflict gate (calendar drag-and-drop). Only sessions
+  // whose start/end differ from the stored ones are checked; overlap is
+  // half-open on workspace-local minutes, and only the SAME booking + SAME
+  // session index is excluded (sibling sessions still conflict).
+  if (rejectOnConflict && parsed.data.sessions) {
+    const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+    const stored = existing.sessions ?? [];
+    const changed = parsed.data.sessions
+      .map((s, index) => ({ s, index }))
+      .filter(({ s, index }) => {
+        const old = stored[index];
+        return (
+          !old ||
+          new Date(old.startAt).getTime() !== s.startAt.getTime() ||
+          new Date(old.endAt).getTime() !== s.endAt.getTime()
+        );
+      })
+      .map(({ s, index }) => ({
+        index,
+        date: dateFmtInTz(s.startAt, tz),
+        start: hhmmToMinutes(formatHHMM(s.startAt, tz)),
+        end: hhmmToMinutes(formatHHMM(s.endAt, tz)),
+      }));
+    if (changed.length > 0) {
+      const byDate = await getShiftsOnDates(
+        ctx.workspace._id,
+        changed.map((c) => c.date),
+        tz,
+        { teamScope: scope }
+      );
+      const conflicts = changed.flatMap((c) =>
+        (byDate[c.date] ?? []).filter(
+          (h) =>
+            !(h.bookingId === id && h.sessionIndex === c.index) &&
+            c.start < hhmmToMinutes(h.shiftEnd) &&
+            hhmmToMinutes(h.shiftStart) < c.end
+        )
+      );
+      if (conflicts.length > 0) {
+        return NextResponse.json({ error: "conflict", conflicts }, { status: 409 });
+      }
     }
   }
 
@@ -322,6 +424,20 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const isClientChange = !!newClientId;
 
+  // Atomic stale-write guard: the token goes into the update filter itself, so
+  // a concurrent write between our read and this write makes it match nothing.
+  const writeFilter: Record<string, unknown> = { _id: id, workspaceId: ctx.workspace._id };
+  if (expectedUpdatedAt) writeFilter.updatedAt = expectedUpdatedAt;
+  const staleResponse = async () => {
+    const current = await Booking.findOne(existingFilter).lean();
+    if (!current) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const currentClient = await buildClientBlock(
+      current.clientId as mongoose.Types.ObjectId | null | undefined,
+      ctx.workspace._id
+    );
+    return NextResponse.json({ error: "stale", booking: { ...current, client: currentClient } }, { status: 409 });
+  };
+
   if (Object.keys(setOp).length === 0 && !isClientChange) {
     const client = await buildClientBlock(
       existing.clientId as mongoose.Types.ObjectId | null | undefined,
@@ -347,11 +463,12 @@ export async function PATCH(req: Request, { params }: Params) {
           // already included in setOp
         }
 
-        await Booking.updateOne(
-          { _id: id, workspaceId: ctx.workspace._id },
+        const written = await Booking.updateOne(
+          writeFilter,
           { $set: clientSetOp },
           { session: mongoSession }
         );
+        if (written.matchedCount === 0) throw new StaleWriteError();
 
         // Build a post-patch snapshot of the fields consumed by
         // reassignBookingBetweenClients. The booking document hasn't been
@@ -442,6 +559,9 @@ export async function PATCH(req: Request, { params }: Params) {
           { session: mongoSession }
         );
       });
+    } catch (err) {
+      if (err instanceof StaleWriteError) return staleResponse();
+      throw err;
     } finally {
       await mongoSession.endSession();
     }
@@ -492,56 +612,65 @@ export async function PATCH(req: Request, { params }: Params) {
       }
     }
 
-    await Booking.updateOne(
-      { _id: id, workspaceId: ctx.workspace._id },
-      { $set: setOp }
-    );
+    // Booking write + client payment projection (+ activity log) commit together.
+    const mongoSession = await mongoose.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const written = await Booking.updateOne(writeFilter, { $set: setOp }, { session: mongoSession });
+        if (written.matchedCount === 0) throw new StaleWriteError();
 
-    if ("payments" in setOp) {
-      await syncBookingPaymentsForClient({
-        workspaceId: ctx.workspace._id,
-        clientId: existing.clientId,
-        booking: {
-          _id: existing._id,
-          teamId: teamReassignment?.to ?? existing.teamId,
-          amount: {
-            currency: (setOp["amount.currency"] as string | undefined) ?? existing.amount?.currency ?? "PHP",
-          },
-          payments: setOp.payments as PaymentInput[],
-        },
+        if ("payments" in setOp) {
+          await syncBookingPaymentsForClient({
+            workspaceId: ctx.workspace._id,
+            clientId: existing.clientId,
+            booking: {
+              _id: existing._id,
+              teamId: teamReassignment?.to ?? existing.teamId,
+              amount: {
+                currency: (setOp["amount.currency"] as string | undefined) ?? existing.amount?.currency ?? "PHP",
+              },
+              payments: setOp.payments as PaymentInput[],
+            },
+            session: mongoSession,
+          });
+        }
+
+        // Skip the activity entry when the only change was a silent coordinate
+        // nudge (diff is empty but setOp persisted lat/lng).
+        if (Object.keys(diff).length > 0) {
+          const paymentsChanged = "payments" in setOp;
+          const statusChanged = "status" in setOp;
+          const paymentAction =
+            paymentsChanged && (setOp.payments as unknown[]).length > (existing.payments?.length ?? 0)
+              ? "payment_added" : "payment_updated";
+          const base = {
+            workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking" as const,
+            entityId: existing._id,
+          };
+
+          if (paymentsChanged && statusChanged) {
+            const { status: statusDiff, ...restDiff } = diff;
+            await ActivityLog.create([
+              { ...base, action: paymentAction, diff: { changes: restDiff } },
+              { ...base, action: "status_changed", diff: { changes: { status: statusDiff } } },
+            ], { session: mongoSession, ordered: true });
+          } else if (paymentsChanged) {
+            await ActivityLog.create([
+              { ...base, action: paymentAction, diff: { changes: diff } },
+            ], { session: mongoSession });
+          } else {
+            // Unchanged existing behavior — covered by an existing passing test, do not alter.
+            await ActivityLog.create([
+              { ...base, action: "status" in setOp ? "status_changed" : "updated", diff: { changes: diff } },
+            ], { session: mongoSession });
+          }
+        }
       });
-    }
-
-    // Skip the activity entry when the only change was a silent coordinate
-    // nudge (diff is empty but setOp persisted lat/lng).
-    if (Object.keys(diff).length > 0) {
-      const paymentsChanged = "payments" in setOp;
-      const statusChanged = "status" in setOp;
-      const paymentAction =
-        paymentsChanged && (setOp.payments as unknown[]).length > (existing.payments?.length ?? 0)
-          ? "payment_added" : "payment_updated";
-
-      if (paymentsChanged && statusChanged) {
-        const { status: statusDiff, ...restDiff } = diff;
-        await ActivityLog.create([
-          { workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
-            entityId: existing._id, action: paymentAction, diff: { changes: restDiff } },
-          { workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
-            entityId: existing._id, action: "status_changed", diff: { changes: { status: statusDiff } } },
-        ]);
-      } else if (paymentsChanged) {
-        await ActivityLog.create({
-          workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
-          entityId: existing._id, action: paymentAction, diff: { changes: diff },
-        });
-      } else {
-        // Unchanged existing behavior — covered by an existing passing test, do not alter.
-        await ActivityLog.create({
-          workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
-          entityId: existing._id, action: "status" in setOp ? "status_changed" : "updated",
-          diff: { changes: diff },
-        });
-      }
+    } catch (err) {
+      if (err instanceof StaleWriteError) return staleResponse();
+      throw err;
+    } finally {
+      await mongoSession.endSession();
     }
   }
 
@@ -554,6 +683,16 @@ export async function PATCH(req: Request, { params }: Params) {
     updated?.clientId as mongoose.Types.ObjectId | null | undefined,
     ctx.workspace._id
   );
+
+  emitDataChanged(ctx.workspace._id.toString(), {
+    type: "booking.updated",
+    bookingId: existing._id.toString(),
+    clientId: updated?.clientId ? String(updated.clientId) : null,
+    inquiryId: existing.createdFromInquiryId ? String(existing.createdFromInquiryId) : null,
+  }, {
+    // Old + new team: the previous team must still learn the booking left it.
+    teamIds: [existing.teamId ? String(existing.teamId) : null, updated?.teamId ? String(updated.teamId) : null],
+  });
 
   // --- Notifications ---
   const shouldNotifyTeamAssigned = teamReassignment !== null;

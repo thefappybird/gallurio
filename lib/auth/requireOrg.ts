@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { connectDB } from "@/lib/db/mongoose";
@@ -44,19 +45,48 @@ export async function requireOrg(
   opts: { allowDuringOnboarding?: boolean; allowWhenGated?: boolean } = {},
 ): Promise<OrgContext> {
   const locale = await getLocale();
+  const resolved = await resolveOrgContext();
+  if (resolved.kind === "signed-out") redirect(localized("/sign-in", locale));
+  if (resolved.kind === "no-workspace") redirect(localized("/onboarding", locale));
+
+  const { ctx, onboardingCompletedAt } = resolved;
+
+  // Onboarding completion only applies to owners (members never onboard).
+  if (ctx.role === "owner" && !opts.allowDuringOnboarding && !onboardingCompletedAt) {
+    redirect(localized("/onboarding", locale));
+  }
+
+  if (!opts.allowWhenGated && isWorkspaceGated(ctx.workspace)) {
+    redirect(localized("/subscribe", locale));
+  }
+
+  return ctx;
+}
+
+type ResolvedOrg =
+  | { kind: "signed-out" }
+  | { kind: "no-workspace" }
+  | { kind: "ok"; ctx: OrgContext; onboardingCompletedAt: Date | null };
+
+/**
+ * Argument-free and redirect-free so React cache() dedupes it per request:
+ * the (app) layout and the page both call requireOrg() but the DB/session
+ * work runs once. Gates stay in requireOrg() since they depend on opts.
+ */
+const resolveOrgContext = cache(async (): Promise<ResolvedOrg> => {
   const authUser = await getAuthUser();
-  if (!authUser) redirect(localized("/sign-in", locale));
+  if (!authUser) return { kind: "signed-out" };
 
   await connectDB();
 
   const user = await User.findOne({ workosUserId: authUser.workosUserId }).lean();
-  if (!user) redirect(localized("/onboarding", locale));
+  if (!user) return { kind: "no-workspace" };
 
   const workspaceId = await getActiveWorkspaceId(user.memberships);
-  if (!workspaceId) redirect(localized("/onboarding", locale));
+  if (!workspaceId) return { kind: "no-workspace" };
 
   let workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
-  if (!workspace) redirect(localized("/onboarding", locale));
+  if (!workspace) return { kind: "no-workspace" };
   workspace = await expireGrantIfPast(workspace);
 
   const membership = user.memberships.find(
@@ -67,25 +97,18 @@ export async function requireOrg(
     workspace.ownerUserId === authUser.workosUserId ||
     membership?.role === "owner";
 
-  // Onboarding completion only applies to owners (members never onboard).
-  if (isOwner && !opts.allowDuringOnboarding && !user.onboardingCompletedAt) {
-    redirect(localized("/onboarding", locale));
-  }
-
-  if (!opts.allowWhenGated && isWorkspaceGated(workspace)) {
-    redirect(localized("/subscribe", locale));
-  }
-
-  const role: "owner" | "staff" = isOwner ? "owner" : "staff";
-
   return {
-    userId: authUser.workosUserId,
-    workspaceId,
-    role,
-    workspace,
-    userAvatarUrl: user.avatarUrl ?? null,
+    kind: "ok",
+    onboardingCompletedAt: user.onboardingCompletedAt ?? null,
+    ctx: {
+      userId: authUser.workosUserId,
+      workspaceId,
+      role: isOwner ? "owner" : "staff",
+      workspace,
+      userAvatarUrl: user.avatarUrl ?? null,
+    },
   };
-}
+});
 
 /**
  * Requires the authenticated user to be the workspace owner.

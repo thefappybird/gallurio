@@ -13,7 +13,7 @@ type Props = ComponentProps<typeof RevenueTrendChartComponent>;
 // boundary makes the code-split real. ssr stays true: only the client chunk
 // boundary moves, the chart still server-renders on first paint.
 const RevenueTrendChart = dynamic(
-  () => import("./revenue-trend-chart").then((module) => module.RevenueTrendChart),
+  () => import("./dashboard-charts").then((module) => module.RevenueTrendChart),
   { ssr: true, loading: () => <ChartLoadingFallback className="h-full rounded-[var(--radius)]" /> }
 );
 

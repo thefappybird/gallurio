@@ -16,7 +16,7 @@ type Props = ComponentProps<typeof PortfolioVisitorsInquiriesChartComponent>;
 // the already-reserved space.
 const PortfolioVisitorsInquiriesChart = dynamic(
   () =>
-    import("./portfolio-visitors-inquiries-chart").then(
+    import("./dashboard-charts").then(
       (module) => module.PortfolioVisitorsInquiriesChart
     ),
   { ssr: true, loading: () => <Skeleton className="h-full w-full" /> }

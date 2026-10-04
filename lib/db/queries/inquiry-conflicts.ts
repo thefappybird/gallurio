@@ -36,53 +36,27 @@ function hasOverlap(
   });
 }
 
+/** Minimal booking shape the conflict core needs (a lean Booking with `sessions`). */
+export type ConflictBookingInput = { sessions?: { startAt: Date | string; endAt: Date | string }[] | null };
+
 /**
- * Returns the set of inquiry IDs whose requested sessions conflict with
- * at least one existing (non-cancelled, non-draft) booking in the workspace.
- *
- * Uses ONE Booking query across the full date span of all inquiry sessions.
+ * Pure core: inquiry IDs whose requested sessions overlap any session of the
+ * given bookings. Caller is responsible for passing only active (non-cancelled,
+ * non-draft) bookings covering the inquiries' dates.
  */
-export async function computeInquiryConflicts(
-  workspaceId: unknown,
+export function computeInquiryConflictsFromBookings(
   inquiries: InquiryConflictInput[],
+  bookings: readonly ConflictBookingInput[],
   tz: string
-): Promise<Set<string>> {
+): Set<string> {
   const result = new Set<string>();
   if (inquiries.length === 0) return result;
-
-  // Collect all startDates across all inquiry sessions.
-  const allDates: string[] = [];
-  for (const inq of inquiries) {
-    for (const s of inq.sessions) {
-      if (s.startDate) allDates.push(s.startDate);
-    }
-  }
-  if (allDates.length === 0) return result;
-
-  allDates.sort();
-  const minDate = allDates[0];
-  const maxDate = allDates[allDates.length - 1];
-
-  // Convert day boundaries to UTC for the Booking query range.
-  const utcDayStart = new Date(wallTimeInTzToUtc(minDate, "00:00", tz));
-  const utcDayEnd = dayBoundInTz(maxDate, tz, 23, 59, 59, 999);
-
-  await connectDB();
-
-  const bookings = await Booking.find({
-    workspaceId,
-    status: { $nin: ["cancelled", "draft"] },
-    firstSessionStart: { $lte: utcDayEnd },
-    lastSessionEnd: { $gte: utcDayStart },
-  })
-    .select("sessions")
-    .lean();
 
   // Build a map from local date (YYYY-MM-DD in tz) -> shift-time pairs.
   const shiftsByDate = new Map<string, { shiftStart: string; shiftEnd: string }[]>();
 
   for (const booking of bookings) {
-    const sessions = booking.sessions as { startAt: Date; endAt: Date }[] | undefined;
+    const sessions = booking.sessions;
     if (!sessions) continue;
 
     for (const session of sessions) {
@@ -124,6 +98,50 @@ export async function computeInquiryConflicts(
   }
 
   return result;
+}
+
+/**
+ * Returns the set of inquiry IDs whose requested sessions conflict with
+ * at least one existing (non-cancelled, non-draft) booking in the workspace.
+ *
+ * Uses ONE Booking query across the full date span of all inquiry sessions.
+ */
+export async function computeInquiryConflicts(
+  workspaceId: unknown,
+  inquiries: InquiryConflictInput[],
+  tz: string
+): Promise<Set<string>> {
+  if (inquiries.length === 0) return new Set();
+
+  // Collect all startDates across all inquiry sessions.
+  const allDates: string[] = [];
+  for (const inq of inquiries) {
+    for (const s of inq.sessions) {
+      if (s.startDate) allDates.push(s.startDate);
+    }
+  }
+  if (allDates.length === 0) return new Set();
+
+  allDates.sort();
+  const minDate = allDates[0];
+  const maxDate = allDates[allDates.length - 1];
+
+  // Convert day boundaries to UTC for the Booking query range.
+  const utcDayStart = new Date(wallTimeInTzToUtc(minDate, "00:00", tz));
+  const utcDayEnd = dayBoundInTz(maxDate, tz, 23, 59, 59, 999);
+
+  await connectDB();
+
+  const bookings = await Booking.find({
+    workspaceId,
+    status: { $nin: ["cancelled", "draft"] },
+    firstSessionStart: { $lte: utcDayEnd },
+    lastSessionEnd: { $gte: utcDayStart },
+  })
+    .select("sessions")
+    .lean();
+
+  return computeInquiryConflictsFromBookings(inquiries, bookings, tz);
 }
 
 export type SingleSession = {

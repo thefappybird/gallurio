@@ -36,21 +36,63 @@ vi.mock("@/lib/i18n/navigation", () => ({
   ),
 }));
 
-// ── ImportSheet stub (avoids pulling in heavy file-upload deps) ───────────
-vi.mock("./import-sheet", () => ({
-  ImportSheet: () => null,
-}));
+const preloadSpy = vi.hoisted(() => vi.fn());
+vi.mock("./booking-wizard-dynamic", () => ({ preloadBookingWizard: preloadSpy }));
 
-// ── InvoiceThemeDialog stub (avoids pulling in the real dialog + action) ──────
-const invoiceThemeDialogOpenSpy = vi.fn();
-vi.mock("./invoice-theme-dialog", () => ({
-  InvoiceThemeDialog: (props: { open: boolean }) => {
-    invoiceThemeDialogOpenSpy(props.open);
-    return null;
-  },
-}));
+// ── Lazy sheets: stubs record mounts; export keeps the real dialog ────────────
+const sheetMounts = vi.hoisted(() => ({ import: vi.fn(), theme: vi.fn() }));
+const sheetPreloads = vi.hoisted(() => ({ import: vi.fn(), export: vi.fn(), theme: vi.fn() }));
+vi.mock("./bookings-toolbar-dynamic", async () => {
+  const real = await vi.importActual<typeof import("./bookings-export-dialog")>(
+    "./bookings-export-dialog"
+  );
+  return {
+    ImportSheetLazy: () => {
+      sheetMounts.import();
+      return null;
+    },
+    InvoiceThemeDialogLazy: () => {
+      sheetMounts.theme();
+      return null;
+    },
+    BookingsExportDialogLazy: real.BookingsExportDialog,
+    preloadImportSheet: sheetPreloads.import,
+    preloadExportDialog: sheetPreloads.export,
+    preloadInvoiceThemeDialog: sheetPreloads.theme,
+  };
+});
+
+describe("BookingsToolbar sheet code split", () => {
+  it("mounts no sheet initially and warms each chunk on pointer-enter/focus", () => {
+    render(
+      <BookingsToolbar defaultCurrency="PHP" isOwner initialInvoiceTheme={DEFAULT_INVOICE_THEME} />,
+      { wrapper }
+    );
+    expect(sheetMounts.import).not.toHaveBeenCalled();
+    expect(sheetMounts.theme).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.pointerEnter(screen.getByRole("button", { name: /^import$/i }));
+    fireEvent.focus(screen.getByRole("button", { name: /^export$/i }));
+    fireEvent.pointerEnter(screen.getByRole("button", { name: /invoice.*receipt theme/i }));
+    expect(sheetPreloads.import).toHaveBeenCalledTimes(1);
+    expect(sheetPreloads.export).toHaveBeenCalledTimes(1);
+    expect(sheetPreloads.theme).toHaveBeenCalledTimes(1);
+  });
+});
 
 const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+
+describe("BookingsToolbar wizard warm-up", () => {
+  it("preloads the wizard chunk on pointer-enter and focus of New booking", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    const btn = screen.getByRole("button", { name: /new booking/i });
+    fireEvent.pointerEnter(btn);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    fireEvent.focus(btn);
+    expect(preloadSpy).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("BookingsToolbar action order", () => {
   it("orders import, export, invoice/receipt theme, then new booking", () => {
@@ -289,7 +331,7 @@ describe("BookingsToolbar — Invoice theme button", () => {
     );
     const btn = screen.getByRole("button", { name: /invoice.*receipt theme/i });
     fireEvent.click(btn);
-    expect(invoiceThemeDialogOpenSpy).toHaveBeenCalledWith(true);
+    expect(sheetMounts.theme).toHaveBeenCalled();
   });
 
   it("does not render the Invoice theme button for a non-owner", () => {

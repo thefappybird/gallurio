@@ -103,6 +103,12 @@ describe("listInquiries", () => {
     const p2 = await listInquiries(workspaceId, {}, { page: 2, limit: 5 });
     expect(p2.rows).toHaveLength(2);
   });
+
+  it("defaults the page size to DEFAULT_PAGE_SIZE (10)", async () => {
+    for (let i = 0; i < 12; i += 1) await seedInquiry(workspaceId);
+    const p1 = await listInquiries(workspaceId, {}, { page: 1 });
+    expect(p1.rows).toHaveLength(10);
+  });
 });
 
 describe("getInquiryStatusCounts", () => {

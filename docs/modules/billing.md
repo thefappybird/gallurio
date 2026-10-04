@@ -47,7 +47,7 @@ Support/recovery playbook: eligibility = `User.betaParticipation.recordedAt` non
 
 ## Known deferrals
 
-- **Billing error handling (open since the 1.5.0 audit)**: `lib/actions/billing.ts` has no try/catch, so a throw from `getLemonSqueezySubscription` or `Workspace.findById` escapes the typed-result convention. `settings/billing/` has no `error.tsx` of its own either, so it falls back to the generic `(app)/error.tsx`.
+- **Billing error boundary**: `settings/billing/` has no `error.tsx` of its own, so a render crash mid-checkout falls back to the generic `(app)/error.tsx`. (`lib/actions/billing.ts` now returns typed failures.)
 
 - **Gulf currency precision**: `formatMoney` hard-codes `maximumFractionDigits: 0` (test-pinned for PHP MVP). 3-decimal Gulf currencies (KWD/BHD/OMR) and 2-decimal ones (AED/SAR/QAR) render rounded. Display-only; billing itself is by Lemon Squeezy `variantId`, unaffected. Fix alongside the Arabic/Gulf UX work — see `docs/modules/i18n-design.md`.
 - **Provider decision**: keep Lemon Squeezy code release-safe; do not add Creem/Paddle config, claim either is integrated, or build a generic payment-provider abstraction before an explicit decision. A switch is a scoped migration (checkout + webhooks + schema/env/docs/test audit), not a config toggle.

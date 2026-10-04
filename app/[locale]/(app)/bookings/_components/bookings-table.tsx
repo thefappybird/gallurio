@@ -10,18 +10,19 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
+  CalendarIcon,
   EyeIcon,
   MoreHorizontalIcon,
   PencilIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/app/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +53,8 @@ type Props = {
   rows: BookingRow[];
   locale: string;
   empty: string;
+  /** Optional secondary line under the empty title (omit when filtered). */
+  emptyHint?: string;
   workspaceTimezone?: string;
 };
 
@@ -88,12 +91,10 @@ export function BookingsTable({
   rows,
   locale,
   empty,
+  emptyHint,
   workspaceTimezone = "UTC",
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const t = useTranslations("app.bookings.table");
+  const t =useTranslations("app.bookings.table");
   const tActions = useTranslations("app.bookings.row");
   const tStatus = useTranslations("app.bookings.statusValues");
   const [sorting, setSorting] = useState<SortingState>([
@@ -102,23 +103,9 @@ export function BookingsTable({
 
   const visibleRows = rows;
 
-  const openDetail = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("detail", id);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [pathname, router, searchParams]
-  );
-
-  const openEdit = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("edit", id);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [pathname, router, searchParams]
-  );
+  // History API, not router.push: the modals mount client-side (BookingUrlModals).
+  const openDetail = useCallback((id: string) => setUrlParams((p) => p.set("detail", id)), []);
+  const openEdit = useCallback((id: string) => setUrlParams((p) => p.set("edit", id)), []);
 
   const formatSessionSummary = useCallback(
     (sessions: { startAt: string; endAt: string }[]) => {
@@ -277,9 +264,11 @@ export function BookingsTable({
 
   if (visibleRows.length === 0) {
     return (
-      <div className="border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
-        {empty}
-      </div>
+      <EmptyState
+        icon={CalendarIcon}
+        title={empty}
+        description={emptyHint || undefined}
+      />
     );
   }
 
@@ -409,33 +398,46 @@ export function BookingsTable({
                 {hg.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
+                  const ariaSort: "ascending" | "descending" | "none" | undefined =
+                    canSort
+                      ? sorted === "asc"
+                        ? "ascending"
+                        : sorted === "desc"
+                          ? "descending"
+                          : "none"
+                      : undefined;
+                  const label = flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  );
                   return (
                     <th
                       key={header.id}
-                      className={cn(
-                        "px-3 py-2 font-medium text-start",
-                        canSort && "cursor-pointer select-none"
-                      )}
-                      onClick={
-                        canSort
-                          ? header.column.getToggleSortingHandler()
-                          : undefined
-                      }
+                      scope="col"
+                      aria-sort={ariaSort}
+                      className="px-3 py-2 font-medium text-start"
                     >
-                      <span className="inline-flex items-center gap-1">
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {canSort &&
-                          (sorted === "asc" ? (
-                            <ArrowUpIcon className="size-3" />
+                      {canSort ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                          {label}
+                          {sorted === "asc" ? (
+                            <ArrowUpIcon className="size-3" aria-hidden="true" />
                           ) : sorted === "desc" ? (
-                            <ArrowDownIcon className="size-3" />
+                            <ArrowDownIcon className="size-3" aria-hidden="true" />
                           ) : (
-                            <ArrowUpDownIcon className="size-3 opacity-40" />
-                          ))}
-                      </span>
+                            <ArrowUpDownIcon
+                              className="size-3 opacity-40"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </button>
+                      ) : (
+                        label
+                      )}
                     </th>
                   );
                 })}

@@ -22,6 +22,8 @@ vi.mock("../_actions", () => ({
 }));
 
 const refreshMock = vi.fn();
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
 
 function renderDialog(onClose = vi.fn()) {
   return render(
@@ -92,7 +94,8 @@ describe("InvoiceThemeDialog", () => {
         expect.objectContaining({ preset: "slate" })
       );
       expect(onClose).toHaveBeenCalled();
-      expect(refreshMock).toHaveBeenCalled();
+      expect(invalidateSpy).toHaveBeenCalledWith({ type: "workspace.updated" });
+      expect(refreshMock).not.toHaveBeenCalled();
     });
   });
 

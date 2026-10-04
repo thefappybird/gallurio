@@ -2,6 +2,7 @@
 
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { Workspace } from "@/lib/db/models";
 import { invoiceThemeSchema } from "@/lib/validators/invoiceTheme";
 import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
@@ -31,5 +32,6 @@ export async function updateInvoiceThemeAction(input: unknown): Promise<UpdateIn
     { $set: { invoiceTheme: { preset: parsed.data.preset, ...resolved } } }
   );
 
+  emitDataChanged(String(ctx.workspace._id), { type: "workspace.updated" });
   return { ok: true };
 }

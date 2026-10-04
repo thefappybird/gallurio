@@ -7,6 +7,9 @@ vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
+
 vi.mock("../_invite-action", () => ({
   inviteMemberAction: vi.fn(),
   checkInviteEligibilityAction: vi.fn(),
@@ -117,6 +120,7 @@ describe("InviteForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /send invite/i }));
 
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+    expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }, { refresh: false });
   });
 
   it("disables Send and shows an inline message when the typed email is already registered", async () => {

@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { queryKeys } from "@/lib/query/keys";
 import { useTranslations } from "next-intl";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
@@ -26,6 +29,12 @@ type Props = {
 
 const PAGE_SIZE = 5;
 
+type ActivityPage = {
+  entries: ActivityEntry[];
+  total: number;
+  actorNames?: Record<string, string>;
+};
+
 export function BookingHistoryDialog({
   bookingId,
   open,
@@ -34,61 +43,31 @@ export function BookingHistoryDialog({
   currency = "PHP",
 }: Props) {
   const t = useTranslations("app.bookings.detail.history");
+  const ws = useAppWorkspaceId();
   const [page, setPage] = useState(1);
-  const [entries, setEntries] = useState<ActivityEntry[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [actorNames, setActorNames] = useState<Record<string, string>>({});
+  // Back to page 1 whenever the dialog re-opens.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setPage(1);
+  }
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    const url = `/api/bookings/${bookingId}/activity?page=${page}&pageSize=${PAGE_SIZE}`;
-    Promise.resolve()
-      .then(() => {
-        if (cancelled) return;
-        setLoading(true);
-        return fetch(url)
-          .then((r) => (r.ok ? r.json() : { entries: [], total: 0 }))
-          .then(async ({ entries: rawEntries, total: rawTotal }: { entries: ActivityEntry[]; total: number }) => {
-            if (cancelled) return;
-            const fetched = rawEntries ?? [];
-            setEntries(fetched);
-            setTotal(rawTotal ?? 0);
-
-            // Resolve actor display names for entries that have an actorUserId.
-            const ids = [...new Set(
-              fetched
-                .map((e) => e.actorUserId)
-                .filter((id): id is string => !!id)
-            )];
-            if (ids.length > 0) {
-              const params = new URLSearchParams();
-              ids.forEach((id) => params.append("ids", id));
-              const res = await fetch(`/api/users/names?${params.toString()}`);
-              if (!cancelled && res.ok) {
-                const names: Record<string, string> = await res.json();
-                setActorNames(names);
-              }
-            }
-
-            setLoading(false);
-          })
-          .catch(() => {
-            if (cancelled) return;
-            setLoading(false);
-          });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId, page, open]);
-
-  // Reset to page 1 whenever the dialog re-opens.
-  useEffect(() => {
-    if (!open) return;
-    Promise.resolve().then(() => setPage(1));
-  }, [open]);
+  // Actor names ride along on each page (no separate names request). The
+  // previous page stays on screen while the next one loads.
+  const query = useQuery({
+    queryKey: queryKeys(ws).bookingActivity(bookingId, page),
+    queryFn: async (): Promise<ActivityPage> => {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}/activity?page=${page}&pageSize=${PAGE_SIZE}`);
+      if (!res.ok) throw new Error(`activity_load_failed_${res.status}`);
+      return res.json();
+    },
+    enabled: open,
+    placeholderData: keepPreviousData,
+  });
+  const entries = query.data?.entries ?? [];
+  const total = query.data?.total ?? 0;
+  const actorNames = query.data?.actorNames ?? {};
+  const loading = query.isPending || query.isPlaceholderData;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const showPagination = total > PAGE_SIZE;
@@ -116,8 +95,15 @@ export function BookingHistoryDialog({
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          {loading ? (
-            <div className="flex flex-col gap-2">
+          {query.isError && !query.data ? (
+            <div role="alert" className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+              <p>{t("loadError")}</p>
+              <Button type="button" variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
+                {t("retry")}
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col gap-2" aria-busy="true">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}

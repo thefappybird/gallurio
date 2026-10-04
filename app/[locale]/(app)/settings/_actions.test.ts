@@ -37,6 +37,9 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 vi.mock("@/lib/storage/cloudflareImages", () => ({
   deleteImage: vi.fn().mockResolvedValue(undefined),
   verifyImageOwnership: vi.fn().mockResolvedValue(true),
@@ -234,6 +237,15 @@ describe("updateWorkspaceBusinessAction", () => {
     const updated = await Workspace.findById(WS_A_ID).lean();
     expect(updated?.name).toBe("Sarah Bell Studios");
     expect(updated?.timezone).toBe("Asia/Kolkata");
+  });
+
+  it("emits workspace.updated after a successful update, none on a slug collision", async () => {
+    await seedWorkspaceA();
+    await seedWorkspaceB();
+    await updateWorkspaceBusinessAction({ ...validInput, slug: "other-studio" });
+    expect(emit).not.toHaveBeenCalled();
+    await updateWorkspaceBusinessAction(validInput);
+    expect(emit).toHaveBeenCalledWith(String(WS_A_ID), { type: "workspace.updated" });
   });
 
   it("persists businessTypeOther when businessType is other, clears it otherwise", async () => {

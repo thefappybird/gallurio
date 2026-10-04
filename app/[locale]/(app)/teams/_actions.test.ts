@@ -16,6 +16,9 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -50,6 +53,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  emit.mockClear();
 });
 
 function makeTeam(
@@ -74,6 +78,24 @@ function makeTeam(
   });
 }
 
+describe("createTeamAction", () => {
+  it("emits team.updated with the new team id after create", async () => {
+    const { createTeamAction } = await import("./_actions");
+    const result = await createTeamAction({ name: "Fresh", color: TEAM_COLOR_PALETTE[1] });
+    expect(result.ok).toBe(true);
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), {
+      type: "team.updated",
+      teamId: result.team?.id,
+    });
+  });
+
+  it("does not emit on invalid input", async () => {
+    const { createTeamAction } = await import("./_actions");
+    await createTeamAction({ name: "", color: TEAM_COLOR_PALETTE[1] });
+    expect(emit).not.toHaveBeenCalled();
+  });
+});
+
 describe("renameTeamAction", () => {
   it("persists the new name", async () => {
     const team = await makeTeam({ name: "Old" });
@@ -82,6 +104,16 @@ describe("renameTeamAction", () => {
     expect(result.ok).toBe(true);
     const after = await Team.findById(team._id).lean();
     expect(after?.name).toBe("New crew");
+  });
+
+  it("emits team.updated after rename, none for a foreign team", async () => {
+    const team = await makeTeam({ name: "Old" });
+    const foreign = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID, name: "F" });
+    const { renameTeamAction } = await import("./_actions");
+    await renameTeamAction({ teamId: String(foreign._id), name: "X" });
+    expect(emit).not.toHaveBeenCalled();
+    await renameTeamAction({ teamId: String(team._id), name: "New crew" });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
   });
 
   it("cannot rename a team in another workspace (tenant isolation)", async () => {
@@ -102,6 +134,13 @@ describe("setTeamColorAction", () => {
     expect(result.ok).toBe(true);
     const after = await Team.findById(team._id).lean();
     expect(after?.color).toBe("#abcdef");
+  });
+
+  it("emits team.updated after recolor", async () => {
+    const team = await makeTeam();
+    const { setTeamColorAction } = await import("./_actions");
+    await setTeamColorAction({ teamId: String(team._id), color: "#123456" });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
   });
 
   it("cannot recolor a team in another workspace", async () => {
@@ -136,6 +175,16 @@ describe("deactivateTeamAction", () => {
     ).toBe(2);
   });
 
+  it("emits team.updated after deactivate, none when the default team is refused", async () => {
+    const def = await makeTeam({ name: "Main", isDefault: true });
+    const team = await makeTeam({ name: "Crew2" });
+    const { deactivateTeamAction } = await import("./_actions");
+    await deactivateTeamAction({ teamId: String(def._id) });
+    expect(emit).not.toHaveBeenCalled();
+    await deactivateTeamAction({ teamId: String(team._id) });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+  });
+
   it("refuses to deactivate the default team and leaves it active", async () => {
     const team = await makeTeam({ isDefault: true, name: "Main" });
     const { deactivateTeamAction } = await import("./_actions");
@@ -165,6 +214,13 @@ describe("reactivateTeamAction", () => {
     const after = await Team.findById(team._id).lean();
     expect(after?.isActive).toBe(true);
     expect(after?.deactivatedAt).toBeNull();
+  });
+
+  it("emits team.updated after reactivation", async () => {
+    const team = await makeTeam({ isActive: false, deactivatedAt: new Date() });
+    const { reactivateTeamAction } = await import("./_actions");
+    await reactivateTeamAction({ teamId: String(team._id) });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
   });
 
   it("refuses reactivation that would exceed the active-team plan cap", async () => {

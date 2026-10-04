@@ -85,6 +85,20 @@ describe("BookingsTable", () => {
     expect(screen.getAllByText(/75,000/).length).toBeGreaterThan(0);
   });
 
+  it("opens a card's detail with history.pushState, not a router push", () => {
+    window.history.replaceState(null, "", "/en/bookings?view=table");
+    const pushState = vi.spyOn(window.history, "pushState");
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+
+    fireEvent.click(within(screen.getByTestId("bookings-card-list")).getByRole("button", { name: /Carter Wedding/ }));
+
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/en/bookings?view=table&detail=1");
+    expect(mockPush).not.toHaveBeenCalled();
+    pushState.mockRestore();
+  });
+
   it("renders empty state when rows is empty", () => {
     renderWithProviders(
       <BookingsTable
@@ -95,6 +109,19 @@ describe("BookingsTable", () => {
       />
     );
     expect(screen.getByText("No rows")).toBeInTheDocument();
+  });
+
+  it("renders the empty hint as description when provided", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[]}
+        locale="en"
+        empty="No bookings yet."
+        emptyHint="Create one to see it here."
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    expect(screen.getByText("Create one to see it here.")).toBeInTheDocument();
   });
 
   it("renders a mobile card list alongside the desktop table markup", () => {
@@ -289,6 +316,44 @@ describe("BookingsTable", () => {
     const [totalValue] = screen.getAllByText(/75,000/);
     expect(totalValue.className).not.toMatch(/text-right/);
     expect(totalValue.className).toMatch(/tabular-nums/);
+  });
+
+  it("sets scope=col on every header and aria-sort only on sortable columns", () => {
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const ths = Array.from(container.querySelectorAll("thead th"));
+    expect(ths.every((th) => th.getAttribute("scope") === "col")).toBe(true);
+    expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
+      "none",
+      "none",
+      "ascending",
+      "none",
+      "none",
+      null,
+    ]);
+  });
+
+  it("makes the sort trigger a button that toggles aria-sort", () => {
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const dateTh = within(table).getByRole("columnheader", { name: /date/i });
+    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
+    expect(dateTh).toHaveAttribute("aria-sort", "none");
+    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
+    expect(dateTh).toHaveAttribute("aria-sort", "descending");
   });
 
   it("renders a row action trigger", () => {

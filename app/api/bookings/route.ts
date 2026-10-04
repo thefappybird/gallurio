@@ -10,6 +10,7 @@ import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/c
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible } from "@/lib/bookings/payment-rules";
 import { resolveFxFreeze } from "@/lib/pricing/fxRates";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 
 export const runtime = "nodejs";
 
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
   // transaction so that a failure in any step leaves no orphan documents.
   const session = await mongoose.startSession();
   let bookingId: mongoose.Types.ObjectId;
+  let committedClientId: mongoose.Types.ObjectId;
 
   try {
     await session.withTransaction(async () => {
@@ -176,6 +178,7 @@ export async function POST(req: Request) {
       );
 
       bookingId = booking._id;
+      committedClientId = clientId;
 
       await ActivityLog.create(
         [
@@ -218,5 +221,18 @@ export async function POST(req: Request) {
     await session.endSession();
   }
 
-  return NextResponse.json({ id: bookingId!.toString() }, { status: 201 });
+  const wsId = ctx.workspace._id.toString();
+  emitDataChanged(wsId, {
+    type: "booking.created",
+    bookingId: bookingId!.toString(),
+    clientId: committedClientId!.toString(),
+  }, { teamIds: [String(team._id)] });
+  if (client.mode === "new") {
+    emitDataChanged(wsId, { type: "client.created", clientId: committedClientId!.toString() });
+  }
+
+  return NextResponse.json(
+    { id: bookingId!.toString(), clientId: committedClientId!.toString() },
+    { status: 201 }
+  );
 }

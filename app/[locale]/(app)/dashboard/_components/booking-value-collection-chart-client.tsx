@@ -14,7 +14,7 @@ type Props = ComponentProps<typeof BookingValueCollectionChartComponent>;
 // boundary moves, the chart still server-renders on first paint.
 const BookingValueCollectionChart = dynamic(
   () =>
-    import("./booking-value-collection-chart").then(
+    import("./dashboard-charts").then(
       (module) => module.BookingValueCollectionChart
     ),
   {

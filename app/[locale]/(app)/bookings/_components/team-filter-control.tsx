@@ -168,7 +168,7 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
                 type="button"
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                aria-label="Previous page"
+                aria-label={t("previousPage")}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <ChevronLeftIcon className="size-4" />
@@ -180,7 +180,7 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page === pageCount - 1}
-                aria-label="Next page"
+                aria-label={t("nextPage")}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <ChevronRightIcon className="size-4" />

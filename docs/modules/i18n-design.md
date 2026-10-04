@@ -30,5 +30,4 @@ Source of truth: root `PRODUCT.md` (register, users, brand personality, anti-ref
 
 ## Known gaps (as of 1.5.0)
 
-- `components/ui/sidebar.tsx`'s root is a plain `<div>`, so the app's primary nav has no navigation landmark. Add `<nav>` or `role="navigation"`.
 - Puck's editor chrome is translated in all five locales (`puck.chrome`), but Puck ships no `[dir=rtl]` CSS, so the Arabic editor chrome is not mirrored. The public page's own RTL scoping is unaffected.

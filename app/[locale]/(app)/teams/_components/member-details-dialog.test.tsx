@@ -19,6 +19,37 @@ describe("MemberDetailsDialog", () => {
     expect(screen.getByRole("status", { name: "Loading activity history" })).toBeInTheDocument();
   });
 
+  it("shows an error with Retry that refetches the history", async () => {
+    const { getMemberActivityAction } = await import("../_member-action");
+    vi.mocked(getMemberActivityAction).mockReset();
+    vi.mocked(getMemberActivityAction).mockResolvedValue({ error: "boom" } as never);
+    renderWithProviders(<MemberDetailsDialog member={member} teams={[]} ownerWorkosUserId="owner" open onOpenChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    const retry = await screen.findByRole("button", { name: "Retry" }, { timeout: 4000 });
+    vi.mocked(getMemberActivityAction).mockResolvedValue({
+      items: [{ id: "a", entity: "booking", action: "created", createdAt: "2026-01-01T00:00:00.000Z" }],
+      nextCursor: null,
+    });
+    fireEvent.click(retry);
+    expect(await screen.findByText(/booking created/i)).toBeInTheDocument();
+  });
+
+  it("serves history from cache when the History tab is reopened (fetched once)", async () => {
+    const { getMemberActivityAction } = await import("../_member-action");
+    vi.mocked(getMemberActivityAction).mockReset();
+    vi.mocked(getMemberActivityAction).mockResolvedValue({
+      items: [{ id: "a", entity: "booking", action: "created", createdAt: "2026-01-01T00:00:00.000Z" }],
+      nextCursor: null,
+    });
+    renderWithProviders(<MemberDetailsDialog member={member} teams={[]} ownerWorkosUserId="owner" open onOpenChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    await screen.findByText(/booking created/i);
+    fireEvent.click(screen.getByRole("tab", { name: "Details" }));
+    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    expect(await screen.findByText(/booking created/i)).toBeInTheDocument();
+    expect(getMemberActivityAction).toHaveBeenCalledTimes(1);
+  });
+
   it("sends date filters and loads the next cursor page", async () => {
     const { getMemberActivityAction } = await import("../_member-action");
     vi.mocked(getMemberActivityAction)
