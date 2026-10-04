@@ -2380,3 +2380,82 @@ describe("BookingWizardModal — step list a11y", () => {
     expect(items[0]).toHaveAttribute("aria-current", "step");
   });
 });
+
+// ── Optimistic concurrency: edit loaded via the shared booking query ──────────
+describe("BookingWizardModal — edit mode expectedUpdatedAt", () => {
+  const ID = "aaaaaaaaaaaaaaaaaaaaaaaa";
+  const T1 = "2026-03-01T10:00:00.000Z";
+  const T2 = "2026-03-01T11:00:00.000Z";
+  const serverBooking = (over: Record<string, unknown> = {}) => ({
+    _id: ID,
+    title: "Test Shoot",
+    clientId: "bbbbbbbbbbbbbbbbbbbbbbbb",
+    clientName: "Test Client",
+    eventType: "portrait",
+    status: "booked",
+    teamId: null,
+    sessions: [{ startAt: "2026-06-15T02:00:00.000Z", endAt: "2026-06-15T09:00:00.000Z" }],
+    location: { address: "Venue", lat: null, lng: null },
+    amount: { total: 0, deposit: 0, currency: "PHP" },
+    payments: [],
+    notes: "",
+    updatedAt: T1,
+    ...over,
+  });
+
+  let currentServer = serverBooking();
+  function setup(patch: () => Response) {
+    currentServer = serverBooking();
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/bookings/shifts-on-date")) return { ok: true, json: async () => shiftsBody(url, []) };
+      if (url.includes("/api/clients")) return { ok: true, json: async () => [] };
+      if (init?.method === "PATCH") return patch();
+      if (url.startsWith(`/api/bookings/${ID}`)) return { ok: true, json: async () => currentServer };
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+    return mockFetch;
+  }
+
+  async function editTitleAndSave(next: string) {
+    await screen.findByText(/Edit Test Shoot/);
+    await act(async () => {
+      fireEvent.click(await screen.findByRole("button", { name: /event/i }));
+    });
+    const title = await screen.findByPlaceholderText(/carter wedding/i);
+    await waitFor(() => expect((title as HTMLInputElement).value).toBe("Test Shoot"));
+    await act(async () => {
+      fireEvent.change(title, { target: { value: next } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    });
+  }
+
+  it("sends the loaded updatedAt as expectedUpdatedAt", async () => {
+    const mockFetch = setup(() => ({ ok: true, status: 200, json: async () => serverBooking({ title: "X", updatedAt: T2 }) }) as unknown as Response);
+    await editTitleAndSave("Renamed");
+    await waitFor(() => {
+      const call = mockFetch.mock.calls.find(([, i]) => (i as RequestInit)?.method === "PATCH");
+      expect(call).toBeDefined();
+      expect(JSON.parse((call![1] as RequestInit).body as string).expectedUpdatedAt).toBe(T1);
+    });
+  });
+
+  it("on 409 stale keeps the wizard open, shows the stale copy and reseeds from the server booking", async () => {
+    setup(() => {
+      currentServer = serverBooking({ title: "Changed Elsewhere", updatedAt: T2 });
+      return new Response(JSON.stringify({ error: "stale", booking: currentServer }), { status: 409 });
+    });
+    await editTitleAndSave("Renamed");
+    expect(await screen.findByText(/changed by someone else/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect((screen.getByPlaceholderText(/carter wedding/i) as HTMLInputElement).value).toBe("Changed Elsewhere")
+    );
+  });
+});

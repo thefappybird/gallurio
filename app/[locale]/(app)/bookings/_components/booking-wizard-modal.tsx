@@ -12,6 +12,7 @@ import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useWorkspaceClients } from "@/hooks/use-workspace-clients";
 import { queryKeys } from "@/lib/query/keys";
 import { useBookingQuery } from "./use-booking-query";
+import { StaleBookingError, throwIfStale } from "@/lib/bookings/stale-booking";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -131,6 +132,7 @@ export function BookingWizardModal({
   const invalidateFor = useInvalidateFor();
   const t = useTranslations("app.bookings.wizard");
   const tDnd = useTranslations("app.bookings.dnd");
+  const tDetail = useTranslations("app.bookings.detail");
   const tCommon = useTranslations("common");
   const errMsg = useActionError();
 
@@ -217,6 +219,8 @@ export function BookingWizardModal({
   const bookingSettled = !bookingQuery.isFetching;
   const bookingLoadFailed = bookingQuery.isError && !fetchedBooking;
   const seededBookingRef = useRef<string | null>(null);
+  /** `updatedAt` of the booking the form was seeded from — the PATCH concurrency token. */
+  const baseUpdatedAtRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!editEnabled) return;
     if (bookingLoadFailed) {
@@ -230,6 +234,7 @@ export function BookingWizardModal({
     if (!fetchedBooking || !bookingSettled || seededBookingRef.current === bookingId) return;
     seededBookingRef.current = bookingId ?? null;
     const b = fetchedBooking;
+    baseUpdatedAtRef.current = b.updatedAt;
     const rawSessions: { startAt: string; endAt: string }[] =
       Array.isArray(b.sessions) && b.sessions.length > 0
         ? b.sessions
@@ -649,8 +654,9 @@ export function BookingWizardModal({
         const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(diff),
+          body: JSON.stringify({ ...diff, expectedUpdatedAt: baseUpdatedAtRef.current }),
         });
+        await throwIfStale(res);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(errMsg(data.error, data.params));
@@ -678,6 +684,22 @@ export function BookingWizardModal({
       // Success path: close() strips URL params; invalidateFor schedules the page refresh.
       close();
     } catch (err) {
+      if (err instanceof StaleBookingError && bookingId) {
+        // Keep the wizard open: swap the cache for the server copy (the seeding
+        // effect re-runs and rebases the form + diff baseline) and explain.
+        const server = err.booking as Record<string, unknown> | null;
+        const key = queryKeys(workspaceIdForQueries).booking(bookingId);
+        if (server) {
+          seededBookingRef.current = null;
+          queryClient.setQueryData(key, (old: Record<string, unknown> | undefined) => ({
+            ...server,
+            activity: old?.activity,
+          }));
+        }
+        void queryClient.invalidateQueries({ queryKey: key });
+        setSubmitError(tDetail("staleConflict"));
+        return;
+      }
       setSubmitError(err instanceof Error ? err.message : errMsg(null));
       // Failed submit: strip URL params so the stale ?edit= doesn't persist if
       // the user navigates away after seeing the error.
@@ -687,7 +709,7 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close, isMultiSessionEdit, onClose, clearWizardUrlParams, tz, errMsg, invalidateFor, queryClient, workspaceIdForQueries]);
+  }, [mode, bookingId, t, close, isMultiSessionEdit, onClose, clearWizardUrlParams, tz, errMsg, invalidateFor, queryClient, workspaceIdForQueries, tDetail]);
 
   const eventStepIndex = STEPS.findIndex((s) => s.id === "sessionsLocation");
 
