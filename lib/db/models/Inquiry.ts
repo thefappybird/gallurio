@@ -64,12 +64,15 @@ const inquirySchema = new Schema(
     clientResolvedAt: { type: Date, default: null },
     convertedClientId: { type: Schema.Types.ObjectId, ref: "Client", default: null },
     convertedBookingId: { type: Schema.Types.ObjectId, ref: "Booking", default: null },
+    // Moment the owner approved the inquiry into a booking. Null until then.
+    bookedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 inquirySchema.index({ workspaceId: 1, status: 1, createdAt: -1 });
 inquirySchema.index({ workspaceId: 1, createdAt: -1 });
+inquirySchema.index({ workspaceId: 1, bookedAt: -1 });
 
 export type InquiryDoc = InferSchemaType<typeof inquirySchema> & {
   _id: mongoose.Types.ObjectId;

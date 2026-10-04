@@ -438,6 +438,7 @@ export async function approveInquiryBookingAction(
   // `status: "draft"` race (matchedCount === 0); only the winner fires the
   // post-commit emails/notification, so the loser must not double-send.
   let promotedThisCall = false;
+  const bookedAt = new Date();
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -448,6 +449,7 @@ export async function approveInquiryBookingAction(
         {
           $set: {
             status: PROMOTED_STATUS,
+            bookedAt,
             "amount.total": newAmount.total,
             "amount.deposit": newAmount.deposit,
             notes: newNotes,
@@ -476,6 +478,7 @@ export async function approveInquiryBookingAction(
         {
           $set: {
             status: "booked",
+            bookedAt,
             convertedBookingId: booking._id,
             convertedClientId: inquiry.clientId,
           },

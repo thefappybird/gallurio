@@ -283,6 +283,19 @@ describe("getInquiryDetailAction clientMatches", () => {
 });
 
 describe("approveInquiryBookingAction", () => {
+  it("stamps the same bookedAt on the booking and the inquiry; draft stays null before", async () => {
+    const { booking, inquiry } = await seedDraft(workspaceId);
+    expect((await Booking.findById(booking._id).lean())?.bookedAt).toBeNull();
+    expect((await Inquiry.findById(inquiry._id).lean())?.bookedAt).toBeNull();
+
+    await approveInquiryBookingAction(String(inquiry._id), {});
+
+    const b = await Booking.findById(booking._id).lean();
+    const i = await Inquiry.findById(inquiry._id).lean();
+    expect(b?.bookedAt).toBeInstanceOf(Date);
+    expect(i?.bookedAt?.getTime()).toBe(b?.bookedAt?.getTime());
+  });
+
   it("promotes the draft, applies edits, and marks the inquiry booked", async () => {
     const { booking, inquiry, client } = await seedDraft(workspaceId);
 

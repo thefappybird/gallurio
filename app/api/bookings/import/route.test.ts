@@ -409,6 +409,12 @@ describe("POST /api/bookings/import", () => {
     expect(client?.source).toBe("import");
   });
 
+  it("stamps bookedAt on an imported non-draft booking", async () => {
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.bookedAt).toBeInstanceOf(Date);
+  });
+
   it("emits bookings.imported once after a successful import", async () => {
     await callImport([VALID_ROW]);
     expect(emit).toHaveBeenCalledTimes(1);

@@ -506,6 +506,14 @@ export async function POST(req: Request) {
             },
             { session: updateSession }
           );
+          // First draft -> non-draft transition via import stamps bookedAt once.
+          if (row.status !== "draft") {
+            await Booking.updateOne(
+              { _id: existingBooking._id, workspaceId: ctx.workspace._id, bookedAt: null },
+              { $set: { bookedAt: new Date() } },
+              { session: updateSession }
+            );
+          }
           await ActivityLog.create(
             [
               {
@@ -647,6 +655,7 @@ export async function POST(req: Request) {
               title: row.title,
               eventType: row.eventType ?? "other",
               status: row.status ?? "booked",
+              bookedAt: row.status === "draft" ? null : now,
               sessions,
               firstSessionStart,
               lastSessionEnd,
