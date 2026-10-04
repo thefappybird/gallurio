@@ -215,6 +215,20 @@ describe("submitInquiry", () => {
     expect(emit).toHaveBeenCalledWith(wsId, { type: "client.created", clientId: res.clientId });
   });
 
+  it("emits only after the analytics counter bump, and still emits when the bump fails", async () => {
+    await Workspace.create(makeWorkspace());
+    const bump = vi.spyOn(PageviewRollup, "updateOne");
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    expect(bump).toHaveBeenCalled();
+    expect(emit.mock.invocationCallOrder[0]).toBeGreaterThan(bump.mock.invocationCallOrder[0]);
+
+    emit.mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    bump.mockRejectedValueOnce(new Error("rollup down"));
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload({ email: "second@example.com" }) });
+    expect(emit).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ type: "inquiry.created" }));
+  });
+
   it("does not emit when the submission is rejected", async () => {
     await Workspace.create(makeWorkspace({ publicPage: { publishedAt: null } }));
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });

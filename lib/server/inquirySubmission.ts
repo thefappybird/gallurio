@@ -202,17 +202,6 @@ export async function submitInquiry(
     return { ok: false, error: "submission_failed" };
   }
 
-  const wsIdStr = String(workspaceId);
-  emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
-  emitDataChanged(wsIdStr, {
-    type: "booking.created",
-    bookingId: String(draftBookingId),
-    clientId: String(clientId),
-  });
-  if (clientIsNew) {
-    emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
-  }
-
   // Bump the portfolio analytics inquiry counter for the day — outside the
   // transaction (analytics must never roll back a committed inquiry), awaited so
   // the dashboard reflects it, but never fatal.
@@ -224,6 +213,19 @@ export async function submitInquiry(
     );
   } catch (err) {
     console.error("[inquiry] rollup inquiry counter failed (non-fatal):", err);
+  }
+
+  // Emitted after the (non-fatal) counter bump so a teammate's refetch sees the
+  // dashboard count; a bump failure is caught above and never suppresses these.
+  const wsIdStr = String(workspaceId);
+  emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
+  emitDataChanged(wsIdStr, {
+    type: "booking.created",
+    bookingId: String(draftBookingId),
+    clientId: String(clientId),
+  });
+  if (clientIsNew) {
+    emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
   }
 
   const recipient =
