@@ -1226,6 +1226,7 @@
         "hidePast": "Sembunyikan yang lalu",
         "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
         "col": {
+          "booked": "Dipesan pada",
           "title": "Pemesanan",
           "client": "Klien",
           "date": "Tanggal",
@@ -2312,6 +2313,7 @@
         "noDate": "Tidak ada tanggal",
         "directSource": "Langsung",
         "col": {
+          "booked": "Dipesan pada",
           "status": "Status",
           "client": "Klien",
           "eventDate": "Tanggal acara",
@@ -3628,6 +3630,11 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Urutkan berdasarkan",
+      "ascending": "Naik",
+      "descending": "Turun"
+    },
     "pagination": {
       "showing": "Menampilkan {from}–{to} dari {total}",
       "rowsPerPage": "Per halaman",

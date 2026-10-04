@@ -1226,6 +1226,7 @@
         "hidePast": "Hide past",
         "pastBookingsHidden": "{count, plural, one {# past booking hidden} other {# past bookings hidden}}",
         "col": {
+          "booked": "Booked on",
           "title": "Booking",
           "client": "Client",
           "date": "Date",
@@ -2312,6 +2313,7 @@
         "noDate": "No date",
         "directSource": "Direct",
         "col": {
+          "booked": "Booked on",
           "status": "Status",
           "client": "Client",
           "eventDate": "Event date",
@@ -3628,6 +3630,11 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Sort by",
+      "ascending": "Ascending",
+      "descending": "Descending"
+    },
     "pagination": {
       "showing": "Showing {from}–{to} of {total}",
       "rowsPerPage": "Per page",

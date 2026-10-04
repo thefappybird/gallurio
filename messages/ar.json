@@ -1226,6 +1226,7 @@
         "hidePast": "إخفاء السابقة",
         "pastBookingsHidden": "{count, plural, zero {لا حجوزات سابقة مخفية} one {حجز سابق واحد مخفي} two {حجزان سابقان مخفيان} few {# حجوزات سابقة مخفية} many {# حجزًا سابقًا مخفيًا} other {# حجز سابق مخفي}}",
         "col": {
+          "booked": "تاريخ الحجز",
           "title": "الحجز",
           "client": "العميل",
           "date": "التاريخ",
@@ -2312,6 +2313,7 @@
         "noDate": "لا يوجد تاريخ",
         "directSource": "مباشر",
         "col": {
+          "booked": "تاريخ الحجز",
           "status": "الحالة",
           "client": "العميل",
           "eventDate": "تاريخ المناسبة",
@@ -3628,6 +3630,11 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "ترتيب حسب",
+      "ascending": "تصاعدي",
+      "descending": "تنازلي"
+    },
     "pagination": {
       "showing": "عرض {from}–{to} من {total}",
       "rowsPerPage": "لكل صفحة",

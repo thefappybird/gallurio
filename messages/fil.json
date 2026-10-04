@@ -1226,6 +1226,7 @@
         "hidePast": "Itago ang nakaraan",
         "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang booking} other {# nakatagong nakaraang booking}}",
         "col": {
+          "booked": "Na-book noong",
           "title": "Booking",
           "client": "Kliyente",
           "date": "Petsa",
@@ -2312,6 +2313,7 @@
         "noDate": "Walang petsa",
         "directSource": "Direkta",
         "col": {
+          "booked": "Na-book noong",
           "status": "Katayuan",
           "client": "Kliyente",
           "eventDate": "Petsa ng kaganapan",
@@ -3628,6 +3630,11 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Ayusin ayon sa",
+      "ascending": "Pataas",
+      "descending": "Pababa"
+    },
     "pagination": {
       "showing": "Ipinapakita ang {from}–{to} ng {total}",
       "rowsPerPage": "Bawat pahina",
