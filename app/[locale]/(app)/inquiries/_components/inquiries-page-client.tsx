@@ -382,7 +382,7 @@ export function InquiriesPageClient({
               {...INQUIRIES_SKELETON}
             />
           ) : (
-            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} onOpenInquiry={openInquiry} />
+            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} />
           )}
 
           {total > 0 && (

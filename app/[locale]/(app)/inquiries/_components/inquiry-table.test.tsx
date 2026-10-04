@@ -45,6 +45,29 @@ describe("InquiryTable", () => {
     expect(preloadSpy).toHaveBeenCalledTimes(2);
   });
 
+  it.each([
+    ["Asia/Manila", "Oct 9, 2026"],
+    ["Pacific/Pago_Pago", "Oct 8, 2026"],
+  ])("formats the event date in workspace tz %s regardless of runner TZ", (tz, expected) => {
+    const prev = process.env.TZ;
+    process.env.TZ = "UTC";
+    try {
+      renderWithProviders(
+        <InquiryTable
+          rows={[{ ...baseRow, eventDate: "2026-10-08T23:30:00Z" }]}
+          locale="en"
+          workspaceTz={tz}
+          empty="x"
+          emptyHint="y"
+        />
+      );
+      expect(screen.getAllByText(expected).length).toBeGreaterThan(0);
+    } finally {
+      if (prev === undefined) delete process.env.TZ;
+      else process.env.TZ = prev;
+    }
+  });
+
   it("renders empty state when rows is empty", () => {
     renderTable([]);
     expect(screen.getByText("No inquiries yet.")).toBeInTheDocument();

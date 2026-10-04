@@ -10,6 +10,7 @@ import { preloadInquiryDetailModal } from "./inquiry-detail-dynamic";
 import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 export type InquiryRow = {
   id: string;
@@ -29,23 +30,27 @@ type Props = {
   locale: string;
   empty: string;
   emptyHint: string;
+  /** Workspace IANA timezone; dates are instants and must render in it. */
+  workspaceTz?: string;
   /** Lets the page own URL navigation so opening a row shares the same
    * transition as filters and pagination. */
   onOpenInquiry?: (inquiryId: string) => void;
 };
 
-// One Intl.DateTimeFormat per locale, built once (construction is expensive).
+// One Intl.DateTimeFormat per locale|tz, built once (construction is expensive).
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 
-function getDateFormatter(locale: string): Intl.DateTimeFormat {
-  let formatter = dateFormatters.get(locale);
+function getDateFormatter(locale: string, tz: string): Intl.DateTimeFormat {
+  const key = `${locale}|${tz}`;
+  let formatter = dateFormatters.get(key);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(locale, {
+      timeZone: tz,
       month: "short",
       day: "numeric",
       year: "numeric",
     });
-    dateFormatters.set(locale, formatter);
+    dateFormatters.set(key, formatter);
   }
   return formatter;
 }
@@ -69,11 +74,11 @@ function CardField({
   );
 }
 
-export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: Props) {
+export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
-  const dateFormatter = getDateFormatter(locale);
+  const dateFormatter = getDateFormatter(locale, workspaceTz);
 
   function eventTypeLabel(type: string): string {
     try {
