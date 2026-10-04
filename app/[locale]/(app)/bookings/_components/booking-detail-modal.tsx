@@ -431,31 +431,6 @@ export function BookingDetailModal({
     });
   }
 
-  /**
-   * 409 stale: the server booking replaces our baseline + the shared cache, the
-   * optimistic change is dropped (caller reverts activity), no retry.
-   */
-  function handleStale(err: StaleBookingError) {
-    const server = err.booking as (BookingDoc & { activity?: BookingActivityBlock }) | null;
-    if (server) {
-      setBooking(normalizeBookingDoc(server));
-      queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
-        ...server,
-        activity: old?.activity,
-      }));
-      invalidateFor({
-        type: "booking.updated",
-        bookingId,
-        clientId: server.clientId ?? null,
-        inquiryId: server.createdFromInquiryId ?? null,
-      });
-    } else {
-      void bookingQuery.refetch();
-    }
-    setSaveError(t("staleConflict"));
-    toast.error(t("staleConflict"));
-  }
-
   async function handleViewClient() {
     if (!booking?.client) return;
     setViewClientLoading(true);
@@ -499,6 +474,31 @@ export function BookingDetailModal({
   const loading = seededFor !== bookingId && (bookingQuery.isPending || bookingQuery.isFetching);
   const notFound = bookingQuery.error instanceof BookingNotFoundError;
   const loadFailed = bookingQuery.isError && !notFound && seededFor !== bookingId;
+
+  /**
+   * 409 stale: the server booking replaces our baseline + the shared cache, the
+   * optimistic change is dropped (caller reverts activity), no retry.
+   */
+  function handleStale(err: StaleBookingError) {
+    const server = err.booking as (BookingDoc & { activity?: BookingActivityBlock }) | null;
+    if (server) {
+      setBooking(normalizeBookingDoc(server));
+      queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
+        ...server,
+        activity: old?.activity,
+      }));
+      invalidateFor({
+        type: "booking.updated",
+        bookingId,
+        clientId: server.clientId ?? null,
+        inquiryId: server.createdFromInquiryId ?? null,
+      });
+    } else {
+      void bookingQuery.refetch();
+    }
+    setSaveError(t("staleConflict"));
+    toast.error(t("staleConflict"));
+  }
 
   // Booking gone (deleted / other workspace): close and strip ?detail.
   useEffect(() => {
