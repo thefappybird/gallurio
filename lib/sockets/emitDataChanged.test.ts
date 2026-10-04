@@ -61,7 +61,7 @@ function fakeIo() {
           c.except = r;
           return api;
         },
-        emit(event: string, payload: unknown) {
+        emit(event: string, payload: Call["payload"]) {
           calls.push({ ...c, event, payload });
         },
       };
