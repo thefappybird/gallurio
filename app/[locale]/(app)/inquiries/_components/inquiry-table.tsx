@@ -289,13 +289,13 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 <td className="px-2 py-2.5 align-middle xl:px-3">
                   <span className="flex flex-col">
                     <span
-                      className="block max-w-[12rem] truncate font-semibold leading-snug"
+                      className="block max-w-[11rem] truncate font-semibold leading-snug"
                       title={row.name}
                     >
                       {row.name}
                     </span>
                     <span
-                      className="block max-w-[12rem] truncate text-xs text-muted-foreground"
+                      className="block max-w-[11rem] truncate text-xs text-muted-foreground"
                       title={row.email}
                     >
                       {row.email}
@@ -304,7 +304,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                 </td>
                 <td className="px-2 py-2.5 align-middle xl:px-3">
                   <span
-                    className="block max-w-[10rem] truncate"
+                    className="block max-w-[9rem] truncate"
                     title={row.eventTitle ?? undefined}
                   >
                     {row.eventTitle ?? t("table.noTitle")}

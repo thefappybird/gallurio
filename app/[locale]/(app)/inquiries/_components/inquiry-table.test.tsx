@@ -87,7 +87,7 @@ describe("InquiryTable", () => {
 
   it("desktop name cell truncates and exposes the full name", () => {
     renderTable();
-    expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate");
+    expect(screen.getByRole("table").querySelector('[title="Maria Santos"]')).toHaveClass("truncate", "max-w-[11rem]");
   });
 
   it("renders empty state when rows is empty", () => {
