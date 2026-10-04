@@ -15,12 +15,14 @@ function go(next: string, viaHistory: boolean, view: ReturnType<typeof render>) 
   pathname = next;
   act(() => {
     if (viaHistory) window.dispatchEvent(new PopStateEvent("popstate"));
+    vi.runAllTimers();
   });
   view.rerender(<HistoryRefreshGuard />);
 }
 
 describe("HistoryRefreshGuard", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     refresh.mockClear();
     clearDirtyRoutes();
     pathname = "/settings";
@@ -35,6 +37,20 @@ describe("HistoryRefreshGuard", () => {
     go("/settings", true, view);
     go("/bookings", true, view);
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("requests the refresh from the popstate tick, before the pathname re-renders", () => {
+    render(<HistoryRefreshGuard />);
+    markRoutesDirty(["/bookings"], "/settings", false);
+    window.history.pushState({}, "", "/bookings");
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(refresh).not.toHaveBeenCalled(); // deferred past Next's handler
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1); // no pathname re-render happened
   });
 
   it("does nothing for a normal push navigation (the router already fetches fresh data)", () => {

@@ -13,12 +13,23 @@ export function HistoryRefreshGuard() {
   const pathname = usePathname();
   const router = useRouter();
   const lastPath = useRef(pathname);
-  const fromHistory = useRef(false);
+  const routerRef = useRef(router);
 
   useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+
+  useEffect(() => {
+    // Decide at popstate time (location is already the destination) so the
+    // refresh starts before the stale cached page finishes committing.
     // Same-path popstates (modal ?detail toggles) are not route changes.
     const onPop = () => {
-      if (window.location.pathname !== lastPath.current) fromHistory.current = true;
+      const dest = window.location.pathname;
+      if (dest === lastPath.current) return;
+      lastPath.current = dest;
+      if (!consumeDirtyFor(dest)) return;
+      // Let Next's own popstate handler dispatch its restore first.
+      setTimeout(() => routerRef.current.refresh(), 0);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -26,10 +37,7 @@ export function HistoryRefreshGuard() {
 
   useEffect(() => {
     lastPath.current = window.location.pathname;
-    if (!fromHistory.current) return;
-    fromHistory.current = false;
-    if (consumeDirtyFor(pathname)) router.refresh();
-  }, [pathname, router]);
+  }, [pathname]);
 
   return null;
 }
