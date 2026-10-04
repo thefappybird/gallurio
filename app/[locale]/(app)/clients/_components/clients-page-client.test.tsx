@@ -286,6 +286,19 @@ describe("ClientsPageClient", () => {
     expect(within(modal).getByText("Maria Santos")).toBeInTheDocument();
   });
 
+  it("shows the refreshed row in the open detail modal instead of the opened snapshot", () => {
+    const deepLinked = sampleRows[0];
+    const view = renderWithProviders(
+      <ClientsPageClient {...build({ initialDetailClient: deepLinked })} />,
+    );
+    expect(within(screen.getByTestId("client-detail-modal")).getByText("Maria Santos")).toBeInTheDocument();
+
+    const renamed = [{ ...sampleRows[0], name: "Maria Reyes" }, sampleRows[1]];
+    view.rerender(<ClientsPageClient {...build({ rows: renamed, initialDetailClient: deepLinked })} />);
+
+    expect(within(screen.getByTestId("client-detail-modal")).getByText("Maria Reyes")).toBeInTheDocument();
+  });
+
   it("does not open the detail modal when initialDetailClient is null", () => {
     renderWithProviders(<ClientsPageClient {...build({ initialDetailClient: null })} />);
     expect(screen.queryByTestId("client-detail-modal")).not.toBeInTheDocument();

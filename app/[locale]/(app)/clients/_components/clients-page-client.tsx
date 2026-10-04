@@ -288,7 +288,7 @@ export function ClientsPageClient({
       />
 
       <ClientDetailModal
-        client={detailClient}
+        client={detailClient ? (rows.find((r) => r.id === detailClient.id) ?? detailClient) : null}
         open={detailOpen}
         onClose={() => {
           setDetailOpen(false);
