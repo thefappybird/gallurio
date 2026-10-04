@@ -2383,7 +2383,9 @@
           "savedToast": "Na-save ang draft.",
           "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
           "conflictBlocks": "Ayusin ang salungatan sa iskedyul sa itaas bago mag-convert.",
-          "team": "Koponan"
+          "team": "Koponan",
+          "changedUnderneath": "Binago ng iba ang draft na ito. Nanatili ang iyong mga pagbabago; suriin ang ibang field bago mag-save.",
+          "notDraft": "Naaprubahan na ang booking na ito. I-reload para makita ang pinakabago."
         },
         "actions": {
           "decline": "Tanggihan at abisuhan",

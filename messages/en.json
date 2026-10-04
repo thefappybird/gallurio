@@ -2383,7 +2383,9 @@
           "savedToast": "Draft saved.",
           "ownerOnly": "Only the workspace owner can convert bookings.",
           "conflictBlocks": "Resolve the scheduling conflict above before converting.",
-          "team": "Team"
+          "team": "Team",
+          "changedUnderneath": "This draft was changed by someone else. Your edits are kept; review the other fields before saving.",
+          "notDraft": "This booking was already approved. Reload to see the latest."
         },
         "actions": {
           "decline": "Decline & notify",

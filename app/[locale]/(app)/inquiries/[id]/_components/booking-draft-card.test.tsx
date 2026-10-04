@@ -72,12 +72,8 @@ describe("BookingDraftCard", () => {
     fireEvent.click(approve);
 
     await waitFor(() => expect(approveInquiryBookingAction).toHaveBeenCalledOnce());
-    expect(approveInquiryBookingAction).toHaveBeenCalledWith("abc", {
-      total: 5000,
-      deposit: 1000,
-      notes: "",
-      teamId: null,
-    });
+    // Nothing edited: nothing overwritten.
+    expect(approveInquiryBookingAction).toHaveBeenCalledWith("abc", {});
     // Optimistic success banner.
     expect(await screen.findByText("This inquiry has been approved.")).toBeInTheDocument();
   });
@@ -148,7 +144,7 @@ describe("BookingDraftCard", () => {
   it("calls onInquiryChanged with draft patch after a successful save", async () => {
     const onInquiryChanged = vi.fn();
     renderWithProviders(
-      <BookingDraftCard {...baseProps} initialTotal={1000} onInquiryChanged={onInquiryChanged} />
+      <BookingDraftCard {...baseProps} clientId="cl_1" initialTotal={1000} onInquiryChanged={onInquiryChanged} />
     );
     fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2500" } });
     fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
@@ -157,7 +153,15 @@ describe("BookingDraftCard", () => {
       "abc",
       expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
     );
-    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
+    // Echo fingerprints match the server's key sets exactly; the action already revalidated this route.
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false }
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "booking.updated", bookingId: "bk_1", clientId: "cl_1", inquiryId: "abc" },
+      { refresh: false }
+    );
   });
 
   it("calls toast.success after a successful sessions save", async () => {
@@ -202,7 +206,10 @@ describe("BookingDraftCard", () => {
     expect(onInquiryChanged).toHaveBeenCalledWith("abc", {
       eventDate: "2099-12-31T00:00:00.000Z",
     });
-    expect(invalidateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ type: "inquiry.updated" }));
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false }
+    );
   });
 
   it("announces inquiry.updated and booking.updated after approving", async () => {
@@ -211,11 +218,13 @@ describe("BookingDraftCard", () => {
 
     await waitFor(() =>
       expect(invalidateSpy).toHaveBeenLastCalledWith(
-        { type: "booking.updated", bookingId: "bk_1", inquiryId: "abc" },
+        { type: "booking.updated", bookingId: "bk_1", clientId: null, inquiryId: "abc" },
+        { refresh: false },
       )
     );
     expect(invalidateSpy).toHaveBeenCalledWith(
       { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false },
     );
   });
 
@@ -256,6 +265,49 @@ describe("BookingDraftCard", () => {
       "/api/bookings/shifts-on-date?dates=2099-12-30,2099-12-31&excludeId=bk_1"
     );
     expect(screen.getAllByText("conflict")).toHaveLength(1);
+  });
+
+  it("re-syncs untouched fields when the server copy changes", () => {
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} />);
+    rerender(<BookingDraftCard {...baseProps} initialTotal={9000} />);
+    expect(screen.getByLabelText(/Total/i)).toHaveValue(9000);
+  });
+
+  it("keeps a dirty edit and announces the draft changed underneath", () => {
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "6000" } });
+    rerender(<BookingDraftCard {...baseProps} initialTotal={9000} />);
+    expect(screen.getByLabelText(/Total/i)).toHaveValue(6000);
+    expect(screen.getByRole("status")).toHaveTextContent(/changed/i);
+  });
+
+  it("save sends only the field the user changed, against the re-synced server values", async () => {
+    const { rerender } = renderWithProviders(
+      <BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={100} />
+    );
+    rerender(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={300} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "7000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() => expect(saveDraftBookingFieldsAction).toHaveBeenCalledWith("abc", { total: 7000 }));
+  });
+
+  it("maps not_draft to the already-approved copy and invalidates", async () => {
+    const { toast } = await import("sonner");
+    saveDraftBookingFieldsAction.mockResolvedValue({ error: "not_draft" });
+    renderWithProviders(<BookingDraftCard {...baseProps} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "10" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("This booking was already approved. Reload to see the latest.")
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" });
+  });
+
+  it("re-syncs the sessions list from props while not editing sessions", () => {
+    const a = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[a]} />);
+    rerender(<BookingDraftCard {...baseProps} sessions={[{ ...a, startTime: "13:00", endTime: "15:00" }]} />);
+    expect(screen.getByText(/13:00/)).toBeInTheDocument();
   });
 
   it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {

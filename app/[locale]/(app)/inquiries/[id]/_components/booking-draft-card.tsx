@@ -45,6 +45,8 @@ type Props = {
   isConverted: boolean;
   bookingMissing: boolean;
   bookingId: string | null;
+  /** The inquiry's client, when known; only used to match the server's socket echo. */
+  clientId?: string | null;
   currency: string;
   initialTotal: number;
   initialDeposit: number;
@@ -68,6 +70,7 @@ export function BookingDraftCard({
   isConverted,
   bookingMissing,
   bookingId,
+  clientId = null,
   currency,
   initialTotal,
   initialDeposit,
@@ -119,14 +122,67 @@ export function BookingDraftCard({
     notes.trim() !== snapshot.notes.trim() ||
     (teamId ?? null) !== (snapshot.teamId ?? null);
 
+  // Re-sync from the server copy whenever it changes (render-phase compare against
+  // the last-synced props). Per field: untouched fields adopt the new value, edited
+  // fields keep the user's edit. The snapshot always follows the server so Save and
+  // Approve send only what the user changed against it.
+  const serverKey = JSON.stringify([initialTotal, initialDeposit, initialNotes, initialTeamId ?? null]);
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  const [changedUnder, setChangedUnder] = useState(false);
+  if (serverKey !== syncedKey) {
+    setSyncedKey(serverKey);
+    const next = {
+      total: String(initialTotal),
+      deposit: String(initialDeposit),
+      notes: initialNotes,
+      teamId: initialTeamId ?? null,
+    };
+    const serverMoved =
+      Number(next.total) !== Number(snapshot.total) ||
+      Number(next.deposit) !== Number(snapshot.deposit) ||
+      next.notes.trim() !== snapshot.notes.trim() ||
+      next.teamId !== (snapshot.teamId ?? null);
+    if (Number(total) === Number(snapshot.total)) setTotal(next.total);
+    if (Number(deposit) === Number(snapshot.deposit)) setDeposit(next.deposit);
+    if (notes.trim() === snapshot.notes.trim()) setNotes(next.notes);
+    if ((teamId ?? null) === (snapshot.teamId ?? null)) setTeamId(next.teamId);
+    setSnapshot(next);
+    if (serverMoved && isDirty) setChangedUnder(true);
+  }
+
   // Sessions editor state
   const [editingSessions, setEditingSessions] = useState(false);
   const [draftSessions, setDraftSessions] = useState<InquirySessionView[]>(sessions);
   const [sessionsSaving, setSessionsSaving] = useState(false);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
 
-  function currentEdits() {
-    return { total: Number(total) || 0, deposit: Number(deposit) || 0, notes, teamId };
+  // Same re-sync for sessions: never write back a stale array from a teammate-changed inquiry.
+  const sessionsKey = JSON.stringify(sessions);
+  const [syncedSessionsKey, setSyncedSessionsKey] = useState(sessionsKey);
+  if (sessionsKey !== syncedSessionsKey) {
+    setSyncedSessionsKey(sessionsKey);
+    if (!editingSessions) setDraftSessions(sessions);
+    else if (JSON.stringify(draftSessions) !== sessionsKey) setChangedUnder(true);
+  }
+
+  // Only fields the user changed vs the last-synced server values, so a stale
+  // untouched field can never overwrite a teammate's newer value.
+  // Mirrors the server's emitInquiryWrite key sets so the socket echo is suppressed.
+  // The caller's action already revalidated this route, so no extra router.refresh().
+  function announceWrite() {
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId }, { refresh: false });
+    if (bookingId) {
+      invalidateFor({ type: "booking.updated", bookingId, clientId, inquiryId }, { refresh: false });
+    }
+  }
+
+  function changedEdits() {
+    const edits: { total?: number; deposit?: number; notes?: string; teamId?: string | null } = {};
+    if (Number(total) !== Number(snapshot.total)) edits.total = Number(total) || 0;
+    if (Number(deposit) !== Number(snapshot.deposit)) edits.deposit = Number(deposit) || 0;
+    if (notes.trim() !== snapshot.notes.trim()) edits.notes = notes;
+    if ((teamId ?? null) !== (snapshot.teamId ?? null)) edits.teamId = teamId;
+    return edits;
   }
 
   function fmtSessionDate(date: string): string {
@@ -187,7 +243,7 @@ export function BookingDraftCard({
           : null,
       });
       // editInquirySessionsAction revalidates the inquiry routes.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
+      announceWrite();
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -203,16 +259,25 @@ export function BookingDraftCard({
   async function handleSave() {
     setSaving(true);
     try {
-      const edits = currentEdits();
+      const edits = changedEdits();
       const res = await saveDraftBookingFieldsAction(inquiryId, edits);
-      if ("error" in res) { toast.error(t("saveError")); return; }
+      if ("error" in res) {
+        if (res.error === "not_draft") {
+          toast.error(t("notDraft"));
+          // Nothing was written: refresh to the server's (approved) state.
+          invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
+        } else {
+          toast.error(t("saveError"));
+        }
+        return;
+      }
       toast.success(t("savedToast"));
       // Reset snapshot so Save button disables until next edit.
       setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
       // Propagate optimistic patch to the table row.
-      onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
+      onInquiryChanged?.(inquiryId, { total: Number(total) || 0, deposit: Number(deposit) || 0, notes });
       // saveDraftBookingFieldsAction revalidates the inquiry routes.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: bookingId ?? undefined });
+      announceWrite();
     } finally {
       setSaving(false);
     }
@@ -221,10 +286,13 @@ export function BookingDraftCard({
   async function handleApprove() {
     setApproving(true);
     try {
-      const res = await approveInquiryBookingAction(inquiryId, currentEdits());
+      const res = await approveInquiryBookingAction(inquiryId, changedEdits());
       if ("error" in res) {
         if (res.error === "needs_client_resolution") {
           onClientResolutionRequired?.();
+        } else if (res.error === "not_draft") {
+          toast.error(t("notDraft"));
+          invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
         } else {
           toast.error(res.error === "owner_only" ? t("ownerOnly") : t("approveError"));
         }
@@ -236,9 +304,15 @@ export function BookingDraftCard({
       // Also drops the cached inquiry detail so reopening shows the booked state.
       const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
       // approveInquiryBookingAction revalidates /inquiries, /bookings and /dashboard.
-      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: convertedBookingId });
+      invalidateFor(
+        { type: "inquiry.updated", inquiryId, bookingId: convertedBookingId ?? null },
+        { refresh: false }
+      );
       if (convertedBookingId) {
-        invalidateFor({ type: "booking.updated", bookingId: convertedBookingId, inquiryId });
+        invalidateFor(
+          { type: "booking.updated", bookingId: convertedBookingId, clientId, inquiryId },
+          { refresh: false }
+        );
       }
     } catch {
       toast.error(t("approveError"));
@@ -281,6 +355,12 @@ export function BookingDraftCard({
       <CardHeader><CardTitle className="text-base">{t("title")}</CardTitle></CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{t("description")}</p>
+
+        {changedUnder && (isDirty || editingSessions) ? (
+          <p role="status" className="border border-border bg-muted px-3 py-2 text-sm">
+            {t("changedUnderneath")}
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">

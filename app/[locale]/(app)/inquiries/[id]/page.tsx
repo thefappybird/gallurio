@@ -100,6 +100,7 @@ export default async function InquiryDetailPage({
             isConverted={isBooked}
             bookingMissing={booking === null}
             bookingId={booking ? String(booking._id) : null}
+            clientId={inquiry.clientId ? String(inquiry.clientId) : null}
             currency={booking?.amount?.currency ?? workspace.currency ?? "PHP"}
             initialTotal={booking?.amount?.total ?? 0}
             initialDeposit={booking?.amount?.deposit ?? 0}

@@ -2383,7 +2383,9 @@
           "savedToast": "Draf disimpan.",
           "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
           "conflictBlocks": "Selesaikan konflik jadwal di atas sebelum mengonversi.",
-          "team": "Tim"
+          "team": "Tim",
+          "changedUnderneath": "Draf ini diubah oleh orang lain. Perubahan Anda tetap disimpan; periksa kolom lain sebelum menyimpan.",
+          "notDraft": "Pemesanan ini sudah disetujui. Muat ulang untuk melihat yang terbaru."
         },
         "actions": {
           "decline": "Tolak & beritahu",
