@@ -9,7 +9,7 @@ import type {
   CalendarEvent,
   AnyCalendarEvent,
 } from "../../bookings/_components/booking-calendar";
-import { BookingCalendarLazy } from "../../bookings/_components/booking-calendar-dynamic";
+import { InquiriesCalendarLazy } from "../../bookings/_components/booking-calendar-dynamic";
 import { TeamFilterControl } from "../../bookings/_components/team-filter-control";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import {
@@ -399,7 +399,7 @@ export function InquiriesCalendarManager({
       aria-busy={windowPending}
       className={cn("transition-opacity", windowPending && "pointer-events-none opacity-60")}
     >
-    <BookingCalendarLazy
+    <InquiriesCalendarLazy
       fallbackClassName={INQUIRIES_CALENDAR_FALLBACK}
       events={eventsWithConflicts}
       defaultDate={defaultDate ? wallDateAsLocal(defaultDate, workspaceTz ?? FALLBACK_TZ) : undefined}
