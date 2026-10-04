@@ -453,6 +453,13 @@ it("adds and removes session rows", () => {
     const clientTab = screen.getByRole("tab", { name: "Your details" });
     expect(clientTab.getAttribute("style")).toContain("font-size: 0.8125rem");
   });
+  it("tabs share the row equally and wrap instead of overflowing", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const cls = screen.getByRole("tab", { name: "Event details" }).className;
+    expect(cls).toMatch(/(^|\s)flex-1(\s|$)/);
+    expect(cls).toContain("min-w-0");
+    expect(cls).toContain("whitespace-normal");
+  });
   it("blocks submit when no committed location and shows required message", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     // Navigate to location tab without setting a location

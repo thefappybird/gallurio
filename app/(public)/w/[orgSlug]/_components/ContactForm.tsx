@@ -422,7 +422,7 @@ export function ContactForm({
         }
       `}</style>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "event" | "location")}>
-        <TabsList>
+        <TabsList className="h-auto items-stretch">
           {(["client", "event", "location"] as const).map((tabValue) => {
             const isActive = activeTab === tabValue;
             const label = tabValue === "client" ? labels.tabClient : tabValue === "event" ? labels.tabEvent : labels.tabLocation;
@@ -445,7 +445,12 @@ export function ContactForm({
                   ...(isSubtle ? { opacity: 0.55 } : {}),
                 };
             return (
-              <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
+              <TabsTab
+                key={tabValue}
+                value={tabValue}
+                style={tabStyle}
+                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal break-words px-2 py-1 text-center leading-tight"
+              >
                 {label}
               </TabsTab>
             );
