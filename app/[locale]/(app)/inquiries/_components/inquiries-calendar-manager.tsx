@@ -135,7 +135,12 @@ export function InquiriesCalendarManager({
   useEffect(() => {
     if (events !== prevEventsRef.current) {
       prevEventsRef.current = events;
-      setOptimisticOverrides((prev) => (prev.size ? new Map() : prev));
+      // Keep overrides for sessions still mid-request; clear the rest.
+      setOptimisticOverrides((prev) => {
+        if (!prev.size) return prev;
+        const kept = new Map([...prev].filter(([id]) => inFlightRef.current.has(id)));
+        return kept.size === prev.size ? prev : kept;
+      });
     }
   }, [events]);
 

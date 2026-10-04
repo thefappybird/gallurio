@@ -226,6 +226,69 @@ describe("CalendarView drag-to-reschedule (single PATCH)", () => {
     expect(screen.getByText(/^Arrived Later@/)).toBeInTheDocument();
   });
 
+  it("sends the dragged candle's updatedAt as expectedUpdatedAt", async () => {
+    mockFetch.mockResolvedValue(jsonRes(500, {}));
+    const ev = { ...futureEvent(), updatedAt: "2026-03-01T10:00:00.000Z" };
+    renderView({ events: [ev] });
+    await act(async () => {
+      await cal.onEventDrop({ event: ev, start: droppedStart, end: droppedEnd });
+    });
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body).expectedUpdatedAt).toBe("2026-03-01T10:00:00.000Z");
+  });
+
+  it("409 stale: reverts the move, toasts the stale copy and invalidates so the fresh window loads", async () => {
+    mockFetch.mockResolvedValue(jsonRes(409, { error: "stale", booking: { clientId: "c9", createdFromInquiryId: null } }));
+    renderView({ events: [futureEvent()] });
+    await act(async () => {
+      await cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    expect(toastErrors).toHaveLength(1);
+    expect(toastErrors[0]).toMatch(/changed by someone else/);
+    expect(screen.getByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeInTheDocument();
+    expect(mockInvalidateFor).toHaveBeenCalledWith({ type: "booking.updated", bookingId: "b1", clientId: "c9", inquiryId: null });
+  });
+
+  it("200: the rebuilt candle carries the response's new updatedAt for the next drag", async () => {
+    const T2 = "2026-03-01T11:00:00.000Z";
+    mockFetch.mockResolvedValueOnce(
+      jsonRes(200, {
+        _id: "b1", title: "Carter Wedding", clientName: "Emma", clientId: "c9", teamId: null, status: "booked",
+        sessions: [{ startAt: droppedStart.toISOString(), endAt: droppedEnd.toISOString() }],
+        updatedAt: T2,
+      })
+    );
+    mockFetch.mockResolvedValue(jsonRes(500, {}));
+    renderView({ events: [{ ...futureEvent(), updatedAt: "2026-03-01T10:00:00.000Z" }] });
+    await act(async () => {
+      await cal.onEventDrop({ event: cal.events[0], start: droppedStart, end: droppedEnd });
+    });
+    const moved = cal.events.find((e) => e.bookingId === "b1")!;
+    expect(moved.updatedAt).toBe(T2);
+  });
+
+  it("an unrelated events refresh mid-PATCH keeps the in-flight candle at its dropped position", async () => {
+    let resolveFetch!: (v: unknown) => void;
+    mockFetch.mockReturnValue(new Promise((r) => (resolveFetch = r)));
+    const other = makeEvent({ id: "b3_s0_2090-01-10", bookingId: "b3", title: "Arrived Later" });
+    const view = renderView({ events: [futureEvent()] });
+    let drop!: Promise<void>;
+    await act(async () => {
+      drop = cal.onEventDrop({ event: futureEvent(), start: droppedStart, end: droppedEnd });
+    });
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <CalendarView events={[futureEvent(), other]} messages={calMessages} workspaceTimezone={TZ} window={windowIso} />
+      </NextIntlClientProvider>
+    );
+    expect(screen.getByText(`Carter Wedding@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    expect(screen.queryByText(`Carter Wedding@${FUTURE_START.toISOString()}`)).toBeNull();
+    expect(screen.getByText(/^Arrived Later@/)).toBeInTheDocument();
+    await act(async () => {
+      resolveFetch(jsonRes(500, {}));
+      await drop;
+    });
+  });
+
   it("encodes the booking id in the PATCH url", async () => {
     mockFetch.mockResolvedValue(jsonRes(500, {}));
     const odd = futureEvent();

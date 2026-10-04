@@ -79,6 +79,7 @@ function startOfDay(d: Date) {
 type PatchResult =
   | { kind: "ok"; booking: BookingEventInput & { clientId?: string | null; createdFromInquiryId?: string | null } }
   | { kind: "conflict"; conflicts: ShiftHit[] }
+  | { kind: "stale"; booking: { clientId?: string | null; createdFromInquiryId?: string | null } | null }
   | { kind: "error" };
 
 /**
@@ -87,7 +88,11 @@ type PatchResult =
  * instead of the client pre-flighting shifts-on-date. A 409 is also used for
  * `completed_booking_read_only`, so branch on the `error` code.
  */
-async function patchBookingSessions(bookingId: string, sessions: Session[]): Promise<PatchResult> {
+async function patchBookingSessions(
+  bookingId: string,
+  sessions: Session[],
+  expectedUpdatedAt?: string
+): Promise<PatchResult> {
   const body = sessions.map((s) => ({
     startAt: s.startAt.toISOString(),
     endAt: s.endAt.toISOString(),
@@ -96,13 +101,15 @@ async function patchBookingSessions(bookingId: string, sessions: Session[]): Pro
     const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessions: body, rejectOnConflict: true }),
+      body: JSON.stringify({ sessions: body, rejectOnConflict: true, expectedUpdatedAt }),
     });
     if (res.ok) return { kind: "ok", booking: await res.json() };
     if (res.status === 409) {
       const data = (await res.json().catch(() => null)) as
-        | { error?: string; conflicts?: ShiftHit[] }
+        | { error?: string; conflicts?: ShiftHit[]; booking?: { clientId?: string | null; createdFromInquiryId?: string | null } }
         | null;
+      // Someone else changed the booking since this candle was loaded.
+      if (data?.error === "stale") return { kind: "stale", booking: data.booking ?? null };
       if (data?.error === "conflict") {
         // The server may report the same shift more than once.
         const seen = new Set<string>();
@@ -148,6 +155,7 @@ export function CalendarView({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
   const tCal = useTranslations("app.bookings.calendar");
+  const tDetail = useTranslations("app.bookings.detail");
 
   const [, startTransition] = useTransition();
   const invalidateFor = useInvalidateFor();
@@ -262,7 +270,17 @@ export function CalendarView({
   useEffect(() => {
     if (events !== prevEventsRef.current) {
       prevEventsRef.current = events;
-      setOptimisticEvents(events);
+      // A booking mid-PATCH keeps its optimistic candles: dropping them would
+      // snap it back to the old slot until the PATCH settles.
+      const inFlight = inFlightRef.current;
+      setOptimisticEvents((cur) =>
+        inFlight.size === 0
+          ? events
+          : [
+              ...events.filter((e) => !inFlight.has(e.bookingId)),
+              ...cur.filter((e) => inFlight.has(e.bookingId)),
+            ]
+      );
     }
   }, [events]);
 
@@ -360,7 +378,7 @@ export function CalendarView({
       setPendingIds((s) => new Set(s).add(event.bookingId));
       // Own the request promise so the pending/in-flight guards outlive the
       // whole round-trip (toast.promise's return value is not awaitable).
-      const request = patchBookingSessions(event.bookingId, newSessions).then((result) => {
+      const request = patchBookingSessions(event.bookingId, newSessions, event.updatedAt).then((result) => {
         if (result.kind === "ok") return result.booking;
         throw result;
       });
@@ -370,6 +388,16 @@ export function CalendarView({
         error: (err: unknown) => {
           setOptimisticEvents((cur) => [...cur.filter((e) => e.bookingId !== event.bookingId), ...prevCandles]);
           const failure = err as PatchResult;
+          if (failure?.kind === "stale") {
+            // Reload the fresh window so the candle shows the teammate's version.
+            invalidateFor({
+              type: "booking.updated",
+              bookingId: event.bookingId,
+              clientId: failure.booking?.clientId ?? null,
+              inquiryId: failure.booking?.createdFromInquiryId ?? null,
+            });
+            return tDetail("staleConflict");
+          }
           if (failure?.kind === "conflict" && failure.conflicts.length > 0) {
             const first = failure.conflicts[0];
             const more = failure.conflicts.length - 1;
@@ -419,7 +447,7 @@ export function CalendarView({
         });
       }
     },
-    [optimisticEvents, t, workspaceTimezone, invalidateFor]
+    [optimisticEvents, t, tDetail, workspaceTimezone, invalidateFor]
   );
 
   // ─── Universal drag handler ───────────────────────────────────────────────

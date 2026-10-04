@@ -183,6 +183,23 @@ describe("InquiriesCalendarManager reschedule", () => {
     expect(screen.getByText(`Cruz@${serverStart.toISOString()}`)).toBeInTheDocument();
   });
 
+  it("an unrelated events refresh mid-request keeps the in-flight override instead of snapping back", async () => {
+    let resolveAction!: (v: unknown) => void;
+    mockReschedule.mockReturnValue(new Promise((r) => (resolveAction = r)));
+    const view = render(ui([inquiryEvent()]));
+    let drop!: Promise<void>;
+    await act(async () => {
+      drop = cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    view.rerender(ui([inquiryEvent(), inquiryEvent({ id: "inq2_s0_2027-09-15", inquiryId: "inq2", title: "Reyes" })]));
+    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    expect(screen.getByText(/^Reyes@/)).toBeInTheDocument();
+    await act(async () => {
+      resolveAction({ ok: true });
+      await drop;
+    });
+  });
+
   it("conflict error: reverts the candle and shows the conflict toast", async () => {
     mockReschedule.mockResolvedValue({ error: "conflict" });
     render(ui([inquiryEvent()]));
