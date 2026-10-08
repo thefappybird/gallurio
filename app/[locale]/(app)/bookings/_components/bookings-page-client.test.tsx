@@ -37,6 +37,7 @@ describe("BookingsPageClient", () => {
         pageSizeOptions={[10, 20, 30]}
         sortKey="bookedAt"
         sortDir="desc"
+        sortExplicit={false}
         locale="en"
         empty="none"
       />
@@ -49,6 +50,38 @@ describe("BookingsPageClient", () => {
     expect(screen.getByText("Carter Wedding", { selector: "td span" })).toBeInTheDocument();
   });
 
+  it("drops sort and dir and resets page when the active desc header is clicked", () => {
+    const { container } = renderWithProviders(
+      <BookingsPageClient
+        rows={[
+          {
+            id: "1",
+            title: "Carter Wedding",
+            clientName: "Emma",
+            sessions: [{ startAt: "2026-05-01T10:00:00Z", endAt: "2026-05-01T12:00:00Z" }],
+            lastSessionEnd: "2026-05-01T12:00:00Z",
+            status: "booked",
+            total: 100,
+            currency: "PHP",
+            bookedAt: null,
+          },
+        ]}
+        total={40}
+        page={3}
+        limit={10}
+        pageSizeOptions={[10, 20, 30]}
+        sortKey="bookedAt"
+        sortDir="desc"
+        sortExplicit
+        locale="en"
+        empty="none"
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    fireEvent.click(within(table).getByRole("button", { name: /booked/i }));
+    expect(mockPush).toHaveBeenLastCalledWith("/bookings?status=booked&page=1");
+  });
+
   it("pins the current limit in the URL when paging", () => {
     renderWithProviders(
       <BookingsPageClient
@@ -59,6 +92,7 @@ describe("BookingsPageClient", () => {
         pageSizeOptions={[10, 20, 30]}
         sortKey="bookedAt"
         sortDir="desc"
+        sortExplicit
         locale="en"
         empty="none"
       />

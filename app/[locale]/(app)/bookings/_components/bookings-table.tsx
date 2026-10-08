@@ -33,7 +33,7 @@ import { isoDateInTz } from "./_helpers/calendar-helpers";
 import { STATUS_COLOR_VAR, STATUS_ORDER } from "@/lib/bookings/status-style";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SortDir } from "@/lib/tables/sort";
-import { nextSortDir } from "@/lib/tables/sort-next";
+import { nextSort } from "@/lib/tables/sort-next";
 import { ariaSortFor, SortHeaderButton } from "@/components/app/table-sort";
 
 /** Column id -> server sort key (`SORT_CONFIG.bookings`). Actions is unsortable. */
@@ -68,10 +68,11 @@ type Props = {
   emptyHint?: string;
   workspaceTimezone?: string;
   /** Server sort state (URL `sort` / `dir`). */
-  sortKey?: string;
+  sortKey?: string | null;
   sortDir?: SortDir;
   /** Fires with the next sort when a header is clicked. */
-  onSortChange?: (key: string, dir: SortDir) => void;
+  /** null = reset to the server default order. */
+  onSortChange?: (next: { key: string; dir: SortDir } | null) => void;
 };
 
 function computeIsPast(lastSessionEnd: string, tz: string): boolean {
@@ -109,7 +110,7 @@ export function BookingsTable({
   empty,
   emptyHint,
   workspaceTimezone = "UTC",
-  sortKey = "bookedAt",
+  sortKey = null,
   sortDir = "desc",
   onSortChange,
 }: Props) {
@@ -495,10 +496,7 @@ export function BookingsTable({
                           label={label}
                           sorted={sorted}
                           onClick={() =>
-                            onSortChange?.(
-                              sortKeyForCol,
-                              nextSortDir("bookings", sortKey, sortDir, sortKeyForCol)
-                            )
+                            onSortChange?.(nextSort(sortKey, sortDir, sortKeyForCol))
                           }
                         />
                       ) : (

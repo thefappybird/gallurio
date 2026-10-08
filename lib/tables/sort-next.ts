@@ -1,16 +1,14 @@
-import { SORT_CONFIG, type SortDir, type SortTable } from "./sort";
+import type { SortDir } from "./sort";
 
-/** Next direction for a header click: flip the active column, else the new column's natural dir. */
-export function nextSortDir(
-  table: SortTable,
-  activeKey: string,
+/**
+ * Header click cycle: unsorted -> asc -> desc -> unsorted (null = reset).
+ * Always asc first; a different column starts at asc.
+ */
+export function nextSort(
+  activeKey: string | null,
   activeDir: SortDir,
   clickedKey: string
-): SortDir {
-  if (clickedKey === activeKey) return activeDir === "asc" ? "desc" : "asc";
-  const columns: Record<
-    string,
-    { field: string; text?: boolean; defaultDir?: SortDir }
-  > = SORT_CONFIG[table].columns;
-  return columns[clickedKey]?.defaultDir ?? "asc";
+): { key: string; dir: SortDir } | null {
+  if (clickedKey !== activeKey) return { key: clickedKey, dir: "asc" };
+  return activeDir === "asc" ? { key: clickedKey, dir: "desc" } : null;
 }

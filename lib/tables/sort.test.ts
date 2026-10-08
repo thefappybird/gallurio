@@ -21,12 +21,18 @@ describe("parseSort", () => {
     expect(parseSort("bookings", { sort: "total" }).field).toBe("amount.total");
   });
 
-  it("bookings default is bookedAt desc", () => {
+  it("bookings default is bookedAt desc and not explicit", () => {
     expect(parseSort("bookings", {})).toEqual({
       key: "bookedAt",
       dir: "desc",
       field: "bookedAt",
       text: false,
+      explicit: false,
     });
+  });
+
+  it("explicit is true only for a valid sort key", () => {
+    expect(parseSort("bookings", { sort: "title" }).explicit).toBe(true);
+    expect(parseSort("bookings", { sort: "nope" }).explicit).toBe(false);
   });
 });

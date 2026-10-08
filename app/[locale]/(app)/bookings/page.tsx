@@ -376,6 +376,7 @@ async function BookingsContent({
               pageSizeOptions={pageSizeOptions}
               sortKey={sort.key}
               sortDir={sort.dir}
+              sortExplicit={sort.explicit}
               locale={locale}
               empty={hasFilters ? t("table.empty") : t("table.listEmpty")}
               emptyHint={hasFilters ? undefined : t("table.listEmptyHint")}

@@ -40,7 +40,7 @@ export const SORT_CONFIG = {
 
 export type SortTable = keyof typeof SORT_CONFIG;
 
-export type ParsedSort = { key: string; dir: SortDir; field: string; text: boolean };
+export type ParsedSort = { key: string; dir: SortDir; field: string; text: boolean; explicit: boolean };
 
 export function parseSort(
   table: SortTable,
@@ -55,5 +55,5 @@ export function parseSort(
   const validKey = key === sp.sort;
   const dir: SortDir =
     validKey && (sp.dir === "asc" || sp.dir === "desc") ? sp.dir : natural;
-  return { key, dir, field: col.field, text: col.text === true };
+  return { key, dir, field: col.field, text: col.text === true, explicit: validKey };
 }

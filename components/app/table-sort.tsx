@@ -14,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { nextSortDir } from "@/lib/tables/sort-next";
-import type { SortDir, SortTable } from "@/lib/tables/sort";
+import type { SortDir } from "@/lib/tables/sort";
 
 /** Sortable `<th>` trigger: label + direction icon. Parent sets `aria-sort` on the th. */
 export function SortHeaderButton({
@@ -51,13 +50,11 @@ export function ariaSortFor(sorted: SortDir | false): "ascending" | "descending"
 
 /** Below-lg sort control (card lists have no headers): key select + direction toggle. */
 export function MobileSortControl({
-  table,
   options,
   sortKey,
   sortDir,
   onSortChange,
 }: {
-  table: SortTable;
   options: { key: string; label: string }[];
   sortKey: string;
   sortDir: SortDir;
@@ -79,7 +76,7 @@ export function MobileSortControl({
         value={sortKey}
         onValueChange={(key) => {
           if (key && key !== sortKey) {
-            onSortChange(key, nextSortDir(table, "", "asc", key));
+            onSortChange(key, "asc");
           }
         }}
       >

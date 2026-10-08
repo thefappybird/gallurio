@@ -8,7 +8,6 @@ describe("MobileSortControl", () => {
     const onChange = vi.fn();
     renderWithProviders(
       <MobileSortControl
-        table="bookings"
         options={[{ key: "title", label: "Booking" }, { key: "total", label: "Total" }]}
         sortKey="title"
         sortDir="asc"

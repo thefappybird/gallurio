@@ -294,6 +294,7 @@ async function InquiriesContent({
         pageSizeOptions={pageSizeOptions}
         sortKey={sort.key}
         sortDir={sort.dir}
+        sortExplicit={sort.explicit}
         locale={locale}
         status={sp.status ?? "all"}
         counts={counts}

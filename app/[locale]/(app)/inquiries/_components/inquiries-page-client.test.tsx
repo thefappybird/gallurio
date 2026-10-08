@@ -34,12 +34,13 @@ vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
 // Expose the rendered rows so tests can inspect optimistic patches.
 let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: ({ rows, onOpenInquiry, onSortChange }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void; onSortChange?: (key: string, dir: "asc" | "desc") => void }) => {
+  InquiryTable: ({ rows, onOpenInquiry, onSortChange }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void; onSortChange?: (next: { key: string; dir: "asc" | "desc" } | null) => void }) => {
     lastRenderedRows = rows;
     return (
       <>
         <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />
-        <button type="button" data-testid="sort-client" onClick={() => onSortChange?.("client", "asc")} />
+        <button type="button" data-testid="sort-client" onClick={() => onSortChange?.({ key: "client", dir: "asc" })} />
+        <button type="button" data-testid="sort-reset" onClick={() => onSortChange?.(null)} />
       </>
     );
   },
@@ -122,6 +123,7 @@ const baseProps = {
   pageSizeOptions: [20, 30, 50],
   sortKey: "submitted",
   sortDir: "desc" as const,
+  sortExplicit: true,
   locale: "en",
   status: "all",
   counts: { all: 1, inquiry: 1, booked: 0, archived: 0 },
@@ -303,6 +305,13 @@ describe("InquiriesPageClient", () => {
     renderInquiriesPage({ ...baseProps, initialDetail: null });
     fireEvent.click(screen.getByTestId("sort-client"));
     expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1&sort=client&dir=asc");
+  });
+
+  it("removes sort and dir and resets page when the table reports a sort reset", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4&sort=client&dir=desc");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-reset"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1");
   });
 
   it("pins the current limit in the URL when paging", () => {

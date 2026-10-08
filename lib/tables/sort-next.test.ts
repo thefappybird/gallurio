@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { nextSortDir } from "./sort-next";
+import { nextSort } from "./sort-next";
 
-describe("nextSortDir", () => {
-  it("flips the direction when the active column is clicked", () => {
-    expect(nextSortDir("bookings", "title", "asc", "title")).toBe("desc");
+describe("nextSort", () => {
+  it("unsorted -> clicked column asc", () => {
+    expect(nextSort(null, "desc", "total")).toEqual({ key: "total", dir: "asc" });
   });
 
-  it("uses the new column's natural direction when switching columns", () => {
-    expect(nextSortDir("bookings", "title", "asc", "total")).toBe("desc");
-    expect(nextSortDir("inquiries", "submitted", "desc", "client")).toBe("asc");
+  it("asc -> desc -> reset on the same column", () => {
+    expect(nextSort("title", "asc", "title")).toEqual({ key: "title", dir: "desc" });
+    expect(nextSort("title", "desc", "title")).toBeNull();
+  });
+
+  it("different column starts asc regardless of natural dir", () => {
+    expect(nextSort("title", "desc", "date")).toEqual({ key: "date", dir: "asc" });
   });
 });

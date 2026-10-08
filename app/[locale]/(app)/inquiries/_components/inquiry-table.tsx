@@ -12,7 +12,7 @@ import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import type { SortDir } from "@/lib/tables/sort";
-import { nextSortDir } from "@/lib/tables/sort-next";
+import { nextSort } from "@/lib/tables/sort-next";
 import { ariaSortFor, SortHeaderButton } from "@/components/app/table-sort";
 
 // Desktop columns in render order; `key` is the server sort key (null = unsortable).
@@ -52,10 +52,11 @@ type Props = {
    * transition as filters and pagination. */
   onOpenInquiry?: (inquiryId: string) => void;
   /** Server sort state (URL `sort` / `dir`). */
-  sortKey?: string;
+  sortKey?: string | null;
   sortDir?: SortDir;
   /** Fires with the next sort when a header is clicked. */
-  onSortChange?: (key: string, dir: SortDir) => void;
+  /** null = reset to the server default order. */
+  onSortChange?: (next: { key: string; dir: SortDir } | null) => void;
 };
 
 // One Intl.DateTimeFormat per locale|tz, built once (construction is expensive).
@@ -107,7 +108,7 @@ function CardField({
   );
 }
 
-export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry, sortKey = "submitted", sortDir = "desc", onSortChange }: Props) {
+export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry, sortKey = null, sortDir = "desc", onSortChange }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
@@ -247,10 +248,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                       label={t(`table.col.${col}`)}
                       sorted={sorted}
                       onClick={() =>
-                        onSortChange?.(
-                          key,
-                          nextSortDir("inquiries", sortKey, sortDir, key)
-                        )
+                        onSortChange?.(nextSort(sortKey, sortDir, key))
                       }
                     />
                   </th>

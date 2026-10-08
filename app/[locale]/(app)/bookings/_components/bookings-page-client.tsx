@@ -33,6 +33,8 @@ type Props = {
   pageSizeOptions: number[];
   sortKey: string;
   sortDir: SortDir;
+  /** False when URL has no valid sort: no header shows as sorted. */
+  sortExplicit: boolean;
   locale: string;
   empty: string;
   emptyHint?: string;
@@ -47,6 +49,7 @@ export function BookingsPageClient({
   pageSizeOptions,
   sortKey,
   sortDir,
+  sortExplicit,
   locale,
   empty,
   emptyHint,
@@ -72,10 +75,15 @@ export function BookingsPageClient({
     });
   }
 
-  function changeSort(key: string, dir: SortDir) {
+  function changeSort(next: { key: string; dir: SortDir } | null) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("sort", key);
-    params.set("dir", dir);
+    if (next) {
+      params.set("sort", next.key);
+      params.set("dir", next.dir);
+    } else {
+      params.delete("sort");
+      params.delete("dir");
+    }
     params.set("page", "1");
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
@@ -86,14 +94,13 @@ export function BookingsPageClient({
     <div className="flex min-w-0 flex-col gap-4">
       {total > 0 && (
         <MobileSortControl
-          table="bookings"
           options={SORT_OPTION_KEYS.map(([key, label]) => ({
             key,
             label: t(`col.${label}`),
           }))}
           sortKey={sortKey}
           sortDir={sortDir}
-          onSortChange={changeSort}
+          onSortChange={(key, dir) => changeSort({ key, dir })}
         />
       )}
       <div ref={fitRef} className="min-w-0">
@@ -111,7 +118,7 @@ export function BookingsPageClient({
             empty={empty}
             emptyHint={emptyHint}
             workspaceTimezone={workspaceTimezone}
-            sortKey={sortKey}
+            sortKey={sortExplicit ? sortKey : null}
             sortDir={sortDir}
             onSortChange={changeSort}
           />

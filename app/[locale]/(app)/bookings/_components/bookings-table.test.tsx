@@ -401,7 +401,26 @@ describe("BookingsTable", () => {
     ]);
   });
 
-  it("fires onSortChange with the column's natural dir when a new header is clicked", () => {
+  it("resets sort (null) when the active desc header is clicked", () => {
+    const onSortChange = vi.fn();
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
+        onSortChange={onSortChange}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const th = within(table).getByRole("columnheader", { name: /booked/i });
+    fireEvent.click(within(th).getByRole("button", { name: /booked/i }));
+    expect(onSortChange).toHaveBeenCalledWith(null);
+  });
+
+  it("fires onSortChange asc first when a new header is clicked", () => {
     const onSortChange = vi.fn();
     const { container } = renderWithProviders(
       <BookingsTable
@@ -417,7 +436,7 @@ describe("BookingsTable", () => {
     const table = container.querySelector("table") as HTMLElement;
     const dateTh = within(table).getByRole("columnheader", { name: /date/i });
     fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
-    expect(onSortChange).toHaveBeenCalledWith("date", "desc");
+    expect(onSortChange).toHaveBeenCalledWith({ key: "date", dir: "asc" });
   });
 
   it("shows the booked date in the workspace timezone and a dash when missing", () => {

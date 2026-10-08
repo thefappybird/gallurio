@@ -51,6 +51,8 @@ type Props = {
   pageSizeOptions: number[];
   sortKey: string;
   sortDir: SortDir;
+  /** False when URL has no valid sort: no header shows as sorted. */
+  sortExplicit: boolean;
   locale: string;
   status: string;
   counts: InquiryStatusCounts;
@@ -76,6 +78,7 @@ export function InquiriesPageClient({
   pageSizeOptions,
   sortKey,
   sortDir,
+  sortExplicit,
   locale,
   status,
   counts,
@@ -264,10 +267,15 @@ export function InquiriesPageClient({
     });
   }
 
-  function changeSort(key: string, dir: SortDir) {
+  function changeSort(next: { key: string; dir: SortDir } | null) {
     pushParams((params) => {
-      params.set("sort", key);
-      params.set("dir", dir);
+      if (next) {
+        params.set("sort", next.key);
+        params.set("dir", next.dir);
+      } else {
+        params.delete("sort");
+        params.delete("dir");
+      }
       params.set("page", "1");
     });
   }
@@ -409,14 +417,13 @@ export function InquiriesPageClient({
 
           {total > 0 && (
             <MobileSortControl
-              table="inquiries"
               options={SORT_OPTION_KEYS.map(([key, col]) => ({
                 key,
                 label: t(`table.col.${col}`),
               }))}
               sortKey={sortKey}
               sortDir={sortDir}
-              onSortChange={changeSort}
+              onSortChange={(key, dir) => changeSort({ key, dir })}
             />
           )}
 
@@ -429,7 +436,7 @@ export function InquiriesPageClient({
                 {...INQUIRIES_SKELETON}
               />
             ) : (
-              <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} sortKey={sortKey} sortDir={sortDir} onSortChange={changeSort} />
+              <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} sortKey={sortExplicit ? sortKey : null} sortDir={sortDir} onSortChange={changeSort} />
             )}
           </div>
 

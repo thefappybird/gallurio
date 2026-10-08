@@ -149,7 +149,7 @@ describe("InquiryTable", () => {
     ]);
   });
 
-  it("fires onSortChange with the flipped dir when the active header is clicked", () => {
+  it("resets sort (null) when the active desc header is clicked", () => {
     const onSortChange = vi.fn();
     const { container } = renderWithProviders(
       <InquiryTable
@@ -164,7 +164,7 @@ describe("InquiryTable", () => {
     );
     const th = container.querySelectorAll("thead th")[5] as HTMLElement;
     fireEvent.click(th.querySelector("button") as HTMLElement);
-    expect(onSortChange).toHaveBeenCalledWith("submitted", "asc");
+    expect(onSortChange).toHaveBeenCalledWith(null);
   });
 
   it("shows the booked date, or a dash when never booked", () => {
