@@ -337,6 +337,46 @@ describe("BookingsTable", () => {
     expect(totalValue.className).toMatch(/tabular-nums/);
   });
 
+  it("reserves status pill width for every status label and the Past slot", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const label = within(screen.getByRole("table")).getByText("Booked");
+    const pill = label.parentElement as HTMLElement;
+    const ghosts = Array.from(
+      pill.querySelectorAll('[aria-hidden="true"][data-label]')
+    );
+    expect(ghosts.map((g) => g.getAttribute("data-label"))).toEqual([
+      "Booked",
+      "Completed",
+      "Cancelled",
+    ]);
+    const slot = pill.parentElement!.querySelector(
+      // reserved Past slot sits beside the pill
+
+      '[data-label="Past"]'
+    ) as HTMLElement;
+    expect(slot.className).toMatch(/\binvisible\b/);
+  });
+
+  it("does not end-align the Total cell value", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const totalValue = within(screen.getByRole("table")).getByText(/75,000/);
+    expect(totalValue.className).not.toMatch(/text-end/);
+  });
+
   it("sets scope=col on every header and aria-sort only on sortable columns", () => {
     const { container } = renderWithProviders(
       <BookingsTable

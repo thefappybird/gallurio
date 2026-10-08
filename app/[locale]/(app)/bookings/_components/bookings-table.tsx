@@ -30,7 +30,7 @@ import { stableWeekdayStyle } from "@/lib/utils/format-date";
 import { cn } from "@/lib/utils";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { isoDateInTz } from "./_helpers/calendar-helpers";
-import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
+import { STATUS_COLOR_VAR, STATUS_ORDER } from "@/lib/bookings/status-style";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SortDir } from "@/lib/tables/sort";
 import { nextSortDir } from "@/lib/tables/sort-next";
@@ -171,23 +171,45 @@ export function BookingsTable({
   const renderStatus = useCallback(
     (status: BookingStatus, lastSessionEnd: string) => {
       const isPast = computeIsPast(lastSessionEnd, workspaceTimezone);
+      const statusLabel = (s: string) =>
+        typeof tStatus.has === "function" && !tStatus.has(s as BookingStatus)
+          ? s
+          : tStatus(s as BookingStatus);
+      const pastClass =
+        "inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
       return (
         <span className="flex items-center gap-1.5 whitespace-nowrap">
-          <span
-            className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-white"
-            style={{
-              backgroundColor: STATUS_COLOR_VAR[status] ?? "var(--muted)",
-            }}
-          >
-            {typeof tStatus.has === "function" && !tStatus.has(status)
-              ? status
-              : tStatus(status)}
+          {/* Ghost labels size the grid to the longest status; the visible label stretches to it. */}
+          <span className="inline-grid">
+            {STATUS_ORDER.map((s) => (
+              <span
+                key={s}
+                aria-hidden="true"
+                data-label={statusLabel(s)}
+                className="invisible px-2 py-0.5 text-xs font-medium [grid-area:1/1] before:content-[attr(data-label)]"
+              />
+            ))}
+            <span
+              className="px-2 py-0.5 text-center text-xs font-medium text-white [grid-area:1/1]"
+              style={{
+                backgroundColor: STATUS_COLOR_VAR[status] ?? "var(--muted)",
+              }}
+            >
+              {statusLabel(status)}
+            </span>
           </span>
           {isPast ? (
-            <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("past")}
-            </span>
-          ) : null}
+            <span className={pastClass}>{t("past")}</span>
+          ) : (
+            <span
+              aria-hidden="true"
+              data-label={t("past")}
+              className={cn(
+                pastClass,
+                "invisible before:content-[attr(data-label)]"
+              )}
+            />
+          )}
         </span>
       );
     },
@@ -245,9 +267,9 @@ export function BookingsTable({
       },
       {
         accessorKey: "total",
-        header: () => <span className="block text-end">{t("col.total")}</span>,
+        header: () => t("col.total"),
         cell: (info) => (
-          <span className="block whitespace-nowrap text-end tabular-nums">
+          <span className="block whitespace-nowrap tabular-nums">
             {formatMoney(
               info.getValue<number>(),
               info.row.original.currency,
