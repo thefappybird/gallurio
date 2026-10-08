@@ -570,10 +570,18 @@ export function BookingDetailModal({
     () => [...new Set(allVisibleSessionDates.filter(Boolean))].sort(),
     [allVisibleSessionDates]
   );
+  // Conflicts are per team: a pending team edit wins over the saved team;
+  // "none" scopes to teamless bookings.
+  const effectiveTeamId =
+    ("teamId" in pending ? (pending.teamId as string | null) : booking?.teamId) || "none";
   const shiftsQuery = useQuery({
-    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId],
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId, effectiveTeamId],
     queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
-      const qs = new URLSearchParams({ dates: conflictDates.join(","), excludeId: bookingId });
+      const qs = new URLSearchParams({
+        dates: conflictDates.join(","),
+        excludeId: bookingId,
+        teamId: effectiveTeamId,
+      });
       const res = await fetch(`/api/bookings/shifts-on-date?${qs.toString()}`);
       if (!res.ok) throw new Error("shifts_load_failed");
       return res.json();

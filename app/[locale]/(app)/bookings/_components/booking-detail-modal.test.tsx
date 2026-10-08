@@ -3123,6 +3123,18 @@ describe("BookingDetailModal — conflict preview batching", () => {
     expect(dates).toHaveLength(3);
   });
 
+  it("scopes the shifts-on-date request to the booking's team (none when teamless)", async () => {
+    const fetchMock = makeFetch({});
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await new Promise((r) => setTimeout(r, 50));
+    const shiftCall = (fetchMock as Mock).mock.calls
+      .map((a: unknown[]) => String(a[0]))
+      .find((u) => u.includes("shifts-on-date"))!;
+    expect(new URL(shiftCall, "http://test").searchParams.get("teamId")).toBe("none");
+  });
+
   it("marks the session conflict alert as role=alert", async () => {
     vi.stubGlobal("fetch", makeFetch({ shifts: [CONFLICT_SHIFT] }));
     renderModal();
