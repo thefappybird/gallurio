@@ -48,6 +48,7 @@ async function seedBooking(sessions: { startAt: Date; endAt: Date }[], overrides
   workspaceId?: Types.ObjectId;
   status?: string;
   title?: string;
+  teamId?: Types.ObjectId | null;
 } = {}) {
   const wid = overrides.workspaceId ?? workspaceId;
   const firstSessionStart = sessions.reduce((min, s) =>
@@ -58,7 +59,7 @@ async function seedBooking(sessions: { startAt: Date; endAt: Date }[], overrides
   );
   return Booking.create({
     workspaceId: wid,
-    teamId: new Types.ObjectId(),
+    teamId: overrides.teamId === undefined ? new Types.ObjectId() : overrides.teamId,
     clientId,
     clientName: "Demo Client",
     title: overrides.title ?? "Demo Booking",
@@ -136,5 +137,32 @@ describe("GET /api/bookings/shifts-on-date", () => {
     const json = await (await getQs(`dates=2030-08-15&excludeShiftKey=${key}`)).json();
     expect(json.byDate["2030-08-15"]).toHaveLength(1);
     expect(json.byDate["2030-08-15"][0].sessionIndex).toBe(1);
+  });
+
+  it("rejects a malformed teamId with 400", async () => {
+    const res = await getQs("dates=2030-08-15&teamId=nope");
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid team" });
+  });
+
+  it("teamId filters to that team's bookings", async () => {
+    const teamA = new Types.ObjectId();
+    const sessions = [
+      { startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") },
+    ];
+    await seedBooking(sessions, { teamId: teamA, title: "a" });
+    await seedBooking(sessions, { title: "other" });
+    const json = await (await getQs(`dates=2030-08-15&teamId=${teamA}`)).json();
+    expect(json.byDate["2030-08-15"].map((h: { title: string }) => h.title)).toEqual(["a"]);
+  });
+
+  it("teamId=none matches only teamless bookings", async () => {
+    const sessions = [
+      { startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") },
+    ];
+    await seedBooking(sessions, { teamId: null, title: "legacy" });
+    await seedBooking(sessions, { title: "teamed" });
+    const json = await (await getQs("dates=2030-08-15&teamId=none")).json();
+    expect(json.byDate["2030-08-15"].map((h: { title: string }) => h.title)).toEqual(["legacy"]);
   });
 });

@@ -222,6 +222,56 @@ describe("getShiftsOnDates", () => {
     expect(result["2030-08-15"].map((h) => h.title)).toEqual(["a"]);
   });
 
+  describe("teamId filter", () => {
+    const teamA = new Types.ObjectId();
+    const teamB = new Types.ObjectId();
+    const seedTeam = (teamId: Types.ObjectId | null, title: string) =>
+      Booking.create({
+        workspaceId,
+        teamId,
+        clientId,
+        clientName: "C",
+        title,
+        status: "booked",
+        sessions: [{ startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T02:00:00Z") }],
+        firstSessionStart: new Date("2030-08-15T01:00:00Z"),
+        lastSessionEnd: new Date("2030-08-15T02:00:00Z"),
+        amount: { total: 0, deposit: 0, currency: "PHP" },
+      });
+
+    it("returns only same-team bookings when teamId is a string", async () => {
+      await seedTeam(teamA, "a");
+      await seedTeam(teamB, "b");
+      const result = await getShiftsOnDates(workspaceId, ["2030-08-15"], TZ, {
+        teamId: teamA.toString(),
+      });
+      expect(result["2030-08-15"].map((h) => h.title)).toEqual(["a"]);
+    });
+
+    it("keeps all teams when teamId is undefined", async () => {
+      await seedTeam(teamA, "a");
+      await seedTeam(teamB, "b");
+      const result = await getShiftsOnDates(workspaceId, ["2030-08-15"], TZ);
+      expect(result["2030-08-15"].map((h) => h.title).sort()).toEqual(["a", "b"]);
+    });
+
+    it("returns empty for every date when teamId is outside teamScope", async () => {
+      await seedTeam(teamB, "b");
+      const result = await getShiftsOnDates(workspaceId, ["2030-08-15", "2030-08-16"], TZ, {
+        teamId: teamB.toString(),
+        teamScope: [teamA.toString()],
+      });
+      expect(result).toEqual({ "2030-08-15": [], "2030-08-16": [] });
+    });
+
+    it("null matches only teamless bookings", async () => {
+      await seedTeam(teamA, "a");
+      await seedTeam(null, "legacy");
+      const result = await getShiftsOnDates(workspaceId, ["2030-08-15"], TZ, { teamId: null });
+      expect(result["2030-08-15"].map((h) => h.title)).toEqual(["legacy"]);
+    });
+  });
+
   it("does not leak bookings from another workspace", async () => {
     await seedBooking(
       [{ startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T02:00:00Z") }],
