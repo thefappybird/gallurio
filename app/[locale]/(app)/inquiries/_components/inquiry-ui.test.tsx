@@ -113,7 +113,7 @@ describe("InquiryTable", () => {
     );
   });
 
-  it("applies the capitalize CSS class to the desktop source cell", () => {
+  it("applies the capitalize CSS class to the source pill", () => {
     renderWithProviders(
       <InquiryTable
         rows={rows}
@@ -122,7 +122,8 @@ describe("InquiryTable", () => {
         emptyHint="hint"
       />
     );
-    const sourceCells = document.querySelectorAll("td.capitalize");
-    expect(sourceCells.length).toBeGreaterThan(0);
+    const pills = screen.getAllByTestId("source-pill");
+    expect(pills.length).toBeGreaterThan(0);
+    for (const pill of pills) expect(pill).toHaveClass("capitalize");
   });
 });

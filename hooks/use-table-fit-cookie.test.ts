@@ -25,7 +25,10 @@ function setDesktop(matches: boolean) {
 }
 
 function clearCookie() {
-  document.cookie = "gw_table_fit_bookings=; max-age=0; path=/";
+  // A past expiry, not max-age=0: jsdom keeps a max-age=0 cookie until the
+  // clock ticks, so a fast test would still read the empty clearing cookie.
+  document.cookie =
+    "gw_table_fit_bookings=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
 }
 
 describe("nextFitCookie", () => {
