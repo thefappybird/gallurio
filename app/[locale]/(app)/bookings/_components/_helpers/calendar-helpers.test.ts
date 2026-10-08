@@ -405,12 +405,13 @@ function makeConflictEvent(
   bookingId: string,
   start: Date,
   end: Date,
-  kind?: 'inquiry' | 'booking'
+  kind?: 'inquiry' | 'booking',
+  teamId: string | null = null
 ): CalendarEvent {
   return {
     id,
     bookingId,
-    teamId: null,
+    teamId,
     title: 'Event',
     start,
     end,
@@ -429,6 +430,30 @@ function makeConflictEvent(
 
 describe('detectConflictIds', () => {
   const t = (h: number, m = 0) => new Date(2026, 4, 25, h, m, 0);
+
+  it('flags overlapping bookings of the same team', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14), undefined, 'teamA'),
+      makeConflictEvent('b', 'b2', t(12), t(16), undefined, 'teamA'),
+    ];
+    expect(detectConflictIds(events).size).toBe(2);
+  });
+
+  it('flags an inquiry overlapping a booking of another team', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'i1', t(10), t(14), 'inquiry', null),
+      makeConflictEvent('b', 'b1', t(12), t(16), undefined, 'teamB'),
+    ];
+    expect(detectConflictIds(events).size).toBe(2);
+  });
+
+  it('does NOT flag overlapping bookings of different teams', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14), undefined, 'teamA'),
+      makeConflictEvent('b', 'b2', t(12), t(16), undefined, 'teamB'),
+    ];
+    expect(detectConflictIds(events).size).toBe(0);
+  });
 
   it('returns empty for non-overlapping events', () => {
     const events: CalendarEvent[] = [
