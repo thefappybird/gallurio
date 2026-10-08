@@ -330,11 +330,15 @@ export function BookingWizardModal({
     [sessionDates]
   );
   const shiftsExcludeId = mode === "edit" && bookingId ? bookingId : "";
+  // Conflicts are per team; empty (no team chosen / workspace without teams)
+  // keeps the any-team behavior.
+  const watchedTeamId = useWatch({ control, name: "teamId" }) ?? "";
   const shiftsQuery = useQuery({
-    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), shiftsExcludeId],
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), shiftsExcludeId, watchedTeamId],
     queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
       const params = new URLSearchParams({ dates: conflictDates.join(",") });
       if (shiftsExcludeId) params.set("excludeId", shiftsExcludeId);
+      if (watchedTeamId) params.set("teamId", watchedTeamId);
       const res = await fetch(`/api/bookings/shifts-on-date?${params.toString()}`);
       if (!res.ok) throw new Error("shifts_load_failed");
       return res.json();

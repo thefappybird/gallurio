@@ -1,11 +1,10 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   type ColumnDef,
   type SortingState,
   useReactTable,
@@ -13,9 +12,6 @@ import {
 import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ArrowUpDownIcon,
   CalendarIcon,
   EyeIcon,
   MoreHorizontalIcon,
@@ -34,8 +30,31 @@ import { stableWeekdayStyle } from "@/lib/utils/format-date";
 import { cn } from "@/lib/utils";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { isoDateInTz } from "./_helpers/calendar-helpers";
-import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
+import { STATUS_COLOR_VAR, STATUS_ORDER } from "@/lib/bookings/status-style";
 import type { BookingStatus } from "@/lib/validators/booking";
+import type { SortDir } from "@/lib/tables/sort";
+import { nextSort } from "@/lib/tables/sort-next";
+import { ariaSortFor, SortHeaderButton } from "@/components/app/table-sort";
+
+/** Column id -> server sort key (`SORT_CONFIG.bookings`). Actions is unsortable. */
+const COLUMN_SORT_KEY: Record<string, string> = {
+  title: "title",
+  clientName: "client",
+  sessions: "date",
+  booked: "bookedAt",
+  status: "status",
+  total: "total",
+};
+
+/** Fixed widths (table-fixed) so sorting/paging never reflows columns; title takes the rest. */
+const COLUMN_WIDTH: Record<string, string> = {
+  clientName: "w-[16%]",
+  sessions: "w-[10rem]",
+  booked: "w-[8rem]",
+  status: "w-[10rem]",
+  total: "w-[8rem]",
+  actions: "w-14",
+};
 
 export type BookingRow = {
   id: string;
@@ -47,6 +66,8 @@ export type BookingRow = {
   status: BookingStatus;
   total: number;
   currency: string;
+  /** ISO string; null for rows that predate bookedAt. */
+  bookedAt: string | null;
 };
 
 type Props = {
@@ -56,6 +77,12 @@ type Props = {
   /** Optional secondary line under the empty title (omit when filtered). */
   emptyHint?: string;
   workspaceTimezone?: string;
+  /** Server sort state (URL `sort` / `dir`). */
+  sortKey?: string | null;
+  sortDir?: SortDir;
+  /** Fires with the next sort when a header is clicked. */
+  /** null = reset to the server default order. */
+  onSortChange?: (next: { key: string; dir: SortDir } | null) => void;
 };
 
 function computeIsPast(lastSessionEnd: string, tz: string): boolean {
@@ -93,19 +120,38 @@ export function BookingsTable({
   empty,
   emptyHint,
   workspaceTimezone = "UTC",
+  sortKey = null,
+  sortDir = "desc",
+  onSortChange,
 }: Props) {
   const t =useTranslations("app.bookings.table");
   const tActions = useTranslations("app.bookings.row");
   const tStatus = useTranslations("app.bookings.statusValues");
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "sessions", desc: false },
-  ]);
+  const sorting = useMemo<SortingState>(() => {
+    const id = Object.keys(COLUMN_SORT_KEY).find(
+      (col) => COLUMN_SORT_KEY[col] === sortKey
+    );
+    return id ? [{ id, desc: sortDir === "desc" }] : [];
+  }, [sortKey, sortDir]);
 
   const visibleRows = rows;
 
   // History API, not router.push: the modals mount client-side (BookingUrlModals).
   const openDetail = useCallback((id: string) => setUrlParams((p) => p.set("detail", id)), []);
   const openEdit = useCallback((id: string) => setUrlParams((p) => p.set("edit", id)), []);
+
+  const formatBooked = useCallback(
+    (iso: string | null) =>
+      iso
+        ? new Date(iso).toLocaleDateString(locale, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            timeZone: workspaceTimezone,
+          })
+        : "—",
+    [locale, workspaceTimezone]
+  );
 
   const formatSessionSummary = useCallback(
     (sessions: { startAt: string; endAt: string }[]) => {
@@ -119,11 +165,12 @@ export function BookingsTable({
         : "-";
       const extra = sessions.length - 1;
       return (
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span>{firstDate}</span>
+        <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap">
+          <span className="truncate">{firstDate}</span>
           {extra > 0 ? (
-            <span className="inline-block border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
-              +{extra} sessions
+            <span className="inline-block shrink-0 border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
+              <span aria-hidden="true">+{extra}</span>
+              <span className="sr-only">+{extra} sessions</span>
             </span>
           ) : null}
         </span>
@@ -135,23 +182,45 @@ export function BookingsTable({
   const renderStatus = useCallback(
     (status: BookingStatus, lastSessionEnd: string) => {
       const isPast = computeIsPast(lastSessionEnd, workspaceTimezone);
+      const statusLabel = (s: string) =>
+        typeof tStatus.has === "function" && !tStatus.has(s as BookingStatus)
+          ? s
+          : tStatus(s as BookingStatus);
+      const pastClass =
+        "inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
       return (
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span
-            className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-white"
-            style={{
-              backgroundColor: STATUS_COLOR_VAR[status] ?? "var(--muted)",
-            }}
-          >
-            {typeof tStatus.has === "function" && !tStatus.has(status)
-              ? status
-              : tStatus(status)}
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
+          {/* Ghost labels size the grid to the longest status; the visible label stretches to it. */}
+          <span className="inline-grid">
+            {STATUS_ORDER.map((s) => (
+              <span
+                key={s}
+                aria-hidden="true"
+                data-label={statusLabel(s)}
+                className="invisible px-2 py-0.5 text-xs font-medium [grid-area:1/1] before:content-[attr(data-label)]"
+              />
+            ))}
+            <span
+              className="px-2 py-0.5 text-center text-xs font-medium text-white [grid-area:1/1]"
+              style={{
+                backgroundColor: STATUS_COLOR_VAR[status] ?? "var(--muted)",
+              }}
+            >
+              {statusLabel(status)}
+            </span>
           </span>
           {isPast ? (
-            <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("past")}
-            </span>
-          ) : null}
+            <span className={pastClass}>{t("past")}</span>
+          ) : (
+            <span
+              aria-hidden="true"
+              data-label={t("past")}
+              className={cn(
+                pastClass,
+                "invisible before:content-[attr(data-label)]"
+              )}
+            />
+          )}
         </span>
       );
     },
@@ -164,12 +233,25 @@ export function BookingsTable({
         accessorKey: "title",
         header: () => t("col.title"),
         cell: (info) => (
-          <span className="font-medium">{info.getValue<string>()}</span>
+          <span
+            className="block truncate font-medium"
+            title={info.getValue<string>()}
+          >
+            {info.getValue<string>()}
+          </span>
         ),
       },
       {
         accessorKey: "clientName",
         header: () => t("col.client"),
+        cell: (info) => (
+          <span
+            className="block truncate"
+            title={info.getValue<string>()}
+          >
+            {info.getValue<string>()}
+          </span>
+        ),
       },
       {
         accessorKey: "sessions",
@@ -178,11 +260,16 @@ export function BookingsTable({
           formatSessionSummary(
             info.getValue<{ startAt: string; endAt: string }[]>()
           ),
-        sortingFn: (a, b) => {
-          const aDate = a.original.sessions[0]?.startAt ?? "";
-          const bDate = b.original.sessions[0]?.startAt ?? "";
-          return new Date(aDate).getTime() - new Date(bDate).getTime();
-        },
+      },
+      {
+        id: "booked",
+        accessorKey: "bookedAt",
+        header: () => t("col.booked"),
+        cell: (info) => (
+          <span className="block truncate whitespace-nowrap">
+            {formatBooked(info.getValue<string | null>())}
+          </span>
+        ),
       },
       {
         accessorKey: "status",
@@ -195,9 +282,9 @@ export function BookingsTable({
       },
       {
         accessorKey: "total",
-        header: () => <span className="block text-end">{t("col.total")}</span>,
+        header: () => t("col.total"),
         cell: (info) => (
-          <span className="tabular-nums">
+          <span className="block truncate whitespace-nowrap tabular-nums">
             {formatMoney(
               info.getValue<number>(),
               info.row.original.currency,
@@ -242,6 +329,7 @@ export function BookingsTable({
       },
     ],
     [
+      formatBooked,
       formatSessionSummary,
       locale,
       openDetail,
@@ -257,9 +345,9 @@ export function BookingsTable({
     data: visibleRows,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    manualSorting: true,
+    enableSortingRemoval: false,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   if (visibleRows.length === 0) {
@@ -360,6 +448,10 @@ export function BookingsTable({
                   value={formatSessionSummary(row.original.sessions)}
                   valueClassName={muted ? "line-through" : undefined}
                 />
+                <CardField
+                  label={t("col.booked")}
+                  value={formatBooked(row.original.bookedAt)}
+                />
                 <CardFieldStack>
                   <CardField
                     label={t("col.status")}
@@ -388,7 +480,7 @@ export function BookingsTable({
       </div>
 
       <div className="hidden min-w-0 max-w-full overflow-x-auto border border-border bg-card lg:block">
-        <table className="w-full min-w-max text-sm">
+        <table className="w-full min-w-[56rem] table-fixed text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr
@@ -396,16 +488,12 @@ export function BookingsTable({
                 className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground"
               >
                 {hg.headers.map((header) => {
-                  const canSort = header.column.getCanSort();
+                  const sortKeyForCol = COLUMN_SORT_KEY[header.column.id];
+                  const canSort = sortKeyForCol !== undefined;
                   const sorted = header.column.getIsSorted();
-                  const ariaSort: "ascending" | "descending" | "none" | undefined =
-                    canSort
-                      ? sorted === "asc"
-                        ? "ascending"
-                        : sorted === "desc"
-                          ? "descending"
-                          : "none"
-                      : undefined;
+                  const ariaSort = canSort
+                    ? ariaSortFor(sorted)
+                    : undefined;
                   const label = flexRender(
                     header.column.columnDef.header,
                     header.getContext()
@@ -415,26 +503,19 @@ export function BookingsTable({
                       key={header.id}
                       scope="col"
                       aria-sort={ariaSort}
-                      className="px-3 py-2 font-medium text-start"
+                      className={cn(
+                        "px-3 py-2 font-medium text-start",
+                        COLUMN_WIDTH[header.column.id]
+                      )}
                     >
                       {canSort ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        >
-                          {label}
-                          {sorted === "asc" ? (
-                            <ArrowUpIcon className="size-3" aria-hidden="true" />
-                          ) : sorted === "desc" ? (
-                            <ArrowDownIcon className="size-3" aria-hidden="true" />
-                          ) : (
-                            <ArrowUpDownIcon
-                              className="size-3 opacity-40"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </button>
+                        <SortHeaderButton
+                          label={label}
+                          sorted={sorted}
+                          onClick={() =>
+                            onSortChange?.(nextSort(sortKey, sortDir, sortKeyForCol))
+                          }
+                        />
                       ) : (
                         label
                       )}
@@ -476,7 +557,7 @@ export function BookingsTable({
                     <td
                       key={cell.id}
                       className={cn(
-                        "px-3 py-2.5 align-middle",
+                        "whitespace-nowrap px-3 py-2.5 align-middle",
                         (cancelled || isPast) &&
                           (cell.column.id === "title" ||
                             cell.column.id === "sessions") &&

@@ -154,6 +154,7 @@ export async function POST(req: Request) {
             title,
             eventType,
             status,
+            bookedAt: now,
             sessions,
             firstSessionStart,
             lastSessionEnd,

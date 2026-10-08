@@ -1,7 +1,6 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -18,7 +17,6 @@ type Props = {
 
 // Slight width variance per column position makes the skeleton feel more natural.
 const COL_WIDTHS = ["w-2/5", "w-1/3", "w-1/4", "w-1/5", "w-1/6", "w-1/6", "w-1/6"];
-const TABLE_HEADER_HEIGHT = 32;
 const TABLE_ROW_HEIGHT = 41;
 
 export function calculateTableSkeletonRows({
@@ -87,18 +85,8 @@ export function TableSkeleton({
   className,
 }: Props) {
   const showResponsiveCards = typeof cardRows === "number" && cardRows > 0;
-  const { ref, remainingHeight } = useViewportRemainingHeight<HTMLDivElement>();
-  const visibleRows =
-    remainingHeight === null
-      ? rows
-      : calculateTableSkeletonRows({
-          availableHeight: remainingHeight,
-          headerHeight: TABLE_HEADER_HEIGHT,
-          rowHeight,
-        });
-
   return (
-    <div ref={ref} className="min-w-0">
+    <div className="min-w-0">
       {showResponsiveCards ? (
         <CardCollectionSkeleton rows={cardRows} fields={cardFields} />
       ) : null}
@@ -122,7 +110,7 @@ export function TableSkeleton({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: visibleRows }).map((_, rowIdx) => (
+            {Array.from({ length: rows }).map((_, rowIdx) => (
               <tr
                 key={rowIdx}
                 className="border-b border-border last:border-b-0"

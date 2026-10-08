@@ -983,3 +983,20 @@ describe("BookingCalendar empty-period pill", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 });
+
+describe("BookingCalendar fallbackClassName", () => {
+  it("applies fallbackClassName to the container instead of the default height", () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar
+          events={[]}
+          messages={calendarMessages}
+          fallbackClassName="h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-188px)]"
+        />
+      </NextIntlClientProvider>
+    );
+    expect((container.firstElementChild as HTMLElement).className).toContain(
+      "lg:h-[calc(100dvh-188px)]"
+    );
+  });
+});

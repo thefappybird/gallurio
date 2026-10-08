@@ -6,8 +6,9 @@ import type { BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { BOOKINGS_CALENDAR_FALLBACK, CalendarSkeleton } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
@@ -26,7 +27,13 @@ import {
   type BookingRow,
 } from "./_components/bookings-table";
 import { BookingsPageClient } from "./_components/bookings-page-client";
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import {
+  TABLE_FIT_COOKIE,
+  parseFitCookie,
+  resolveLimit,
+  resolvePageSize,
+} from "@/lib/tables/page-fit";
+import { parseSort } from "@/lib/tables/sort";
 import { BookingUrlModals } from "./_components/booking-url-modals";
 import type { CalendarEvent } from "./_components/booking-calendar";
 import type { BookingStatus } from "@/lib/validators/booking";
@@ -62,10 +69,12 @@ type SearchParams = {
   edit?: string;
   page?: string;
   limit?: string;
+  sort?: string;
+  dir?: string;
 };
 
-// BookingsTable columns: title, client, date, status, total, actions = 6
-const BOOKINGS_TABLE_COLUMNS = 6;
+// BookingsTable columns: title, client, date, booked, status, total, actions = 7
+const BOOKINGS_TABLE_COLUMNS = 7;
 
 export default async function BookingsPage({
   params,
@@ -82,6 +91,11 @@ export default async function BookingsPage({
     BOOKINGS_VIEW_COOKIE_NAME
   )) as BookingsView;
 
+  // Resolved before the Suspense boundary so the fallback skeleton renders the
+  // exact row count the table will (no layout shift on stream-in).
+  const fit = parseFitCookie((await cookies()).get(TABLE_FIT_COOKIE.bookings)?.value);
+  const limit = resolveLimit(sp.limit, fit);
+
   // Everything data-dependent streams behind a per-view boundary: switching
   // table <-> calendar shows the matching skeleton immediately.
   return (
@@ -90,15 +104,17 @@ export default async function BookingsPage({
       fallback={
         <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
           <BookingsHeaderSkeleton />
+          {/* Reserves MobileSortControl's slot so the list doesn't jump on stream-in. */}
+          {view !== "calendar" && <div className="h-11 lg:hidden" aria-hidden="true" />}
           {view === "calendar" ? (
-            <CalendarSkeleton />
+            <CalendarSkeleton fallbackClassName={BOOKINGS_CALENDAR_FALLBACK} />
           ) : (
-            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} {...BOOKINGS_SKELETON} />
+            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={limit} cardRows={4} {...BOOKINGS_SKELETON} />
           )}
         </div>
       }
     >
-      <BookingsContent locale={locale} sp={sp} view={view} />
+      <BookingsContent locale={locale} sp={sp} view={view} limit={limit} fit={fit} />
     </Suspense>
   );
 }
@@ -107,10 +123,14 @@ async function BookingsContent({
   locale,
   sp,
   view,
+  limit,
+  fit,
 }: {
   locale: string;
   sp: SearchParams;
   view: BookingsView;
+  limit: number;
+  fit: number | undefined;
 }) {
   const t = await getTranslations("app.bookings");
   const tCal = await getTranslations("app.calendar");
@@ -167,8 +187,9 @@ async function BookingsContent({
   // Parse pagination params (table view only).
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const tablePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
-  const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+  const tableLimit = limit;
+  const pageSizeOptions = resolvePageSize(fit).options;
+  const sort = parseSort("bookings", sp);
 
   // Cancelled + past filters are opt-OUT (absent -> ON); see parseBookingsToggleFilters.
   const toggleFlags = parseBookingsToggleFilters(sp);
@@ -203,7 +224,11 @@ async function BookingsContent({
   const [{ rows: bookings, total: bookingsTotal }, events] = await Promise.all([
     view === "calendar"
       ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
-      : listBookings(workspace._id, filters, { page: tablePage, limit: tableLimit }),
+      : listBookings(workspace._id, filters, {
+          page: tablePage,
+          limit: tableLimit,
+          sort: { field: sort.field, dir: sort.dir, text: sort.text },
+        }),
     view === "calendar"
       ? loadBookingsCalendarEvents({
           workspaceId: workspace._id,
@@ -256,6 +281,7 @@ async function BookingsContent({
         endAt: new Date(s.endAt).toISOString(),
       })),
       lastSessionEnd,
+      bookedAt: b.bookedAt ? new Date(b.bookedAt).toISOString() : null,
       status: b.status as BookingStatus,
       ...bookingRowAmount(b.amount, fx.rates, fx.target),
     };
@@ -347,6 +373,10 @@ async function BookingsContent({
               total={bookingsTotal}
               page={tablePage}
               limit={tableLimit}
+              pageSizeOptions={pageSizeOptions}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              sortExplicit={sort.explicit}
               locale={locale}
               empty={hasFilters ? t("table.empty") : t("table.listEmpty")}
               emptyHint={hasFilters ? undefined : t("table.listEmptyHint")}

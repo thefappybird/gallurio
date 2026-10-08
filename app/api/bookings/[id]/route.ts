@@ -260,7 +260,8 @@ export async function PATCH(req: Request, { params }: Params) {
   // Opt-in server-side conflict gate (calendar drag-and-drop). Only sessions
   // whose start/end differ from the stored ones are checked; overlap is
   // half-open on workspace-local minutes, and only the SAME booking + SAME
-  // session index is excluded (sibling sessions still conflict).
+  // session index is excluded (sibling sessions still conflict). Only bookings
+  // of the same (effective) team conflict; other teams may overlap freely.
   if (rejectOnConflict && parsed.data.sessions) {
     const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
     const stored = existing.sessions ?? [];
@@ -281,11 +282,14 @@ export async function PATCH(req: Request, { params }: Params) {
         end: hhmmToMinutes(formatHHMM(s.endAt, tz)),
       }));
     if (changed.length > 0) {
+      const effectiveTeamId: string | null =
+        parsed.data.teamId ?? (existing.teamId ? String(existing.teamId) : null);
       const byDate = await getShiftsOnDates(
         ctx.workspace._id,
         changed.map((c) => c.date),
         tz,
-        { teamScope: scope }
+        // Same-team rule: only the booking's effective team can double-book it.
+        { teamScope: scope, teamId: effectiveTeamId }
       );
       const conflicts = changed.flatMap((c) =>
         (byDate[c.date] ?? []).filter(

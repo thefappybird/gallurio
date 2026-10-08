@@ -1032,7 +1032,9 @@
         "allMyTeams": "All my teams",
         "label": "Filter by team",
         "inactive": "Inactive",
-        "teams": "Teams",
+        "legend": "Legend",
+        "booked": "Booked",
+        "conflicted": "Conflicted",
         "countLabel": "{count, plural, one {# team} other {# teams}}",
         "previousPage": "Previous page",
         "nextPage": "Next page"
@@ -1226,6 +1228,7 @@
         "hidePast": "Hide past",
         "pastBookingsHidden": "{count, plural, one {# past booking hidden} other {# past bookings hidden}}",
         "col": {
+          "booked": "Booked on",
           "title": "Booking",
           "client": "Client",
           "date": "Date",
@@ -1414,6 +1417,7 @@
           "cancel": "Go back",
           "invalidError": "Some changes have errors — fix them before submitting."
         },
+        "unconfirmedEdits": "{count, plural, one {# change isn't confirmed yet} other {# changes aren't confirmed yet}} — press ✓ to keep or ✕ to discard.",
         "incompleteBusiness": {
           "title": "Business info incomplete",
           "bodyInvoice": "Your business address and contact email are not configured in your settings page. Your invoice will contain incomplete data.",
@@ -2312,6 +2316,7 @@
         "noDate": "No date",
         "directSource": "Direct",
         "col": {
+          "booked": "Booked on",
           "status": "Status",
           "client": "Client",
           "eventDate": "Event date",
@@ -3628,6 +3633,12 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Sort by",
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "direction": "Sort direction: {dir}"
+    },
     "pagination": {
       "showing": "Showing {from}–{to} of {total}",
       "rowsPerPage": "Per page",

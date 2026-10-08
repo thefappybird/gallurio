@@ -1032,7 +1032,9 @@
         "allMyTeams": "Semua tim saya",
         "label": "Filter berdasarkan tim",
         "inactive": "Tidak aktif",
-        "teams": "Tim",
+        "legend": "Keterangan",
+        "booked": "Dipesan",
+        "conflicted": "Konflik",
         "countLabel": "{count, plural, other {# tim}}",
         "previousPage": "Halaman sebelumnya",
         "nextPage": "Halaman berikutnya"
@@ -1226,6 +1228,7 @@
         "hidePast": "Sembunyikan yang lalu",
         "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
         "col": {
+          "booked": "Dipesan pada",
           "title": "Pemesanan",
           "client": "Klien",
           "date": "Tanggal",
@@ -1414,6 +1417,7 @@
           "cancel": "Kembali",
           "invalidError": "Beberapa perubahan memiliki kesalahan — perbaiki sebelum mengirim."
         },
+        "unconfirmedEdits": "{count, plural, other {# perubahan belum dikonfirmasi}} — tekan ✓ untuk menyimpan atau ✕ untuk membuang.",
         "incompleteBusiness": {
           "title": "Informasi bisnis belum lengkap",
           "bodyInvoice": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Invoice Anda akan berisi data yang tidak lengkap.",
@@ -2312,6 +2316,7 @@
         "noDate": "Tidak ada tanggal",
         "directSource": "Langsung",
         "col": {
+          "booked": "Dipesan pada",
           "status": "Status",
           "client": "Klien",
           "eventDate": "Tanggal acara",
@@ -3628,6 +3633,12 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Urutkan berdasarkan",
+      "ascending": "Naik",
+      "descending": "Turun",
+      "direction": "Arah urutan: {dir}"
+    },
     "pagination": {
       "showing": "Menampilkan {from}–{to} dari {total}",
       "rowsPerPage": "Per halaman",

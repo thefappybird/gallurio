@@ -188,7 +188,42 @@ describe("BookingDraftCard", () => {
     }));
   });
 
-  it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {
+  it("moves end to start + 1h when start is changed past end", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "11:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const [start, end] = Array.from(container.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+  fireEvent.change(start, { target: { value: "14:00" } });
+
+  expect(end.value).toBe("15:00");
+});
+
+it("snaps end to start + 1h on blur when end is at or before start", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "11:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const end = container.querySelectorAll('input[type="time"]')[1] as HTMLInputElement;
+  fireEvent.change(end, { target: { value: "09:00" } });
+  expect(end.value).toBe("09:00");
+  fireEvent.blur(end);
+
+  expect(end.value).toBe("11:00");
+});
+
+it("leaves end alone when start moves but end is still later", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "17:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const [start, end] = Array.from(container.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+  fireEvent.change(start, { target: { value: "12:00" } });
+
+  expect(end.value).toBe("17:00");
+});
+
+it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {
     const onInquiryChanged = vi.fn();
     const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
     renderWithProviders(

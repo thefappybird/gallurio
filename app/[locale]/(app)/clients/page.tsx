@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
@@ -6,7 +8,14 @@ import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags, resolveDetailClient } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import {
+  TABLE_FIT_COOKIE,
+  parseFitCookie,
+  resolveLimit,
+  resolvePageSize,
+} from "@/lib/tables/page-fit";
 import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 
 export async function generateMetadata({
@@ -30,6 +39,9 @@ type SearchParams = {
   client?: string;
 };
 
+// ClientsTable columns: name, contact, source, totalSpent, actions = 5
+const CLIENTS_TABLE_COLUMNS = 5;
+
 export default async function ClientsPage({
   params,
   searchParams,
@@ -39,18 +51,53 @@ export default async function ClientsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const sp = await searchParams;
+  const tCommon = await getTranslations("common");
+
+  // Resolved before the Suspense boundary (a route-level loading.tsx can't see
+  // ?limit) so the fallback skeleton renders the exact row count the table will.
+  const fit = parseFitCookie((await cookies()).get(TABLE_FIT_COOKIE.clients)?.value);
+  const limit = resolveLimit(sp.limit, fit);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-w-0 flex-col gap-4" aria-busy="true" role="status">
+          <span className="sr-only">{tCommon("loading")}</span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton className="h-9 w-full sm:w-72" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+          <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={limit} cardRows={4} />
+        </div>
+      }
+    >
+      <ClientsContent locale={locale} sp={sp} limit={limit} fit={fit} />
+    </Suspense>
+  );
+}
+
+async function ClientsContent({
+  locale,
+  sp,
+  limit,
+  fit,
+}: {
+  locale: string;
+  sp: SearchParams;
+  limit: number;
+  fit: number | undefined;
+}) {
   const t = await getTranslations("app.clients");
 
   const { workspace } = await requireOrg();
   await connectDB();
 
-  const sp = await searchParams;
   // parseInt("abc") → NaN, Math.max(1, NaN) → NaN; clamp explicitly so a
   // malformed `?page=` can't flow into Mongo's skip() as NaN.
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? String(DEFAULT_PAGE_SIZE), 10);
-  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : DEFAULT_PAGE_SIZE;
+  const pageSizeOptions = resolvePageSize(fit).options;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   // Total spent is rendered labelled with the workspace currency below, so a
@@ -167,6 +214,7 @@ export default async function ClientsPage({
         total={total}
         page={page}
         limit={limit}
+        pageSizeOptions={pageSizeOptions}
         locale={locale}
         availableTags={availableTags}
         empty={t("table.empty")}

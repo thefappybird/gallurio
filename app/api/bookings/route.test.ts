@@ -128,6 +128,15 @@ describe("POST /api/bookings", () => {
     expect(log?.action).toBe("created");
   });
 
+  it("stamps bookedAt on a non-draft create", async () => {
+    const { POST } = await load();
+    const before = Date.now();
+    await POST(makeReq(makeBody()));
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.bookedAt).toBeInstanceOf(Date);
+    expect(booking!.bookedAt!.getTime()).toBeGreaterThanOrEqual(before);
+  });
+
   it("returns { id, clientId } with the newly created client id", async () => {
     const { POST } = await load();
     const res = await POST(makeReq(makeBody()));

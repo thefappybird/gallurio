@@ -1032,7 +1032,9 @@
         "allMyTeams": "ทีมทั้งหมดของฉัน",
         "label": "กรองตามทีม",
         "inactive": "ไม่ใช้งาน",
-        "teams": "ทีม",
+        "legend": "คำอธิบายสี",
+        "booked": "จองแล้ว",
+        "conflicted": "ขัดแย้ง",
         "countLabel": "{count, plural, one {# ทีม} other {# ทีม}}",
         "previousPage": "หน้าก่อนหน้า",
         "nextPage": "หน้าถัดไป"
@@ -1226,6 +1228,7 @@
         "hidePast": "ซ่อนที่ผ่านมา",
         "pastBookingsHidden": "{count, plural, one {ซ่อนการจองที่ผ่านมา # รายการ} other {ซ่อนการจองที่ผ่านมา # รายการ}}",
         "col": {
+          "booked": "จองเมื่อ",
           "title": "การจอง",
           "client": "ลูกค้า",
           "date": "วันที่",
@@ -1414,6 +1417,7 @@
           "cancel": "ย้อนกลับ",
           "invalidError": "การเปลี่ยนแปลงบางรายการมีข้อผิดพลาด — แก้ไขก่อนส่ง"
         },
+        "unconfirmedEdits": "{count, plural, other {# การเปลี่ยนแปลงที่ยังไม่ได้ยืนยัน}} — กด ✓ เพื่อเก็บไว้ หรือ ✕ เพื่อยกเลิก",
         "incompleteBusiness": {
           "title": "ข้อมูลธุรกิจไม่ครบถ้วน",
           "bodyInvoice": "ที่อยู่ธุรกิจและอีเมลติดต่อของคุณยังไม่ได้ตั้งค่าไว้ในหน้าการตั้งค่า ใบแจ้งหนี้ของคุณจะมีข้อมูลไม่ครบถ้วน",
@@ -2312,6 +2316,7 @@
         "noDate": "ไม่มีวันที่",
         "directSource": "โดยตรง",
         "col": {
+          "booked": "จองเมื่อ",
           "status": "สถานะ",
           "client": "ลูกค้า",
           "eventDate": "วันที่งาน",
@@ -3628,6 +3633,12 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "เรียงตาม",
+      "ascending": "น้อยไปมาก",
+      "descending": "มากไปน้อย",
+      "direction": "ทิศทางการเรียง: {dir}"
+    },
     "pagination": {
       "showing": "แสดง {from}–{to} จาก {total}",
       "rowsPerPage": "ต่อหน้า",

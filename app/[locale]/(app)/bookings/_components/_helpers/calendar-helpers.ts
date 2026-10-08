@@ -193,6 +193,10 @@ export function fromCalendarGridDate(displayDate: Date, timeZone: string): Date 
  * least one other event from a different booking. Used to render a conflict
  * indicator (&#9888;) on calendar candles.
  *
+ * Booking vs. booking only conflicts when both share the same teamId (null and
+ * null count as the same team). An inquiry vs. a booking conflicts on any
+ * overlap regardless of team; inquiry vs. inquiry never conflicts.
+ *
  * Overlap test: standard half-open interval — adjacent-exact boundaries do NOT
  * conflict, which matches `overlappingShifts()`.
  */
@@ -206,6 +210,9 @@ export function detectConflictIds(events: CalendarEvent[]): Set<string> {
       // Two inquiry candles overlapping each other are not a conflict;
       // only an inquiry vs. a real booking (or booking vs. booking) counts.
       if (a.kind === "inquiry" && b.kind === "inquiry") continue;
+      // Booking vs. booking only conflicts within the same team (null === null
+      // counts as the same, legacy teamless bookings).
+      if (a.kind !== "inquiry" && b.kind !== "inquiry" && a.teamId !== b.teamId) continue;
       if (a.start < b.end && b.start < a.end) {
         ids.add(a.id);
         ids.add(b.id);

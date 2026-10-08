@@ -48,7 +48,7 @@ type CalProps = {
 };
 let cal: CalProps;
 vi.mock("../../bookings/_components/booking-calendar-dynamic", () => ({
-  BookingCalendarLazy: (props: CalProps) => {
+  InquiriesCalendarLazy: (props: CalProps) => {
     cal = props;
     return (
       <ul>

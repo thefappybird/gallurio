@@ -9,7 +9,7 @@ import type {
   CalendarEvent,
   AnyCalendarEvent,
 } from "../../bookings/_components/booking-calendar";
-import { BookingCalendarLazy } from "../../bookings/_components/booking-calendar-dynamic";
+import { InquiriesCalendarLazy } from "../../bookings/_components/booking-calendar-dynamic";
 import { TeamFilterControl } from "../../bookings/_components/team-filter-control";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import {
@@ -20,6 +20,7 @@ import {
 import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { INQUIRIES_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
 
@@ -398,7 +399,8 @@ export function InquiriesCalendarManager({
       aria-busy={windowPending}
       className={cn("transition-opacity", windowPending && "pointer-events-none opacity-60")}
     >
-    <BookingCalendarLazy
+    <InquiriesCalendarLazy
+      fallbackClassName={INQUIRIES_CALENDAR_FALLBACK}
       events={eventsWithConflicts}
       defaultDate={defaultDate ? wallDateAsLocal(defaultDate, workspaceTz ?? FALLBACK_TZ) : undefined}
       onVisibleChange={onVisibleChange}

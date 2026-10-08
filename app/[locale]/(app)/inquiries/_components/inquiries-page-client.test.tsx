@@ -34,9 +34,15 @@ vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
 // Expose the rendered rows so tests can inspect optimistic patches.
 let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: ({ rows, onOpenInquiry }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void }) => {
+  InquiryTable: ({ rows, onOpenInquiry, onSortChange }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void; onSortChange?: (next: { key: string; dir: "asc" | "desc" } | null) => void }) => {
     lastRenderedRows = rows;
-    return <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />;
+    return (
+      <>
+        <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />
+        <button type="button" data-testid="sort-client" onClick={() => onSortChange?.({ key: "client", dir: "asc" })} />
+        <button type="button" data-testid="sort-reset" onClick={() => onSortChange?.(null)} />
+      </>
+    );
   },
 }));
 
@@ -85,6 +91,7 @@ const row: InquiryRow = {
   eventType: "wedding",
   submittedAt: "2026-01-01T00:00:00.000Z",
   source: null,
+  bookedAt: null,
 };
 
 const detail: InquiryDetailModalData = {
@@ -113,6 +120,10 @@ const baseProps = {
   total: 1,
   page: 1,
   limit: 20,
+  pageSizeOptions: [20, 30, 50],
+  sortKey: "submitted",
+  sortDir: "desc" as const,
+  sortExplicit: true,
   locale: "en",
   status: "all",
   counts: { all: 1, inquiry: 1, booked: 0, archived: 0 },
@@ -287,5 +298,26 @@ describe("InquiriesPageClient", () => {
     // Row shows booked optimistically
     const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
     expect(patchedRow?.status).toBe("booked");
+  });
+
+  it("pushes sort, dir and page=1 when the table reports a sort change", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-client"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1&sort=client&dir=asc");
+  });
+
+  it("removes sort and dir and resets page when the table reports a sort reset", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4&sort=client&dir=desc");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-reset"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1");
+  });
+
+  it("pins the current limit in the URL when paging", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=1");
+    renderInquiriesPage({ ...baseProps, initialDetail: null, total: 60 });
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(push.mock.calls.at(-1)?.[0]).toMatch(/limit=20/);
   });
 });

@@ -96,7 +96,8 @@ export function useViewportRemainingHeight<T extends HTMLElement>(
       frame = window.requestAnimationFrame(measure);
     };
 
-    scheduleMeasure();
+    // Measure before first paint so fresh mounts never flash the CSS fallback.
+    measure();
     window.addEventListener("resize", scheduleMeasure);
     window.visualViewport?.addEventListener("resize", scheduleMeasure);
 

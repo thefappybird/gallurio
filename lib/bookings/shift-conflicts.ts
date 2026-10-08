@@ -24,7 +24,7 @@ export function formatHHMM(date: Date, timeZone: string): string {
   return `${h}:${m}`;
 }
 
-type GetShiftsOptions = {
+export type GetShiftsOptions = {
   /** Exclude an entire booking — used by the wizard in edit mode so the
    *  user's own current booking doesn't appear as a self-conflict. */
   excludeId?: string | null;
@@ -35,12 +35,21 @@ type GetShiftsOptions = {
   /** Restrict results to bookings belonging to these team IDs (non-owners).
    *  `undefined` means no restriction (owners see everything). */
   teamScope?: string[] | undefined;
+  /** Same-team rule for booking-vs-booking conflicts: two different teams
+   *  booked at the same time is NOT a conflict. `undefined` = no team filter
+   *  (inquiry callers: any overlapping booking conflicts). A 24-hex string =
+   *  only bookings of that team. `null` = only legacy teamless bookings
+   *  (`teamId: null`). Composes with `teamScope`: a team outside the scope
+   *  yields empty results. Invalid non-hex strings are ignored. */
+  teamId?: string | null;
 };
 
 const PER_DATE_LIMIT = 20;
 
 /**
- * Returns shifts in the workspace that touch each given local date. Runs one
+ * Returns shifts in the workspace that touch each given local date, optionally
+ * restricted to a single team (`teamId`) so only same-team double-booking
+ * counts as a conflict. Runs one
  * bounded query per date in parallel (callers batch dates so this is still one
  * HTTP request): a shift "touches" a date if any session's range overlaps
  * [dayStart, dayEnd] in the workspace's timezone; each date keeps at most the
@@ -58,6 +67,10 @@ export async function getShiftsOnDates(
   opts: GetShiftsOptions = {}
 ): Promise<Record<string, ShiftHit[]>> {
   const { excludeId, excludeShiftKey, teamScope } = opts;
+  const teamId =
+    typeof opts.teamId === "string" && !/^[a-f0-9]{24}$/i.test(opts.teamId)
+      ? undefined
+      : opts.teamId;
   const dates = [...new Set(dateStrs)];
   const byDate: Record<string, ShiftHit[]> = {};
   if (dates.length === 0) return byDate;
@@ -92,6 +105,17 @@ export async function getShiftsOnDates(
   }
   if (teamScope !== undefined) {
     baseFilter.teamId = { $in: teamScope };
+  }
+  if (typeof teamId === "string") {
+    if (teamScope !== undefined && !teamScope.some((t) => String(t) === teamId)) {
+      for (const date of dates) byDate[date] = [];
+      return byDate;
+    }
+    baseFilter.teamId = teamId;
+  } else if (teamId === null) {
+    // Legacy teamless bookings only. Under a teamScope, `$in` can't match
+    // null unless scope allows it, so keep the intersection semantics.
+    baseFilter.teamId = teamScope !== undefined ? { $in: teamScope, $eq: null } : null;
   }
 
   const dateFmt = new Intl.DateTimeFormat("en-CA", {

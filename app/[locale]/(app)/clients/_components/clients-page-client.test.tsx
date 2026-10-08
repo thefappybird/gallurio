@@ -123,6 +123,7 @@ function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>
     total: 2,
     page: 1,
     limit: 25,
+    pageSizeOptions: [10, 20, 30, 50],
     locale: "en",
     availableTags: ["vip", "wedding"],
     empty: "No clients",
@@ -173,6 +174,14 @@ describe("ClientsPageClient", () => {
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
     expect(routerPush).toHaveBeenCalledTimes(1);
     expect(String(routerPush.mock.calls[0][0])).toMatch(/page=2/);
+  });
+
+  it("pagination pins the current limit in the URL", () => {
+    renderWithProviders(
+      <ClientsPageClient {...build({ total: 60, page: 1, limit: 25 })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(String(routerPush.mock.calls[0][0])).toMatch(/limit=25/);
   });
 
   it("Previous button is disabled on page 1", () => {

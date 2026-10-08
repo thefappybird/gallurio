@@ -38,6 +38,7 @@ import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
 import { useActionError } from "@/lib/i18n/actionError";
+import { syncEndTime } from "@/lib/utils/time-format";
 
 type Props = {
   inquiryId: string;
@@ -193,7 +194,21 @@ export function BookingDraftCard({
   }
 
   function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
-    setDraftSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+    setDraftSessions((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const next = { ...s, [field]: value };
+        // End never sits at/before start; start is never auto-adjusted.
+        if (field === "startTime") next.endTime = syncEndTime(next.startTime, next.endTime);
+        return next;
+      })
+    );
+  }
+
+  function handleEndTimeBlur(idx: number) {
+    setDraftSessions((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, endTime: syncEndTime(s.startTime, s.endTime) } : s))
+    );
   }
 
   // ONE batched request for every distinct session date. A changed date set is
@@ -491,6 +506,7 @@ export function BookingDraftCard({
                           type="time"
                           value={s.endTime}
                           onChange={(e) => handleSessionChange(i, "endTime", e.target.value)}
+                          onBlur={() => handleEndTimeBlur(i)}
                           className="border border-border bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
                       </div>

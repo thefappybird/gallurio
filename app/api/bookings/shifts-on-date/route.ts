@@ -15,6 +15,8 @@ const MAX_DATES = 31;
  * the date if any session's range overlaps [dayStart, dayEnd]. Returns the
  * shift-start and shift-end times (HH:MM, local) from the matching session so
  * the wizard can show conflict ranges without leaking full booking details.
+ * Optional `teamId` (24-hex, or "none" for teamless) restricts to one team so
+ * only same-team double-booking is reported.
  */
 export async function GET(req: Request) {
   const ctx = await requireOrg();
@@ -36,6 +38,14 @@ export async function GET(req: Request) {
   const excludeId = url.searchParams.get("excludeId");
   const excludeShiftKey = url.searchParams.get("excludeShiftKey");
 
+  // Optional same-team filter: absent = all teams, "none" = teamless only.
+  const teamParam = url.searchParams.get("teamId");
+  let teamId: string | null | undefined;
+  if (teamParam === null) teamId = undefined;
+  else if (teamParam === "none") teamId = null;
+  else if (/^[a-f0-9]{24}$/i.test(teamParam)) teamId = teamParam;
+  else return NextResponse.json({ error: "Invalid team" }, { status: 400 });
+
   await connectDB();
   const scope = await resolveBookingTeamScope(ctx);
 
@@ -53,6 +63,7 @@ export async function GET(req: Request) {
     excludeId,
     excludeShiftKey,
     teamScope: scope,
+    teamId,
   });
   return NextResponse.json({ byDate });
 }

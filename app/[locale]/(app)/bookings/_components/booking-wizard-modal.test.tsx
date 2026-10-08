@@ -366,6 +366,40 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
     ).length;
     expect(callCountAfterChange).toBeGreaterThan(callCountAfterInitial);
   });
+
+  it("sends the selected team to shifts-on-date", async () => {
+    const mockFetch = vi.fn(async (url: string) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => (shiftsBody(url, [])) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ([]) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate={TARGET_DATE}
+          defaultCurrency="PHP"
+          locale="en"
+          teamId="507f1f77bcf86cd799439011"
+        />
+      </NextIntlClientProvider>
+    );
+    await advanceToSessionsStep();
+
+    await waitFor(() => {
+      const calls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes("/api/bookings/shifts-on-date") &&
+        url.includes("teamId=507f1f77bcf86cd799439011")
+      );
+      expect(calls.length).toBeGreaterThan(0);
+    });
+  });
 });
 
 // ── Issue 4 regression: start date change preserves session duration ──────────

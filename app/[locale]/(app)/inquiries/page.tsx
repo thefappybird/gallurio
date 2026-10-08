@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
@@ -16,7 +17,13 @@ import { getBookingTeamOptions } from "../bookings/_data/team-options";
 import { InquiriesPageClient } from "./_components/inquiries-page-client";
 import { BookingUrlModals } from "../bookings/_components/booking-url-modals";
 import type { InquiryRow } from "./_components/inquiry-table";
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import {
+  TABLE_FIT_COOKIE,
+  parseFitCookie,
+  resolveLimit,
+  resolvePageSize,
+} from "@/lib/tables/page-fit";
+import { parseSort } from "@/lib/tables/sort";
 import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 import { isValidObjectId } from "mongoose";
 import type { CalendarEvent } from "../bookings/_components/booking-calendar";
@@ -25,7 +32,7 @@ import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { buildInquiryDetail } from "@/lib/inquiries/detail-data";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
-import { CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { CalendarSkeleton, INQUIRIES_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
 import { InquiriesHeaderSkeleton } from "./_components/inquiries-page-skeleton";
@@ -53,6 +60,8 @@ type SearchParams = {
   view?: string;
   detail?: string;
   date?: string;
+  sort?: string;
+  dir?: string;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -81,8 +90,9 @@ function compactSource(source: {
   return null;
 }
 
-// InquiryTable columns match INQUIRY_TABLE_COLUMNS in inquiries-page-client.tsx
-const INQUIRY_TABLE_COLUMNS = 6;
+// InquiryTable columns: status, client, title (with source pill), type, event date, submitted, booked, actions = 8
+// (matches INQUIRY_TABLE_COLUMNS in inquiries-page-client.tsx)
+const INQUIRY_TABLE_COLUMNS = 8;
 
 export default async function InquiriesPage({
   params,
@@ -99,6 +109,11 @@ export default async function InquiriesPage({
     INQUIRIES_VIEW_COOKIE_NAME
   );
 
+  // Resolved before the Suspense boundary so the fallback skeleton renders the
+  // exact row count the table will (no layout shift on stream-in).
+  const fit = parseFitCookie((await cookies()).get(TABLE_FIT_COOKIE.inquiries)?.value);
+  const limit = resolveLimit(sp.limit, fit);
+
   // Data-dependent content streams behind a per-view boundary so a table <->
   // calendar switch shows the matching skeleton immediately.
   return (
@@ -107,15 +122,17 @@ export default async function InquiriesPage({
       fallback={
         <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
           <InquiriesHeaderSkeleton />
+          {/* Reserves MobileSortControl's slot so the list doesn't jump on stream-in. */}
+          {view !== "calendar" && <div className="h-11 lg:hidden" aria-hidden="true" />}
           {view === "calendar" ? (
-            <CalendarSkeleton />
+            <CalendarSkeleton fallbackClassName={INQUIRIES_CALENDAR_FALLBACK} />
           ) : (
-            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={DEFAULT_PAGE_SIZE} cardRows={4} {...INQUIRIES_SKELETON} />
+            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={limit} cardRows={4} {...INQUIRIES_SKELETON} />
           )}
         </div>
       }
     >
-      <InquiriesContent locale={locale} sp={sp} view={view} />
+      <InquiriesContent locale={locale} sp={sp} view={view} limit={limit} fit={fit} />
     </Suspense>
   );
 }
@@ -124,10 +141,14 @@ async function InquiriesContent({
   locale,
   sp,
   view,
+  limit,
+  fit,
 }: {
   locale: string;
   sp: SearchParams;
   view: Awaited<ReturnType<typeof resolveStoredCollectionView>>;
+  limit: number;
+  fit: number | undefined;
 }) {
   const t = await getTranslations("app.inquiries");
 
@@ -135,8 +156,8 @@ async function InquiriesContent({
 
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? String(DEFAULT_PAGE_SIZE), 10);
-  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : DEFAULT_PAGE_SIZE;
+  const pageSizeOptions = resolvePageSize(fit).options;
+  const sort = parseSort("inquiries", sp);
 
   const from = parseDate(sp.from);
   const to = parseDate(sp.to, true);
@@ -152,7 +173,9 @@ async function InquiriesContent({
   const [{ rows: items, total }, counts] = isCalendar
     ? [{ rows: [] as InquiryDoc[], total: 0 }, { all: 0, inquiry: 0, booked: 0, archived: 0 }]
     : await Promise.all([
-        listInquiries(workspace._id, { status: sp.status ?? null, from, to }, { page, limit }),
+        listInquiries(workspace._id, { status: sp.status ?? null, from, to },
+          { page, limit, sort: { field: sort.field, dir: sort.dir, text: sort.text } }
+        ),
         getInquiryStatusCounts(workspace._id),
       ]);
 
@@ -198,6 +221,8 @@ async function InquiriesContent({
       if (sp.from) next.set("from", sp.from);
       if (sp.to) next.set("to", sp.to);
       if (sp.limit) next.set("limit", sp.limit);
+      if (sp.sort) next.set("sort", sp.sort);
+      if (sp.dir) next.set("dir", sp.dir);
       next.set("page", String(totalPages));
       redirect({
         href: { pathname: "/inquiries", query: Object.fromEntries(next.entries()) },
@@ -215,6 +240,7 @@ async function InquiriesContent({
     eventDate: q.eventDate ? new Date(q.eventDate).toISOString() : null,
     eventType: q.eventType ?? "other",
     submittedAt: q.createdAt.toISOString(),
+    bookedAt: q.bookedAt ? new Date(q.bookedAt).toISOString() : null,
     source: compactSource(q.source),
     hasConflict: conflictSet.has(q._id.toString()),
   }));
@@ -265,6 +291,10 @@ async function InquiriesContent({
         total={total}
         page={page}
         limit={limit}
+        pageSizeOptions={pageSizeOptions}
+        sortKey={sort.key}
+        sortDir={sort.dir}
+        sortExplicit={sort.explicit}
         locale={locale}
         status={sp.status ?? "all"}
         counts={counts}

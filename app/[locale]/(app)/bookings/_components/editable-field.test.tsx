@@ -107,6 +107,23 @@ describe("EditableField validation a11y", () => {
   });
 });
 
+describe("EditableField editing layout", () => {
+  it("renders confirm button on the same row as the select trigger", () => {
+    render(
+      <EditableField
+        label="Event type"
+        value="open"
+        type="select"
+        options={[{ value: "open", label: "Open" }]}
+        onCommit={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit Event type" }));
+    const row = screen.getByRole("combobox").parentElement;
+    expect(row).toContainElement(screen.getByRole("button", { name: "Confirm" }));
+  });
+});
+
 describe("EditableField localized labels", () => {
   it("uses the active locale for the confirm / cancel buttons", () => {
     render(<EditableField label="Title" value="Original" type="text" onCommit={vi.fn()} />, {
@@ -116,5 +133,29 @@ describe("EditableField localized labels", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit Title" }));
     expect(screen.getByRole("button", { name: "Kumpirmahin" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kanselahin" })).toBeInTheDocument();
+  });
+});
+
+describe("EditableField dirty reporting", () => {
+  it("reports dirty true when edited and false after cancel, with green confirm only when committable", () => {
+    const onDirtyChange = vi.fn();
+    render(
+      <EditableField
+        label="Title"
+        value="Original"
+        type="text"
+        editKey="title"
+        onDirtyChange={onDirtyChange}
+        onCommit={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit Title" }));
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+    expect(confirm.className).not.toContain("--success-bg");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Changed" } });
+    expect(onDirtyChange).toHaveBeenLastCalledWith("title", true);
+    expect(confirm.className).toContain("--success-bg");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onDirtyChange).toHaveBeenLastCalledWith("title", false);
   });
 });

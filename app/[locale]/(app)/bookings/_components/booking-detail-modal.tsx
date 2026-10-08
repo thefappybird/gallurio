@@ -92,7 +92,7 @@ import {
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { FxSubtitle } from "@/components/app/fx-subtitle";
-import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, syncEndTime, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
@@ -570,10 +570,18 @@ export function BookingDetailModal({
     () => [...new Set(allVisibleSessionDates.filter(Boolean))].sort(),
     [allVisibleSessionDates]
   );
+  // Conflicts are per team: a pending team edit wins over the saved team;
+  // "none" scopes to teamless bookings.
+  const effectiveTeamId =
+    ("teamId" in pending ? (pending.teamId as string | null) : booking?.teamId) || "none";
   const shiftsQuery = useQuery({
-    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId],
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId, effectiveTeamId],
     queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
-      const qs = new URLSearchParams({ dates: conflictDates.join(","), excludeId: bookingId });
+      const qs = new URLSearchParams({
+        dates: conflictDates.join(","),
+        excludeId: bookingId,
+        teamId: effectiveTeamId,
+      });
       const res = await fetch(`/api/bookings/shifts-on-date?${qs.toString()}`);
       if (!res.ok) throw new Error("shifts_load_failed");
       return res.json();
@@ -718,6 +726,18 @@ export function BookingDetailModal({
     },
     []
   );
+
+  /** Editors holding an unconfirmed (dirty) change; drives the footer warning. */
+  const [dirtyEditorKeys, setDirtyEditorKeys] = useState<Set<string>>(new Set());
+  const onDirtyChange = useCallback((editKey: string, dirty: boolean) => {
+    setDirtyEditorKeys((prev) => {
+      if (dirty === prev.has(editKey)) return prev;
+      const next = new Set(prev);
+      if (dirty) next.add(editKey);
+      else next.delete(editKey);
+      return next;
+    });
+  }, []);
 
   // Total undrafted work: open existing-session editors + unlocked draft editors
   // + open EditableField editors.
@@ -1542,6 +1562,7 @@ export function BookingDetailModal({
               onDraftDateChange={handleDraftDateChange}
               registerFieldHandle={registerFieldHandle}
               onFieldEditingChange={onFieldEditingChange}
+              onDirtyChange={onDirtyChange}
               onLocalEditingChange={onLocalEditingChange}
             />
           )}
@@ -1557,6 +1578,7 @@ export function BookingDetailModal({
             pendingCount={pendingCount}
             saving={saving}
             saveError={saveError}
+            unconfirmedCount={dirtyEditorKeys.size}
             saveBlocked={hasAnyConflict || hasInvalidDraftPayment}
             sessionActionBusy={sessionActionBusyIdx !== null}
             businessComplete={businessComplete}
@@ -2002,6 +2024,7 @@ function BookingTabs({
   onToggleRemovePayment,
   registerFieldHandle,
   onFieldEditingChange,
+  onDirtyChange,
   onLocalEditingChange,
 }: {
   booking: BookingDoc;
@@ -2059,6 +2082,7 @@ function BookingTabs({
   onToggleRemovePayment: (idx: number) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
   onFieldEditingChange: (editKey: string, editing: boolean) => void;
+  onDirtyChange: (editKey: string, dirty: boolean) => void;
   onLocalEditingChange: (key: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
@@ -2330,6 +2354,7 @@ function BookingTabs({
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
           {showTeamField ? (
             <EditableField
@@ -2345,6 +2370,7 @@ function BookingTabs({
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
             />
           ) : null}
         </div>
@@ -2422,6 +2448,7 @@ function BookingTabs({
               editKey="amount.total"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
             />
             {booking.amount.fxRate &&
             booking.amount.fxRate > 0 &&
@@ -2459,6 +2486,7 @@ function BookingTabs({
             editKey="amount.deposit"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
           <EditableField
             label={tFields("currency")}
@@ -2472,6 +2500,7 @@ function BookingTabs({
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
         </div>
 
@@ -2880,6 +2909,7 @@ function BookingTabs({
                 onDraftDateChange={(date) =>
                   onDraftDateChange(String(resolvedIdx), date)
                 }
+                onDirtyChange={(dirty) => onDirtyChange(`session:${resolvedIdx}`, dirty)}
               />
             );
           })}
@@ -2940,6 +2970,7 @@ function BookingTabs({
                 onDraftDateChange={(date) =>
                   onDraftDateChange(`draft:${draftIdx}`, date)
                 }
+                onDirtyChange={(dirty) => onDirtyChange(`draft:${draft.draftId}`, dirty)}
               />
             );
           })}
@@ -2978,6 +3009,7 @@ function BookingTabs({
           editKey="notes"
           registerHandle={registerFieldHandle}
           onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
         />
 
         <SectionHeader label={tSections("history")} />
@@ -3068,6 +3100,18 @@ function SessionConflictAlert({
  * `pendingSessionEdits` via `onCommit`. The parent renders the "Unsaved" pill
  * and a ✗ to drop the pending edit without saving.
  */
+/** Reports a dirty flag to the modal; clears it on unmount. */
+function useReportDirty(dirty: boolean, onDirtyChange?: (dirty: boolean) => void) {
+  const cbRef = useRef(onDirtyChange);
+  useEffect(() => {
+    cbRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    cbRef.current?.(dirty);
+  }, [dirty]);
+  useEffect(() => () => cbRef.current?.(false), []);
+}
+
 function SessionCard({
   session,
   sessionIndex,
@@ -3088,6 +3132,7 @@ function SessionCard({
   onRemove,
   onDiscardEdit,
   onDraftDateChange,
+  onDirtyChange,
 }: {
   session: SessionDoc;
   sessionIndex: number;
@@ -3110,6 +3155,7 @@ function SessionCard({
   onRemove: () => void;
   onDiscardEdit: () => void;
   onDraftDateChange: (date: string | null) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
@@ -3213,6 +3259,7 @@ function SessionCard({
     !!draftEndTime &&
     draftEndTime > draftStartTime;
   const canCommit = isDirty && isSessionValid;
+  useReportDirty(editing && isDirty, onDirtyChange);
 
   // While editing, show the in-flight draft date for conflict lookup; otherwise
   // use the display date (which already incorporates a pending edit if any).
@@ -3261,6 +3308,11 @@ function SessionCard({
                   onClick={commit}
                   aria-label={tFields("confirmEdit")}
                   disabled={disabled || !canCommit || isCheckingConflicts}
+                  className={
+                    canCommit && !disabled && !isCheckingConflicts
+                      ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+                      : undefined
+                  }
                 >
                   {isCheckingConflicts ? (
                     <Loader2Icon className="size-3 animate-spin" />
@@ -3413,7 +3465,11 @@ function SessionCard({
                 type="time"
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftStartTime}
-                onChange={(e) => setDraftStartTime(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDraftStartTime(val);
+                  setDraftEndTime((end) => syncEndTime(val, end));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3429,6 +3485,7 @@ function SessionCard({
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
+                onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3587,6 +3644,7 @@ function DraftSessionCard({
   onUpdate,
   onLock,
   onDraftDateChange,
+  onDirtyChange,
 }: {
   draft: DraftSession;
   draftIndex: number;
@@ -3600,6 +3658,7 @@ function DraftSessionCard({
   onUpdate: (startAt: string, endAt: string) => void;
   onLock: () => void;
   onDraftDateChange: (date: string | null) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const timeMode = useTimeFormat();
@@ -3640,6 +3699,12 @@ function DraftSessionCard({
     !!draftStartTime &&
     !!draftEndTime &&
     draftEndTime > draftStartTime;
+  useReportDirty(
+    draftStartDate !== isoDate(draft.startAt) ||
+      draftStartTime !== hhmm(draft.startAt) ||
+      draftEndTime !== hhmm(draft.endAt),
+    onDirtyChange
+  );
 
   function commit() {
     const newStartAt = combineDatetime(draftStartDate, draftStartTime);
@@ -3689,6 +3754,11 @@ function DraftSessionCard({
               onClick={commit}
               aria-label={tFields("confirmDraftSession")}
               disabled={disabled || !isDraftValid || isCheckingConflicts}
+              className={
+                isDraftValid && !disabled && !isCheckingConflicts
+                  ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+                  : undefined
+              }
             >
               {isCheckingConflicts ? (
                 <Loader2Icon className="size-3 animate-spin" />
@@ -3750,7 +3820,9 @@ function DraftSessionCard({
               lang={TIME_INPUT_LANG[timeMode]}
               value={draftStartTime}
               onChange={(e) => {
-                setDraftStartTime(e.target.value);
+                const val = e.target.value;
+                setDraftStartTime(val);
+                setDraftEndTime((end) => syncEndTime(val, end));
                 setError(null);
               }}
               onKeyDown={(e) => {
@@ -3772,6 +3844,7 @@ function DraftSessionCard({
                 setDraftEndTime(e.target.value);
                 setError(null);
               }}
+              onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
                 if (e.key === "Escape") onDiscard();
@@ -3951,6 +4024,7 @@ function DialogFooterBar({
   pendingCount,
   saving,
   saveError,
+  unconfirmedCount,
   saveBlocked,
   sessionActionBusy,
   businessComplete,
@@ -3967,6 +4041,7 @@ function DialogFooterBar({
   pendingCount: number;
   saving: boolean;
   saveError: string | null;
+  unconfirmedCount: number;
   saveBlocked: boolean;
   sessionActionBusy: boolean;
   businessComplete: boolean;
@@ -4000,6 +4075,16 @@ function DialogFooterBar({
 
   return (
     <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
+      {unconfirmedCount > 0 ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-1.5 text-xs text-[var(--warning-text)]"
+        >
+          <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span>{t("unconfirmedEdits", { count: unconfirmedCount })}</span>
+        </p>
+      ) : null}
       {saveError ? (
         <p className="text-xs text-destructive">{saveError}</p>
       ) : null}

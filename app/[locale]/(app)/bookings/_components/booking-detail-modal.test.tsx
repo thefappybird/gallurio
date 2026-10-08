@@ -685,6 +685,22 @@ describe("Issue 2 — session edits are deferred (pendingSessionEdits)", () => {
     expect(patchCalls).toHaveLength(0);
   });
 
+  it("flags an edited-but-unconfirmed session in the footer and clears it after confirm", async () => {
+    vi.stubGlobal("fetch", makeFetch());
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    expect(screen.queryByRole("status")).toBeNull();
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 5);
+    expect(await screen.findByRole("status")).toHaveTextContent("1 change isn't confirmed yet");
+
+    await clickConfirm();
+    await waitFor(() => {
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+  });
+
   it("fires a single PATCH with sessions payload when Save changes is clicked", async () => {
     const fetchMock = makeFetch();
     vi.stubGlobal("fetch", fetchMock);
@@ -1560,6 +1576,23 @@ describe("Event tab — event-type field", () => {
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
     expect(screen.getByRole("combobox")).toHaveTextContent("Wedding");
+  });
+
+  it("shows an unconfirmed-edits status in the footer only while an inline editor is dirty", async () => {
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: /payments/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^edit total$/i }));
+    expect(screen.queryByText(/isn't confirmed yet|aren't confirmed yet/i)).toBeNull();
+
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "99999" } });
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("1 change isn't confirmed yet");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/isn't confirmed yet/i)).toBeNull();
+    });
   });
 
   it("does NOT render an event-type control in the header", async () => {
@@ -3090,6 +3123,18 @@ describe("BookingDetailModal — conflict preview batching", () => {
     expect(dates).toHaveLength(3);
   });
 
+  it("scopes the shifts-on-date request to the booking's team (none when teamless)", async () => {
+    const fetchMock = makeFetch({});
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await new Promise((r) => setTimeout(r, 50));
+    const shiftCall = (fetchMock as Mock).mock.calls
+      .map((a: unknown[]) => String(a[0]))
+      .find((u) => u.includes("shifts-on-date"))!;
+    expect(new URL(shiftCall, "http://test").searchParams.get("teamId")).toBe("none");
+  });
+
   it("marks the session conflict alert as role=alert", async () => {
     vi.stubGlobal("fetch", makeFetch({ shifts: [CONFLICT_SHIFT] }));
     renderModal();
@@ -3224,5 +3269,81 @@ describe("BookingDetailModal — optimistic concurrency", () => {
     expect(screen.queryByText("Unsaved")).not.toBeInTheDocument();
     expect(screen.getAllByText(/changed by someone else/i).length).toBeGreaterThan(0);
     expect(fetchMock.mock.calls.filter((c) => c[1]?.method === "PATCH")).toHaveLength(1);
+  });
+});
+
+describe("SessionCard end time follows start time", () => {
+  it("moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+
+  it("snaps end to start + 1h on blur when end is at or before start", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(start, { target: { value: "10:00" } });
+    fireEvent.change(end, { target: { value: "09:00" } });
+    fireEvent.blur(end);
+
+    expect(end.value).toBe("11:00");
+  });
+
+  it("leaves end alone when start moves but end is still later", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "17:00" } });
+    fireEvent.change(start, { target: { value: "12:00" } });
+
+    expect(end.value).toBe("17:00");
+  });
+
+  it("DraftSessionCard moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+
+  it("DraftSessionCard snaps end to start + 1h on blur when end is before start", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(start, { target: { value: "10:00" } });
+    fireEvent.change(end, { target: { value: "09:00" } });
+    fireEvent.blur(end);
+
+    expect(end.value).toBe("11:00");
+  });
+
+  it("DraftSessionCard leaves end alone when start moves but end is still later", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "17:00" } });
+    fireEvent.change(start, { target: { value: "12:00" } });
+
+    expect(end.value).toBe("17:00");
   });
 });

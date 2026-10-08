@@ -1268,6 +1268,36 @@ describe("PATCH /api/bookings/[id] rejectOnConflict", () => {
     expect(res.status).toBe(200);
   });
 
+  it("overlap with a different team's booking is not a conflict", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    await seedAt(c._id, [sess(10, 12)], { teamId: new Types.ObjectId() });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const res = await patchFlag(b._id.toString(), [sess(11, 13)]);
+    expect(res.status).toBe(200);
+  });
+
+  it("a PATCH that reassigns the team checks conflicts against the new team", async () => {
+    auth.workspaceOverrides = { timezone: "UTC" };
+    const c = await seedClient(workspaceId);
+    const newTeam = await Team.create({
+      workspaceId,
+      name: "New",
+      color: TEAM_COLOR_PALETTE[2],
+      isActive: true,
+      memberCount: 0,
+      createdByWorkosUserId: userId,
+    });
+    await seedAt(c._id, [sess(10, 12)], { teamId: newTeam._id });
+    const b = await seedAt(c._id, [sess(14, 16)]);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ sessions: [iso(sess(11, 13))], teamId: newTeam._id.toString(), rejectOnConflict: true }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(409);
+  });
+
   it("400s on a non-boolean rejectOnConflict", async () => {
     const c = await seedClient(workspaceId);
     const b = await seedAt(c._id, [sess(14, 16)]);

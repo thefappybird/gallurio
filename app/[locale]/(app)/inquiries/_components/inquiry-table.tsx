@@ -11,6 +11,20 @@ import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import type { SortDir } from "@/lib/tables/sort";
+import { nextSort } from "@/lib/tables/sort-next";
+import { ariaSortFor, SortHeaderButton } from "@/components/app/table-sort";
+
+// Desktop columns in render order; `key` is the server sort key (null = unsortable).
+const COLUMNS = [
+  { col: "status", key: "status" },
+  { col: "client", key: "client" },
+  { col: "eventTitle", key: "eventTitle" },
+  { col: "eventType", key: "eventType" },
+  { col: "eventDate", key: "eventDate" },
+  { col: "submitted", key: "submitted" },
+  { col: "booked", key: "bookedAt" },
+] as const;
 
 export type InquiryRow = {
   id: string;
@@ -21,6 +35,8 @@ export type InquiryRow = {
   eventDate: string | null;
   eventType: string;
   submittedAt: string;
+  /** ISO string; null when never booked or predates bookedAt. */
+  bookedAt: string | null;
   source: string | null;
   hasConflict?: boolean;
 };
@@ -35,6 +51,12 @@ type Props = {
   /** Lets the page own URL navigation so opening a row shares the same
    * transition as filters and pagination. */
   onOpenInquiry?: (inquiryId: string) => void;
+  /** Server sort state (URL `sort` / `dir`). */
+  sortKey?: string | null;
+  sortDir?: SortDir;
+  /** Fires with the next sort when a header is clicked. */
+  /** null = reset to the server default order. */
+  onSortChange?: (next: { key: string; dir: SortDir } | null) => void;
 };
 
 // One Intl.DateTimeFormat per locale|tz, built once (construction is expensive).
@@ -53,6 +75,18 @@ function getDateFormatter(locale: string, tz: string): Intl.DateTimeFormat {
     dateFormatters.set(key, formatter);
   }
   return formatter;
+}
+
+function SourcePill({ source, fallback }: { source: string | null; fallback: string }) {
+  return (
+    <span
+      data-testid="source-pill"
+      title={source ?? undefined}
+      className="inline-flex shrink-0 items-center border border-border px-1.5 py-px text-[11px] leading-none capitalize text-muted-foreground"
+    >
+      {source ?? fallback}
+    </span>
+  );
 }
 
 function CardField({
@@ -74,7 +108,7 @@ function CardField({
   );
 }
 
-export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry }: Props) {
+export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FALLBACK_TZ, onOpenInquiry, sortKey = null, sortDir = "desc", onSortChange }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
@@ -151,6 +185,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                         {t("table.conflict")}
                       </span>
                     ) : null}
+                    <SourcePill source={row.source} fallback={t("table.directSource")} />
                   </div>
                   <p className="mt-3 font-semibold leading-snug">{row.name}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -180,17 +215,15 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   value={fmtDate(row.eventDate)}
                 />
                 <CardField
+                  label={t("table.col.booked")}
+                  value={row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
+                />
+                <CardField
                   label={t("table.col.submitted")}
                   value={
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <span>{fmtDateTime(row.submittedAt)}</span>
-                      <span aria-hidden>-</span>
-                      <span className="capitalize">
-                        {row.source ?? t("table.directSource")}
-                      </span>
-                    </span>
+                    fmtDateTime(row.submittedAt)
                   }
-                  valueClassName="capitalize text-muted-foreground"
+                  valueClassName="text-muted-foreground"
                 />
               </dl>
             </article>
@@ -199,31 +232,29 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
       </div>
 
       <div className="hidden min-w-0 max-w-full overflow-x-auto border border-border bg-card lg:block">
-        <table className="w-full min-w-max text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground">
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.status")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.client")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventTitle")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventType")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.eventDate")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.submitted")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
-                {t("table.col.source")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium text-start">
+              {COLUMNS.map(({ col, key }) => {
+                const sorted = sortKey === key && sortDir;
+                return (
+                  <th
+                    key={col}
+                    scope="col"
+                    aria-sort={ariaSortFor(sorted)}
+                    className="px-2 py-2 font-medium xl:px-3 text-start"
+                  >
+                    <SortHeaderButton
+                      label={t(`table.col.${col}`)}
+                      sorted={sorted}
+                      onClick={() =>
+                        onSortChange?.(nextSort(sortKey, sortDir, key))
+                      }
+                    />
+                  </th>
+                );
+              })}
+              <th scope="col" className="px-2 py-2 font-medium xl:px-3 text-start">
                 <span className="sr-only">{t("table.col.actions")}</span>
               </th>
             </tr>
@@ -246,7 +277,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                   }
                 }}
               >
-                <td className="px-3 py-2.5 align-middle">
+                <td className="px-2 py-2.5 align-middle xl:px-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <InquiryStatusBadge status={row.status} />
                     {row.hasConflict ? (
@@ -257,33 +288,47 @@ export function InquiryTable({ rows, locale, empty, emptyHint, workspaceTz = FAL
                     ) : null}
                   </div>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
+                <td className="px-2 py-2.5 align-middle xl:px-3">
                   <span className="flex flex-col">
-                    <span className="font-semibold leading-snug">
+                    <span
+                      className="block max-w-[10rem] truncate font-semibold leading-snug"
+                      title={row.name}
+                    >
                       {row.name}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span
+                      className="block max-w-[10rem] truncate text-xs text-muted-foreground"
+                      title={row.email}
+                    >
                       {row.email}
                     </span>
                   </span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
-                  {row.eventTitle ?? t("table.noTitle")}
+                <td className="px-2 py-2.5 align-middle xl:px-3">
+                  <span
+                    className="block max-w-[9rem] truncate"
+                    title={row.eventTitle ?? undefined}
+                  >
+                    {row.eventTitle ?? t("table.noTitle")}
+                  </span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
-                  {eventTypeLabel(row.eventType)}
+                <td className="px-2 py-2.5 align-middle xl:px-3">
+                  <span className="flex flex-col items-start gap-0.5 leading-tight">
+                    {eventTypeLabel(row.eventType)}
+                    <SourcePill source={row.source} fallback={t("table.directSource")} />
+                  </span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
+                <td className="whitespace-nowrap px-2 py-2.5 align-middle xl:px-3">
                   {fmtDate(row.eventDate)}
                 </td>
-                <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
                   {fmtDateTime(row.submittedAt)}
                 </td>
-                <td className="px-3 py-2.5 align-middle capitalize text-muted-foreground">
-                  {row.source ?? t("table.directSource")}
+                <td className="px-2 py-2.5 align-middle xl:px-3 whitespace-nowrap text-muted-foreground">
+                  {row.bookedAt ? fmtDateTime(row.bookedAt) : "—"}
                 </td>
                 <td
-                  className="px-3 py-2.5 align-middle"
+                  className="px-2 py-2.5 align-middle xl:px-3"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex justify-end">

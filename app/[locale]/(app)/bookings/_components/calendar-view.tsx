@@ -32,6 +32,7 @@ import { useInvalidateFor } from "@/hooks/use-data-events";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
 import { setUrlParams } from "@/lib/utils/url-params";
 import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-window";
+import { BOOKINGS_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
@@ -684,7 +685,7 @@ export function CalendarView({
 
   const toolbarTrailing = useMemo(
     () =>
-      teams && teams.length > 1 ? (
+      teams ? (
         <TeamFilterControl
           teams={teams}
           selected={selectedTeams}
@@ -698,6 +699,7 @@ export function CalendarView({
   return (
     <>
       <BookingCalendarLazy
+        fallbackClassName={BOOKINGS_CALENDAR_FALLBACK}
         events={eventsWithConflicts}
         defaultDate={defaultDate}
         view={view}

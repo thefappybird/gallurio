@@ -12,7 +12,7 @@ import {
 import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, syncEndTime } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
@@ -158,6 +158,15 @@ function SessionCard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, setValue, index]);
 
+  // End never sits at/before start: pull it to start+1h (start is never adjusted).
+  const syncEnd = (start: string) => {
+    const end = watch(`sessions.${index}.endTime`);
+    const next = syncEndTime(start, end);
+    if (next !== end) {
+      setValue(`sessions.${index}.endTime`, next, { shouldDirty: true, shouldValidate: true });
+    }
+  };
+
   const sessionErrors = errors.sessions?.[index];
   // The drawer is forced open (below) while this session has validation errors
   // so they can't be collapsed out of sight; user-controlled otherwise.
@@ -234,6 +243,7 @@ function SessionCard({
             {...register(`sessions.${index}.startTime`, {
               required: true,
               pattern: /^\d{2}:\d{2}$/,
+              onChange: (e: { target: { value: string } }) => syncEnd(e.target.value),
             })}
             aria-invalid={startTimeA11y["aria-invalid"]}
             aria-describedby={startTimeA11y["aria-describedby"]}
@@ -253,6 +263,7 @@ function SessionCard({
             {...register(`sessions.${index}.endTime`, {
               required: true,
               pattern: /^\d{2}:\d{2}$/,
+              onBlur: () => syncEnd(watch(`sessions.${index}.startTime`)),
               validate: (v: string) => {
                 const start = watch(`sessions.${index}.startTime`);
                 if (!start || !v) return true;

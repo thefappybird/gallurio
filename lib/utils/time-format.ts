@@ -128,3 +128,18 @@ export const TIME_INPUT_LANG: Record<TimeMode, string> = {
 };
 
 export const DEFAULT_TIME_INPUT_LANG = TIME_INPUT_LANG[DEFAULT_TIME_MODE];
+
+// ─── Start/end sync ──────────────────────────────────────────────────────────
+
+/**
+ * Keep an HH:mm end time after its start. If `end <= start`, returns
+ * start + 60min clamped to "23:59" (sessions are single-day, never wrap).
+ * Empty start or end → `end` unchanged.
+ */
+export function syncEndTime(start: string, end: string): string {
+  if (!start || !end || end > start) return end;
+  const [h, m] = start.split(":").map(Number);
+  const total = h * 60 + m + 60;
+  if (total > 23 * 60 + 59) return "23:59";
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
