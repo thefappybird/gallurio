@@ -107,6 +107,23 @@ describe("EditableField validation a11y", () => {
   });
 });
 
+describe("EditableField editing layout", () => {
+  it("renders confirm button on the same row as the select trigger", () => {
+    render(
+      <EditableField
+        label="Event type"
+        value="open"
+        type="select"
+        options={[{ value: "open", label: "Open" }]}
+        onCommit={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit Event type" }));
+    const row = screen.getByRole("combobox").parentElement;
+    expect(row).toContainElement(screen.getByRole("button", { name: "Confirm" }));
+  });
+});
+
 describe("EditableField localized labels", () => {
   it("uses the active locale for the confirm / cancel buttons", () => {
     render(<EditableField label="Title" value="Original" type="text" onCommit={vi.fn()} />, {

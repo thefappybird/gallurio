@@ -260,6 +260,35 @@ export function EditableField({
     return String(v);
   })();
 
+  const editButtons = (
+    <div className="flex shrink-0 items-center gap-1">
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        onClick={commit}
+        aria-label={tFields("confirmEdit")}
+        disabled={!canCommit}
+        className={
+          canCommit
+            ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+            : undefined
+        }
+      >
+        <CheckIcon className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        onClick={cancelEdit}
+        aria-label={tFields("cancelEdit")}
+      >
+        <XIcon className="size-4" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="flex min-w-0 flex-col gap-1 py-1.5">
       <div className="flex items-start justify-between gap-2">
@@ -300,6 +329,12 @@ export function EditableField({
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
+              <div
+                className={cn(
+                  "flex gap-1",
+                  type === "textarea" ? "items-start" : "items-center"
+                )}
+              >
               {type === "text" || type === "date" ? (
                 <Input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -316,7 +351,7 @@ export function EditableField({
                   }}
                 />
               ) : type === "datetime" ? (
-                <div className="flex gap-2">
+                <div className="flex min-w-0 flex-1 gap-2">
                   <Input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
                     id={a11y.id}
@@ -373,7 +408,7 @@ export function EditableField({
                   rows={4}
                 />
               ) : type === "money" ? (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   {currency ? (
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {currency}
@@ -402,6 +437,7 @@ export function EditableField({
                   onValueChange={(v) => setDraft(v ?? "")}
                 >
                   <SelectTrigger
+                    className="min-w-0 flex-1"
                     id={a11y.id}
                     aria-invalid={a11y["aria-invalid"]}
                     aria-describedby={a11y["aria-describedby"]}
@@ -419,6 +455,8 @@ export function EditableField({
                   </SelectContent>
                 </Select>
               ) : null}
+              {!readOnly ? editButtons : null}
+              </div>
               {error ? (
                 <span id={a11y.errorId} role="alert" className="text-xs text-destructive">
                   {error}
@@ -428,47 +466,18 @@ export function EditableField({
           )}
         </div>
 
-        {!readOnly ? (
+        {!readOnly && !editing ? (
           <div className="flex shrink-0 items-center gap-1">
-            {editing ? (
-              <>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={commit}
-                  aria-label={tFields("confirmEdit")}
-                  disabled={!canCommit}
-                  className={
-                    canCommit
-                      ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
-                      : undefined
-                  }
-                >
-                  <CheckIcon className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={cancelEdit}
-                  aria-label={tFields("cancelEdit")}
-                >
-                  <XIcon className="size-4" />
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                onClick={startEdit}
-                disabled={disabled}
-                aria-label={`Edit ${label}`}
-              >
-                <PencilIcon className="size-4" />
-              </Button>
-            )}
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={startEdit}
+              disabled={disabled}
+              aria-label={`Edit ${label}`}
+            >
+              <PencilIcon className="size-4" />
+            </Button>
           </div>
         ) : null}
       </div>
