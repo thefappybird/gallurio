@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing motion mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ---------- Gallurio tokens (mirrors app/globals.css) ---------- */
+:root{
+  --background:oklch(0.972 0.004 235);--foreground:oklch(0.26 0.008 255);
+  --card:oklch(0.988 0.003 235);--primary:oklch(0.28 0.008 255);--primary-foreground:oklch(0.985 0.002 235);
+  --muted:oklch(0.945 0.005 235);--muted-foreground:oklch(0.52 0.012 250);
+  --border:oklch(0.90 0.006 235);--ring:oklch(0.60 0.10 195);
+  --brand:oklch(0.55 0.10 195);--brand-foreground:oklch(0.985 0 0);
+  --sidebar:oklch(0.96 0.004 235);--sidebar-accent:oklch(0.93 0.006 235);
+  --radius:0.25rem;--radius-surface:0rem;
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --amb:url("../../public/onboarding/background-light.svg");
+}
+html.dark{
+  --background:oklch(0.205 0.006 255);--foreground:oklch(0.92 0.004 235);
+  --card:oklch(0.245 0.006 255);--primary:oklch(0.90 0.004 235);--primary-foreground:oklch(0.24 0.006 255);
+  --muted:oklch(0.285 0.006 255);--muted-foreground:oklch(0.72 0.01 250);
+  --border:oklch(1 0 0 / 12%);--ring:oklch(0.70 0.12 195);
+  --brand:oklch(0.70 0.12 195);--brand-foreground:oklch(0.145 0 0);
+  --sidebar:oklch(0.235 0.006 255);--sidebar-accent:oklch(0.30 0.006 255);
+  --amb:url("../../public/onboarding/background-dark.svg");
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:var(--background);color:var(--foreground);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+a{color:inherit}
+button{font:inherit;color:inherit}
+svg.i{width:1rem;height:1rem;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wrap{max-width:72rem;margin-inline:auto;padding-inline:16px}
+@media (min-width:640px){.wrap{padding-inline:24px}}
+.shot-dark{display:none}
+html.dark .shot-light{display:none}
+html.dark .shot-dark{display:block}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:2rem;padding:0 10px;border-radius:var(--radius);font-size:14px;font-weight:500;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:background-color .2s,opacity .2s,transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 50%,transparent)}
+.btn-brand{background:var(--brand);color:var(--brand-foreground)}
+.btn-brand:hover{opacity:.9}
+.btn-outline{background:var(--background);border-color:var(--border)}
+.btn-outline:hover{background:var(--muted)}
+.btn-ghost{background:transparent}
+.btn-ghost:hover{background:var(--muted)}
+.btn-lg{height:3rem;padding:0 2rem;font-size:16px}
+
+/* ---------- Header ---------- */
+header.site{position:sticky;top:0;z-index:40;background:color-mix(in oklch,var(--background) 0%,transparent);border-bottom:1px solid transparent;transition:background-color .3s,border-color .3s}
+header.site.scrolled{background:var(--background);border-color:var(--border)}
+header.site .wrap{display:flex;align-items:center;gap:16px;height:4rem}
+header.site .logo{height:26px;width:auto}
+html.dark header.site .logo{filter:invert(1) hue-rotate(180deg) brightness(1.4)}
+header.site nav{display:none;gap:4px;margin-inline-start:12px}
+@media (min-width:900px){header.site nav{display:flex}}
+header.site nav a{font-size:14px;font-weight:500;color:var(--muted-foreground);text-decoration:none;padding:6px 10px;border-radius:var(--radius)}
+header.site nav a:hover{color:var(--foreground);background:var(--muted)}
+header.site .end{margin-inline-start:auto;display:flex;gap:8px;align-items:center}
+.hide-sm{display:none}
+@media (min-width:640px){.hide-sm{display:inline-flex}}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;text-align:center;padding-bottom:4rem}
+.amb{position:absolute;inset:0;-webkit-mask-image:radial-gradient(ellipse 30% 80% at center,transparent 65%,black 100%);mask-image:radial-gradient(ellipse 30% 80% at center,transparent 65%,black 100%);pointer-events:none;overflow:hidden}
+.amb::before{content:"";position:absolute;inset:-6%;background:var(--amb) center/cover no-repeat;transform:rotate(180deg);animation:drift 30s ease-in-out infinite alternate}
+@keyframes drift{to{transform:rotate(180deg) scale(1.06) translate(1.5%,-1%)}}
+.hero-top{position:relative;max-width:42rem;margin-inline:auto;padding:3.5rem 16px 1.5rem}
+@media (min-width:640px){.hero-top{padding-top:5rem}}
+.eyebrow{display:inline-flex;margin-bottom:24px;border-radius:calc(var(--radius)*.6);background:var(--brand);color:var(--brand-foreground);padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+h1{margin:0;font-size:36px;line-height:.98;font-weight:800;letter-spacing:-0.04em;text-wrap:balance}
+@media (min-width:640px){h1{font-size:60px}}
+h1 .ln{display:block;overflow:hidden;padding-bottom:.08em}
+h1 .ln>span{display:block}
+h1 .teal{color:var(--brand)}
+.hero p.lead{max-width:36rem;margin:24px auto 0;font-size:18px;line-height:2rem;color:var(--muted-foreground)}
+.ctas{margin-top:36px;display:flex;flex-direction:column;align-items:center;gap:12px}
+@media (min-width:640px){.ctas{flex-direction:row;justify-content:center}}
+.trust{position:relative;margin:18px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px;max-width:48rem;padding-inline:16px;font-size:14px;font-weight:600;color:var(--muted-foreground)}
+.trust span{display:inline-flex;align-items:center;gap:8px}
+.trust svg{color:var(--brand)}
+.trust svg path{stroke-dasharray:24;stroke-dashoffset:0}
+
+.splitcards{position:relative;max-width:64rem;margin:4rem auto 0;padding-inline:16px;display:grid;gap:32px}
+@media (min-width:768px){.splitcards{grid-template-columns:1fr 1fr;gap:0}.splitcards>.sc:first-child{padding-inline-end:32px}.splitcards>.sc:last-child{padding-inline-start:32px;border-inline-start:1px solid var(--border)}}
+.sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;transition:transform .3s}
+.sc:hover .sc-head{transform:translateY(-4px)}
+.sc-head b{font-size:18px;font-weight:700}
+.sc-head span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-foreground)}
+.sc:last-child .sc-head b{color:var(--brand)}
+.frame{position:relative;aspect-ratio:16/11;overflow:hidden;border-radius:var(--radius);box-shadow:0 0 0 1px color-mix(in oklch,var(--foreground) 10%,transparent);background:var(--muted);transition:transform .5s var(--ease-out)}
+.frame img{width:100%;height:100%;object-fit:cover;object-position:top}
+.sc .frame{--tilt:-1.2deg;transform:rotate(var(--tilt))}
+.sc:last-child .frame{--tilt:1.2deg}
+[dir="rtl"] .sc .frame{--tilt:1.2deg}
+[dir="rtl"] .sc:last-child .frame{--tilt:-1.2deg}
+.sc:hover .frame{transform:translateY(-4px) scale(1.025) rotate(0deg)}
+.bridge{position:relative;max-width:28rem;margin:28px auto 0;padding-inline:16px;font-size:14px;font-weight:600;color:var(--muted-foreground)}
+.bridge strong{color:var(--foreground);font-weight:800}
+.marquee{position:relative;margin-top:40px;overflow:hidden;border-block:1px solid var(--border);padding-block:16px}
+.marquee .track{display:flex;width:max-content;gap:40px;animation:marquee 28s linear infinite}
+.marquee span{display:flex;align-items:center;gap:40px;font-weight:600;white-space:nowrap;color:var(--muted-foreground)}
+.marquee span i{font-style:normal;color:var(--brand)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+[dir="rtl"] .marquee .track{animation-name:marquee-rtl}
+@keyframes marquee-rtl{to{transform:translateX(50%)}}
+
+/* ---------- Panels ---------- */
+.panel{border-top:1px solid var(--border);padding-block:4rem}
+@media (min-width:640px){.panel{padding-block:6rem}}
+.panel.card{background:var(--card)}
+.panel.muted{background:var(--muted)}
+.panel.tint{background:color-mix(in oklch,var(--brand) 10%,var(--background))}
+.panel .row{display:flex;flex-direction:column;gap:40px;align-items:center}
+@media (min-width:768px){.panel .row{flex-direction:row;gap:56px}.panel .row.rev{flex-direction:row-reverse}}
+.panel .txt{flex:1;text-align:start;min-width:0}
+.kick{margin:0;font-size:14px;font-weight:700;letter-spacing:-0.01em;color:var(--brand)}
+h2,h3.ph{margin:8px 0 0;font-size:24px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;text-wrap:balance}
+@media (min-width:640px){h2,h3.ph{font-size:30px}}
+.desc{margin:14px 0 0;max-width:28rem;font-size:16px;line-height:1.75rem;color:var(--muted-foreground)}
+.checks{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-size:14px;font-weight:500}
+.checks svg{margin-top:2px;color:var(--brand)}
+.panel .img{flex:1;width:100%}
+.panel .img .frame{aspect-ratio:16/10;border-radius:var(--radius-surface)}
+.panel .img:hover .frame{transform:scale(1.025)}
+
+/* Migration */
+.mig{border-top:1px solid var(--border);background:var(--card);padding-block:4rem}
+@media (min-width:640px){.mig{padding-block:6rem}}
+.steps{list-style:none;margin:40px 0 0;padding:0;display:grid;gap:32px;position:relative}
+@media (min-width:768px){.steps{grid-template-columns:repeat(3,1fr);gap:20px}}
+.connector{display:none;position:absolute;top:-14px;inset-inline:0;height:2px;background:var(--border);overflow:hidden}
+.connector::after{content:"";position:absolute;inset:0;background:var(--foreground);transform-origin:left center;transform:scaleX(1)}
+[dir="rtl"] .connector::after{transform-origin:right center}
+@media (min-width:768px){.connector{display:block}}
+.step{min-width:0}
+.step .box{overflow:hidden;background:var(--card);box-shadow:0 0 0 1px color-mix(in oklch,var(--foreground) 10%,transparent);border-radius:var(--radius-surface)}
+.step .hd{display:flex;gap:12px;align-items:flex-start;padding:20px 16px;border-bottom:1px solid var(--border);min-height:8rem;text-align:start}
+@media (min-width:768px){.step .hd{min-height:10rem}}
+.step .n{font-size:14px;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums;padding-top:2px}
+.step h4{margin:0;font-size:16px;font-weight:700}
+.step p{margin:4px 0 0;font-size:14px;line-height:1.5rem;color:var(--muted-foreground)}
+.step .pic{aspect-ratio:543/868;background:var(--muted);overflow:hidden}
+.step .pic img{width:100%;height:100%;object-fit:cover;object-position:top}
+
+/* ---------- NEW: Speaks your trade ---------- */
+.trade{border-top:1px solid var(--border);padding-block:4rem;background:var(--background)}
+@media (min-width:640px){.trade{padding-block:6rem}}
+.trade .grid{display:grid;gap:40px;align-items:center}
+@media (min-width:960px){.trade .grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.chip{position:relative;overflow:hidden;height:2.25rem;padding:0 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background-color .2s,color .2s,border-color .2s}
+.chip:hover{border-color:var(--muted-foreground)}
+.chip:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 50%,transparent)}
+.chip[aria-checked="true"]{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.chip .prog{position:absolute;inset-inline:0;bottom:0;height:2px;background:currentColor;opacity:.55;transform:scaleX(0);transform-origin:left center}
+[dir="rtl"] .chip .prog{transform-origin:right center}
+.chip[aria-checked="true"].timing .prog{animation:prog var(--cycle) linear forwards}
+@keyframes prog{to{transform:scaleX(1)}}
+.trade-foot{display:flex;align-items:center;gap:12px;margin-top:20px;font-size:14px;color:var(--muted-foreground)}
+.trade-foot .btn{flex-shrink:0}
+
+.win{background:var(--card);box-shadow:0 0 0 1px color-mix(in oklch,var(--foreground) 10%,transparent);border-radius:var(--radius-surface);overflow:hidden}
+.win .bar{display:flex;align-items:center;gap:6px;height:2.25rem;padding-inline:12px;border-bottom:1px solid var(--border);background:var(--muted)}
+.win .bar i{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.win .bar small{margin-inline-start:8px;font-size:12px;color:var(--muted-foreground)}
+.win .body{display:grid;grid-template-columns:9.5rem minmax(0,1fr);min-height:21rem}
+@media (min-width:560px){.win .body{grid-template-columns:12rem minmax(0,1fr)}}
+.mside{background:var(--sidebar);border-inline-end:1px solid var(--border);padding:8px;display:flex;flex-direction:column;gap:2px}
+.mside .ws{display:flex;align-items:center;gap:8px;padding:6px;margin-bottom:6px;font-size:14px;font-weight:600}
+.mside .ws b{width:22px;height:22px;border-radius:var(--radius);background:var(--foreground);color:var(--background);display:grid;place-items:center;font-size:12px;font-weight:800}
+.mitem{display:flex;align-items:center;gap:8px;height:2rem;padding-inline:8px;border-radius:calc(var(--radius)*.8);font-size:14px;overflow:hidden}
+.mitem.on{background:color-mix(in oklch,var(--brand) 12%,transparent);color:var(--brand);font-weight:500}
+.slot{display:inline-grid;overflow:hidden;height:1.4em;line-height:1.4em}
+.slot>span{grid-area:1/1;white-space:nowrap}
+.slot .o{animation:slotOut .3s var(--ease-out) forwards;animation-delay:var(--d,0ms)}
+.slot .n{animation:slotIn .45s var(--ease-out) both;animation-delay:var(--d,0ms)}
+@keyframes slotOut{to{transform:translateY(-110%);opacity:0}}
+@keyframes slotIn{from{transform:translateY(110%);opacity:0}}
+.mmain{padding:16px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.mtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mtop h5{margin:0;font-size:20px;font-weight:600;letter-spacing:-0.01em}
+.mtop .fake{height:1.75rem;padding:0 10px;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.msearch{height:2rem;border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:8px;padding-inline:10px;font-size:14px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden}
+.mrows{display:flex;flex-direction:column}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--border);font-size:14px}
+.mrow .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .meta{grid-column:1;font-size:12px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .st{grid-row:1/3;grid-column:2;align-self:center;font-size:12px;font-weight:500;padding:2px 8px;border-radius:calc(var(--radius)*.8);background:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.mrow .st i{width:6px;height:6px;border-radius:50%;background:oklch(0.55 0.10 195)}
+.mrow .st.inq i{background:oklch(0.55 0.04 250)}
+.mrows.swap .mrow{animation:rowIn .5s var(--ease-out) both;animation-delay:calc(120ms + var(--r) * 60ms)}
+@keyframes rowIn{from{opacity:0;transform:translateY(8px);filter:blur(3px)}}
+.wordmap{margin-top:12px;font-size:12px;color:var(--muted-foreground);display:flex;flex-wrap:wrap;gap:4px 14px}
+.wordmap b{color:var(--foreground);font-weight:600}
+
+/* Transparency */
+.trans{border-top:1px solid var(--border);background:var(--foreground);color:var(--background);padding-block:4rem}
+@media (min-width:640px){.trans{padding-block:6rem}}
+.trans .sub{margin:12px 0 0;max-width:32rem;font-size:16px;line-height:1.75rem;color:color-mix(in oklch,var(--background) 70%,transparent)}
+.tgrid{margin-top:40px;display:grid;gap:24px}
+@media (min-width:640px){.tgrid{grid-template-columns:1fr 1fr;gap:32px 40px}}
+.titem{display:flex;gap:14px;align-items:flex-start;font-size:14px;line-height:1.5rem;color:color-mix(in oklch,var(--background) 80%,transparent)}
+.titem strong{display:block;color:var(--background);font-weight:700}
+.badge{width:28px;height:28px;flex-shrink:0;display:grid;place-items:center;border-radius:calc(var(--radius)*.6);background:var(--brand);color:var(--brand-foreground);margin-top:2px}
+.tlinks{margin-top:40px;padding-top:32px;border-top:1px solid color-mix(in oklch,var(--background) 15%,transparent);display:flex;flex-wrap:wrap;gap:12px 28px;font-size:14px;font-weight:600}
+.tlinks a{text-decoration:none}
+.tlinks a:hover{color:var(--brand)}
+
+/* Manifesto */
+.mani{border-top:1px solid var(--border);background:var(--brand);color:var(--brand-foreground);text-align:center;padding:5rem 16px}
+@media (min-width:640px){.mani{padding-block:7rem}}
+.mani blockquote{margin:0 auto;max-width:42rem;font-size:30px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;text-wrap:balance}
+@media (min-width:640px){.mani blockquote{font-size:36px}}
+.mani .w{display:inline-block;white-space:pre}
+.mani cite{display:block;margin-top:24px;font-size:14px;font-weight:600;font-style:normal;opacity:.85}
+
+/* Pricing */
+.pricing{border-top:1px solid var(--border);padding-block:4rem;text-align:center}
+@media (min-width:640px){.pricing{padding-block:6rem}}
+.pricing .sub{margin:12px auto 0;color:var(--muted-foreground);font-size:16px}
+.cad{display:inline-flex;margin-top:28px;border:1px solid var(--border);border-radius:var(--radius);padding:2px;gap:2px;background:var(--card)}
+.cad button{border:0;background:transparent;height:2rem;padding:0 12px;border-radius:calc(var(--radius)*.8);font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.cad button[aria-pressed="true"]{background:var(--primary);color:var(--primary-foreground)}
+.cad button:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 50%,transparent)}
+.cad .save{font-size:12px;font-weight:600;color:var(--brand)}
+.cad button[aria-pressed="true"] .save{color:inherit;opacity:.8}
+.pcard{max-width:24rem;margin:24px auto 0;text-align:start;background:var(--card);box-shadow:0 0 0 1px color-mix(in oklch,var(--foreground) 10%,transparent);padding:24px;border-radius:var(--radius-surface)}
+.pcard .hd{display:flex;justify-content:space-between;align-items:center}
+.pcard .hd b{font-size:20px;font-weight:600}
+.pcard .pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:calc(var(--radius)*.8);background:color-mix(in oklch,var(--brand) 14%,transparent);color:var(--brand)}
+.price{margin-top:16px;display:flex;align-items:baseline;gap:4px}
+.price .amt{font-size:30px;font-weight:800;letter-spacing:-0.03em;display:inline-grid;overflow:hidden;height:1.15em;line-height:1.15em}
+.price .amt>span{grid-area:1/1}
+.price .suf{font-size:16px;color:var(--muted-foreground);font-weight:500}
+.pcard .note{font-size:14px;color:var(--muted-foreground);margin:4px 0 0}
+.pcard .checks{margin-top:16px}
+.pcard .btn{width:100%;margin-top:20px;height:2.5rem}
+.compare{border-top:1px solid var(--border);padding:32px 16px;text-align:center;font-size:14px;color:var(--muted-foreground)}
+.compare a{color:var(--foreground);font-weight:500;text-underline-offset:4px}
+
+/* Final CTA */
+.final{position:relative;border-top:1px solid var(--border);text-align:center;padding:5rem 16px}
+@media (min-width:640px){.final{padding-block:7rem}}
+.final .amb{-webkit-mask-image:radial-gradient(ellipse 32% 78% at center,transparent 62%,black 100%);mask-image:radial-gradient(ellipse 32% 78% at center,transparent 62%,black 100%)}
+.final .inner{position:relative;max-width:42rem;margin-inline:auto;display:flex;flex-direction:column;align-items:center;gap:24px}
+.final h2{font-size:30px;font-weight:800;margin:0}
+@media (min-width:640px){.final h2{font-size:48px;line-height:1.05}}
+.final h2 .ln{display:block;overflow:hidden;padding-bottom:.08em}
+.final h2 .ln>span{display:block}
+.final p{margin:0;max-width:36rem;font-size:16px;line-height:1.75rem;color:var(--muted-foreground)}
+.final small{font-size:14px;font-weight:500;color:var(--muted-foreground)}
+footer.site{border-top:1px solid var(--border);padding-block:32px;font-size:14px;color:var(--muted-foreground)}
+footer.site .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
+
+/* =====================================================================
+   MOTION. Content is visible by default; html.motion opts in. Without JS,
+   or with prefers-reduced-motion, every section renders in its final state.
+   ===================================================================== */
+html.motion [data-r]{transition:opacity .7s var(--ease-out),transform .8s var(--ease-out),clip-path .9s var(--ease-out),filter .7s var(--ease-out);transition-delay:calc(var(--i,0) * 70ms)}
+html.motion [data-r]:not(.in){opacity:0}
+html.motion [data-r="rise"]:not(.in){transform:translateY(32px)}
+html.motion [data-r="soft"]:not(.in){transform:translateY(16px);filter:blur(4px)}
+
+/* Hero headline: lines slide up from behind a mask on load */
+html.motion .hero h1 .ln>span,html.motion .final h2 .ln>span{transition:transform .9s var(--ease-out);transition-delay:calc(120ms + var(--i,0) * 110ms)}
+html.motion .hero:not(.in) h1 .ln>span,html.motion .final:not(.in) h2 .ln>span{transform:translateY(110%)}
+html.motion .hero .eyebrow,html.motion .hero p.lead,html.motion .hero .ctas{transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+html.motion .hero .p1{transition-delay:0ms}html.motion .hero .p2{transition-delay:380ms}html.motion .hero .p3{transition-delay:480ms}
+html.motion .hero:not(.in) .eyebrow{opacity:0;transform:translateY(-8px)}
+html.motion .hero:not(.in) p.lead,html.motion .hero:not(.in) .ctas{opacity:0;transform:translateY(14px)}
+/* Trust checks draw themselves in sequence */
+html.motion .trust span{transition:opacity .4s ease-out;transition-delay:calc(700ms + var(--i) * 120ms)}
+html.motion .trust svg path{transition:stroke-dashoffset .5s var(--ease-out);transition-delay:calc(760ms + var(--i) * 120ms)}
+html.motion .hero:not(.in) .trust span{opacity:0}
+html.motion .hero:not(.in) .trust svg path{stroke-dashoffset:24}
+
+/* Split cards: rise from below and settle into their resting tilt */
+html.motion .sc[data-r]:not(.in){transform:translateY(70px)}
+html.motion .sc[data-r]:not(.in) .frame{transform:rotate(calc(var(--tilt) * 4))}
+html.motion .sc[data-r] .frame{transition:transform 1.1s var(--ease-out);transition-delay:calc(var(--i,0) * 120ms)}
+html.motion .sc[data-r].in .frame{transition-delay:0ms;transition-duration:.5s}
+
+/* Feature screenshots: wipe open from the side they sit on */
+html.motion .img[data-r] .frame img{transition:transform 1.2s var(--ease-out)}
+html.motion .img[data-r]:not(.in){opacity:1}
+/* clip lives on the inner frame: IntersectionObserver ignores a target whose own clip-path hides it */
+html.motion .img[data-r] .frame{transition:transform .5s var(--ease-out),clip-path 1s var(--ease-out);clip-path:inset(0 0 0 0)}
+html.motion .img[data-r="wipe-start"]:not(.in) .frame{clip-path:inset(0 100% 0 0)}
+html.motion .img[data-r="wipe-end"]:not(.in) .frame{clip-path:inset(0 0 0 100%)}
+html.motion[dir="rtl"] .img[data-r="wipe-start"]:not(.in) .frame{clip-path:inset(0 0 0 100%)}
+html.motion[dir="rtl"] .img[data-r="wipe-end"]:not(.in) .frame{clip-path:inset(0 100% 0 0)}
+html.motion .img[data-r]:not(.in) .frame img{transform:scale(1.08)}
+/* checklists tick in one by one */
+html.motion .checks[data-r]{opacity:1}
+html.motion .checks[data-r] li{transition:opacity .5s var(--ease-out),transform .5s var(--ease-out);transition-delay:calc(250ms + var(--i) * 80ms)}
+html.motion .checks[data-r]:not(.in) li{opacity:0;transform:translateX(-10px)}
+html.motion[dir="rtl"] .checks[data-r]:not(.in) li{transform:translateX(10px)}
+
+/* Migration: the connector draws, then steps land 1 → 2 → 3 */
+html.motion .steps[data-r]{opacity:1}
+html.motion .steps[data-r] .connector::after{transition:transform 1.4s var(--ease-out)}
+html.motion .steps[data-r]:not(.in) .connector::after{transform:scaleX(0)}
+html.motion .steps[data-r] .step{transition:opacity .7s var(--ease-out),transform .8s var(--ease-out);transition-delay:calc(var(--i) * 260ms)}
+html.motion .steps[data-r]:not(.in) .step{opacity:0;transform:translateY(40px)}
+
+/* Transparency: badges stamp in, items follow */
+html.motion .tgrid[data-r]{opacity:1}
+html.motion .tgrid[data-r] .titem{transition:opacity .6s var(--ease-out);transition-delay:calc(var(--i) * 140ms)}
+html.motion .tgrid[data-r] .badge{transition:transform .5s var(--ease-out),opacity .3s;transition-delay:calc(var(--i) * 140ms)}
+html.motion .tgrid[data-r]:not(.in) .titem{opacity:0}
+html.motion .tgrid[data-r]:not(.in) .badge{transform:scale(.3) rotate(-25deg);opacity:0}
+
+/* Manifesto: words surface one at a time */
+html.motion .mani blockquote[data-r]{opacity:1}
+html.motion .mani .w{transition:opacity .6s var(--ease-out),transform .6s var(--ease-out),filter .6s var(--ease-out);transition-delay:calc(var(--i) * 45ms)}
+html.motion .mani blockquote[data-r]:not(.in) .w{opacity:0;transform:translateY(.4em);filter:blur(6px)}
+
+/* Price roll on cadence change */
+.amt .o{animation:slotOut .3s var(--ease-out) forwards}
+.amt .n{animation:slotIn .45s var(--ease-out) both}
+
+/* Speaks-your-trade window lifts in */
+html.motion .win[data-r]:not(.in){transform:translateY(40px) scale(.98)}
+
+@media (prefers-reduced-motion:reduce){
+  .amb::before,.marquee .track{animation:none}
+}
+html.rm .amb::before,html.rm .marquee .track{animation:none}
+html.rm *{animation-duration:1ms!important;transition-duration:1ms!important}
+
+/* ---------- Mockup chrome (not product) ---------- */
+.mock{position:fixed;inset-inline-end:12px;bottom:12px;z-index:100;display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:calc(100% - 24px);padding:6px;border-radius:6px;background:oklch(0.18 0.006 255);color:oklch(0.92 0.004 235);font-size:12px;box-shadow:0 10px 30px -10px oklch(0 0 0 / 30%)}
+.mock b{padding-inline:6px}
+.mock button{border:1px solid oklch(1 0 0 / 14%);background:transparent;color:inherit;border-radius:4px;padding:4px 8px;cursor:pointer}
+.mock button[aria-pressed="true"]{background:oklch(1 0 0 / 14%)}
+.mock button:focus-visible{outline:2px solid oklch(0.70 0.12 195)}
+</style>
+</head>
+<body>
+
+<header class="site" id="hdr">
+  <div class="wrap">
+    <img class="logo" src="../../public/brand/gallurio-rect.svg" alt="Gallurio">
+    <nav aria-label="Primary"><a href="#">Portfolio Builder</a><a href="#">Pricing</a><a href="#">Compare</a><a href="#">Resources</a><a href="#">Contact</a></nav>
+    <div class="end"><a class="btn btn-ghost hide-sm" href="#">Sign in</a><a class="btn btn-brand" href="#">Get started</a></div>
+  </div>
+</header>
+
+<main>
+<!-- ================= HERO ================= -->
+<section class="hero" id="hero">
+  <div style="position:relative">
+    <div class="amb" aria-hidden="true"></div>
+    <div class="hero-top">
+      <span class="eyebrow p1">One workspace, two jobs</span>
+      <h1><span class="ln"><span style="--i:0">Gallurio: portfolio and booking software</span></span><span class="ln teal"><span style="--i:1">for event creatives.</span></span></h1>
+      <p class="lead p2">Gallurio is a portfolio and booking platform for creative professionals. Build a public page with a drag-and-drop, no-code website builder, then manage the bookings, clients, and details that follow every inquiry — all from the same workspace.</p>
+      <div class="ctas p3"><a class="btn btn-brand btn-lg" href="#">Start your free month</a><a class="btn btn-outline btn-lg" href="#">Book a demo</a></div>
+      <div class="trust" id="trust"></div>
+    </div>
+  </div>
+
+  <div class="splitcards">
+    <div class="sc" data-r style="--i:0">
+      <div class="sc-head"><b>Build</b><span>your portfolio</span></div>
+      <div class="frame"><img class="shot-light" src="../../public/marketing/screenshots/portfolio-builder-canvas-light.png" alt="A public Gallurio portfolio page"><img class="shot-dark" src="../../public/marketing/screenshots/portfolio-builder-canvas-dark.png" alt=""></div>
+    </div>
+    <div class="sc" data-r style="--i:1">
+      <div class="sc-head"><b>Manage</b><span>your workspace</span></div>
+      <div class="frame"><img class="shot-light" src="../../public/marketing/screenshots/dashboard-overview-light.png" alt="Gallurio workspace dashboard"><img class="shot-dark" src="../../public/marketing/screenshots/dashboard-overview-dark.png" alt=""></div>
+    </div>
+  </div>
+  <p class="bridge" data-r="soft">Same login. <strong>Two very different jobs, done right.</strong></p>
+  <div class="marquee"><div class="track" id="marquee" aria-hidden="true"></div><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Photographers, Videographers, Wedding and event planners, Makeup artists, Stylists, Caterers, Entertainers and DJs, Creative studios</span></div>
+</section>
+
+<div id="panels"></div>
+
+<!-- ================= NEW: SPEAKS YOUR TRADE ================= -->
+<section class="trade" id="trade" aria-labelledby="trade-h">
+  <div class="wrap grid">
+    <div style="text-align:start">
+      <h2 id="trade-h" data-r="rise" style="margin-top:0">A venue books events. A caterer takes orders. Gallurio speaks both.</h2>
+      <p class="desc" data-r="rise" style="--i:2">Pick your business type and the whole workspace renames itself to match: the menu, page titles, buttons, notifications, and team emails. Same tool underneath, and your data and links never change.</p>
+      <div class="chips" role="radiogroup" aria-label="Business type" id="chips" data-r="rise" style="--i:3"></div>
+      <div class="trade-foot" data-r="soft" style="--i:4">
+        <button class="btn btn-outline" id="pause" aria-pressed="false"><svg class="i" viewBox="0 0 24 24" id="pauseIc"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span id="pauseTx">Pause tour</span></button>
+        <span>Change it anytime in Settings.</span>
+      </div>
+    </div>
+    <div>
+      <div class="win" data-r="rise" style="--i:1" aria-label="Gallurio workspace preview" role="img" id="win">
+        <div class="bar" aria-hidden="true"><i></i><i></i><i></i><small id="winUrl">gallurio.com/bookings</small></div>
+        <div class="body" aria-hidden="true">
+          <div class="mside"><div class="ws"><b>A</b>Aurora</div><div id="mnav"></div></div>
+          <div class="mmain">
+            <div class="mtop"><h5><span class="slot" id="mtitle"><span>Bookings</span></span></h5><span class="fake">+ <span class="slot" id="mnew"><span>New booking</span></span></span></div>
+            <div class="msearch"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="slot" id="msearch"><span>Search bookings</span></span></div>
+            <div class="mrows" id="mrows"></div>
+          </div>
+        </div>
+      </div>
+      <div class="wordmap" id="wordmap" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRANSPARENCY ================= -->
+<section class="trans">
+  <div class="wrap" style="max-width:64rem">
+    <div style="max-width:32rem;text-align:start">
+      <h2 data-r="rise" style="margin:0">Straightforward. Even at speed.</h2>
+      <p class="sub" data-r="rise" style="--i:1">No guessing about what you're signing up for, what it costs, or who's handling payment.</p>
+    </div>
+    <div class="tgrid" data-r id="tgrid"></div>
+    <div class="tlinks" data-r="soft"><a href="#">Terms of Service</a><a href="#">Privacy Policy</a><a href="#">Refund policy</a><a href="#">Contact</a></div>
+  </div>
+</section>
+
+<!-- ================= MANIFESTO ================= -->
+<section class="mani">
+  <blockquote data-r id="mani">“Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.”</blockquote>
+  <cite data-r="soft" style="--i:6">— the idea behind Gallurio</cite>
+</section>
+
+<!-- ================= PRICING ================= -->
+<section class="pricing">
+  <div class="wrap">
+    <h2 data-r="rise" style="margin:0">Simple pricing</h2>
+    <p class="sub" data-r="rise" style="--i:1">1 month of Pro, free. Then one plan, monthly or yearly.</p>
+    <div class="cad" role="group" aria-label="Billing cadence" data-r="soft" style="--i:2"><button aria-pressed="true" data-c="m">Monthly</button><button aria-pressed="false" data-c="y">Yearly <span class="save">Save 2 months</span></button></div>
+    <div class="pcard" data-r="rise" style="--i:3">
+      <div class="hd"><b>Pro</b><span class="pill">1 month free</span></div>
+      <div class="price"><span class="amt" id="amt"><span>$5</span></span><span class="suf" id="suf">/mo</span></div>
+      <p class="note">after your free month</p>
+      <ul class="checks" data-r><li style="--i:0"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Unlimited bookings and inquiries</li><li style="--i:1"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Custom branding and advanced galleries</li><li style="--i:2"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Priority support</li></ul>
+      <a class="btn btn-brand" href="#">Start my free month</a>
+    </div>
+  </div>
+</section>
+<p class="compare" data-r="soft">Curious how Gallurio stacks up against what you're using now? <a href="#">See the comparisons</a></p>
+
+<!-- ================= FINAL CTA ================= -->
+<section class="final" id="final" data-r>
+  <div class="amb" aria-hidden="true"></div>
+  <div class="inner">
+    <h2><span class="ln"><span style="--i:0">Build a portfolio that's ready</span></span><span class="ln"><span style="--i:1">for the next booking.</span></span></h2>
+    <p data-r="rise" style="--i:3">Create your Gallurio workspace and start shaping the way clients discover and work with you.</p>
+    <div class="ctas" data-r="rise" style="--i:4;margin-top:0"><a class="btn btn-brand btn-lg" href="#">Start your free month</a><a class="btn btn-outline btn-lg" href="#">Book a demo</a></div>
+    <small data-r="soft" style="--i:5">Full Pro access for one month. No card required.</small>
+  </div>
+</section>
+</main>
+<footer class="site"><div class="wrap"><span>© 2026 Gallurio</span><span>Terms · Privacy · Refunds · Contact</span></div></footer>
+
+<div class="mock" role="toolbar" aria-label="Mockup controls">
+  <b>Mockup</b>
+  <button id="mTheme" aria-pressed="false">Dark</button>
+  <button id="mDir" aria-pressed="false">RTL</button>
+  <button id="mRm" aria-pressed="false">Reduced motion</button>
+  <button id="mReplay">Replay</button>
+</div>
+
+<script>
+const check='<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+const H=document.documentElement;
+
+/* ---------- Static content ---------- */
+document.getElementById('trust').innerHTML=['Free during beta','No card required','Cancel anytime','Secure checkout by Lemon Squeezy'].map((t,i)=>`<span style="--i:${i}">${check}${t}</span>`).join('');
+const built=['Photographers','Videographers','Wedding and event planners','Makeup artists','Stylists','Caterers','Entertainers and DJs','Creative studios'];
+document.getElementById('marquee').innerHTML=[...built,...built].map(t=>`<span>${t}<i>—</i></span>`).join('');
+
+const PANELS=[
+ {k:'Drag-and-drop portfolio builder',h:'Make your first impression feel like you.',d:'A block-based, no-code page builder — browse a library of ready-made sections with live previews, no blank screen to start from. Style every block\'s color, spacing, and type, choose your gallery layout, and apply a brand kit across your whole site.',f:['Ready-made sections with live previews','Grid, masonry, and carousel gallery layouts','Per-block color, spacing, and type controls','Brand kit and theme presets, applied sitewide'],img:'portfolio-builder-canvas',tone:'card',cta:'Open the portfolio builder'},
+ {k:'Booking inquiries',h:'Give every lead a clear next step.',d:'Visitors send structured inquiries straight from your page — the event date, location, and project details you need to respond with confidence.',f:['Custom inquiry forms','Event dates and multi-day sessions','Contact and project details in one view','Notified the moment one arrives'],img:'bookings-calendar',tone:'muted'},
+ {k:'Business workspace',h:'Everything that happens after the inquiry.',d:'Clients, bookings, invoices, and galleries — organized in one dashboard, so less time goes to piecing tools together and more goes to the work itself.',f:['Client management','Booking status and scheduling','Invoice PDFs','Gallery and workspace organization'],img:'dashboard-overview',tone:'tint'},
+ {k:'Team collaboration',h:'Invite the team, assign roles, share one calendar.',d:'Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what\'s theirs without stepping on each other.',f:['Role-based permissions','One shared calendar','Per-team assignment'],img:'teams-collaboration',tone:'card'}
+];
+const MIG=`<section class="mig"><div class="wrap"><div style="max-width:42rem;text-align:start"><h2 data-r="rise" style="margin:0">Migrating from a different CRM provider? We got you in just three quick steps.</h2><p class="desc" data-r="rise" style="--i:1;max-width:36rem">Bring your CSV or Excel file into the bookings calendar, match it to Gallurio, then check every booking before it is imported.</p></div>
+<ol class="steps" data-r><span class="connector" aria-hidden="true"></span>${[['Upload','Choose a CSV or Excel export from the service you are leaving.'],['Normalize','Match the columns and values in your file to Gallurio.'],['Preview','Review valid rows and errors before you import.']].map((s,i)=>`<li class="step" style="--i:${i}"><div class="box"><div class="hd"><span class="n">${String(i+1).padStart(2,'0')}</span><div><h4>${s[0]}</h4><p>${s[1]}</p></div></div><div class="pic"><img class="shot-light" src="../../public/marketing/editorial/import-bookings-step-${i+1}-light.png" alt="${s[0]} step"><img class="shot-dark" src="../../public/marketing/editorial/import-bookings-step-${i+1}-dark.png" alt=""></div></div></li>`).join('')}</ol></div></section>`;
+document.getElementById('panels').innerHTML=PANELS.map((p,i)=>{
+  const imgFirst=i%2===1; // matches page.tsx alternation
+  const txt=`<div class="txt"><p class="kick" data-r="soft">${p.k}</p><h3 class="ph" data-r="rise" style="--i:1">${p.h}</h3><p class="desc" data-r="rise" style="--i:2">${p.d}</p><ul class="checks" data-r>${p.f.map((f,j)=>`<li style="--i:${j}">${check}${f}</li>`).join('')}</ul>${p.cta?`<a class="btn btn-brand" style="margin-top:24px" data-r="soft" href="#">${p.cta}</a>`:''}</div>`;
+  const img=`<div class="img" data-r="${imgFirst?'wipe-start':'wipe-end'}"><div class="frame"><img class="shot-light" src="../../public/marketing/screenshots/${p.img}-light.png" alt="${p.k}"><img class="shot-dark" src="../../public/marketing/screenshots/${p.img}-dark.png" alt=""></div></div>`;
+  return `<section class="panel ${p.tone}"><div class="wrap row">${imgFirst?img+txt:txt+img}</div></section>${i===1?MIG:''}`;
+}).join('');
+
+document.getElementById('tgrid').innerHTML=[['One month of Pro, free.','No payment card required to start.'],['One plan. Clear terms.','Price and terms shown clearly before checkout.'],['Lemon Squeezy handles checkout','as our merchant of record.'],['Software, not services.','Gallurio isn\'t a photography or event agency — it\'s the tool the business runs on.']].map((t,i)=>`<div class="titem" style="--i:${i}"><span class="badge">${check}</span><p style="margin:0"><strong>${t[0]}</strong>${t[1]}</p></div>`).join('');
+
+const mani=document.getElementById('mani');
+mani.innerHTML=mani.textContent.split(/(\s+)/).map((w,i)=>/\s/.test(w)?w:`<span class="w" style="--i:${i/2|0}">${w}</span>`).join('');
+
+/* ---------- Speaks your trade ---------- */
+const NAVI={dash:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',inquiry:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',booking:'<path d="M8 2v4"/><path d="M16 2v4"/><path d="M21 14V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><path d="M3 10h18"/><path d="m16 20 2 2 4-4"/>',client:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',team:'<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>',portfolio:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>'};
+const T={
+ photographer:{name:'Photographer',w:{inquiry:['inquiry','Inquiries'],booking:['session','Sessions'],client:['client','Clients'],team:['crew','Crews']},rows:[['Santos–Cruz engagement session','Feb 14 · Crew A · Tagaytay','Booked'],['Lim family portraits','Feb 18 · Crew B · Studio','Booked'],['Reyes debut coverage','Mar 2 · Crew A · Makati','Inquiry']]},
+ venue:{name:'Venue',w:{inquiry:['inquiry','Inquiries'],booking:['event','Events'],client:['host','Hosts'],team:['venue','Venues']},rows:[['Santos–Cruz reception','Feb 14 · Grand Hall · 180 guests','Booked'],['Lim corporate dinner','Feb 18 · Garden Pavilion · 60 guests','Booked'],['Reyes debut','Mar 2 · Rooftop · 120 guests','Inquiry']]},
+ planner:{name:'Planner',w:{inquiry:['lead','Leads'],booking:['event','Events'],client:['client','Clients'],team:['team','Teams']},rows:[['Santos–Cruz wedding','Feb 14 · Day-of team · Tagaytay','Booked'],['Lim company retreat','Feb 18 · Full-service team · Batangas','Booked'],['Reyes debut','Mar 2 · Day-of team · Makati','Inquiry']]},
+ stylist:{name:'Stylist',w:{inquiry:['request','Requests'],booking:['appointment','Appointments'],client:['client','Clients'],team:['team','Teams']},rows:[['Bridal glam — Ana Santos','Feb 14 · 6:00 AM · On-location','Booked'],['Trial look — Mia Lim','Feb 18 · 2:00 PM · Studio','Booked'],['Debut glam — Bea Reyes','Mar 2 · 1:00 PM · Makati','Inquiry']]},
+ catering:{name:'Catering',w:{inquiry:['quote request','Quote requests'],booking:['order','Orders'],client:['customer','Customers'],team:['kitchen','Kitchens']},rows:[['Plated dinner for 180','Feb 14 · Main kitchen · Santos–Cruz','Booked'],['Buffet for 60','Feb 18 · Commissary · Lim Corp','Booked'],['Dessert bar for 120','Mar 2 · Main kitchen · Reyes','Inquiry']]},
+ entertainer:{name:'Entertainer',w:{inquiry:['inquiry','Inquiries'],booking:['gig','Gigs'],client:['client','Clients'],team:['act','Acts']},rows:[['Reception set — Santos–Cruz','Feb 14 · The Weekenders · 3 sets','Booked'],['Corporate night — Lim Corp','Feb 18 · DJ Rio · 4 hrs','Booked'],['Debut party — Reyes','Mar 2 · The Weekenders · 2 sets','Inquiry']]},
+ artists:{name:'Artists',w:{inquiry:['inquiry','Inquiries'],booking:['commission','Commissions'],client:['patron','Patrons'],team:['studio','Studios']},rows:[['Wedding live painting','Feb 14 · North studio · Santos–Cruz','Booked'],['Family portrait, oil','Feb 18 · North studio · Lim','Booked'],['Calligraphy suite','Mar 2 · South studio · Reyes','Inquiry']]},
+ standard:{name:'Standard',w:{inquiry:['inquiry','Inquiries'],booking:['booking','Bookings'],client:['client','Clients'],team:['team','Teams']},rows:[['Santos–Cruz wedding','Feb 14 · Team A · Tagaytay','Booked'],['Lim corporate dinner','Feb 18 · Team B · Makati','Booked'],['Reyes debut','Mar 2 · Team A · Makati','Inquiry']]}
+};
+const ORDER=['photographer','venue','planner','stylist','catering','entertainer','artists','standard'];
+const CYCLE=3200;
+H.style.setProperty('--cycle',CYCLE+'ms');
+const chips=document.getElementById('chips');
+chips.innerHTML=ORDER.map(k=>`<button type="button" role="radio" class="chip" data-k="${k}" aria-checked="false" tabindex="-1">${T[k].name}<span class="prog" aria-hidden="true"></span></button>`).join('');
+const mnav=document.getElementById('mnav');
+mnav.innerHTML=[['dash','Dashboard'],['inquiry'],['booking'],['client'],['team'],['portfolio','Portfolio']].map(([k,f])=>`<div class="mitem${k==='booking'?' on':''}" data-k="${k}"><svg class="i" viewBox="0 0 24 24">${NAVI[k]}</svg><span class="slot"><span>${f||''}</span></span></div>`).join('');
+
+function roll(el,next,delay=0){
+  const cur=el.querySelector('span:last-child')?.textContent;
+  if(cur===next)return;
+  if(!cur||H.classList.contains('rm')||!H.classList.contains('motion')){el.innerHTML=`<span>${next}</span>`;return}
+  el.innerHTML=`<span class="o" style="--d:${delay}ms">${cur}</span><span class="n" style="--d:${delay+60}ms">${next}</span>`;
+}
+let cur=null;
+function setTrade(k,{user=false}={}){
+  cur=k;const t=T[k];
+  chips.querySelectorAll('.chip').forEach(c=>{const on=c.dataset.k===k;c.setAttribute('aria-checked',on);c.tabIndex=on?0:-1;c.classList.remove('timing');});
+  ['inquiry','booking','client','team'].forEach((c,i)=>roll(mnav.querySelector(`[data-k="${c}"] .slot`),t.w[c][1],i*55));
+  roll(document.getElementById('mtitle'),t.w.booking[1],120);
+  roll(document.getElementById('mnew'),'New '+t.w.booking[0],180);
+  roll(document.getElementById('msearch'),'Search '+t.w.booking[1].toLowerCase(),220);
+  document.getElementById('winUrl').textContent='gallurio.com/bookings';
+  const rows=document.getElementById('mrows');rows.classList.remove('swap');void rows.offsetWidth;
+  rows.innerHTML=t.rows.map((r,i)=>`<div class="mrow" style="--r:${i}"><span class="nm">${r[0]}</span><span class="meta">${r[1]}</span><span class="st ${r[2]==='Inquiry'?'inq':''}"><i></i>${r[2]==='Inquiry'?t.w.inquiry[0].replace(/^./,c=>c.toUpperCase()):r[2]}</span></div>`).join('');
+  if(H.classList.contains('motion'))rows.classList.add('swap');
+  const std=T.standard.w;
+  document.getElementById('wordmap').innerHTML=['inquiry','booking','client','team'].map(c=>`<span>${std[c][1]} → <b>${t.w[c][1]}</b></span>`).join('')+'<span>Dashboard, Portfolio, Notifications, Settings stay the same</span>';
+  document.getElementById('win').setAttribute('aria-label',`Gallurio workspace preview using ${t.name} words: ${Object.values(t.w).map(v=>v[1]).join(', ')}`);
+  if(playing&&!user)requestAnimationFrame(()=>chips.querySelector(`[data-k="${k}"]`).classList.add('timing'));
+}
+/* autoplay: only while visible, stops for good on user choice, pausable */
+let playing=true,inView=false,timer=null,interacted=false;
+function schedule(){clearTimeout(timer);if(!playing||!inView||interacted||H.classList.contains('rm'))return;
+  chips.querySelector(`[data-k="${cur}"]`).classList.add('timing');
+  timer=setTimeout(()=>{setTrade(ORDER[(ORDER.indexOf(cur)+1)%ORDER.length]);schedule()},CYCLE)}
+function stopAuto(){playing=false;clearTimeout(timer);chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('timing'));const p=document.getElementById('pause');p.setAttribute('aria-pressed','true');document.getElementById('pauseTx').textContent='Play tour';document.getElementById('pauseIc').innerHTML='<path d="M7 4v16l13-8z"/>'}
+function startAuto(){playing=true;interacted=false;const p=document.getElementById('pause');p.setAttribute('aria-pressed','false');document.getElementById('pauseTx').textContent='Pause tour';document.getElementById('pauseIc').innerHTML='<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';schedule()}
+document.getElementById('pause').onclick=()=>playing?stopAuto():startAuto();
+chips.addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;interacted=true;stopAuto();setTrade(c.dataset.k,{user:true})});
+chips.addEventListener('keydown',e=>{const list=[...chips.children];const i=list.indexOf(document.activeElement);if(i<0)return;const rtl=H.dir==='rtl';let n=null;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')n=rtl&&e.key==='ArrowRight'?i-1:i+1;if(e.key==='ArrowLeft'||e.key==='ArrowUp')n=rtl&&e.key==='ArrowLeft'?i+1:i-1;
+  if(n!==null){e.preventDefault();n=(n+list.length)%list.length;interacted=true;stopAuto();setTrade(list[n].dataset.k,{user:true});list[n].focus()}});
+const trade=document.getElementById('trade');
+['pointerenter','focusin'].forEach(ev=>trade.addEventListener(ev,()=>{clearTimeout(timer);chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('timing'))}));
+['pointerleave'].forEach(ev=>trade.addEventListener(ev,schedule));
+trade.addEventListener('focusout',e=>{if(!trade.contains(e.relatedTarget))schedule()});
+new IntersectionObserver(([en])=>{inView=en.isIntersecting;inView?schedule():clearTimeout(timer)},{threshold:.35}).observe(trade);
+document.addEventListener('visibilitychange',()=>document.hidden?clearTimeout(timer):schedule());
+
+/* ---------- Reveal engine (mirrors MotionObserver: data-anim → in-view class) ---------- */
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+let io;
+function arm(){
+  io?.disconnect();
+  document.querySelectorAll('[data-r]').forEach(el=>el.classList.remove('in'));
+  document.getElementById('hero').classList.remove('in');
+  if(!H.classList.contains('motion')){document.querySelectorAll('[data-r]').forEach(el=>el.classList.add('in'));document.getElementById('hero').classList.add('in');return}
+  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.18,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('[data-r]').forEach(el=>io.observe(el));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('hero').classList.add('in')));
+}
+function applyMotionPref(){H.classList.toggle('motion',!reduced.matches&&!H.classList.contains('rm'))}
+applyMotionPref();arm();setTrade('venue');
+
+/* header state */
+const hdr=document.getElementById('hdr');
+addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>12),{passive:true});
+
+/* pricing cadence roll */
+document.querySelectorAll('.cad button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.cad button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  const y=b.dataset.c==='y',amt=document.getElementById('amt'),next=y?'$50':'$5',curr=amt.querySelector('span:last-child').textContent;
+  if(curr!==next){amt.innerHTML=H.classList.contains('motion')?`<span class="o">${curr}</span><span class="n">${next}</span>`:`<span>${next}</span>`}
+  document.getElementById('suf').textContent=y?'/yr':'/mo';
+});
+
+/* ---------- Mockup chrome ---------- */
+const tg=(id,fn)=>{const b=document.getElementById(id);b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);fn(on)}};
+tg('mTheme',on=>H.classList.toggle('dark',on));
+tg('mDir',on=>{H.dir=on?'rtl':'ltr';arm()});
+tg('mRm',on=>{H.classList.toggle('rm',on);applyMotionPref();arm();on?stopAuto():startAuto()});
+document.getElementById('mReplay').onclick=()=>{scrollTo({top:0,behavior:'instant'});arm()};
+if(matchMedia('(prefers-color-scheme: dark)').matches){H.classList.add('dark');document.getElementById('mTheme').setAttribute('aria-pressed','true')}
+if(reduced.matches){document.getElementById('mRm').setAttribute('aria-pressed','true');H.classList.add('rm');stopAuto()}
+</script>
+</body>
+</html>
