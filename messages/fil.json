@@ -1032,7 +1032,9 @@
         "allMyTeams": "Lahat ng aking koponan",
         "label": "I-filter ayon sa koponan",
         "inactive": "Hindi aktibo",
-        "teams": "Mga Team",
+        "legend": "Legend",
+        "booked": "Naka-book",
+        "conflicted": "May Salungatan",
         "countLabel": "{count, plural, other {# koponan}}",
         "previousPage": "Nakaraang pahina",
         "nextPage": "Susunod na pahina"

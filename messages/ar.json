@@ -1032,7 +1032,9 @@
         "allMyTeams": "كل فِرقي",
         "label": "تصفية حسب الفريق",
         "inactive": "غير نشط",
-        "teams": "الفِرق",
+        "legend": "دليل الألوان",
+        "booked": "محجوز",
+        "conflicted": "متعارض",
         "countLabel": "{count, plural, zero {لا فرق} one {فريق واحد} two {فريقان} few {# فرق} many {# فريقًا} other {# فريق}}",
         "previousPage": "الصفحة السابقة",
         "nextPage": "الصفحة التالية"

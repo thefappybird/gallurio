@@ -1032,7 +1032,9 @@
         "allMyTeams": "All my teams",
         "label": "Filter by team",
         "inactive": "Inactive",
-        "teams": "Teams",
+        "legend": "Legend",
+        "booked": "Booked",
+        "conflicted": "Conflicted",
         "countLabel": "{count, plural, one {# team} other {# teams}}",
         "previousPage": "Previous page",
         "nextPage": "Next page"

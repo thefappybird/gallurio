@@ -1032,7 +1032,9 @@
         "allMyTeams": "Semua tim saya",
         "label": "Filter berdasarkan tim",
         "inactive": "Tidak aktif",
-        "teams": "Tim",
+        "legend": "Keterangan",
+        "booked": "Dipesan",
+        "conflicted": "Konflik",
         "countLabel": "{count, plural, other {# tim}}",
         "previousPage": "Halaman sebelumnya",
         "nextPage": "Halaman berikutnya"

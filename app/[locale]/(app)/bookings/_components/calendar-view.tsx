@@ -685,7 +685,7 @@ export function CalendarView({
 
   const toolbarTrailing = useMemo(
     () =>
-      teams && teams.length > 1 ? (
+      teams ? (
         <TeamFilterControl
           teams={teams}
           selected={selectedTeams}

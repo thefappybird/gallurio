@@ -1032,7 +1032,9 @@
         "allMyTeams": "ทีมทั้งหมดของฉัน",
         "label": "กรองตามทีม",
         "inactive": "ไม่ใช้งาน",
-        "teams": "ทีม",
+        "legend": "คำอธิบายสี",
+        "booked": "จองแล้ว",
+        "conflicted": "ขัดแย้ง",
         "countLabel": "{count, plural, one {# ทีม} other {# ทีม}}",
         "previousPage": "หน้าก่อนหน้า",
         "nextPage": "หน้าถัดไป"

@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeftIcon, ChevronRightIcon, UsersIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PaletteIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 import type { BookingTeamOption } from "../_data/team-options";
 
 const INACTIVE_COLOR = "var(--muted-foreground)";
@@ -27,11 +28,22 @@ function chipClass(active: boolean, allActive: boolean) {
   );
 }
 
+function KeyItem({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex min-h-9 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground">
+      <span aria-hidden className="size-2.5 shrink-0" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
+}
+
 export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props) {
   const t = useTranslations("app.bookings.teamPicker");
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(0);
 
+  const teamless = teams.length <= 1;
+  const conflictKey = <KeyItem color={CONFLICT_COLOR_VAR} label={t("conflicted")} />;
   const allActive = selected.length === 0;
   const canInline = teams.length <= INLINE_THRESHOLD;
   const activeTeams = teams.filter((tm) => tm.isActive);
@@ -46,6 +58,7 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
 
   const inlineChips = (
     <div role="group" aria-label={t("label")} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      {conflictKey}
       <button
         type="button"
         onClick={() => onChange([])}
@@ -110,14 +123,15 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
           />
         }
       >
-        <UsersIcon className="size-3.5 shrink-0" />
-        <span>{t("teams")}</span>
+        <PaletteIcon className="size-3.5 shrink-0" />
+        <span>{t("legend")}</span>
         {selected.length > 0 && (
           <span className="tabular-nums text-[10px] text-background/70">{selected.length}</span>
         )}
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" className="w-72 p-3">
         <div className="flex flex-col gap-2">
+          {conflictKey}
           <button
             type="button"
             onClick={() => onChange([])}
@@ -191,6 +205,33 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
       </PopoverContent>
     </Popover>
   );
+
+  if (teamless) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                "inline-flex min-h-9 items-center gap-1.5 border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors",
+                "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              )}
+            />
+          }
+        >
+          <PaletteIcon className="size-3.5 shrink-0" />
+          <span>{t("legend")}</span>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-56 p-3">
+          <div className="flex flex-col gap-1">
+            <KeyItem color={teams[0]?.color ?? "var(--event-booked)"} label={t("booked")} />
+            {conflictKey}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   if (canInline) {
     return (
