@@ -96,6 +96,18 @@ describe("BookingsTable", () => {
     expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
   });
 
+  it("desktop table uses fixed layout with a fixed-width status column", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const table = screen.getByRole("table");
+    expect(table).toHaveClass("table-fixed");
+    const statusTh = within(table)
+      .getAllByRole("columnheader")
+      .find((th) => /status/i.test(th.textContent ?? ""));
+    expect(statusTh).toHaveClass("w-[10rem]");
+  });
+
   it("desktop title cell truncates and exposes the full title", () => {
     renderWithProviders(
       <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />

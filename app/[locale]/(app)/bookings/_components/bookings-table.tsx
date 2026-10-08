@@ -46,6 +46,16 @@ const COLUMN_SORT_KEY: Record<string, string> = {
   total: "total",
 };
 
+/** Fixed widths (table-fixed) so sorting/paging never reflows columns; title takes the rest. */
+const COLUMN_WIDTH: Record<string, string> = {
+  clientName: "w-[16%]",
+  sessions: "w-[10rem]",
+  booked: "w-[8rem]",
+  status: "w-[10rem]",
+  total: "w-[8rem]",
+  actions: "w-14",
+};
+
 export type BookingRow = {
   id: string;
   title: string;
@@ -155,10 +165,10 @@ export function BookingsTable({
         : "-";
       const extra = sessions.length - 1;
       return (
-        <span className="flex items-center gap-1.5 whitespace-nowrap">
-          <span>{firstDate}</span>
+        <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap">
+          <span className="truncate">{firstDate}</span>
           {extra > 0 ? (
-            <span className="inline-block border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-block shrink-0 border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
               <span aria-hidden="true">+{extra}</span>
               <span className="sr-only">+{extra} sessions</span>
             </span>
@@ -224,7 +234,7 @@ export function BookingsTable({
         header: () => t("col.title"),
         cell: (info) => (
           <span
-            className="block max-w-[14rem] truncate font-medium"
+            className="block truncate font-medium"
             title={info.getValue<string>()}
           >
             {info.getValue<string>()}
@@ -236,7 +246,7 @@ export function BookingsTable({
         header: () => t("col.client"),
         cell: (info) => (
           <span
-            className="block max-w-[10rem] truncate"
+            className="block truncate"
             title={info.getValue<string>()}
           >
             {info.getValue<string>()}
@@ -255,7 +265,11 @@ export function BookingsTable({
         id: "booked",
         accessorKey: "bookedAt",
         header: () => t("col.booked"),
-        cell: (info) => formatBooked(info.getValue<string | null>()),
+        cell: (info) => (
+          <span className="block truncate whitespace-nowrap">
+            {formatBooked(info.getValue<string | null>())}
+          </span>
+        ),
       },
       {
         accessorKey: "status",
@@ -270,7 +284,7 @@ export function BookingsTable({
         accessorKey: "total",
         header: () => t("col.total"),
         cell: (info) => (
-          <span className="block whitespace-nowrap tabular-nums">
+          <span className="block truncate whitespace-nowrap tabular-nums">
             {formatMoney(
               info.getValue<number>(),
               info.row.original.currency,
@@ -466,7 +480,7 @@ export function BookingsTable({
       </div>
 
       <div className="hidden min-w-0 max-w-full overflow-x-auto border border-border bg-card lg:block">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[56rem] table-fixed text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr
@@ -489,7 +503,10 @@ export function BookingsTable({
                       key={header.id}
                       scope="col"
                       aria-sort={ariaSort}
-                      className="px-3 py-2 font-medium text-start"
+                      className={cn(
+                        "px-3 py-2 font-medium text-start",
+                        COLUMN_WIDTH[header.column.id]
+                      )}
                     >
                       {canSort ? (
                         <SortHeaderButton
