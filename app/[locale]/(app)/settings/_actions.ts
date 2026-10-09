@@ -328,7 +328,9 @@ export async function updateVocabularyPresetAction(
     { $set: { vocabularyPreset: parsed.data } },
   );
 
-  revalidatePath("/", "layout");
+  // Route groups like (app) are not part of the URL pattern, so the narrowest
+  // addressable layout that wraps every (app) page is the [locale] segment.
+  revalidatePath("/[locale]", "layout");
   return { ok: true };
 }
 

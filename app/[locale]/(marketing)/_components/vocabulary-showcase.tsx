@@ -216,7 +216,6 @@ export function VocabularyShowcase() {
           >
             <button
               type="button"
-              aria-pressed={!playing}
               onClick={() => setPlaying((p) => !p)}
               className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius)] border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50"
               disabled={reduced}
@@ -302,10 +301,11 @@ export function VocabularyShowcase() {
               </div>
             </div>
           </div>
-          <p aria-live="polite" className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-xs text-muted-foreground">
+          {/* Live region only for user-driven changes; autoplay swaps stay silent. */}
+          <p aria-live={running ? undefined : "polite"} className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-xs text-muted-foreground">
             {CONCEPTS.map((c) => (
               <span key={c}>
-                {cap(word(c, true, "standard"))} {"→"} <b className="font-semibold text-foreground">{cap(word(c))}</b>
+                {cap(word(c, true, "standard"))} {locale === "ar" ? "←" : "→"} <b className="font-semibold text-foreground">{cap(word(c))}</b>
               </span>
             ))}
             <span>{t("universalNote")}</span>

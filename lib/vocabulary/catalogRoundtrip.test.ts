@@ -92,6 +92,18 @@ describe("fil app catalog vocabulary tokens", () => {
   });
 });
 
+describe("no vocabulary tokens outside the app subtree", () => {
+  it.each(["en", "fil", "id", "ar", "th"])("%s has no %token% in any non-app subtree", async (loc) => {
+    const catalog = (await import(`@/messages/${loc}.json`)).default as Record<string, unknown>;
+    const leaks: string[] = [];
+    for (const [key, subtree] of Object.entries(catalog)) {
+      if (key === "app") continue;
+      for (const s of collect(subtree)) if (/%[A-Za-z_]+%/.test(s)) leaks.push(`${key}: ${s}`);
+    }
+    expect(leaks).toEqual([]);
+  });
+});
+
 describe("th app catalog vocabulary tokens", () => {
   it("uses only known token forms", async () => {
     const th = (await import("@/messages/th.json")).default;

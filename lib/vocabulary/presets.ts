@@ -91,7 +91,7 @@ const LEAD: TermSet = {
   en: t("lead", "leads"),
   fil: fil("lead"),
   id: t("prospek"),
-  ar: t("عميل محتمل", "عملاء محتملون"),
+  ar: t("استفسار", "استفسارات"),
   th: t("ลูกค้าเป้าหมาย"),
 };
 const REQUEST: TermSet = {
@@ -112,7 +112,7 @@ const QUOTE_REQUEST: TermSet = {
   en: t("quote request", "quote requests"),
   fil: t("hiling ng quote", "mga hiling ng quote"),
   id: t("permintaan penawaran"),
-  ar: t("طلب عرض سعر", "طلبات عروض أسعار"),
+  ar: t("عرض", "عروض"),
   th: t("คำขอใบเสนอราคา"),
 };
 const ORDER: TermSet = {
@@ -154,7 +154,7 @@ const COMMISSION: TermSet = {
   en: t("commission", "commissions"),
   fil: fil("komisyon"),
   id: t("komisi"),
-  ar: t("طلب فني", "طلبات فنية"),
+  ar: t("طلب", "طلبات"),
   th: t("งานคอมมิชชัน"),
 };
 const PATRON: TermSet = {

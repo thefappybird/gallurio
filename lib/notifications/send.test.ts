@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Types } from 'mongoose'
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from '@/test-utils/mongo'
+import { Workspace } from '@/lib/db/models/Workspace'
 
 vi.mock('@/lib/db/mongoose', () => ({ connectDB: async () => undefined }))
 
@@ -25,14 +27,6 @@ vi.mock('@/lib/notifications/messages', () => ({
   buildNotificationContent: (...args: unknown[]) => buildNotificationContent(...args),
 }))
 
-const workspaceLean = vi.fn()
-const workspaceFindById = vi.fn((_id: unknown) => ({
-  select: () => ({ lean: () => workspaceLean() }),
-}))
-vi.mock('@/lib/db/models/Workspace', () => ({
-  Workspace: { findById: (id: unknown) => workspaceFindById(id) },
-}))
-
 vi.mock('@/lib/db/models/Notification', () => ({
   Notification: {
     insertMany: vi.fn(async (docs: unknown[]) => {
@@ -52,6 +46,29 @@ import * as ioModule from '@/lib/sockets/io'
 import type { SendNotificationOptions } from './types'
 
 const WS_ID = String(new Types.ObjectId())
+const OTHER_WS_ID = String(new Types.ObjectId())
+
+async function seedWorkspace(id: string, extra: Record<string, unknown> = {}) {
+  return Workspace.create({
+    _id: new Types.ObjectId(id),
+    slug: `ws-${id.slice(-8)}`,
+    name: `Workspace ${id.slice(-4)}`,
+    ownerUserId: `owner-${id}`,
+    businessType: 'other',
+    country: 'PH',
+    currency: 'PHP',
+    timezone: 'Asia/Manila',
+    ...extra,
+  })
+}
+
+beforeAll(async () => {
+  await startInMemoryMongo()
+})
+
+afterAll(async () => {
+  await stopInMemoryMongo()
+})
 const ENTITY_ID = String(new Types.ObjectId())
 
 function makeOpts(overrides: Partial<SendNotificationOptions> = {}): SendNotificationOptions {
@@ -70,7 +87,9 @@ function makeOpts(overrides: Partial<SendNotificationOptions> = {}): SendNotific
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await clearCollections()
+  await seedWorkspace(WS_ID)
   vi.clearAllMocks()
   ;(Notification.insertMany as ReturnType<typeof vi.fn>).mockImplementation(
     async (docs: unknown[]) => {
@@ -88,7 +107,6 @@ beforeEach(() => {
   })
   sendNotificationEmail.mockResolvedValue(undefined)
   mockTo.mockReturnValue({ emit: mockEmit })
-  workspaceLean.mockResolvedValue({ businessType: 'photographer' })
 })
 
 afterEach(() => {
@@ -320,20 +338,29 @@ describe('sendNotification', () => {
   })
 
   describe('vocabulary preset', () => {
-    it('looks up the preset by opts.workspaceId and passes it to content builder', async () => {
-      workspaceLean.mockResolvedValue({ vocabularyPreset: 'venue', businessType: 'venue' })
+    it('applies the workspace vocabularyPreset to the content builder', async () => {
+      await Workspace.updateOne({ _id: WS_ID }, { $set: { vocabularyPreset: 'venue' } })
       await sendNotification(
         makeOpts({
           recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
           triggeredByWorkosUserId: 'trigger',
         }),
       )
-      expect(workspaceFindById).toHaveBeenCalledWith(WS_ID)
       expect(buildNotificationContent.mock.calls[0][5]).toBe('venue')
     })
 
+    it("never applies another workspace's preset (tenant isolation)", async () => {
+      await seedWorkspace(OTHER_WS_ID, { vocabularyPreset: 'venue' })
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
+    })
+
     it('falls back to standard for a non-vocabulary business type', async () => {
-      workspaceLean.mockResolvedValue({ businessType: 'plumber' })
       await sendNotification(
         makeOpts({
           recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],

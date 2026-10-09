@@ -3991,7 +3991,7 @@
       "filmstripLabel": "Filmstrip foto",
       "dateLabel": "Tanggal",
       "locationLabel": "Lokasi",
-      "clientLabel": "%Client%",
+      "clientLabel": "Klien",
       "tagsLabel": "Tag"
     },
     "seoDefaults": {

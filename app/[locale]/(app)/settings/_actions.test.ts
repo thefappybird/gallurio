@@ -1539,6 +1539,17 @@ describe("updateVocabularyPresetAction", () => {
     expect(a?.vocabularyPreset).toBe("venue");
     expect(b?.vocabularyPreset ?? null).toBeNull();
   });
+
+  it("revalidates the [locale] layout, not the whole site", async () => {
+    await seedWorkspaceA();
+    const { revalidatePath } = await import("next/cache");
+    vi.mocked(revalidatePath).mockClear();
+
+    await updateVocabularyPresetAction("venue");
+
+    expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith("/[locale]", "layout");
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalledWith("/", "layout");
+  });
 });
 
 describe("updateVocabularyPresetAction guards", () => {

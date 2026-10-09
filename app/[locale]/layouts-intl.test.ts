@@ -30,7 +30,10 @@ describe("app/[locale] route branches pick a client message catalog", () => {
 
       const hasMessagesProp = /messages=/.test(match?.[1] ?? "");
       // (app) passes the vocabulary-applied full catalog; (marketing) scopes down.
-      if (branch === "(marketing)" || branch === "(app)") {
+      // Bare-provider branches that mount app.* components also pass the
+      // standard-vocabulary-applied catalog so %tokens% never leak.
+      const passesMessages = ["(marketing)", "(app)", "(onboarding)", "subscribe", "portfolio-maker-demo"];
+      if (passesMessages.includes(branch)) {
         expect(hasMessagesProp, `${branch}/layout.tsx must pass messages= (scoped or vocabulary-applied catalog)`).toBe(true);
       } else {
         expect(hasMessagesProp, `${branch}/layout.tsx must use the bare provider (no messages=)`).toBe(false);
