@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 
 // react-big-calendar tries to import CSS in the test environment which fails.
 // Stub out both stylesheet imports before the component loads.

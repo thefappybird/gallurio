@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { pickMessages, ROOT_CLIENT_MESSAGE_KEYS } from "@/lib/i18n/clientMessages";
 
 vi.mock("next-intl/server", () => ({

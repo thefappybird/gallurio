@@ -24,7 +24,7 @@ import {
   within,
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import type { TimeMode } from "@/lib/utils/time-format";
 import { act } from "@testing-library/react";
 import { useQueryClient } from "@tanstack/react-query";

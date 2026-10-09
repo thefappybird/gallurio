@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import enMessages from "@/messages/en.json";
-import arMessages from "@/messages/ar.json";
+import { enMessages } from "@/test-utils/messages";
+import { arMessages } from "@/test-utils/messages";
 import { useFormLocaleTranslator } from "./useFormLocaleTranslator";
 
 describe("useFormLocaleTranslator", () => {

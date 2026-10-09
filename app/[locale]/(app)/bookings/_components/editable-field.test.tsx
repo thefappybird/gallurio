@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders as render } from "@/test-utils/render";
-import filMessages from "@/messages/fil.json";
+import { filMessages } from "@/test-utils/messages";
 import { EditableField } from "./editable-field";
 
 describe("EditableField validation a11y", () => {

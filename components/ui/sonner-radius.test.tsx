@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { toast } from "sonner";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { Toaster } from "./sonner";
 
 // Toasts are interactive controls, not structural frames — they soften with the
