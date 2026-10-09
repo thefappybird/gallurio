@@ -771,7 +771,7 @@
       "greeting": "مرحبًا بعودتك، {name}",
       "tabs": {
         "aria": "تبديل لوحة التحكم",
-        "bookings": "الحجوزات",
+        "bookings": "ال%bookings%",
         "portfolio": "معرض الأعمال"
       },
       "dateFilter": {
@@ -797,28 +797,28 @@
       },
       "kpi": {
         "revenueThisMonth": "الإيرادات المُحصّلة",
-        "activeBookings": "الحجوزات المجدولة",
-        "newInquiries": "استفسارات جديدة",
+        "activeBookings": "ال%bookings% المجدولة",
+        "newInquiries": "%inquiries% جديدة",
         "outstandingBalance": "الرصيد المستحق"
       },
       "sections": {
         "todaysEvents": "مناسبات اليوم",
         "upcomingWeek": "القادم هذا الأسبوع",
-        "recentInquiries": "أحدث الاستفسارات",
+        "recentInquiries": "أحدث ال%inquiries%",
         "activity": "النشاط الأخير",
         "revenueTrend": "الإيرادات",
-        "calendar": "تقويم الحجوزات",
+        "calendar": "تقويم ال%bookings%",
         "eventTypes": "توزيع أنواع المناسبات",
-        "topClients": "أكثر العملاء إنفاقًا",
-        "teamPerformance": "أداء الفريق",
-        "bookingsPerTeam": "الحجوزات حسب الفريق",
+        "topClients": "أكثر ال%clients% إنفاقًا",
+        "teamPerformance": "أداء ال%team%",
+        "bookingsPerTeam": "ال%bookings% حسب ال%team%",
         "operations": "العمليات"
       },
       "quickAdd": {
         "title": "إضافة سريعة",
-        "booking": "حجز جديد",
-        "client": "عميل جديد",
-        "inquiry": "عرض الاستفسارات"
+        "booking": "%booking% جديد",
+        "client": "%client% جديد",
+        "inquiry": "عرض ال%inquiries%"
       },
       "empty": "لا يوجد شيء هنا بعد.",
       "filteredEmpty": "لا توجد بيانات تطابق النطاق الزمني المحدد.",
@@ -827,14 +827,14 @@
         "analyticsSoon": "تحليلات معرض الأعمال قادمة قريبًا.",
         "totalViews": "إجمالي المشاهدات",
         "uniqueVisitors": "زوار فريدون",
-        "inquiries": "الاستفسارات",
+        "inquiries": "ال%inquiries%",
         "conversionRate": "معدل التحويل",
         "viewsOverTime": "المشاهدات والزوار",
         "views": "المشاهدات",
         "visitors": "الزوار",
         "topSources": "أهم المصادر",
         "perPage": "حسب الصفحة",
-        "siteInquiries": "الاستفسارات من موقعك",
+        "siteInquiries": "ال%inquiries% من موقعك",
         "publishStatus": "حالة النشر",
         "published": "منشور",
         "notPublished": "لم يُنشر بعد",
@@ -843,34 +843,34 @@
         "openEditor": "فتح المحرر",
         "noTraffic": "لا زيارات بعد في هذه الفترة.",
         "directSource": "مباشر",
-        "inquiryInsights": "رؤى الاستفسارات",
-        "inquiryToBooking": "من استفسار إلى حجز",
-        "bookedFromInquiries": "محجوز من الاستفسارات",
-        "newClientsFromForm": "عملاء جدد من النموذج",
+        "inquiryInsights": "رؤى ال%inquiries%",
+        "inquiryToBooking": "من %inquiry% إلى %booking%",
+        "bookedFromInquiries": "محجوز من ال%inquiries%",
+        "newClientsFromForm": "%clients% جدد من النموذج",
         "visitorDays": "أيام-الزوار",
         "submissionRate": "معدل الإرسال",
         "bookedLeads": "العملاء المحجوزون",
-        "visitorsInquiriesTitle": "الزوار والاستفسارات عبر الزمن",
+        "visitorsInquiriesTitle": "الزوار وال%inquiries% عبر الزمن",
         "funnel": {
           "title": "مسار التحويل",
           "visitorDays": "أيام-الزوار",
           "contactOpened": "فتح التواصل",
-          "inquirySubmitted": "تم إرسال الاستفسار",
+          "inquirySubmitted": "تم إرسال ال%inquiry%",
           "ofVisitors": "من الزوار",
           "ofOpened": "مما فُتح",
           "ofTotal": "من الإجمالي",
           "collectingData": "جارٍ جمع البيانات"
         },
         "pipeline": {
-          "title": "مسار الاستفسارات",
+          "title": "مسار ال%inquiries%",
           "new": "جديد",
           "booked": "محجوز",
           "archived": "مؤرشف",
-          "total": "إجمالي الاستفسارات"
+          "total": "إجمالي ال%inquiries%"
         },
         "demand": {
           "title": "ملف الطلب",
-          "eventTypeMix": "نوع المناسبة (حسب الاستفسارات)",
+          "eventTypeMix": "نوع المناسبة (حسب ال%inquiries%)",
           "requestedMonth": "شهر المناسبة المطلوب",
           "medianLeadTime": "الوسيط لمهلة الحجز",
           "days": "يوم",
@@ -878,7 +878,7 @@
         }
       },
       "team": {
-        "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}"
+        "bookingsCount": "{count, plural, one {# %booking%} other {# %bookings%}}"
       },
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
@@ -894,38 +894,38 @@
         "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "إجماليات هذا الشهر. الأسهم تقارن بالشهر الماضي.",
-        "calendar": "الحجوزات لكل يوم. صفِّ حسب الفريق؛ اضغط على يوم لفتح التقويم عنده.",
-        "eventTypes": "حصة الحجوزات حسب نوع المناسبة.",
-        "teamPerformance": "أداء كل فريق حسب الإيرادات وعدد الحجوزات.",
-        "bookingsPerTeam": "عدد الحجوزات التي يديرها كل فريق.",
+        "calendar": "ال%bookings% لكل يوم. صفِّ حسب ال%team%؛ اضغط على يوم لفتح التقويم عنده.",
+        "eventTypes": "حصة ال%bookings% حسب نوع المناسبة.",
+        "teamPerformance": "أداء كل %team% حسب الإيرادات وعدد ال%bookings%.",
+        "bookingsPerTeam": "عدد ال%bookings% التي يديرها كل %team%.",
         "revenueTrend": "الإيرادات المدفوعة خلال الفترة المحددة.",
-        "inquiryInsights": "التحويل من الزيارات والاستفسارات، إضافة إلى العملاء الجدد عبر نموذج التواصل.",
-        "topClients": "العملاء مرتبون حسب إجمالي الإنفاق.",
-        "todaysEvents": "الحجوزات التي تبدأ اليوم.",
-        "upcomingWeek": "الحجوزات المؤكدة خلال الأيام السبعة القادمة.",
-        "recentInquiries": "أحدث استفساراتك الواردة.",
+        "inquiryInsights": "التحويل من الزيارات وال%inquiries%، إضافة إلى ال%clients% الجدد عبر نموذج التواصل.",
+        "topClients": "ال%clients% مرتبون حسب إجمالي الإنفاق.",
+        "todaysEvents": "ال%bookings% التي تبدأ اليوم.",
+        "upcomingWeek": "ال%bookings% المؤكدة خلال الأيام السبعة القادمة.",
+        "recentInquiries": "أحدث %inquiries% الواردة لديك",
         "activity": "أحدث التغييرات في مساحة عملك.",
-        "quickAdd": "أنشئ حجزًا أو عميلًا أو استفسارًا."
+        "quickAdd": "أنشئ %booking% أو %client% أو %inquiry%."
       },
       "totalLabel": "الإجمالي",
       "miniCalendar": {
         "today": "اليوم",
-        "monthTotal": "{count, plural, zero {# حجز هذا الشهر} one {حجز واحد هذا الشهر} two {حجزان هذا الشهر} few {# حجوزات هذا الشهر} many {# حجزًا هذا الشهر} other {# حجز هذا الشهر}}",
+        "monthTotal": "{count, plural, zero {# %booking% هذا الشهر} one {%booking% واحد هذا الشهر} two {# %bookings% هذا الشهر} few {# %bookings% هذا الشهر} many {# %booking% هذا الشهر} other {# %booking% هذا الشهر}}",
         "prevMonth": "الشهر السابق",
         "nextMonth": "الشهر التالي",
         "jumpToToday": "الانتقال إلى الشهر الحالي",
-        "dayBookingCount": "{count, plural, zero {# حجز} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}",
+        "dayBookingCount": "{count, plural, zero {# %booking%} one {%booking% واحد} two {# %bookings%} few {# %bookings%} many {# %booking%} other {# %booking%}}",
         "loadError": "تعذّر تحميل هذا الشهر.",
         "retry": "إعادة المحاولة"
       },
       "calendarTeam": {
-        "label": "تصفية حسب الفريق",
-        "all": "كل الفرق"
+        "label": "تصفية حسب ال%team%",
+        "all": "كل ال%teams%"
       },
       "activityEntity": {
-        "booking": "حجز",
-        "client": "عميل",
-        "inquiry": "استفسار",
+        "booking": "%booking%",
+        "client": "%client%",
+        "inquiry": "%inquiry%",
         "gallery": "معرض",
         "transaction": "معاملة",
         "workspace": "مساحة العمل"
@@ -935,7 +935,7 @@
         "updated": "حُدّث",
         "deleted": "حُذف",
         "status_changed": "تغيّرت الحالة",
-        "client_changed": "تغيّر العميل",
+        "client_changed": "تغيّر ال%client%",
         "payment_added": "أُضيفت دفعة",
         "payment_updated": "حُدِّثت دفعة"
       },
@@ -958,7 +958,7 @@
           "title": "تغطية التحصيل",
           "asOf": "حتى",
           "confirmedValue": "القيمة المؤكدة",
-          "confirmedHint": "إجمالي قيمة الحجوزات المؤكدة",
+          "confirmedHint": "إجمالي قيمة ال%bookings% المؤكدة",
           "paid": "المدفوع (المُحصّل)",
           "paidHint": "المدفوعات المستلمة حتى الآن",
           "remaining": "الرصيد المتبقي",
@@ -971,7 +971,7 @@
           "next": "تواريخ الخريطة التالية",
           "title": "خريطة حرارية للساعات المحجوزة",
           "bookedHours": "الساعات المحجوزة",
-          "bookingsCount": "{count, plural, zero {لا حجوزات} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}",
+          "bookingsCount": "{count, plural, zero {لا %bookings%} one {%booking% واحد} two {# %bookings%} few {# %bookings%} many {# %booking%} other {# %booking%}}",
           "skipPrevious": "الرجوع 5 صفحات",
           "skipNext": "التقدّم 5 صفحات",
           "weekdays": [
@@ -1016,28 +1016,28 @@
       "go": "انتقل"
     },
     "bookings": {
-      "title": "الحجوزات",
-      "titleForTeam": "حجوزات {team}",
+      "title": "ال%bookings%",
+      "titleForTeam": "%bookings% {team}",
       "view": {
         "table": "جدول",
         "card": "وضع البطاقات",
         "calendar": "تقويم",
-        "inquiriesToggle": "تبديل عرض الاستفسارات"
+        "inquiriesToggle": "تبديل عرض ال%inquiries%"
       },
       "toolbar": {
-        "search": "بحث في الحجوزات",
+        "search": "بحث في ال%bookings%",
         "statusAll": "كل الحالات",
         "showCancelled": "إظهار الملغاة",
         "showPast": "إظهار السابقة",
         "import": "استيراد",
         "export": "تصدير",
-        "add": "حجز جديد",
+        "add": "%booking% جديد",
         "invoiceTheme": "نمط الفاتورة والإيصال"
       },
       "exportDialog": {
-        "title": "تصدير الحجوزات",
-        "teamLabel": "الفريق",
-        "allTeams": "كل الفرق",
+        "title": "تصدير ال%bookings%",
+        "teamLabel": "ال%team%",
+        "allTeams": "كل ال%teams%",
         "rangeLabel": "النطاق الزمني",
         "allTime": "كل الأوقات",
         "dateRange": "نطاق التواريخ",
@@ -1053,19 +1053,19 @@
         "cancel": "إلغاء"
       },
       "teamPicker": {
-        "allTeams": "كل الفِرق",
-        "allMyTeams": "كل فِرقي",
-        "label": "تصفية حسب الفريق",
+        "allTeams": "كل ال%teams%",
+        "allMyTeams": "كل ال%teams% الخاصة بي",
+        "label": "تصفية حسب ال%team%",
         "inactive": "غير نشط",
         "legend": "دليل الألوان",
         "booked": "محجوز",
         "conflicted": "متعارض",
-        "countLabel": "{count, plural, zero {لا فرق} one {فريق واحد} two {فريقان} few {# فرق} many {# فريقًا} other {# فريق}}",
+        "countLabel": "{count, plural, zero {لا %teams%} one {%team% واحد} two {# %teams%} few {# %teams%} many {# %team%} other {# %team%}}",
         "previousPage": "الصفحة السابقة",
         "nextPage": "الصفحة التالية"
       },
       "import": {
-        "title": "استيراد الحجوزات",
+        "title": "استيراد ال%bookings%",
         "dropzone": "أفلِت ملف CSV أو XLSX هنا، أو انقر للاختيار",
         "dropzoneActive": "أفلِت للرفع",
         "templateCsv": "تنزيل قالب CSV",
@@ -1073,19 +1073,19 @@
         "preview": "تم العثور على {total} صف",
         "validCount": "{count} صالح",
         "invalidCount": "{count} بها أخطاء",
-        "importButton": "استيراد {count} حجز",
+        "importButton": "استيراد {count} %booking%",
         "importing": "جارٍ الاستيراد…",
         "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
-        "success": "تم استيراد {bookings} حجز و{shifts} وردية بنجاح.",
-        "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
+        "success": "تم استيراد {bookings} %booking% و{shifts} وردية بنجاح.",
+        "partialSuccess": "تم استيراد {count} %booking%. تعذّر استيراد {failed} صف.",
         "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
         "crossesMidnight": "يجب أن تقع البداية والنهاية في اليوم نفسه بتوقيت مساحة العمل ({tz}).",
         "previewMore": "{count} صفوف أخرى غير معروضة",
-        "groupBlocked": "صف آخر يحمل booking_id نفسه به خطأ، لذلك أُوقف الحجز بأكمله.",
+        "groupBlocked": "صف آخر يحمل booking_id نفسه به خطأ، لذلك أُوقف ال%booking% بأكمله.",
         "columns": {
           "row": "#",
           "title": "العنوان",
-          "client": "العميل",
+          "client": "ال%client%",
           "start": "البداية",
           "error": "الخطأ"
         },
@@ -1097,7 +1097,7 @@
           "line": "السطر {csvLine}",
           "rawRow": "الصف الخام",
         "showAll": "عرض الكل ({count})",
-          "untitled": "حجز بلا عنوان",
+          "untitled": "%booking% بلا عنوان",
           "summary": "تم الاستيراد {created} · تم التحديث {updated} · تم التخطّي {skipped}",
           "hint": "صحِّح الصفوف أعلاه وأعد الرفع لاستيرادها.",
           "previewHint": "لم يُستورد شيء بعد. صحِّح هذه الصفوف وأعد رفع الملف."
@@ -1106,12 +1106,12 @@
           "required": "مطلوب",
           "optional": "اختياري",
           "failedWithDetails": "فشل الاستيراد — راجِع التفاصيل",
-          "teamLabel": "إسناد إلى الفريق",
-          "teamDefault": "الفريق الرئيسي (افتراضي)",
+          "teamLabel": "إسناد إلى ال%team%",
+          "teamDefault": "ال%team% الرئيسي (افتراضي)",
           "duplicateTitle": "مُستورد مسبقاً؟",
-          "duplicateBody": "{count, plural, one {يطابق حجز واحد هنا حجزاً لديك بالفعل. استيراده مجدداً؟} other {تطابق # حجوزات هنا حجوزات لديك بالفعل. استيرادها مجدداً؟}}",
-          "duplicateOnTeam": "في فريق {team}",
-          "duplicateNoTeam": "الفريق غير معروف",
+          "duplicateBody": "{count, plural, one {يطابق %booking% واحد هنا %booking% لديك بالفعل. استيراده مجدداً؟} other {تطابق # %bookings% هنا %bookings% لديك بالفعل. استيرادها مجدداً؟}}",
+          "duplicateOnTeam": "في %team% {team}",
+          "duplicateNoTeam": "ال%team% غير معروف",
           "duplicateContinue": "استيراد على أي حال",
           "failedRetry": "فشل الاستيراد. يرجى المحاولة مرة أخرى.",
           "close": "إغلاق",
@@ -1119,10 +1119,10 @@
           "viewErrors": "عرض {n} خطأ",
           "spec": {
             "clientName": {
-              "note": "الاسم الكامل للعميل"
+              "note": "الاسم الكامل لل%client%"
             },
             "clientEmail": {
-              "note": "يُستخدم لإزالة تكرار العملاء الموجودين"
+              "note": "يُستخدم لإزالة تكرار ال%clients% الموجودين"
             },
             "startAt": {
               "note": "ISO 8601 — مثال: 2026-06-15T09:00"
@@ -1131,7 +1131,7 @@
               "note": "يُضبط افتراضيًا على startAt إذا تُرك فارغًا"
             },
             "title": {
-              "note": "عنوان الحجز"
+              "note": "عنوان ال%booking%"
             },
             "eventType": {
               "note": "زفاف، شركات، بورتريه، إلخ."
@@ -1140,7 +1140,7 @@
               "note": "محجوز، مكتمل، ملغى"
             },
             "amountTotal": {
-              "note": "المبلغ الإجمالي للحجز"
+              "note": "المبلغ الإجمالي لل%booking%"
             },
             "amountDeposit": {
               "note": "مبلغ العربون"
@@ -1155,7 +1155,7 @@
               "note": "ملاحظات داخلية"
             },
             "booking_id": {
-              "note": "من ملف مُصدَّر. احتفظ به لتحديث الحجز بدلاً من إنشاء نسخة"
+              "note": "من ملف مُصدَّر. احتفظ به لتحديث ال%booking% بدلاً من إنشاء نسخة"
             },
             "session_index": {
               "note": "يرتّب الجلسات عندما تشترك الصفوف في booking_id واحد"
@@ -1164,7 +1164,7 @@
               "note": "من ملف مُصدَّر. يُطابق قبل clientEmail"
             },
             "clientPhone": {
-              "note": "يُحفظ للعميل الجديد؛ يملأ الفارغ ولا يستبدل أبداً"
+              "note": "يُحفظ لل%client% الجديد؛ يملأ الفارغ ولا يستبدل أبداً"
             },
             "locationLat": {
               "note": "خط العرض على الخريطة، مثل 14.5995"
@@ -1190,7 +1190,7 @@
           "columnsFound": "{count, plural, zero {# عمود} one {عمود واحد} two {عمودان} few {# أعمدة} many {# عمودًا} other {# عمود}}",
           "rowsFound": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
           "sectionRequired": "مطلوب",
-          "sectionCommon": "تفاصيل الحجز",
+          "sectionCommon": "تفاصيل ال%booking%",
           "sectionAdvanced": "أعمدة متقدمة وأعمدة الاستيراد المتبادل",
           "advancedHint": "تلزم فقط عند إعادة استيراد ملف صدّرته من Gallurio.",
           "selectColumn": "اختر عمودًا من ملفك",
@@ -1198,7 +1198,7 @@
           "useFixedValue": "استخدم قيمة ثابتة",
           "fixedValueLabel": "القيمة لكل صف",
           "inferFromDate": "استنتجها من التاريخ",
-          "inferHint": "الحجوزات السابقة المسددة بالكامل تصبح مكتملة، وما عداها يبقى محجوزًا.",
+          "inferHint": "ال%bookings% السابقة المسددة بالكامل تصبح مكتملة، وما عداها يبقى محجوزًا.",
           "alreadyUsed": "{column} (مستخدم بالفعل)",
           "sample": "الصف الأول: {value}",
           "sampleEmpty": "الصف الأول فارغ",
@@ -1237,25 +1237,25 @@
           "continue": "متابعة",
           "reviewMapping": "طوبقت الأعمدة تلقائيًا",
           "reviewMappingAction": "مراجعة",
-          "committing": "جارٍ استيراد حجوزاتك"
+          "committing": "جارٍ استيراد %bookings% لديك"
         }
       },
       "export": {
-        "tooltip": "تنزيل الحجوزات بصيغة CSV",
-        "empty": "لا توجد حجوزات للتصدير"
+        "tooltip": "تنزيل ال%bookings% بصيغة CSV",
+        "empty": "لا توجد %bookings% للتصدير"
       },
       "table": {
-        "empty": "لا توجد حجوزات تطابق عوامل التصفية.",
-        "listEmpty": "لا توجد حجوزات بعد.",
-        "listEmptyHint": "ستظهر هنا الحجوزات التي تنشئها أو تقبلها من الاستفسارات.",
+        "empty": "لا توجد %bookings% تطابق عوامل التصفية.",
+        "listEmpty": "لا توجد %bookings% بعد.",
+        "listEmptyHint": "ستظهر هنا ال%bookings% التي تنشئها أو تقبلها من ال%inquiries%.",
         "past": "سابق",
         "showPast": "إظهار السابقة",
         "hidePast": "إخفاء السابقة",
-        "pastBookingsHidden": "{count, plural, zero {لا حجوزات سابقة مخفية} one {حجز سابق واحد مخفي} two {حجزان سابقان مخفيان} few {# حجوزات سابقة مخفية} many {# حجزًا سابقًا مخفيًا} other {# حجز سابق مخفي}}",
+        "pastBookingsHidden": "{count, plural, zero {لا %bookings% سابقة مخفية} one {%booking% سابق واحد مخفي} two {# %bookings% سابقة مخفية} few {# %bookings% سابقة مخفية} many {# %booking% سابقًا مخفيًا} other {# %booking% سابق مخفي}}",
         "col": {
           "booked": "تاريخ الحجز",
-          "title": "الحجز",
-          "client": "العميل",
+          "title": "ال%booking%",
+          "client": "ال%client%",
           "date": "التاريخ",
           "status": "الحالة",
           "total": "الإجمالي",
@@ -1264,7 +1264,7 @@
         }
       },
       "row": {
-        "openMenu": "فتح إجراءات الحجز",
+        "openMenu": "فتح إجراءات ال%booking%",
         "view": "عرض",
         "edit": "تعديل"
       },
@@ -1318,7 +1318,7 @@
         "hidePast": "إخفاء الجلسات السابقة",
         "pastSessionsHidden": "{count, plural, zero {لا جلسات سابقة مخفية} one {جلسة سابقة واحدة مخفية — بدِّل للإظهار} two {جلستان سابقتان مخفيتان — بدِّل للإظهار} few {# جلسات سابقة مخفية — بدِّل للإظهار} many {# جلسة سابقة مخفية — بدِّل للإظهار} other {# جلسة سابقة مخفية — بدِّل للإظهار}}",
         "tabs": {
-          "client": "العميل",
+          "client": "ال%client%",
           "event": "المناسبة",
           "pricing": "التسعير",
           "eventPricing": "المناسبة",
@@ -1335,7 +1335,7 @@
         "fields": {
           "title": "العنوان",
           "titleRequired": "لا يمكن أن يكون العنوان فارغًا.",
-          "clientName": "اسم العميل",
+          "clientName": "اسم ال%client%",
           "status": "الحالة",
           "eventType": "نوع المناسبة",
           "date": "التاريخ",
@@ -1366,15 +1366,15 @@
           "removeDraftSession": "إزالة الجلسة المسودة",
           "email": "البريد الإلكتروني",
           "phone": "الهاتف",
-          "openClient": "فتح العميل",
-          "viewClient": "عرض العميل",
-          "changeClient": "تغيير العميل",
+          "openClient": "فتح ال%client%",
+          "viewClient": "عرض ال%client%",
+          "changeClient": "تغيير ال%client%",
           "changeClientCancel": "الإبقاء على الحالي",
-          "changeClientSearch": "ابحث عن عملاء…",
+          "changeClientSearch": "ابحث عن %clients%…",
           "noEmail": "لا يوجد بريد إلكتروني",
           "noPhone": "لا يوجد هاتف",
-          "noClientResults": "لم يُعثر على عملاء",
-          "changeClientMultiSession": "إعادة التعيين غير متاحة للحجوزات متعددة الجلسات",
+          "noClientResults": "لم يُعثر على %clients%",
+          "changeClientMultiSession": "إعادة التعيين غير متاحة لل%bookings% متعددة الجلسات",
           "searchFailed": "فشل البحث. حاول مرة أخرى.",
           "editTitle": "تعديل العنوان",
           "confirmTitle": "تأكيد",
@@ -1385,13 +1385,13 @@
           "callClient": "اتصال"
         },
         "cancelConfirm": {
-          "title": "إلغاء هذا الحجز؟",
-          "body": "سنضع علامة \"ملغى\" على \"{title}\". لن يُحذف الحجز — يمكنك استعادته من النافذة نفسها إذا عاد عميلك. يبقى سجل التدقيق سليمًا في الحالتين.",
-          "keep": "الإبقاء على الحجز",
-          "confirm": "نعم، ألغِ الحجز"
+          "title": "إلغاء هذا ال%booking%؟",
+          "body": "سنضع علامة \"ملغى\" على \"{title}\". لن يُحذف ال%booking% — يمكنك استعادته من النافذة نفسها إذا عاد ال%client% الخاص بك. يبقى سجل التدقيق سليمًا في الحالتين.",
+          "keep": "الإبقاء على ال%booking%",
+          "confirm": "نعم، ألغِ ال%booking%"
         },
         "history": {
-          "title": "سجل الحجز",
+          "title": "سجل ال%booking%",
           "totalCount": "{count} إدخال",
           "pageOf": "الصفحة {page} من {total}",
           "loadError": "تعذّر تحميل السجل.",
@@ -1402,7 +1402,7 @@
             "created": "أُنشئ",
             "updated": "حُدِّث",
             "status_changed": "تغيّرت الحالة",
-            "client_changed": "تغيّر العميل",
+            "client_changed": "تغيّر ال%client%",
             "deleted": "حُذف",
             "payment_added": "أُضيفت دفعة",
             "payment_updated": "حُدِّثت دفعة"
@@ -1411,8 +1411,8 @@
           "yesterday": "أمس",
           "timelineLabel": "المخطط الزمني للنشاط"
         },
-        "cancel": "إلغاء الحجز",
-        "restore": "استعادة الحجز",
+        "cancel": "إلغاء ال%booking%",
+        "restore": "استعادة ال%booking%",
         "invoice": "تنزيل الفاتورة",
         "receipt": "تنزيل الإيصال",
         "discardChanges": "تجاهل التغييرات",
@@ -1423,13 +1423,13 @@
         "discardDescription": "{count, plural, zero {لن تُفقد أي تغييرات.} one {سيُفقد تغيير واحد غير محفوظ.} two {سيُفقد تغييران غير محفوظين.} few {ستُفقد # تغييرات غير محفوظة.} many {سيُفقد # تغييرًا غير محفوظ.} other {سيُفقد # تغيير غير محفوظ.}}",
         "discardConfirm": "تجاهل وإغلاق",
         "keepEditing": "متابعة التعديل",
-        "savedToast": "تم تحديث الحجز.",
-        "cancelledToast": "تم إلغاء الحجز.",
-        "restoredToast": "تمت استعادة الحجز.",
+        "savedToast": "تم تحديث ال%booking%.",
+        "cancelledToast": "تم إلغاء ال%booking%.",
+        "restoredToast": "تمت استعادة ال%booking%.",
         "actionFailed": "حدث خطأ ما. حاول مرة أخرى.",
-        "notFound": "لم يُعثر على الحجز.",
-        "loadFailed": "تعذّر تحميل هذا الحجز.",
-        "staleConflict": "تم تغيير هذا الحجز بواسطة شخص آخر. لم يتم حفظ تعديلك — راجع أحدث نسخة وحاول مرة أخرى.",
+        "notFound": "لم يُعثر على ال%booking%.",
+        "loadFailed": "تعذّر تحميل هذا ال%booking%.",
+        "staleConflict": "تم تغيير هذا ال%booking% بواسطة شخص آخر. لم يتم حفظ تعديلك — راجع أحدث نسخة وحاول مرة أخرى.",
         "staleNotice": "تم التحديث بواسطة شخص آخر — تعديلك غير المحفوظ مبني على نسخة أقدم.",
         "retry": "أعد المحاولة",
         "editAll": "تعديل الكل",
@@ -1464,11 +1464,11 @@
         "pastDateWarning": "نُقل إلى تاريخ سابق",
         "pastSplitWarning": "حُفظت الأيام السابقة — حُدِّثت الأيام المستقبلية فقط",
         "thisDayOnlyOnPast": "لا يمكن تعديل يوم سابق",
-        "updating": "جارٍ تحديث الحجز…",
-        "updated": "تم تحديث الحجز",
-        "updateError": "فشل تحديث الحجز",
+        "updating": "جارٍ تحديث ال%booking%…",
+        "updated": "تم تحديث ال%booking%",
+        "updateError": "فشل تحديث ال%booking%",
         "conflictCheckFailed": "تعذّر التحقّق من التعارضات — يرجى المحاولة مرة أخرى",
-        "overnightNotAllowed": "لا يمكن أن تمتد الحجوزات بعد منتصف الليل — يرجى تعديل الوقت",
+        "overnightNotAllowed": "لا يمكن أن تمتد ال%bookings% بعد منتصف الليل — يرجى تعديل الوقت",
         "conflictBlockSubmit": "حُلّ تعارضات الجلسات قبل الحفظ.",
         "conflictBlockDnd": "يتداخل هذا الوقت مع \"{title}\" — أُلغي النقل",
         "conflictBlockDndMany": "يتداخل هذا الوقت مع \"{title}\" و{more} وردية أخرى — أُلغي النقل",
@@ -1479,13 +1479,13 @@
         "togglePast": "سابق",
         "dropConflict": {
           "title": "تعارض في الجدول يوم {date}",
-          "description": "نقل هذا الحجز يُحدث تداخلًا مع وردية موجودة أو أكثر. يمكنك نقله على أي حال أو الإلغاء.",
+          "description": "نقل هذا ال%booking% يُحدث تداخلًا مع وردية موجودة أو أكثر. يمكنك نقله على أي حال أو الإلغاء.",
           "cancel": "إلغاء",
           "moveAnyway": "انقل على أي حال"
         },
         "pastDateConfirm": {
           "title": "النقل إلى تاريخ سابق؟",
-          "description": "أنت تنقل هذا الحجز إلى تاريخ في الماضي. هذا مسموح لكنه غير معتاد — أكِّد للمتابعة.",
+          "description": "أنت تنقل هذا ال%booking% إلى تاريخ في الماضي. هذا مسموح لكنه غير معتاد — أكِّد للمتابعة.",
           "confirm": "النقل إلى السابق",
           "cancel": "إلغاء"
         },
@@ -1493,10 +1493,10 @@
         "hidePast": "إخفاء السابقة",
         "filterByStatus": "تصفية حسب الحالة",
         "filterActive": "تصفية حسب {status} — انقر مرة أخرى للمسح",
-        "teamsLegend": "الفِرق",
-        "inactiveTeam": "فريق غير نشط",
+        "teamsLegend": "ال%teams%",
+        "inactiveTeam": "%team% غير نشط",
         "conflict": "متعارض",
-        "emptyPeriod": "لا توجد حجوزات في هذه الفترة"
+        "emptyPeriod": "لا توجد %bookings% في هذه الفترة"
       },
       "sessions": {
         "label": "الجلسة {n}",
@@ -1527,43 +1527,43 @@
         "frozenRate": "≈ {price} · السعر {rate} · {date}",
         "frozenRateTrailing": "{date} · السعر {rate} · ≈ {price}",
         "approx": "≈ {price}",
-        "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
+        "empty": "لا توجد مدفوعات مجدولة بعد لهذا ال%booking%",
         "exceedsBalance": "يتجاوز الرصيد المتبقي",
         "titleRequired": "العنوان مطلوب.",
         "priceRequired": "يجب أن يكون المبلغ أكبر من 0."
       },
       "wizard": {
-        "createTitle": "حجز جديد",
-        "editTitle": "تعديل الحجز",
+        "createTitle": "%booking% جديد",
+        "editTitle": "تعديل ال%booking%",
         "editTitleNamed": "تعديل {title}",
-        "loading": "جارٍ تحميل الحجز…",
+        "loading": "جارٍ تحميل ال%booking%…",
         "previous": "السابق",
         "next": "التالي",
         "cancel": "إلغاء",
-        "create": "إنشاء الحجز",
+        "create": "إنشاء ال%booking%",
         "creating": "جارٍ الإنشاء…",
         "save": "حفظ التغييرات",
         "saving": "جارٍ الحفظ…",
-        "createdToast": "تم إنشاء الحجز.",
-        "savedToast": "تم تحديث الحجز.",
+        "createdToast": "تم إنشاء ال%booking%.",
+        "savedToast": "تم تحديث ال%booking%.",
         "depositExceedsTotal": "لا يمكن أن يتجاوز العربون الإجمالي.",
         "unsavedConfirm": "ستفقد تقدّمك إذا خرجت الآن. هل أنت متأكّد؟",
         "hasErrors": "توجد أخطاء في التحقق",
-        "viewBooking": "عرض الحجز",
+        "viewBooking": "عرض ال%booking%",
         "unsaved": {
           "title": "تجاهل تغييراتك؟",
-          "body": "ستفقد كل ما أدخلته في هذا الحجز إذا غادرت الآن. لم تُحفظ تغييراتك.",
+          "body": "ستفقد كل ما أدخلته في هذا ال%booking% إذا غادرت الآن. لم تُحفظ تغييراتك.",
           "keep": "متابعة التعديل",
           "discard": "تجاهل وإغلاق"
         },
         "conflictConfirm": {
           "title": "تم اكتشاف تعارضات في الجدول",
-          "description": "تتداخل جلسة واحدة أو أكثر مع حجوزات موجودة. يمكنك الإرسال على أي حال أو الرجوع لتعديل التواريخ.",
+          "description": "تتداخل جلسة واحدة أو أكثر مع %bookings% موجودة. يمكنك الإرسال على أي حال أو الرجوع لتعديل التواريخ.",
           "confirm": "أرسِل على أي حال",
           "cancel": "رجوع"
         },
         "steps": {
-          "client": "العميل",
+          "client": "ال%client%",
           "event": "المناسبة",
           "pricing": "التسعير",
           "eventPricing": "المناسبة",
@@ -1572,13 +1572,13 @@
           "review": "المراجعة"
         },
         "client": {
-          "tabExisting": "عميل موجود",
+          "tabExisting": "%client% موجود",
           "tabNew": "إنشاء جديد",
           "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني",
-          "noResults": "لا يوجد عملاء مطابقون. جرّب بحثًا مختلفًا.",
-          "selectRequired": "اختر عميلًا للمتابعة.",
-          "loadingClients": "جارٍ تحميل العملاء",
-          "loadError": "تعذّر تحميل العملاء.",
+          "noResults": "لا يوجد %clients% مطابقون. جرّب بحثًا مختلفًا.",
+          "selectRequired": "اختر %client% للمتابعة.",
+          "loadingClients": "جارٍ تحميل ال%clients%",
+          "loadError": "تعذّر تحميل ال%clients%.",
           "retry": "أعد المحاولة",
           "name": "الاسم",
           "namePlaceholder": "مثال: إيما كارتر",
@@ -1586,13 +1586,13 @@
           "emailPlaceholder": "emma@example.com",
           "phone": "الهاتف",
           "phonePlaceholder": "+63 917 555 0142",
-          "readOnlyLabel": "العميل",
-          "readOnlyHint": "إعادة تعيين حجز إلى عميل مختلف غير مدعومة في هذا العرض بعد.",
-          "multiSessionReadOnly": "العميل مقفل في الحجوزات متعددة الجلسات."
+          "readOnlyLabel": "ال%client%",
+          "readOnlyHint": "إعادة تعيين %booking% إلى %client% مختلف غير مدعومة في هذا العرض بعد.",
+          "multiSessionReadOnly": "ال%client% مقفل في ال%bookings% متعددة الجلسات."
         },
         "event": {
           "title": "العنوان",
-          "titleRequired": "أعطِ هذا الحجز عنوانًا.",
+          "titleRequired": "أعطِ هذا ال%booking% عنوانًا.",
           "titlePlaceholder": "مثال: زفاف كارتر — رصيف 27",
           "eventType": "نوع المناسبة",
           "startAt": "تاريخ بداية الوردية",
@@ -1601,7 +1601,7 @@
           "endAt": "تاريخ نهاية الوردية",
           "endTime": "وقت نهاية الوردية",
           "conflictsLabel": "ورديات موجودة بالفعل في {date}:",
-          "allowPastDate": "هل تضيف حجزًا قديمًا؟ اسمح بالتواريخ السابقة",
+          "allowPastDate": "هل تضيف %booking% قديمًا؟ اسمح بالتواريخ السابقة",
           "location": "الموقع",
           "checkingConflicts": "جارٍ التحقّق من التعارضات…",
           "repeatingSessions": "جلسات متكرّرة",
@@ -1623,24 +1623,24 @@
           "total": "الإجمالي",
           "deposit": "العربون",
           "currency": "العملة",
-          "hint": "التسعير بعملة مساحة العمل الافتراضية. يمكنك تغيير العملة لكل حجز.",
+          "hint": "التسعير بعملة مساحة العمل الافتراضية. يمكنك تغيير العملة لكل %booking%.",
           "depositRequiresTotal": "لا يمكنك إضافة عربون قبل تحديد السعر."
         },
         "review": {
           "intro": "تحقّق سريع — تأكّد من أن كل شيء صحيح قبل الحفظ."
         },
-        "teamLabel": "الفريق",
-        "teamPlaceholder": "اختر فريقًا"
+        "teamLabel": "ال%team%",
+        "teamPlaceholder": "اختر %team%"
       }
     },
     "sidebar": {
       "dashboard": "لوحة التحكّم",
-      "bookings": "الحجوزات",
-      "clients": "العملاء",
+      "bookings": "ال%bookings%",
+      "clients": "ال%clients%",
       "calendar": "التقويم",
-      "inquiries": "الاستفسارات",
+      "inquiries": "ال%inquiries%",
       "gallery": "المعرض",
-      "teams": "الفِرق",
+      "teams": "ال%teams%",
       "settings": "الإعدادات",
       "account": "الحساب",
       "logOut": "تسجيل الخروج",
@@ -1735,7 +1735,7 @@
         "account": "الحساب",
         "customize": "التخصيص",
         "workspace": "تفاصيل العمل",
-        "teams": "الفِرق",
+        "teams": "ال%teams%",
         "publicPage": "الصفحة العامة",
         "billing": "الفوترة",
         "devPlan": "المطوِّر · الخطة",
@@ -1781,8 +1781,8 @@
         "title": "مبدِّل خطة المطوِّر",
         "description": "غيّر workspace.plan دون المرور بـ Lemon Squeezy. محظور تمامًا في بيئة الإنتاج. استخدم تبويب الفوترة لإدارة الاشتراك الفعلي.",
         "currentLabel": "الخطة الحالية",
-        "teamsSuffix": "فِرق",
-        "perTeamSuffix": "أعضاء/فريق",
+        "teamsSuffix": "%teams%",
+        "perTeamSuffix": "أعضاء/%team%",
         "active": "نشط",
         "switch": "تبديل",
         "toasts": {
@@ -1797,7 +1797,7 @@
         "savedToast": "تم تحديث مساحة العمل.",
         "currencyWarning": "سيؤدي تغيير العملة إلى إعادة حساب كل المبالغ المدفوعة الحالية بالعملة الجديدة، وتأمين هذا الحقل لمدة 90 يومًا بعد ذلك.",
         "currencyConfirmTitle": "تغيير عملة مساحة العمل؟",
-        "currencyConfirmBody": "{count, plural, =0 {لا توجد مبالغ إجمالية ستتغير. يمكنك تغيير العملة في أي وقت.} one {سيُعاد احتساب حجز واحد. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} two {سيُعاد احتساب حجزين. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} few {سيُعاد احتساب # حجوزات. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} other {سيُعاد احتساب # حجز. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.}}",
+        "currencyConfirmBody": "{count, plural, =0 {لا توجد مبالغ إجمالية ستتغير. يمكنك تغيير العملة في أي وقت.} one {سيُعاد احتساب %booking% واحد. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} two {سيُعاد احتساب # %bookings%. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} few {سيُعاد احتساب # %bookings%. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.} other {سيُعاد احتساب # %booking%. بعد هذا التغيير، لن تتمكن من تغيير العملة مرة أخرى حتى {date}.}}",
         "currencyConfirmConfirm": "تأكيد التغيير",
         "currencyConfirmCancel": "إلغاء",
         "currencyLockedUntil": "العملة مقفلة حتى {date}.",
@@ -1876,7 +1876,7 @@
         "seoTitlePlaceholder": "تصوير سارة بِل — زفاف وبورتريه",
         "seoDescription": "وصف SEO",
         "seoDescriptionPlaceholder": "تصوير الأعراس والبورتريه في منطقة الخليج…",
-        "inquirySection": "توجيه الاستفسارات",
+        "inquirySection": "توجيه ال%inquiries%",
         "inquirySectionHint": "المكان الذي تُحوَّل إليه عمليات الإرسال من نموذج الاستفسار.",
         "inquiryRecipientEmail": "بريد المستلِم",
         "inquiryRecipientEmailPlaceholder": "you@example.com",
@@ -1935,20 +1935,20 @@
       }
     },
     "teams": {
-      "title": "الفِرق",
-      "description": "اجمع زملاءك في فِرق. لكل فريق تقويمه الخاص. يرى الأعضاء حجوزات الفِرق التي ينتمون إليها فقط.",
-      "listEmpty": "ليس لديك أي فِرق بعد.",
-      "createButton": "إنشاء فريق",
+      "title": "ال%teams%",
+      "description": "اجمع زملاءك في %teams%. لكل %team% تقويمه الخاص. يرى الأعضاء %bookings% ال%teams% التي ينتمون إليها فقط.",
+      "listEmpty": "ليس لديك أي %teams% بعد.",
+      "createButton": "إنشاء %team%",
       "toolbar": {
-        "search": "بحث في الفِرق",
-        "searchLabel": "بحث في الفِرق بالاسم",
+        "search": "بحث في ال%teams%",
+        "searchLabel": "بحث في ال%teams% بالاسم",
         "showDeactivated": "إظهار المعطّلة"
       },
       "table": {
-        "empty": "لا توجد فِرق تطابق بحثك.",
+        "empty": "لا توجد %teams% تطابق بحثك.",
         "col": {
           "color": "اللون",
-          "name": "الفريق",
+          "name": "ال%team%",
           "members": "الأعضاء",
           "monthlyAverage": "المتوسط الشهري",
           "actions": "إجراءات"
@@ -1962,38 +1962,38 @@
         "hexLabel": "ست عشري"
       },
       "createDialog": {
-        "title": "إنشاء فريق",
-        "description": "أعطِ الفريق اسمًا واختر لونًا لشارات تقويمه.",
-        "nameLabel": "اسم الفريق",
+        "title": "إنشاء %team%",
+        "description": "أعطِ ال%team% اسمًا واختر لونًا لشارات تقويمه.",
+        "nameLabel": "اسم ال%team%",
         "namePlaceholder": "مثال: طاقم الأعراس",
         "colorLabel": "اللون",
-        "submit": "إنشاء فريق",
+        "submit": "إنشاء %team%",
         "cancel": "إلغاء",
         "creating": "جارٍ الإنشاء…"
       },
       "renameDialog": {
-        "title": "إعادة تسمية الفريق",
+        "title": "إعادة تسمية ال%team%",
         "submit": "حفظ",
         "saving": "جارٍ الحفظ…",
         "cancel": "إلغاء"
       },
       "deactivateDialog": {
-        "title": "تعطيل الفريق؟",
-        "description": "سيُخفى \"{name}\" من فِرقك النشطة ولن يتمكّن من تلقّي حجوزات جديدة. يُحتفظ بأعضائه وحجوزاته وسجله، ويمكنك إعادة تفعيله في أي وقت.",
-        "confirm": "تعطيل الفريق",
+        "title": "تعطيل ال%team%؟",
+        "description": "سيُخفى \"{name}\" من فِرقك النشطة ولن يتمكّن من تلقّي %bookings% جديدة. يُحتفظ بأعضائه و%bookings% التابعة له وسجله، ويمكنك إعادة تفعيله في أي وقت.",
+        "confirm": "تعطيل ال%team%",
         "deactivating": "جارٍ التعطيل…",
         "cancel": "إلغاء"
       },
       "reactivateDialog": {
-        "title": "إعادة تفعيل الفريق؟",
-        "description": "سيصبح \"{name}\" نشطًا مرة أخرى ويمكنه تلقّي حجوزات جديدة. يُحتسب ذلك ضمن حد الفِرق النشطة في خطتك.",
-        "confirm": "إعادة تفعيل الفريق",
+        "title": "إعادة تفعيل ال%team%؟",
+        "description": "سيصبح \"{name}\" نشطًا مرة أخرى ويمكنه تلقّي %bookings% جديدة. يُحتسب ذلك ضمن حد ال%teams% النشطة في خطتك.",
+        "confirm": "إعادة تفعيل ال%team%",
         "reactivating": "جارٍ إعادة التفعيل…",
         "cancel": "إلغاء"
       },
       "team": {
         "memberCount": "{count, plural, =0 {لا أعضاء بعد} =1 {عضو واحد} zero {لا أعضاء} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}",
-        "monthlyBookings": "{count, number} حجز/شهر",
+        "monthlyBookings": "{count, number} %booking%/شهر",
         "defaultBadge": "افتراضي",
         "edit": "تعديل",
         "rename": "إعادة تسمية",
@@ -2005,71 +2005,71 @@
         "inactiveBadge": "غير نشط"
       },
       "editDialog": {
-        "title": "تعديل الفريق",
+        "title": "تعديل ال%team%",
         "submit": "حفظ التغييرات",
         "saving": "جارٍ الحفظ…"
       },
       "drawer": {
         "membersHeading": "الأعضاء",
         "memberCount": "{count}/{max} عضو",
-        "noMembers": "لا يوجد أعضاء في هذا الفريق بعد.",
+        "noMembers": "لا يوجد أعضاء في هذا ال%team% بعد.",
         "addMemberLabel": "إضافة عضو موجود",
         "addMemberPlaceholder": "اختر عضوًا…",
-        "noAssignableMembers": "الجميع في مساحة العمل هذه موجودون بالفعل في هذا الفريق.",
+        "noAssignableMembers": "الجميع في مساحة العمل هذه موجودون بالفعل في هذا ال%team%.",
         "pendingHeading": "الدعوات المعلّقة",
-        "noPending": "لا توجد دعوات معلّقة لهذا الفريق.",
-        "inviteToTeam": "دعوة إلى هذا الفريق",
+        "noPending": "لا توجد دعوات معلّقة لهذا ال%team%.",
+        "inviteToTeam": "دعوة إلى هذا ال%team%",
         "leadToggleLabel": "قائد",
-        "leadOnlyOnePerTeam": "يمكن أن يكون للفريق قائد واحد فقط.",
+        "leadOnlyOnePerTeam": "يمكن أن يكون لل%team% قائد واحد فقط.",
         "removeFromTeam": "إزالة",
-        "teamFull": "هذا الفريق ممتلئ.",
+        "teamFull": "هذا ال%team% ممتلئ.",
         "close": "إغلاق",
         "removeMemberFlow": {
           "confirmTitle": "إزالة {name} من {team}؟",
-          "confirmDescription": "سيفقد الوصول إلى تقويم هذا الفريق وحجوزاته.",
-          "confirmButton": "إزالة من الفريق",
-          "removeFromTeamAndWorkspace": "إزالة من الفريق + مساحة العمل",
-          "otherTeamsBlocked": "هذا العضو ينتمي إلى فرق أخرى. أزله من تلك الفرق أولاً.",
+          "confirmDescription": "سيفقد الوصول إلى تقويم هذا ال%team% و%bookings% التابعة له.",
+          "confirmButton": "إزالة من ال%team%",
+          "removeFromTeamAndWorkspace": "إزالة من ال%team% + مساحة العمل",
+          "otherTeamsBlocked": "هذا العضو ينتمي إلى %teams% أخرى. أزله من تلك ال%teams% أولاً.",
           "removing": "جارٍ الإزالة…",
           "workspacePromptTitle": "هل تريد أيضًا إزالة {name} من مساحة العمل؟",
-          "workspacePromptDescription": "سيفقد الوصول إلى جميع الفِرق وإلى مساحة العمل بأكملها. لا يمكن التراجع عن هذا.",
+          "workspacePromptDescription": "سيفقد الوصول إلى جميع ال%teams% وإلى مساحة العمل بأكملها. لا يمكن التراجع عن هذا.",
           "dontAskAgain": "لا تسألني مرة أخرى",
           "removeFromWorkspaceButton": "إزالة من مساحة العمل",
           "keepInWorkspaceButton": "الإبقاء في مساحة العمل"
         }
       },
       "upsell": {
-        "atCapTitle": "لقد وصلت إلى حد الفِرق",
-        "atCapBody": "تتيح خطتك {plan} عددًا من الفِرق يبلغ {max, plural, =1 {فريقًا واحدًا} other {{max} فريق}}. قم بالترقية لإضافة المزيد.",
+        "atCapTitle": "لقد وصلت إلى حد ال%teams%",
+        "atCapBody": "تتيح خطتك {plan} عددًا من ال%teams% يبلغ {max, plural, =1 {%team% واحد} other {{max} %team%}}. قم بالترقية لإضافة المزيد.",
         "cta": "عرض الخطط",
-        "proAtCapBody": "خطة Pro محدودة بـ {max} فريق. تواصل مع الدعم إذا احتجت إلى المزيد."
+        "proAtCapBody": "خطة Pro محدودة بـ {max} %team%. تواصل مع الدعم إذا احتجت إلى المزيد."
       },
       "errors": {
-        "nameRequired": "اسم الفريق مطلوب.",
-        "nameTooLong": "يجب ألا يتجاوز اسم الفريق 40 حرفًا.",
-        "duplicateName": "يوجد فريق بهذا الاسم بالفعل في مساحة العمل هذه.",
-        "teamNotFound": "لم يُعثر على الفريق.",
+        "nameRequired": "اسم ال%team% مطلوب.",
+        "nameTooLong": "يجب ألا يتجاوز اسم ال%team% 40 حرفًا.",
+        "duplicateName": "يوجد %team% بهذا الاسم بالفعل في مساحة العمل هذه.",
+        "teamNotFound": "لم يُعثر على ال%team%.",
         "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
-        "cannotDeactivateDefault": "لا يمكن تعطيل الفريق الافتراضي.",
-        "reactivateCapExceeded": "ستتجاوز إعادة التفعيل حد الفِرق النشطة في خطتك. عطِّل فريقًا آخر أو قم بترقية خطتك أولًا."
+        "cannotDeactivateDefault": "لا يمكن تعطيل ال%team% الافتراضي.",
+        "reactivateCapExceeded": "ستتجاوز إعادة التفعيل حد ال%teams% النشطة في خطتك. عطِّل %team% آخر أو قم بترقية خطتك أولًا."
       },
       "toasts": {
-        "created": "تم إنشاء الفريق.",
-        "renamed": "تمت إعادة تسمية الفريق.",
+        "created": "تم إنشاء ال%team%.",
+        "renamed": "تمت إعادة تسمية ال%team%.",
         "colorChanged": "تم تحديث اللون.",
-        "saved": "تم تحديث الفريق.",
-        "deactivated": "تم تعطيل الفريق.",
-        "reactivated": "تمت إعادة تفعيل الفريق."
+        "saved": "تم تحديث ال%team%.",
+        "deactivated": "تم تعطيل ال%team%.",
+        "reactivated": "تمت إعادة تفعيل ال%team%."
       },
-      "teamsHeading": "الفِرق",
+      "teamsHeading": "ال%teams%",
       "invite": {
         "button": "دعوة عضو",
         "dialog": {
           "title": "دعوة زميل",
-          "description": "سيتلقّى دعوة عبر البريد الإلكتروني. بمجرد قبولها، سيظهر في قائمة أعضائك مُعيَّنًا إلى الفِرق التي تختارها.",
+          "description": "سيتلقّى دعوة عبر البريد الإلكتروني. بمجرد قبولها، سيظهر في قائمة أعضائك مُعيَّنًا إلى ال%teams% التي تختارها.",
           "emailLabel": "عنوان البريد الإلكتروني",
           "emailPlaceholder": "teammate@example.com",
-          "teamsLabel": "أضِف إلى هذه الفِرق",
+          "teamsLabel": "أضِف إلى هذه ال%teams%",
           "leadLabel": "قائد",
           "teamFull": "ممتلئ",
           "submit": "إرسال الدعوة",
@@ -2078,12 +2078,12 @@
         },
         "errors": {
           "emailRequired": "أدخِل عنوان بريد إلكتروني صالحًا.",
-          "pickAtLeastOneTeam": "اختر فريقًا واحدًا على الأقل لإضافته إليه.",
-          "teamFull": "هذه الفِرق ممتلئة ولا يمكنها قبول أعضاء جدد: {teams}.",
-          "teamAlreadyHasLead": "هذه الفِرق لديها قائد معيَّن بالفعل: {teams}.",
-          "teamNotFound": "لم يُعثر على أحد الفِرق المحدّدة.",
+          "pickAtLeastOneTeam": "اختر %team% واحد على الأقل لإضافته إليه.",
+          "teamFull": "هذه ال%teams% ممتلئة ولا يمكنها قبول أعضاء جدد: {teams}.",
+          "teamAlreadyHasLead": "هذه ال%teams% لديها قائد معيَّن بالفعل: {teams}.",
+          "teamNotFound": "لم يُعثر على أحد ال%teams% المحدّدة.",
           "alreadyInvitedOrMember": "هذا البريد الإلكتروني لديه دعوة بالفعل أو هو عضو في مساحة العمل بالفعل.",
-          "noTeamsExist": "أنشئ فريقًا أولًا قبل دعوة الأعضاء."
+          "noTeamsExist": "أنشئ %team% أولًا قبل دعوة الأعضاء."
         },
         "toasts": {
           "sent": "تم إرسال الدعوة.",
@@ -2091,7 +2091,7 @@
         },
         "revokeDialog": {
           "title": "إلغاء الدعوة؟",
-          "description": "ستُلغى الدعوة الموجّهة إلى {email} وستُحرَّر المقاعد المحجوزة في الفريق.",
+          "description": "ستُلغى الدعوة الموجّهة إلى {email} وستُحرَّر المقاعد المحجوزة في ال%team%.",
           "confirm": "إلغاء الدعوة"
         }
       },
@@ -2102,7 +2102,7 @@
         "leadBadge": "قائد",
         "memberBadge": "عضو",
         "pendingBadge": "معلّق",
-        "manageTeams": "إدارة الفِرق",
+        "manageTeams": "إدارة ال%teams%",
         "removeFromWorkspace": "إزالة من مساحة العمل",
         "revokeInvite": "إلغاء الدعوة",
         "rowActionsLabel": "إجراءات لـ {name}",
@@ -2110,7 +2110,7 @@
         "inviteCountsLabel": "أعداد الدعوات",
         "newlyAcceptedCount": "جديد {count}",
         "pendingCount": "قيد الانتظار {count}",
-        "description": "كل من لديه صلاحية الوصول إلى مساحة العمل هذه، عبر جميع الفِرق.",
+        "description": "كل من لديه صلاحية الوصول إلى مساحة العمل هذه، عبر جميع ال%teams%.",
         "modeLabel": "قائمة الأعضاء",
         "active": "نشط",
         "pending": "معلّق",
@@ -2118,13 +2118,13 @@
         "noActiveMatches": "لا يوجد أعضاء يطابقون بحثك.",
         "noPendingMatches": "لا توجد دعوات معلّقة تطابق بحثك.",
         "noPending": "لا توجد دعوات معلّقة.",
-        "moreTeams": "+{count} فِرق أخرى",
-        "ownerAllTeams": "يمكنه الإشراف على جميع الفِرق",
-        "noTeams": "ليس ضمن أي فريق",
+        "moreTeams": "+{count} %teams% أخرى",
+        "ownerAllTeams": "يمكنه الإشراف على جميع ال%teams%",
+        "noTeams": "ليس ضمن أي %team%",
         "removeFromWorkspaceLabel": "إزالة {name} من مساحة العمل",
         "removeDialog": {
           "title": "إزالة العضو؟",
-          "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى حجوزاته؛ وتُحرَّر مقاعد الفريق. لا يمكن التراجع عن هذا.",
+          "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى %bookings% التابعة له؛ وتُحرَّر مقاعد ال%team%. لا يمكن التراجع عن هذا.",
           "confirm": "إزالة العضو"
         },
         "details": {
@@ -2133,8 +2133,8 @@
             "details": "التفاصيل",
             "history": "السجل"
           },
-          "teams": "الفِرق",
-          "noTeams": "لا توجد فِرق",
+          "teams": "ال%teams%",
+          "noTeams": "لا توجد %teams%",
           "completed": "مكتمل",
           "workingNow": "قيد التنفيذ",
           "future": "مستقبلية",
@@ -2158,7 +2158,7 @@
         },
         "errors": {
           "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
-          "isTeamLead": "{name} قائد فريق واحد على الأقل. أزل عنه صفة قائد الفريق أولًا قبل حذفه."
+          "isTeamLead": "{name} قائد %team% واحد على الأقل. أزل عنه صفة قائد ال%team% أولًا قبل حذفه."
         },
         "toasts": {
           "removed": "تمت إزالة العضو."
@@ -2166,18 +2166,18 @@
       },
       "assignment": {
         "dialog": {
-          "title": "إدارة تعيينات الفِرق",
-          "description": "أضِف {name} إلى الفِرق أو أزِله منها. بدِّل شارة القائد لمنحه صلاحيات التعديل داخل الفريق.",
+          "title": "إدارة تعيينات ال%teams%",
+          "description": "أضِف {name} إلى ال%teams% أو أزِله منها. بدِّل شارة القائد لمنحه صلاحيات التعديل داخل ال%team%.",
           "add": "إضافة",
           "remove": "إزالة",
           "done": "تم"
         },
         "errors": {
-          "alreadyOnTeam": "هذا العضو موجود في هذا الفريق بالفعل."
+          "alreadyOnTeam": "هذا العضو موجود في هذا ال%team% بالفعل."
         },
         "toasts": {
-          "added": "تمت الإضافة إلى الفريق.",
-          "removed": "تمت الإزالة من الفريق.",
+          "added": "تمت الإضافة إلى ال%team%.",
+          "removed": "تمت الإزالة من ال%team%.",
           "promoted": "تمت الترقية إلى قائد.",
           "demoted": "تم التخفيض إلى عضو.",
           "promoting": "جارٍ نقل القائد…",
@@ -2186,24 +2186,24 @@
       },
       "downgradeBlock": {
         "title": "تم حظر التخفيض",
-        "description": "أنت على خطة {currentPlan} بعدد فِرق أكبر مما تسمح به خطة {targetPlan} ({maxTeams} كحد أقصى). احذف {excess} فريقًا قبل تغيير الخطط.",
-        "teamsHeading": "الفِرق الحالية",
+        "description": "أنت على خطة {currentPlan} بعدد %teams% أكبر مما تسمح به خطة {targetPlan} ({maxTeams} كحد أقصى). احذف {excess} %team% قبل تغيير الخطط.",
+        "teamsHeading": "ال%teams% الحالية",
         "dismiss": "فهمت",
-        "manageTeams": "إدارة الفِرق"
+        "manageTeams": "إدارة ال%teams%"
       }
     },
     "clients": {
-      "title": "العملاء",
-      "listEmpty": "ليس لديك أي عملاء بعد.",
-      "listEmptyHint": "أضف أول عميل لك لبدء تتبع الحجوزات والسجل.",
+      "title": "ال%clients%",
+      "listEmpty": "ليس لديك أي %clients% بعد.",
+      "listEmptyHint": "أضف أول %client% لك لبدء تتبع ال%bookings% والسجل.",
       "toolbar": {
         "search": "ابحث بالاسم أو البريد الإلكتروني",
-        "searchLabel": "بحث في العملاء",
+        "searchLabel": "بحث في ال%clients%",
         "sourceAll": "كل المصادر",
         "tagsAll": "كل الوسوم",
         "tagsSelected": "{count} {count, plural, zero {وسم} one {وسم} two {وسمان} few {وسوم} many {وسمًا} other {وسم}}",
         "showInactive": "إظهار غير النشطين",
-        "add": "إضافة عميل"
+        "add": "إضافة %client%"
       },
       "sourceValues": {
         "form": "نموذج",
@@ -2212,7 +2212,7 @@
         "import": "استيراد"
       },
       "table": {
-        "empty": "لا يوجد عملاء يطابقون عوامل التصفية.",
+        "empty": "لا يوجد %clients% يطابقون عوامل التصفية.",
         "col": {
           "name": "الاسم",
           "contact": "جهة الاتصال",
@@ -2220,10 +2220,10 @@
           "totalSpent": "إجمالي الإنفاق",
           "actions": "إجراءات"
         },
-        "bookings": "{count} حجز",
+        "bookings": "{count} %booking%",
         "lastBooking": "الأخير: {date}",
-        "noBookings": "لا توجد حجوزات بعد",
-        "openMenu": "فتح إجراءات العميل",
+        "noBookings": "لا توجد %bookings% بعد",
+        "openMenu": "فتح إجراءات ال%client%",
         "openClient": "فتح {name}",
         "view": "عرض",
         "edit": "تعديل",
@@ -2231,8 +2231,8 @@
         "reactivate": "إعادة تفعيل"
       },
       "form": {
-        "addTitle": "إضافة عميل",
-        "editTitle": "تعديل العميل",
+        "addTitle": "إضافة %client%",
+        "editTitle": "تعديل ال%client%",
         "name": "الاسم",
         "namePlaceholder": "مثال: ماريا سانتوس",
         "email": "البريد الإلكتروني",
@@ -2244,14 +2244,14 @@
         "tagsPlaceholder": "أضِف وسمًا",
         "removeTag": "إزالة الوسم {tag}",
         "notes": "ملاحظات",
-        "notesPlaceholder": "أي ملاحظات عن هذا العميل…",
+        "notesPlaceholder": "أي ملاحظات عن هذا ال%client%…",
         "save": "حفظ",
         "view": "عرض",
         "saving": "جارٍ الحفظ…",
         "cancel": "إلغاء",
-        "createSuccess": "تم إنشاء العميل.",
-        "linkSuccess": "تم الربط بعميل موجود.",
-        "updateSuccess": "تم تحديث العميل.",
+        "createSuccess": "تم إنشاء ال%client%.",
+        "linkSuccess": "تم الربط ب%client% موجود.",
+        "updateSuccess": "تم تحديث ال%client%.",
         "error": "حدث خطأ ما. حاول مرة أخرى."
       },
       "detail": {
@@ -2259,13 +2259,13 @@
         "retry": "إعادة المحاولة",
         "tabs": {
           "overview": "نظرة عامة",
-          "bookings": "الحجوزات",
+          "bookings": "ال%bookings%",
           "payments": "المدفوعات"
         },
         "overview": {
           "totalSpent": "إجمالي الإنفاق",
-          "bookingsCount": "الحجوزات",
-          "lastBooking": "آخر حجز",
+          "bookingsCount": "ال%bookings%",
+          "lastBooking": "آخر %booking%",
           "never": "أبدًا",
           "contact": "جهة الاتصال",
           "noEmail": "—",
@@ -2277,9 +2277,9 @@
           "noNotes": "لا توجد ملاحظات"
         },
         "bookings": {
-          "loading": "جارٍ تحميل الحجوزات…",
-          "empty": "لا توجد حجوزات بعد.",
-          "error": "فشل تحميل الحجوزات."
+          "loading": "جارٍ تحميل ال%bookings%…",
+          "empty": "لا توجد %bookings% بعد.",
+          "error": "فشل تحميل ال%bookings%."
         },
         "payments": {
           "empty": "لا توجد سجلات مدفوعات بعد."
@@ -2290,38 +2290,38 @@
         "close": "إغلاق"
       },
       "deactivate": {
-        "title": "تعطيل هذا العميل؟",
-        "body": "سيُخفى هذا العميل من القائمة النشطة. يمكنك إعادة تفعيله في أي وقت بتمكين 'إظهار غير النشطين' في قائمة العملاء.",
+        "title": "تعطيل هذا ال%client%؟",
+        "body": "سيُخفى هذا ال%client% من القائمة النشطة. يمكنك إعادة تفعيله في أي وقت بتمكين 'إظهار غير النشطين' في قائمة ال%clients%.",
         "cancel": "إلغاء",
         "confirm": "تعطيل"
       },
       "unsaved": {
         "title": "تجاهل تغييراتك؟",
-        "body": "لديك تغييرات غير محفوظة على هذا العميل. ستُفقد إذا أغلقت الآن.",
+        "body": "لديك تغييرات غير محفوظة على هذا ال%client%. ستُفقد إذا أغلقت الآن.",
         "keep": "متابعة التعديل",
         "discard": "تجاهل وإغلاق"
       },
       "matchDialog": {
-        "title": "هل هذا العميل أحد هؤلاء؟",
-        "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}",
-        "escapeCreate": "لا، هذا عميل جديد",
-        "escapeLink": "الربط بعميل جديد",
+        "title": "هل هذا ال%client% أحد هؤلاء؟",
+        "bookingsCount": "{count, plural, one {# %booking%} other {# %bookings%}}",
+        "escapeCreate": "لا، هذا %client% جديد",
+        "escapeLink": "الربط ب%client% جديد",
         "cancel": "إلغاء",
-        "submitCreate": "حفظ العميل",
-        "submitLink": "ربط العميل",
+        "submitCreate": "حفظ ال%client%",
+        "submitLink": "ربط ال%client%",
         "reconcileTitle": "{count, plural, one {حقل واحد مختلف - اختر ما تريد الاحتفاظ به} two {حقلان مختلفان - اختر ما تريد الاحتفاظ به} other {# حقول مختلفة - اختر ما تريد الاحتفاظ به}}",
         "current": "الحالي",
         "typed": "ما أدخلته",
         "additiveTitle": "سيُضاف (بلا تعارض)"
       },
       "toasts": {
-        "reactivating": "جارٍ إعادة تفعيل العميل…",
-        "deactivating": "جارٍ تعطيل العميل…"
+        "reactivating": "جارٍ إعادة تفعيل ال%client%…",
+        "deactivating": "جارٍ تعطيل ال%client%…"
       }
     },
     "inquiries": {
-      "title": "الاستفسارات",
-      "subtitle": "طلبات الحجز من معرض أعمالك العام.",
+      "title": "ال%inquiries%",
+      "subtitle": "طلبات ال%booking% من معرض أعمالك العام.",
       "toolbar": {
         "from": "من",
         "to": "إلى",
@@ -2331,15 +2331,15 @@
       },
       "tabs": {
         "all": "الكل",
-        "inquiry": "استفسار",
+        "inquiry": "%inquiry%",
         "booked": "محجوز",
         "archived": "مؤرشف"
       },
       "statusValues": {
-        "inquiry": "استفسار",
+        "inquiry": "%inquiry%",
         "archived": "مؤرشف",
         "booked": "محجوز",
-        "converted": "محوَّل إلى حجز"
+        "converted": "محوَّل إلى %booking%"
       },
       "eventTypes": {
         "wedding": "زفاف",
@@ -2355,17 +2355,17 @@
         "either": "أيٌّ منهما"
       },
       "table": {
-        "empty": "لا توجد استفسارات بعد.",
-        "filteredEmpty": "لا توجد استفسارات تطابق عوامل التصفية.",
+        "empty": "لا توجد %inquiries% بعد.",
+        "filteredEmpty": "لا توجد %inquiries% تطابق عوامل التصفية.",
         "emptyHint": "عندما يرسل شخص ما نموذج التواصل في معرض أعمالك، يصل طلبه إلى هنا.",
         "viewPublicPage": "عرض صفحتك العامة",
-        "open": "فتح استفسار من {name}",
+        "open": "فتح %inquiry% من {name}",
         "noDate": "لا يوجد تاريخ",
         "directSource": "مباشر",
         "col": {
           "booked": "تاريخ الحجز",
           "status": "الحالة",
-          "client": "العميل",
+          "client": "ال%client%",
           "eventDate": "تاريخ المناسبة",
           "eventType": "النوع",
           "submitted": "تاريخ الإرسال",
@@ -2377,20 +2377,20 @@
         "conflict": "تعارض",
         "actions": {
           "view": "عرض",
-          "menuLabel": "فتح إجراءات الاستفسار"
+          "menuLabel": "فتح إجراءات ال%inquiry%"
         }
       },
       "detail": {
-        "back": "العودة إلى الاستفسارات",
-        "conflictBanner": "تتعارض جلسة واحدة أو أكثر مع حجوزات موجودة.",
-        "loadingTitle": "الاستفسار",
-        "loading": "جارٍ تحميل الاستفسار...",
-        "loadError": "تعذّر تحميل هذا الاستفسار.",
+        "back": "العودة إلى ال%inquiries%",
+        "conflictBanner": "تتعارض جلسة واحدة أو أكثر مع %bookings% موجودة.",
+        "loadingTitle": "ال%inquiry%",
+        "loading": "جارٍ تحميل ال%inquiry%...",
+        "loadError": "تعذّر تحميل هذا ال%inquiry%.",
         "retry": "إعادة المحاولة",
         "submittedOn": "أُرسل في {date}",
-        "notFound": "لم يُعثر على الاستفسار.",
+        "notFound": "لم يُعثر على ال%inquiry%.",
         "clientInfo": {
-          "title": "معلومات العميل",
+          "title": "معلومات ال%client%",
           "name": "الاسم",
           "email": "البريد الإلكتروني",
           "phone": "الهاتف",
@@ -2402,9 +2402,9 @@
           "savedToast": "تم تحديث الهاتف."
         },
         "clientMatch": {
-          "warning": "قد ينتمي هذا الاستفسار إلى عميل موجود مسبقًا",
-          "resolveButton": "تحديد العميل",
-          "resolvedToast": "تم تحديث العميل."
+          "warning": "قد ينتمي هذا ال%inquiry% إلى %client% موجود مسبقًا",
+          "resolveButton": "تحديد ال%client%",
+          "resolvedToast": "تم تحديث ال%client%."
         },
         "eventRequest": {
           "title": "طلب المناسبة",
@@ -2416,49 +2416,49 @@
           "none": "—"
         },
         "bookingDraft": {
-          "title": "مسوّدة الحجز",
-          "description": "تحويل هذا يُنشئ حجزًا في تقويمك. حدِّد سعرك الآن أو لاحقًا.",
+          "title": "مسوّدة ال%booking%",
+          "description": "تحويل هذا يُنشئ %booking% في تقويمك. حدِّد سعرك الآن أو لاحقًا.",
           "total": "الإجمالي",
           "deposit": "العربون",
           "notes": "ملاحظات داخلية",
           "notesPlaceholder": "ملاحظات تراها أنت فقط…",
           "save": "حفظ التعديلات",
           "saving": "جارٍ الحفظ…",
-          "approve": "تحويل إلى حجز",
+          "approve": "تحويل إلى %booking%",
           "approving": "جارٍ التحويل…",
           "approved": "تم التحويل",
-          "missing": "لا توجد مسوّدة حجز مرتبطة بهذا الاستفسار.",
-          "alreadyConverted": "تمت الموافقة على هذا الاستفسار.",
-          "viewBooking": "عرض الحجز",
+          "missing": "لا توجد مسوّدة %booking% مرتبطة بهذا ال%inquiry%.",
+          "alreadyConverted": "تمت الموافقة على هذا ال%inquiry%.",
+          "viewBooking": "عرض ال%booking%",
           "approveError": "تعذّر التحويل. يرجى المحاولة مرة أخرى.",
           "saveError": "تعذّر الحفظ. يرجى المحاولة مرة أخرى.",
           "savedToast": "تم حفظ المسوّدة.",
-          "ownerOnly": "يمكن لمالك مساحة العمل فقط تحويل الحجوزات.",
+          "ownerOnly": "يمكن لمالك مساحة العمل فقط تحويل ال%bookings%.",
           "conflictBlocks": "حُلّ تعارض الجدول أعلاه قبل التحويل.",
-          "team": "الفريق",
+          "team": "ال%team%",
           "changedUnderneath": "قام شخص آخر بتعديل هذه المسودة. تم الاحتفاظ بتعديلاتك؛ راجع الحقول الأخرى قبل الحفظ.",
-          "notDraft": "تمت الموافقة على هذا الحجز بالفعل. أعد التحميل لرؤية أحدث نسخة."
+          "notDraft": "تمت الموافقة على هذا ال%booking% بالفعل. أعد التحميل لرؤية أحدث نسخة."
         },
         "actions": {
           "decline": "رفض وإشعار",
-          "declinedToast": "تم رفض الاستفسار — تم إشعار العميل.",
+          "declinedToast": "تم رفض ال%inquiry% — تم إشعار ال%client%.",
           "archive": "أرشفة",
           "working": "جارٍ الحفظ…",
-          "archivedToast": "تمت أرشفة الاستفسار.",
-          "approvedToast": "تم التحويل إلى حجز.",
+          "archivedToast": "تمت أرشفة ال%inquiry%.",
+          "approvedToast": "تم التحويل إلى %booking%.",
           "errorToast": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
         },
         "history": {
           "title": "السجل",
-          "submitted": "تم إرسال الاستفسار",
-          "booked": "تمت الموافقة على الحجز"
+          "submitted": "تم إرسال ال%inquiry%",
+          "booked": "تمت الموافقة على ال%booking%"
         },
         "sessionsEditor": {
           "edit": "تعديل الجلسات",
           "save": "حفظ التغييرات",
           "saving": "جارٍ الحفظ…",
           "discard": "تجاهل",
-          "conflictBlocks": "تتعارض جلسة واحدة أو أكثر مع حجوزات موجودة.",
+          "conflictBlocks": "تتعارض جلسة واحدة أو أكثر مع %bookings% موجودة.",
           "pastDate": "يجب أن تكون الجلسات في المستقبل.",
           "lockedConverted": "الجلسات مقفلة بعد التحويل.",
           "lockedArchived": "الجلسات مقفلة (مؤرشفة).",
@@ -2481,17 +2481,17 @@
         "calendar": "تقويم"
       },
       "calendar": {
-        "empty": "لا توجد استفسارات أو حجوزات لعرضها.",
+        "empty": "لا توجد %inquiries% أو %bookings% لعرضها.",
         "filters": {
-          "inquiry": "استفسار",
+          "inquiry": "%inquiry%",
           "booked": "محجوز",
           "conflicted": "متعارض"
         },
-        "rescheduleConflict": "يتعارض هذا الوقت مع حجز موجود؛ أُلغي النقل.",
+        "rescheduleConflict": "يتعارض هذا الوقت مع %booking% موجود؛ أُلغي النقل.",
         "rescheduleFailed": "تعذّرت إعادة الجدولة — يرجى المحاولة مرة أخرى",
         "updating": "جارٍ إعادة الجدولة…",
         "updated": "تمت إعادة جدولة الجلسة",
-        "emptyPeriod": "لا توجد استفسارات في هذه الفترة"
+        "emptyPeriod": "لا توجد %inquiries% في هذه الفترة"
       }
     },
     "pageBuilder": {
@@ -2706,7 +2706,7 @@
           "altHint": "يُستخدم في كل مكان تظهر فيه هذه الصورة.",
           "dateLabel": "التاريخ",
           "locationLabel": "الموقع",
-          "clientLabel": "العميل",
+          "clientLabel": "ال%client%",
           "tagsLabel": "الوسوم",
           "tagsHint": "افصل بين الوسوم بفواصل أو مسافات أو Enter.",
           "tagsPlaceholder": "مثال: في الهواء الطلق، غروب الشمس، الرقصة الأولى",
@@ -2736,21 +2736,21 @@
           "fieldDate": "التاريخ",
           "fieldLocation": "الموقع",
           "fieldLocationPlaceholder": "مثال: تاغايتاي، الفلبين",
-          "fieldClient": "العميل",
+          "fieldClient": "ال%client%",
           "fieldClientPlaceholder": "مثال: سارة وميغيل",
-          "hideClient": "إخفاء اسم العميل",
-          "hideClientHelp": "حافظ على خصوصية معلومات العميل أينما ظهرت هذه الصورة.",
-          "linkBooking": "ربط حجز",
-          "linkClient": "ربط عميل",
-          "noBooking": "لا يوجد حجز مرتبط",
-          "noClient": "لا يوجد عميل مرتبط",
+          "hideClient": "إخفاء اسم ال%client%",
+          "hideClientHelp": "حافظ على خصوصية معلومات ال%client% أينما ظهرت هذه الصورة.",
+          "linkBooking": "ربط %booking%",
+          "linkClient": "ربط %client%",
+          "noBooking": "لا يوجد %booking% مرتبط",
+          "noClient": "لا يوجد %client% مرتبط",
           "searchLinks": "البحث في السجلات",
           "noLinkMatches": "لا توجد سجلات مطابقة",
           "linksLoading": "جارٍ تحميل السجلات...",
-          "linksLoadError": "تعذر تحميل الحجوزات والعملاء.",
+          "linksLoadError": "تعذر تحميل ال%bookings% وال%clients%.",
           "retryLinks": "حاول مرة أخرى",
           "manualDetails": "غير مسجل في Gallurio؟ أدخل التفاصيل أو عدّلها يدويًا أدناه.",
-          "linkedRecord": "الحجز المرتبط",
+          "linkedRecord": "ال%booking% المرتبط",
           "fieldTags": "الوسوم",
           "fieldTagsPlaceholder": "أضف وسمًا واضغط Enter",
           "fieldTagsHint": "حتى 20 وسمًا.",
@@ -3543,23 +3543,23 @@
       "types": {
         "inquiry": {
           "created": {
-            "title": "تم استلام استفسار جديد",
-            "body": "لديك استفسار جديد من {clientName}."
+            "title": "تم استلام %inquiry% جديد",
+            "body": "لديك %inquiry% جديد من {clientName}."
           }
         },
         "booking": {
           "team_assigned": {
-            "title": "تم تعيين حجز جديد لفريقك",
-            "body": "عيّن {assignerName} حجزًا لفريقك."
+            "title": "تم تعيين %booking% جديد إلى ال%team% الخاص بك",
+            "body": "عيّن {assignerName} %booking% إلى ال%team% الخاص بك."
           },
           "status_changed": {
-            "title": "{newStatus, select, cancelled {تم إلغاء الحجز} completed {تم إكمال الحجز} booked {تم تأكيد الحجز} other {تم تحديث حالة الحجز}}",
-            "body": "{newStatus, select, cancelled {ألغى {actorName} حجزًا.} completed {وضع {actorName} علامة مكتمل على حجز.} booked {أكّد {actorName} حجزًا.} other {غيّر {actorName} حالة حجز إلى {newStatus}.}}"
+            "title": "{newStatus, select, cancelled {تم إلغاء ال%booking%} completed {تم إكمال ال%booking%} booked {تم تأكيد ال%booking%} other {تم تحديث حالة ال%booking%}}",
+            "body": "{newStatus, select, cancelled {ألغى {actorName} %booking%.} completed {وضع {actorName} علامة مكتمل على %booking%.} booked {أكّد {actorName} %booking%.} other {غيّر {actorName} حالة %booking% إلى {newStatus}.}}"
           }
         },
         "team": {
           "invitation": {
-            "title": "تمت دعوتك إلى فريق",
+            "title": "تمت دعوتك إلى %team%",
             "body": "دعاك {inviterName} للانضمام إلى {teamName}."
           },
           "invite_accepted": {
@@ -3567,11 +3567,11 @@
             "body": "لقد انضم إلى {teamName}."
           },
           "removed": {
-            "title": "تمت إزالتك من الفريق",
+            "title": "تمت إزالتك من ال%team%",
             "body": "تمت إزالتك من {teamName}."
           },
           "deleted": {
-            "title": "تم حل الفريق",
+            "title": "تم حل ال%team%",
             "body": "تم حذف {teamName}."
           }
         }
@@ -3586,11 +3586,11 @@
       "no_active_workspace": "لا توجد مساحة عمل نشطة. اختر مساحة عمل وحاول مجددًا.",
       "workspace_not_found": "مساحة العمل غير موجودة.",
       "owner_only": "هذا الإجراء متاح للمالك فقط.",
-      "resolve_failed": "تعذر تحديث العميل. يرجى المحاولة مرة أخرى.",
-      "client_match_lookup_failed": "تعذر التحقق من العملاء الحاليين. يرجى المحاولة مرة أخرى.",
-      "needs_client_resolution": "قد يعود هذا الاستفسار إلى عميل موجود. افتحه وحدد العميل قبل التحويل.",
+      "resolve_failed": "تعذر تحديث ال%client%. يرجى المحاولة مرة أخرى.",
+      "client_match_lookup_failed": "تعذر التحقق من ال%clients% الحاليين. يرجى المحاولة مرة أخرى.",
+      "needs_client_resolution": "قد يعود هذا ال%inquiry% إلى %client% موجود. افتحه وحدد ال%client% قبل التحويل.",
       "invalid_data": "بيانات غير صالحة. يرجى مراجعة المدخلات والمحاولة مرة أخرى.",
-      "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
+      "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا ال%booking%.",
       "onboarding_required": "أكمل الإعداد الأولي للمتابعة.",
       "onboarding_plan_locked": "خطتك مفعلة بالفعل. أكمل الإعداد الأولي لإدارتها من إعدادات الفوترة.",
       "subscription_required": "انتهى وصولك إلى Pro. اشترك للمتابعة.",
@@ -3623,25 +3623,25 @@
       "email_send_failed": "تعذّر إرسال البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
       "onboarding_no_active_workspace": "لا توجد مساحة عمل نشطة — أعد الإعداد الأولي.",
       "already_member_elsewhere": "هذا البريد الإلكتروني عضو بالفعل في مساحة عمل أخرى. استخدم بريدًا إلكترونيًا مختلفًا لإنشاء واحدة جديدة.",
-      "client_create_failed": "تعذّر إنشاء العميل. يرجى المحاولة مرة أخرى.",
-      "client_not_found": "العميل غير موجود.",
-      "client_update_failed": "تعذّر تحديث بيانات العميل. يرجى المحاولة مرة أخرى.",
-      "client_deactivate_failed": "تعذّر تعطيل العميل. يرجى المحاولة مرة أخرى.",
-      "client_has_active_bookings": "لدى هذا العميل حجوزات نشطة ولا يمكن تعطيله.",
-      "client_reactivate_failed": "تعذّر إعادة تفعيل العميل. يرجى المحاولة مرة أخرى.",
-      "bookings_load_failed": "تعذّر تحميل الحجوزات. يرجى المحاولة مرة أخرى.",
-      "client_load_failed": "تعذّر تحميل بيانات العميل. يرجى المحاولة مرة أخرى.",
+      "client_create_failed": "تعذّر إنشاء ال%client%. يرجى المحاولة مرة أخرى.",
+      "client_not_found": "ال%client% غير موجود.",
+      "client_update_failed": "تعذّر تحديث بيانات ال%client%. يرجى المحاولة مرة أخرى.",
+      "client_deactivate_failed": "تعذّر تعطيل ال%client%. يرجى المحاولة مرة أخرى.",
+      "client_has_active_bookings": "لدى هذا ال%client% %bookings% نشطة ولا يمكن تعطيله.",
+      "client_reactivate_failed": "تعذّر إعادة تفعيل ال%client%. يرجى المحاولة مرة أخرى.",
+      "bookings_load_failed": "تعذّر تحميل ال%bookings%. يرجى المحاولة مرة أخرى.",
+      "client_load_failed": "تعذّر تحميل بيانات ال%client%. يرجى المحاولة مرة أخرى.",
       "invalid_id": "طلب غير صالح.",
       "not_found": "غير موجود.",
       "forbidden": "ليس لديك صلاحية لهذا الإجراء.",
-      "team_not_found": "الفريق غير موجود.",
-      "team_deactivated": "لا يمكن تعيين حجز لفريق غير نشط.",
+      "team_not_found": "ال%team% غير موجود.",
+      "team_deactivated": "لا يمكن تعيين %booking% ل%team% غير نشط.",
       "session_crosses_midnight": "الجلسة {index} تتجاوز منتصف الليل بالتوقيت المحلي لمساحة العمل.",
-      "client_change_multi_session": "لا يمكن تغيير العميل في حجز متعدد الجلسات.",
-      "invalid_client_id": "عميل غير صالح.",
-      "client_not_found_workspace": "العميل غير موجود في مساحة العمل هذه.",
+      "client_change_multi_session": "لا يمكن تغيير ال%client% في %booking% متعدد الجلسات.",
+      "invalid_client_id": "%client% غير صالح.",
+      "client_not_found_workspace": "ال%client% غير موجود في مساحة العمل هذه.",
       "invalid_request": "طلب غير صالح.",
-      "export_too_large": "عدد الحجوزات كبير جدًا للتصدير. قلّص نطاق الفلترة وحاول مجددًا.",
+      "export_too_large": "عدد ال%bookings% كبير جدًا للتصدير. قلّص نطاق الفلترة وحاول مجددًا.",
       "free_plan_no_checkout": "الباقة المجانية لا تتطلب عملية دفع.",
       "lemonsqueezy_variant_not_configured": "هذه الباقة غير متاحة حاليًا. يرجى التواصل مع الدعم.",
       "no_verified_email": "أضف بريدًا إلكترونيًا موثّقًا قبل الاشتراك.",
@@ -3649,7 +3649,7 @@
       "no_subscription": "ليس لديك اشتراك نشط لإدارته.",
       "subscription_manage_unavailable": "تعذّر فتح إدارة الاشتراك. يرجى المحاولة مرة أخرى.",
       "locked": "هذا العنصر مقفل ولا يمكن تعديله الآن.",
-      "conflict": "هذا الوقت يتعارض مع حجز آخر.",
+      "conflict": "هذا الوقت يتعارض مع %booking% آخر.",
       "edit_sessions_failed": "تعذّر تحديث الجلسات. يرجى المحاولة مرة أخرى.",
       "session_index_out_of_range": "هذه الجلسة لم تعد موجودة.",
       "invalid": "يرجى مراجعة المدخلات والمحاولة مرة أخرى.",

@@ -771,7 +771,7 @@
       "greeting": "Selamat datang kembali, {name}",
       "tabs": {
         "aria": "Ganti dasbor",
-        "bookings": "Pemesanan",
+        "bookings": "%Booking%",
         "portfolio": "Portfolio"
       },
       "dateFilter": {
@@ -797,28 +797,28 @@
       },
       "kpi": {
         "revenueThisMonth": "Pendapatan terkumpul",
-        "activeBookings": "Pemesanan terjadwal",
-        "newInquiries": "Pertanyaan baru",
+        "activeBookings": "%Booking% terjadwal",
+        "newInquiries": "%Inquiry% baru",
         "outstandingBalance": "Saldo tertunggak"
       },
       "sections": {
         "todaysEvents": "Acara hari ini",
         "upcomingWeek": "Akan datang minggu ini",
-        "recentInquiries": "Pertanyaan terbaru",
+        "recentInquiries": "%Inquiry% terbaru",
         "activity": "Aktivitas terbaru",
         "revenueTrend": "Pendapatan",
-        "calendar": "Kalender pemesanan",
+        "calendar": "Kalender %booking%",
         "eventTypes": "Rincian jenis acara",
-        "topClients": "Klien teratas berdasarkan pengeluaran",
-        "teamPerformance": "Kinerja tim",
-        "bookingsPerTeam": "Pemesanan per tim",
+        "topClients": "%Client% teratas berdasarkan pengeluaran",
+        "teamPerformance": "Kinerja %team%",
+        "bookingsPerTeam": "%Booking% per %team%",
         "operations": "Operasi"
       },
       "quickAdd": {
         "title": "Tambah cepat",
-        "booking": "Pemesanan baru",
-        "client": "Klien baru",
-        "inquiry": "Lihat pertanyaan"
+        "booking": "%Booking% baru",
+        "client": "%Client% baru",
+        "inquiry": "Lihat %inquiry%"
       },
       "empty": "Belum ada apa-apa di sini.",
       "filteredEmpty": "Tidak ada data yang cocok dengan rentang tanggal yang dipilih.",
@@ -827,14 +827,14 @@
         "analyticsSoon": "Analitik portofolio segera hadir.",
         "totalViews": "Total tampilan",
         "uniqueVisitors": "Pengunjung unik",
-        "inquiries": "Pertanyaan",
+        "inquiries": "%Inquiry%",
         "conversionRate": "Tingkat konversi",
         "viewsOverTime": "Tampilan & pengunjung",
         "views": "Tampilan",
         "visitors": "Pengunjung",
         "topSources": "Sumber teratas",
         "perPage": "Per halaman",
-        "siteInquiries": "Pertanyaan dari situs Anda",
+        "siteInquiries": "%Inquiry% dari situs Anda",
         "publishStatus": "Status terbit",
         "published": "Diterbitkan",
         "notPublished": "Belum diterbitkan",
@@ -843,34 +843,34 @@
         "openEditor": "Buka editor",
         "noTraffic": "Belum ada kunjungan pada periode ini.",
         "directSource": "Langsung",
-        "inquiryInsights": "Wawasan pertanyaan",
-        "inquiryToBooking": "Pertanyaan → pemesanan",
-        "bookedFromInquiries": "Dipesan dari pertanyaan",
-        "newClientsFromForm": "Klien baru dari formulir",
+        "inquiryInsights": "Wawasan %inquiry%",
+        "inquiryToBooking": "%Inquiry% → %booking%",
+        "bookedFromInquiries": "Dipesan dari %inquiry%",
+        "newClientsFromForm": "%Client% baru dari formulir",
         "visitorDays": "Hari-pengunjung",
         "submissionRate": "Tingkat pengiriman",
         "bookedLeads": "Prospek dipesan",
-        "visitorsInquiriesTitle": "Pengunjung & pertanyaan dari waktu ke waktu",
+        "visitorsInquiriesTitle": "Pengunjung & %inquiry% dari waktu ke waktu",
         "funnel": {
           "title": "Corong konversi",
           "visitorDays": "Hari-pengunjung",
           "contactOpened": "Kontak dibuka",
-          "inquirySubmitted": "Pertanyaan dikirim",
+          "inquirySubmitted": "%Inquiry% dikirim",
           "ofVisitors": "dari pengunjung",
           "ofOpened": "dari yang dibuka",
           "ofTotal": "dari total",
           "collectingData": "Mengumpulkan data"
         },
         "pipeline": {
-          "title": "Alur pertanyaan",
+          "title": "Alur %inquiry%",
           "new": "Baru",
           "booked": "Dipesan",
           "archived": "Diarsipkan",
-          "total": "Total pertanyaan"
+          "total": "Total %inquiry%"
         },
         "demand": {
           "title": "Profil permintaan",
-          "eventTypeMix": "Jenis acara (berdasarkan pertanyaan)",
+          "eventTypeMix": "Jenis acara (berdasarkan %inquiry%)",
           "requestedMonth": "Bulan acara yang diminta",
           "medianLeadTime": "Median waktu tenggang",
           "days": "hari",
@@ -894,23 +894,23 @@
         "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
-        "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
-        "eventTypes": "Bagian pemesanan menurut jenis acara.",
-        "teamPerformance": "Kinerja tiap tim berdasarkan pendapatan dan jumlah pemesanan.",
-        "bookingsPerTeam": "Jumlah pemesanan yang ditangani tiap tim.",
+        "calendar": "%Booking% per hari. Filter berdasarkan %team%; ketuk satu hari untuk membuka kalender di sana.",
+        "eventTypes": "Bagian %booking% menurut jenis acara.",
+        "teamPerformance": "Kinerja tiap %team% berdasarkan pendapatan dan jumlah %booking%.",
+        "bookingsPerTeam": "Jumlah %booking% yang ditangani tiap %team%.",
         "revenueTrend": "Pendapatan dibayar dalam periode yang dipilih.",
-        "inquiryInsights": "Konversi dari kunjungan dan pertanyaan, ditambah klien baru dari formulir kontak Anda.",
-        "topClients": "Klien menurut total pengeluaran.",
-        "todaysEvents": "Pemesanan yang mulai hari ini.",
-        "upcomingWeek": "Pemesanan terkonfirmasi dalam 7 hari ke depan.",
-        "recentInquiries": "Pertanyaan masuk terbaru Anda.",
+        "inquiryInsights": "Konversi dari kunjungan dan %inquiry%, ditambah %client% baru dari formulir kontak Anda.",
+        "topClients": "%Client% menurut total pengeluaran.",
+        "todaysEvents": "%Booking% yang mulai hari ini.",
+        "upcomingWeek": "%Booking% terkonfirmasi dalam 7 hari ke depan.",
+        "recentInquiries": "%Inquiry% masuk terbaru Anda.",
         "activity": "Perubahan terbaru di ruang kerja Anda.",
-        "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
+        "quickAdd": "Buat %booking%, %client%, atau %inquiry%."
       },
       "totalLabel": "Total",
       "miniCalendar": {
         "today": "Hari ini",
-        "monthTotal": "{count, plural, other {# pemesanan bulan ini}}",
+        "monthTotal": "{count, plural, other {# %booking% bulan ini}}",
         "prevMonth": "Bulan sebelumnya",
         "nextMonth": "Bulan berikutnya",
         "jumpToToday": "Lompat ke bulan ini",
@@ -919,13 +919,13 @@
         "retry": "Coba lagi"
       },
       "calendarTeam": {
-        "label": "Filter berdasarkan tim",
-        "all": "Semua tim"
+        "label": "Filter berdasarkan %team%",
+        "all": "Semua %team%"
       },
       "activityEntity": {
-        "booking": "pemesanan",
-        "client": "klien",
-        "inquiry": "pertanyaan",
+        "booking": "%booking%",
+        "client": "%client%",
+        "inquiry": "%inquiry%",
         "gallery": "galeri",
         "transaction": "transaksi",
         "workspace": "ruang kerja"
@@ -935,7 +935,7 @@
         "updated": "diperbarui",
         "deleted": "dihapus",
         "status_changed": "status diubah",
-        "client_changed": "klien diubah",
+        "client_changed": "%client% diubah",
         "payment_added": "pembayaran ditambahkan",
         "payment_updated": "pembayaran diperbarui"
       },
@@ -958,7 +958,7 @@
           "title": "Cakupan penagihan",
           "asOf": "per",
           "confirmedValue": "Nilai terkonfirmasi",
-          "confirmedHint": "Total nilai pemesanan yang terkonfirmasi",
+          "confirmedHint": "Total nilai %booking% yang terkonfirmasi",
           "paid": "Dibayar (terkumpul)",
           "paidHint": "Pembayaran diterima hingga saat ini",
           "remaining": "Sisa saldo",
@@ -1016,28 +1016,28 @@
       "go": "Go"
     },
     "bookings": {
-      "title": "Pemesanan",
-      "titleForTeam": "Pemesanan {team}",
+      "title": "%Booking%",
+      "titleForTeam": "%Booking% {team}",
       "view": {
         "table": "Tabel",
         "card": "Mode kartu",
         "calendar": "Kalender",
-        "inquiriesToggle": "Pengalih tampilan permintaan"
+        "inquiriesToggle": "Pengalih tampilan %inquiry%"
       },
       "toolbar": {
-        "search": "Cari pemesanan",
+        "search": "Cari %booking%",
         "statusAll": "Semua status",
         "showCancelled": "Tampilkan yang dibatalkan",
         "showPast": "Tampilkan yang lalu",
         "import": "Impor",
         "export": "Ekspor",
-        "add": "Pemesanan baru",
+        "add": "%Booking% baru",
         "invoiceTheme": "Tema faktur & tanda terima"
       },
       "exportDialog": {
-        "title": "Ekspor pemesanan",
-        "teamLabel": "Tim",
-        "allTeams": "Semua tim",
+        "title": "Ekspor %booking%",
+        "teamLabel": "%Team%",
+        "allTeams": "Semua %team%",
         "rangeLabel": "Rentang waktu",
         "allTime": "Sepanjang waktu",
         "dateRange": "Rentang tanggal",
@@ -1053,9 +1053,9 @@
         "cancel": "Batal"
       },
       "teamPicker": {
-        "allTeams": "Semua tim",
-        "allMyTeams": "Semua tim saya",
-        "label": "Filter berdasarkan tim",
+        "allTeams": "Semua %team%",
+        "allMyTeams": "Semua %team% saya",
+        "label": "Filter berdasarkan %team%",
         "inactive": "Tidak aktif",
         "legend": "Keterangan",
         "booked": "Dipesan",
@@ -1065,7 +1065,7 @@
         "nextPage": "Halaman berikutnya"
       },
       "import": {
-        "title": "Impor pemesanan",
+        "title": "Impor %booking%",
         "dropzone": "Letakkan file CSV atau XLSX di sini, atau klik untuk memilih",
         "dropzoneActive": "Lepaskan untuk mengunggah",
         "templateCsv": "Unduh template CSV",
@@ -1073,19 +1073,19 @@
         "preview": "{total} baris ditemukan",
         "validCount": "{count} valid",
         "invalidCount": "{count} dengan kesalahan",
-        "importButton": "Impor {count} pemesanan",
+        "importButton": "Impor {count} %booking%",
         "importing": "Mengimpor…",
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
-        "success": "Berhasil mengimpor {bookings} pemesanan dan {shifts} shift.",
-        "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
+        "success": "Berhasil mengimpor {bookings} %booking% dan {shifts} shift.",
+        "partialSuccess": "Mengimpor {count} %booking%. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
         "previewMore": "{count} baris lainnya tidak ditampilkan",
-        "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh pemesanan ditahan.",
+        "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh %booking% ditahan.",
         "columns": {
           "row": "#",
           "title": "Judul",
-          "client": "Klien",
+          "client": "%Client%",
           "start": "Mulai",
           "error": "Kesalahan"
         },
@@ -1097,7 +1097,7 @@
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
         "showAll": "Tampilkan semua {count}",
-          "untitled": "Pemesanan tanpa judul",
+          "untitled": "%Booking% tanpa judul",
           "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
           "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",
           "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya."
@@ -1106,12 +1106,12 @@
           "required": "wajib",
           "optional": "opsional",
           "failedWithDetails": "Impor gagal — lihat detailnya",
-          "teamLabel": "Tetapkan ke tim",
-          "teamDefault": "Tim utama (default)",
+          "teamLabel": "Tetapkan ke %team%",
+          "teamDefault": "%Team% utama (default)",
           "duplicateTitle": "Sudah diimpor?",
-          "duplicateBody": "{count, plural, other {# booking di sini cocok dengan yang sudah ada. Tetap impor lagi?}}",
-          "duplicateOnTeam": "Di tim {team}",
-          "duplicateNoTeam": "Tim tidak diketahui",
+          "duplicateBody": "{count, plural, other {# %booking% di sini cocok dengan yang sudah ada. Tetap impor lagi?}}",
+          "duplicateOnTeam": "Di %team% {team}",
+          "duplicateNoTeam": "%Team% tidak diketahui",
           "duplicateContinue": "Tetap impor",
           "failedRetry": "Impor gagal. Silakan coba lagi.",
           "close": "Tutup",
@@ -1119,10 +1119,10 @@
           "viewErrors": "Lihat {n} kesalahan",
           "spec": {
             "clientName": {
-              "note": "Nama lengkap klien"
+              "note": "Nama lengkap %client%"
             },
             "clientEmail": {
-              "note": "Digunakan untuk mendeduplikasi klien yang ada"
+              "note": "Digunakan untuk mendeduplikasi %client% yang ada"
             },
             "startAt": {
               "note": "ISO 8601 — mis. 2026-06-15T09:00"
@@ -1131,7 +1131,7 @@
               "note": "Default ke startAt jika dihilangkan"
             },
             "title": {
-              "note": "Judul pemesanan"
+              "note": "Judul %booking%"
             },
             "eventType": {
               "note": "pernikahan, korporat, potret, dll."
@@ -1140,7 +1140,7 @@
               "note": "booked, completed, cancelled"
             },
             "amountTotal": {
-              "note": "Total jumlah pemesanan"
+              "note": "Total jumlah %booking%"
             },
             "amountDeposit": {
               "note": "Jumlah deposit"
@@ -1155,7 +1155,7 @@
               "note": "Catatan internal"
             },
             "booking_id": {
-              "note": "Dari ekspor. Simpan untuk memperbarui booking itu alih-alih membuat salinan"
+              "note": "Dari ekspor. Simpan untuk memperbarui %booking% itu alih-alih membuat salinan"
             },
             "session_index": {
               "note": "Mengurutkan sesi saat beberapa baris berbagi satu booking_id"
@@ -1164,7 +1164,7 @@
               "note": "Dari ekspor. Dicocokkan sebelum clientEmail"
             },
             "clientPhone": {
-              "note": "Disimpan pada klien baru; mengisi yang kosong, tidak pernah menimpa"
+              "note": "Disimpan pada %client% baru; mengisi yang kosong, tidak pernah menimpa"
             },
             "locationLat": {
               "note": "Lintang peta, mis. 14.5995"
@@ -1190,7 +1190,7 @@
           "columnsFound": "{count, plural, other {# kolom}}",
           "rowsFound": "{count, plural, other {# baris}}",
           "sectionRequired": "Wajib",
-          "sectionCommon": "Rincian pemesanan",
+          "sectionCommon": "Rincian %booking%",
           "sectionAdvanced": "Kolom lanjutan dan pulang-pergi",
           "advancedHint": "Hanya diperlukan saat mengimpor ulang berkas yang Anda ekspor dari Gallurio.",
           "selectColumn": "Pilih kolom dari berkas Anda",
@@ -1198,7 +1198,7 @@
           "useFixedValue": "Gunakan nilai tetap",
           "fixedValueLabel": "Nilai untuk setiap baris",
           "inferFromDate": "Simpulkan dari tanggal",
-          "inferHint": "Pemesanan lampau yang lunas menjadi selesai; sisanya tetap dipesan.",
+          "inferHint": "%Booking% lampau yang lunas menjadi selesai; sisanya tetap dipesan.",
           "alreadyUsed": "{column} (sudah dipakai)",
           "sample": "Baris pertama: {value}",
           "sampleEmpty": "Baris pertama kosong",
@@ -1237,25 +1237,25 @@
           "continue": "Lanjutkan",
           "reviewMapping": "Kolom dicocokkan otomatis",
           "reviewMappingAction": "Tinjau",
-          "committing": "Mengimpor pemesanan Anda"
+          "committing": "Mengimpor %booking% Anda"
         }
       },
       "export": {
-        "tooltip": "Unduh pemesanan sebagai CSV",
-        "empty": "Tidak ada pemesanan untuk diekspor"
+        "tooltip": "Unduh %booking% sebagai CSV",
+        "empty": "Tidak ada %booking% untuk diekspor"
       },
       "table": {
-        "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
-        "listEmpty": "Belum ada pemesanan.",
-        "listEmptyHint": "Pemesanan yang Anda buat atau terima dari pertanyaan akan muncul di sini.",
+        "empty": "Tidak ada %booking% yang sesuai dengan filter Anda.",
+        "listEmpty": "Belum ada %booking%.",
+        "listEmptyHint": "%Booking% yang Anda buat atau terima dari %inquiry% akan muncul di sini.",
         "past": "Lalu",
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
-        "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
+        "pastBookingsHidden": "{count, plural, one {# %booking% lalu disembunyikan} other {# %booking% lalu disembunyikan}}",
         "col": {
           "booked": "Dipesan pada",
-          "title": "Pemesanan",
-          "client": "Klien",
+          "title": "%Booking%",
+          "client": "%Client%",
           "date": "Tanggal",
           "status": "Status",
           "total": "Total",
@@ -1264,7 +1264,7 @@
         }
       },
       "row": {
-        "openMenu": "Buka tindakan pemesanan",
+        "openMenu": "Buka tindakan %booking%",
         "view": "Lihat",
         "edit": "Edit"
       },
@@ -1318,7 +1318,7 @@
         "hidePast": "Sembunyikan sesi yang lalu",
         "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}",
         "tabs": {
-          "client": "Klien",
+          "client": "%Client%",
           "event": "Acara",
           "pricing": "Harga",
           "eventPricing": "Acara",
@@ -1335,7 +1335,7 @@
         "fields": {
           "title": "Judul",
           "titleRequired": "Judul tidak boleh kosong.",
-          "clientName": "Nama klien",
+          "clientName": "Nama %client%",
           "status": "Status",
           "eventType": "Jenis acara",
           "date": "Tanggal",
@@ -1366,15 +1366,15 @@
           "removeDraftSession": "Hapus sesi draf",
           "email": "Email",
           "phone": "Telepon",
-          "openClient": "Buka klien",
-          "viewClient": "Lihat klien",
-          "changeClient": "Ganti klien",
+          "openClient": "Buka %client%",
+          "viewClient": "Lihat %client%",
+          "changeClient": "Ganti %client%",
           "changeClientCancel": "Pertahankan saat ini",
-          "changeClientSearch": "Cari klien…",
+          "changeClientSearch": "Cari %client%…",
           "noEmail": "Tidak ada email",
           "noPhone": "Tidak ada telepon",
-          "noClientResults": "Tidak ada klien ditemukan",
-          "changeClientMultiSession": "Penugasan ulang tidak tersedia untuk pemesanan multi-sesi",
+          "noClientResults": "Tidak ada %client% ditemukan",
+          "changeClientMultiSession": "Penugasan ulang tidak tersedia untuk %booking% multi-sesi",
           "searchFailed": "Pencarian gagal. Coba lagi.",
           "editTitle": "Edit judul",
           "confirmTitle": "Konfirmasi",
@@ -1385,13 +1385,13 @@
           "callClient": "Hubungi"
         },
         "cancelConfirm": {
-          "title": "Batalkan pemesanan ini?",
-          "body": "Kami akan menandai \"{title}\" sebagai dibatalkan. Pemesanan tidak akan dihapus — Anda dapat memulihkannya dari jendela yang sama jika klien Anda kembali. Riwayat audit tetap utuh.",
-          "keep": "Pertahankan pemesanan",
-          "confirm": "Ya, batalkan pemesanan"
+          "title": "Batalkan %booking% ini?",
+          "body": "Kami akan menandai \"{title}\" sebagai dibatalkan. %Booking% tidak akan dihapus — Anda dapat memulihkannya dari jendela yang sama jika %client% Anda kembali. Riwayat audit tetap utuh.",
+          "keep": "Pertahankan %booking%",
+          "confirm": "Ya, batalkan %booking%"
         },
         "history": {
-          "title": "Riwayat pemesanan",
+          "title": "Riwayat %booking%",
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
           "loadError": "Riwayat tidak dapat dimuat.",
@@ -1402,7 +1402,7 @@
             "created": "Dibuat",
             "updated": "Diperbarui",
             "status_changed": "Status diubah",
-            "client_changed": "Klien diubah",
+            "client_changed": "%Client% diubah",
             "deleted": "Dihapus",
             "payment_added": "Pembayaran ditambahkan",
             "payment_updated": "Pembayaran diperbarui"
@@ -1411,8 +1411,8 @@
           "yesterday": "Kemarin",
           "timelineLabel": "Linimasa aktivitas"
         },
-        "cancel": "Batalkan pemesanan",
-        "restore": "Pulihkan pemesanan",
+        "cancel": "Batalkan %booking%",
+        "restore": "Pulihkan %booking%",
         "invoice": "Unduh faktur",
         "receipt": "Unduh kuitansi",
         "discardChanges": "Buang perubahan",
@@ -1423,13 +1423,13 @@
         "discardDescription": "{count, plural, one {# perubahan belum disimpan akan hilang.} other {# perubahan belum disimpan akan hilang.}}",
         "discardConfirm": "Buang dan tutup",
         "keepEditing": "Terus mengedit",
-        "savedToast": "Pemesanan diperbarui.",
-        "cancelledToast": "Pemesanan dibatalkan.",
-        "restoredToast": "Pemesanan dipulihkan.",
+        "savedToast": "%Booking% diperbarui.",
+        "cancelledToast": "%Booking% dibatalkan.",
+        "restoredToast": "%Booking% dipulihkan.",
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
-        "notFound": "Pemesanan tidak ditemukan.",
-        "loadFailed": "Pemesanan ini tidak dapat dimuat.",
-        "staleConflict": "Pemesanan ini diubah oleh orang lain. Perubahan Anda tidak tersimpan — tinjau versi terbaru lalu coba lagi.",
+        "notFound": "%Booking% tidak ditemukan.",
+        "loadFailed": "%Booking% ini tidak dapat dimuat.",
+        "staleConflict": "%Booking% ini diubah oleh orang lain. Perubahan Anda tidak tersimpan — tinjau versi terbaru lalu coba lagi.",
         "staleNotice": "Diperbarui oleh orang lain — perubahan Anda yang belum disimpan didasarkan pada versi yang lebih lama.",
         "retry": "Coba lagi",
         "editAll": "Edit semua",
@@ -1464,11 +1464,11 @@
         "pastDateWarning": "Dipindahkan ke tanggal lampau",
         "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
         "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang telah berlalu",
-        "updating": "Memperbarui pemesanan…",
-        "updated": "Pemesanan diperbarui",
-        "updateError": "Gagal memperbarui pemesanan",
+        "updating": "Memperbarui %booking%…",
+        "updated": "%Booking% diperbarui",
+        "updateError": "Gagal memperbarui %booking%",
         "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi",
-        "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
+        "overnightNotAllowed": "%Booking% tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
         "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
         "conflictBlockDnd": "Bentrok dengan {title} — tidak bisa pindah ke sini.",
         "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini.",
@@ -1479,13 +1479,13 @@
         "togglePast": "Lalu",
         "dropConflict": {
           "title": "Konflik jadwal pada {date}",
-          "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
+          "description": "Memindahkan %booking% ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
           "cancel": "Batal",
           "moveAnyway": "Pindahkan saja"
         },
         "pastDateConfirm": {
           "title": "Pindah ke tanggal lampau?",
-          "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
+          "description": "Anda memindahkan %booking% ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
           "confirm": "Pindah ke lampau",
           "cancel": "Batal"
         },
@@ -1493,10 +1493,10 @@
         "hidePast": "Sembunyikan yang lalu",
         "filterByStatus": "Filter berdasarkan status",
         "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
-        "teamsLegend": "Tim",
-        "inactiveTeam": "Tim tidak aktif",
+        "teamsLegend": "%Team%",
+        "inactiveTeam": "%Team% tidak aktif",
         "conflict": "Konflik",
-        "emptyPeriod": "Tidak ada pemesanan pada periode ini"
+        "emptyPeriod": "Tidak ada %booking% pada periode ini"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -1527,43 +1527,43 @@
         "frozenRate": "≈ {price} · kurs {rate} · {date}",
         "frozenRateTrailing": "{date} · kurs {rate} · ≈ {price}",
         "approx": "≈ {price}",
-        "empty": "Belum ada pembayaran terjadwal untuk pemesanan ini",
+        "empty": "Belum ada pembayaran terjadwal untuk %booking% ini",
         "exceedsBalance": "Melebihi sisa saldo",
         "titleRequired": "Judul diperlukan.",
         "priceRequired": "Jumlah harus lebih besar dari 0."
       },
       "wizard": {
-        "createTitle": "Pemesanan baru",
-        "editTitle": "Edit pemesanan",
+        "createTitle": "%Booking% baru",
+        "editTitle": "Edit %booking%",
         "editTitleNamed": "Edit {title}",
-        "loading": "Memuat pemesanan…",
+        "loading": "Memuat %booking%…",
         "previous": "Sebelumnya",
         "next": "Berikutnya",
         "cancel": "Batal",
-        "create": "Buat pemesanan",
+        "create": "Buat %booking%",
         "creating": "Membuat…",
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
-        "createdToast": "Pemesanan dibuat.",
-        "savedToast": "Pemesanan diperbarui.",
+        "createdToast": "%Booking% dibuat.",
+        "savedToast": "%Booking% diperbarui.",
         "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
         "unsavedConfirm": "Kemajuan Anda akan hilang jika keluar sekarang. Yakin?",
         "hasErrors": "Ada kesalahan validasi",
-        "viewBooking": "Lihat pemesanan",
+        "viewBooking": "Lihat %booking%",
         "unsaved": {
           "title": "Buang perubahan Anda?",
-          "body": "Semua yang Anda masukkan dalam pemesanan ini akan hilang jika Anda pergi sekarang. Perubahan Anda belum disimpan.",
+          "body": "Semua yang Anda masukkan dalam %booking% ini akan hilang jika Anda pergi sekarang. Perubahan Anda belum disimpan.",
           "keep": "Terus mengedit",
           "discard": "Buang dan tutup"
         },
         "conflictConfirm": {
           "title": "Konflik jadwal terdeteksi",
-          "description": "Satu atau lebih sesi tumpang tindih dengan pemesanan yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
+          "description": "Satu atau lebih sesi tumpang tindih dengan %booking% yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
           "confirm": "Kirim tetap",
           "cancel": "Kembali"
         },
         "steps": {
-          "client": "Klien",
+          "client": "%Client%",
           "event": "Acara",
           "pricing": "Harga",
           "eventPricing": "Acara",
@@ -1572,13 +1572,13 @@
           "review": "Tinjau"
         },
         "client": {
-          "tabExisting": "Klien yang ada",
+          "tabExisting": "%Client% yang ada",
           "tabNew": "Buat baru",
           "searchPlaceholder": "Cari berdasarkan nama atau email",
-          "noResults": "Tidak ada klien yang cocok. Coba pencarian lain.",
-          "selectRequired": "Pilih klien untuk melanjutkan.",
-          "loadingClients": "Memuat klien",
-          "loadError": "Klien tidak dapat dimuat.",
+          "noResults": "Tidak ada %client% yang cocok. Coba pencarian lain.",
+          "selectRequired": "Pilih %client% untuk melanjutkan.",
+          "loadingClients": "Memuat %client%",
+          "loadError": "%Client% tidak dapat dimuat.",
           "retry": "Coba lagi",
           "name": "Nama",
           "namePlaceholder": "mis. Emma Carter",
@@ -1586,13 +1586,13 @@
           "emailPlaceholder": "emma@example.com",
           "phone": "Telepon",
           "phonePlaceholder": "+62 812 555 0142",
-          "readOnlyLabel": "Klien",
-          "readOnlyHint": "Mengubah klien ke pemesanan yang berbeda belum didukung dalam tampilan ini.",
-          "multiSessionReadOnly": "Klien dikunci pada pemesanan multi-sesi."
+          "readOnlyLabel": "%Client%",
+          "readOnlyHint": "Mengubah %client% ke %booking% yang berbeda belum didukung dalam tampilan ini.",
+          "multiSessionReadOnly": "%Client% dikunci pada %booking% multi-sesi."
         },
         "event": {
           "title": "Judul",
-          "titleRequired": "Beri judul untuk pemesanan ini.",
+          "titleRequired": "Beri judul untuk %booking% ini.",
           "titlePlaceholder": "mis. Pernikahan Carter — Pier 27",
           "eventType": "Jenis acara",
           "startAt": "Tanggal mulai shift",
@@ -1601,7 +1601,7 @@
           "endAt": "Tanggal selesai shift",
           "endTime": "Waktu selesai shift",
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
-          "allowPastDate": "Menambahkan pemesanan lama? Izinkan tanggal lampau",
+          "allowPastDate": "Menambahkan %booking% lama? Izinkan tanggal lampau",
           "location": "Lokasi",
           "checkingConflicts": "Memeriksa konflik…",
           "repeatingSessions": "Sesi berulang",
@@ -1623,24 +1623,24 @@
           "total": "Total",
           "deposit": "Deposit",
           "currency": "Mata uang",
-          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per pemesanan.",
+          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per %booking%.",
           "depositRequiresTotal": "Anda tidak dapat menambahkan deposit tanpa menetapkan harga terlebih dahulu."
         },
         "review": {
           "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
         },
-        "teamLabel": "Tim",
-        "teamPlaceholder": "Pilih tim"
+        "teamLabel": "%Team%",
+        "teamPlaceholder": "Pilih %team%"
       }
     },
     "sidebar": {
       "dashboard": "Dasbor",
-      "bookings": "Pemesanan",
-      "clients": "Klien",
+      "bookings": "%Booking%",
+      "clients": "%Client%",
       "calendar": "Kalender",
-      "inquiries": "Pertanyaan",
+      "inquiries": "%Inquiry%",
       "gallery": "Galeri",
-      "teams": "Tim",
+      "teams": "%Team%",
       "settings": "Pengaturan",
       "account": "Akun",
       "logOut": "Keluar",
@@ -1735,7 +1735,7 @@
         "account": "Akun",
         "customize": "Sesuaikan",
         "workspace": "Detail Bisnis",
-        "teams": "Tim",
+        "teams": "%Team%",
         "publicPage": "Halaman publik",
         "billing": "Tagihan",
         "devPlan": "Dev · plan",
@@ -1797,7 +1797,7 @@
         "savedToast": "Ruang kerja diperbarui.",
         "currencyWarning": "Mengubah mata uang akan menghitung ulang semua jumlah yang sudah dibayar ke mata uang baru, dan mengunci kolom ini selama 90 hari setelahnya.",
         "currencyConfirmTitle": "Ubah mata uang workspace?",
-        "currencyConfirmBody": "{count, plural, =0 {Tidak ada total yang akan berubah. Anda dapat mengubah mata uang kapan saja.} other {# booking akan dihitung ulang. Setelah ini, Anda tidak dapat mengubah mata uang lagi hingga {date}.}}",
+        "currencyConfirmBody": "{count, plural, =0 {Tidak ada total yang akan berubah. Anda dapat mengubah mata uang kapan saja.} other {# %booking% akan dihitung ulang. Setelah ini, Anda tidak dapat mengubah mata uang lagi hingga {date}.}}",
         "currencyConfirmConfirm": "Konfirmasi perubahan",
         "currencyConfirmCancel": "Batal",
         "currencyLockedUntil": "Mata uang terkunci hingga {date}.",
@@ -1876,7 +1876,7 @@
         "seoTitlePlaceholder": "Sarah Bell Photography — Pernikahan & Potret",
         "seoDescription": "Deskripsi SEO",
         "seoDescriptionPlaceholder": "Fotografi pernikahan dan potret di seluruh Jakarta…",
-        "inquirySection": "Perutean pertanyaan",
+        "inquirySection": "Perutean %inquiry%",
         "inquirySectionHint": "Ke mana kiriman dari formulir pertanyaan Anda diteruskan.",
         "inquiryRecipientEmail": "Email penerima",
         "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
@@ -1935,20 +1935,20 @@
       }
     },
     "teams": {
-      "title": "Tim",
-      "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
-      "listEmpty": "Anda belum memiliki tim apa pun.",
-      "createButton": "Buat tim",
+      "title": "%Team%",
+      "description": "Kelompokkan anggota tim ke dalam %team%. Setiap %team% memiliki kalendarnya sendiri. Anggota hanya dapat melihat %booking% dari %team% yang mereka ikuti.",
+      "listEmpty": "Anda belum memiliki %team% apa pun.",
+      "createButton": "Buat %team%",
       "toolbar": {
-        "search": "Cari tim",
-        "searchLabel": "Cari tim berdasarkan nama",
+        "search": "Cari %team%",
+        "searchLabel": "Cari %team% berdasarkan nama",
         "showDeactivated": "Tampilkan yang dinonaktifkan"
       },
       "table": {
-        "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.",
+        "empty": "Tidak ada %team% yang sesuai dengan pencarian Anda.",
         "col": {
           "color": "Warna",
-          "name": "Tim",
+          "name": "%Team%",
           "members": "Anggota",
           "monthlyAverage": "Rata-rata Bulanan",
           "actions": "Tindakan"
@@ -1962,38 +1962,38 @@
         "hexLabel": "Hex"
       },
       "createDialog": {
-        "title": "Buat tim",
-        "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
-        "nameLabel": "Nama tim",
+        "title": "Buat %team%",
+        "description": "Beri nama %team% dan pilih warna untuk chip kalendernya.",
+        "nameLabel": "Nama %team%",
         "namePlaceholder": "mis. Kru pernikahan",
         "colorLabel": "Warna",
-        "submit": "Buat tim",
+        "submit": "Buat %team%",
         "cancel": "Batal",
         "creating": "Membuat…"
       },
       "renameDialog": {
-        "title": "Ganti nama tim",
+        "title": "Ganti nama %team%",
         "submit": "Simpan",
         "saving": "Menyimpan…",
         "cancel": "Batal"
       },
       "deactivateDialog": {
-        "title": "Nonaktifkan tim?",
-        "description": "“{name}” akan disembunyikan dari tim aktif Anda dan tidak dapat lagi menerima pemesanan baru. Anggota, pemesanan, dan riwayatnya tetap tersimpan, dan Anda dapat mengaktifkannya kembali kapan saja.",
-        "confirm": "Nonaktifkan tim",
+        "title": "Nonaktifkan %team%?",
+        "description": "“{name}” akan disembunyikan dari %team% aktif Anda dan tidak dapat lagi menerima %booking% baru. Anggota, %booking%, dan riwayatnya tetap tersimpan, dan Anda dapat mengaktifkannya kembali kapan saja.",
+        "confirm": "Nonaktifkan %team%",
         "deactivating": "Menonaktifkan…",
         "cancel": "Batal"
       },
       "reactivateDialog": {
-        "title": "Aktifkan kembali tim?",
-        "description": "“{name}” akan aktif kembali dan dapat menerima pemesanan baru. Ini akan dihitung dalam batas tim aktif paket Anda.",
-        "confirm": "Aktifkan kembali tim",
+        "title": "Aktifkan kembali %team%?",
+        "description": "“{name}” akan aktif kembali dan dapat menerima %booking% baru. Ini akan dihitung dalam batas %team% aktif paket Anda.",
+        "confirm": "Aktifkan kembali %team%",
         "reactivating": "Mengaktifkan kembali…",
         "cancel": "Batal"
       },
       "team": {
         "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
-        "monthlyBookings": "{count, plural, one {# booking/bln} other {# booking/bln}}",
+        "monthlyBookings": "{count, plural, one {# %booking%/bln} other {# %booking%/bln}}",
         "defaultBadge": "Default",
         "rename": "Ganti nama",
         "changeColor": "Ubah warna",
@@ -2007,64 +2007,64 @@
       "drawer": {
         "membersHeading": "Anggota",
         "memberCount": "{count}/{max} anggota",
-        "noMembers": "Belum ada anggota di tim ini.",
+        "noMembers": "Belum ada anggota di %team% ini.",
         "addMemberLabel": "Tambah anggota yang sudah ada",
         "addMemberPlaceholder": "Pilih anggota…",
-        "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di tim ini.",
+        "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di %team% ini.",
         "pendingHeading": "Undangan tertunda",
-        "noPending": "Tidak ada undangan tertunda untuk tim ini.",
-        "inviteToTeam": "Undang ke tim ini",
+        "noPending": "Tidak ada undangan tertunda untuk %team% ini.",
+        "inviteToTeam": "Undang ke %team% ini",
         "leadToggleLabel": "Lead",
-        "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
+        "leadOnlyOnePerTeam": "Setiap %team% hanya boleh memiliki satu lead.",
         "removeFromTeam": "Hapus",
-        "teamFull": "Tim ini sudah penuh.",
+        "teamFull": "%Team% ini sudah penuh.",
         "close": "Tutup",
         "removeMemberFlow": {
           "confirmTitle": "Hapus {name} dari {team}?",
-          "confirmDescription": "Mereka akan kehilangan akses ke kalender dan pemesanan tim ini.",
-          "confirmButton": "Hapus dari tim",
-          "removeFromTeamAndWorkspace": "Hapus dari tim + ruang kerja",
-          "otherTeamsBlocked": "Anggota ini juga berada di tim lain. Hapus dari tim tersebut terlebih dahulu.",
+          "confirmDescription": "Mereka akan kehilangan akses ke kalender dan %booking% %team% ini.",
+          "confirmButton": "Hapus dari %team%",
+          "removeFromTeamAndWorkspace": "Hapus dari %team% + ruang kerja",
+          "otherTeamsBlocked": "Anggota ini juga berada di %team% lain. Hapus dari %team% tersebut terlebih dahulu.",
           "removing": "Menghapus…",
           "workspacePromptTitle": "Hapus juga {name} dari ruang kerja?",
-          "workspacePromptDescription": "Mereka akan kehilangan akses ke semua tim dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
+          "workspacePromptDescription": "Mereka akan kehilangan akses ke semua %team% dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
           "dontAskAgain": "Jangan tanya lagi",
           "removeFromWorkspaceButton": "Hapus dari ruang kerja",
           "keepInWorkspaceButton": "Pertahankan di ruang kerja"
         }
       },
       "upsell": {
-        "atCapTitle": "Anda telah mencapai batas tim Anda",
+        "atCapTitle": "Anda telah mencapai batas %team% Anda",
         "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
         "cta": "Lihat paket",
-        "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
+        "proAtCapBody": "Pro dibatasi hingga {max} %team%. Hubungi dukungan jika Anda membutuhkan lebih banyak."
       },
       "errors": {
-        "nameRequired": "Nama tim diperlukan.",
-        "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
-        "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
-        "teamNotFound": "Tim tidak ditemukan.",
+        "nameRequired": "Nama %team% diperlukan.",
+        "nameTooLong": "Nama %team% harus 40 karakter atau kurang.",
+        "duplicateName": "%Team% dengan nama ini sudah ada di ruang kerja ini.",
+        "teamNotFound": "%Team% tidak ditemukan.",
         "generic": "Terjadi kesalahan. Silakan coba lagi.",
-        "cannotDeactivateDefault": "Tim default tidak dapat dinonaktifkan.",
-        "reactivateCapExceeded": "Mengaktifkan kembali akan melebihi batas tim aktif paket Anda. Nonaktifkan tim lain atau tingkatkan paket Anda terlebih dahulu."
+        "cannotDeactivateDefault": "%Team% default tidak dapat dinonaktifkan.",
+        "reactivateCapExceeded": "Mengaktifkan kembali akan melebihi batas %team% aktif paket Anda. Nonaktifkan %team% lain atau tingkatkan paket Anda terlebih dahulu."
       },
       "toasts": {
-        "created": "Tim dibuat.",
-        "renamed": "Tim diganti nama.",
+        "created": "%Team% dibuat.",
+        "renamed": "%Team% diganti nama.",
         "colorChanged": "Warna diperbarui.",
-        "saved": "Tim diperbarui.",
-        "deactivated": "Tim dinonaktifkan.",
-        "reactivated": "Tim diaktifkan kembali."
+        "saved": "%Team% diperbarui.",
+        "deactivated": "%Team% dinonaktifkan.",
+        "reactivated": "%Team% diaktifkan kembali."
       },
-      "teamsHeading": "Tim",
+      "teamsHeading": "%Team%",
       "invite": {
         "button": "Undang anggota",
         "dialog": {
           "title": "Undang rekan kerja",
-          "description": "Mereka akan mendapatkan undangan email. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke tim yang Anda pilih.",
+          "description": "Mereka akan mendapatkan undangan email. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke %team% yang Anda pilih.",
           "emailLabel": "Alamat email",
           "emailPlaceholder": "rekankerja@contoh.com",
-          "teamsLabel": "Tambahkan ke tim ini",
+          "teamsLabel": "Tambahkan ke %team% ini",
           "leadLabel": "Lead",
           "teamFull": "Penuh",
           "submit": "Kirim undangan",
@@ -2073,12 +2073,12 @@
         },
         "errors": {
           "emailRequired": "Masukkan alamat email yang valid.",
-          "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
-          "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
-          "teamAlreadyHasLead": "Tim-tim ini sudah memiliki lead yang ditetapkan: {teams}.",
-          "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
+          "pickAtLeastOneTeam": "Pilih setidaknya satu %team% untuk menambahkan mereka.",
+          "teamFull": "%Team%-%team% ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+          "teamAlreadyHasLead": "%Team%-%team% ini sudah memiliki lead yang ditetapkan: {teams}.",
+          "teamNotFound": "Salah satu %team% yang dipilih tidak ditemukan.",
           "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
-          "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
+          "noTeamsExist": "Buat %team% terlebih dahulu sebelum mengundang anggota."
         },
         "toasts": {
           "sent": "Undangan terkirim.",
@@ -2086,7 +2086,7 @@
         },
         "revokeDialog": {
           "title": "Cabut undangan?",
-          "description": "Undangan untuk {email} akan dibatalkan dan kursi tim yang telah dipesan akan dibebaskan.",
+          "description": "Undangan untuk {email} akan dibatalkan dan kursi %team% yang telah dipesan akan dibebaskan.",
           "confirm": "Cabut undangan"
         }
       },
@@ -2097,7 +2097,7 @@
         "leadBadge": "Lead",
         "memberBadge": "Anggota",
         "pendingBadge": "Menunggu",
-        "manageTeams": "Kelola tim",
+        "manageTeams": "Kelola %team%",
         "removeFromWorkspace": "Hapus dari ruang kerja",
         "revokeInvite": "Cabut undangan",
         "rowActionsLabel": "Tindakan untuk {name}",
@@ -2105,7 +2105,7 @@
         "inviteCountsLabel": "Jumlah undangan",
         "newlyAcceptedCount": "Baru {count}",
         "pendingCount": "Tertunda {count}",
-        "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua tim.",
+        "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua %team%.",
         "modeLabel": "Daftar anggota",
         "active": "Aktif",
         "pending": "Menunggu",
@@ -2113,13 +2113,13 @@
         "noActiveMatches": "Tidak ada anggota yang cocok dengan pencarian Anda.",
         "noPendingMatches": "Tidak ada undangan tertunda yang cocok dengan pencarian Anda.",
         "noPending": "Tidak ada undangan tertunda.",
-        "moreTeams": "+{count} tim lainnya",
-        "ownerAllTeams": "Dapat mengawasi semua tim",
-        "noTeams": "Tidak berada di tim mana pun",
+        "moreTeams": "+{count} %team% lainnya",
+        "ownerAllTeams": "Dapat mengawasi semua %team%",
+        "noTeams": "Tidak berada di %team% mana pun",
         "removeFromWorkspaceLabel": "Hapus {name} dari ruang kerja",
         "removeDialog": {
           "title": "Hapus anggota?",
-          "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
+          "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. %Booking% mereka tetap ada; kursi %team% dibebaskan. Tindakan ini tidak dapat dibatalkan.",
           "confirm": "Hapus anggota"
         },
         "details": {
@@ -2128,8 +2128,8 @@
             "details": "Detail",
             "history": "Riwayat"
           },
-          "teams": "Tim",
-          "noTeams": "Tidak ada tim",
+          "teams": "%Team%",
+          "noTeams": "Tidak ada %team%",
           "completed": "Selesai",
           "workingNow": "Sedang berjalan",
           "future": "Mendatang",
@@ -2153,7 +2153,7 @@
         },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
-          "isTeamLead": "{name} adalah lead tim untuk setidaknya satu tim. Hapus status lead tim mereka terlebih dahulu sebelum menghapusnya."
+          "isTeamLead": "{name} adalah lead %team% untuk setidaknya satu %team%. Hapus status lead %team% mereka terlebih dahulu sebelum menghapusnya."
         },
         "toasts": {
           "removed": "Anggota dihapus."
@@ -2161,18 +2161,18 @@
       },
       "assignment": {
         "dialog": {
-          "title": "Kelola penugasan tim",
-          "description": "Tambahkan atau hapus {name} dari tim. Aktifkan tanda lead untuk memberi mereka hak edit di dalam tim.",
+          "title": "Kelola penugasan %team%",
+          "description": "Tambahkan atau hapus {name} dari %team%. Aktifkan tanda lead untuk memberi mereka hak edit di dalam %team%.",
           "add": "Tambahkan",
           "remove": "Hapus",
           "done": "Selesai"
         },
         "errors": {
-          "alreadyOnTeam": "Anggota tersebut sudah ada di tim ini."
+          "alreadyOnTeam": "Anggota tersebut sudah ada di %team% ini."
         },
         "toasts": {
-          "added": "Ditambahkan ke tim.",
-          "removed": "Dihapus dari tim.",
+          "added": "Ditambahkan ke %team%.",
+          "removed": "Dihapus dari %team%.",
           "promoted": "Dipromosikan menjadi lead.",
           "demoted": "Diturunkan menjadi anggota.",
           "promoting": "Memindahkan lead…",
@@ -2181,29 +2181,29 @@
       },
       "downgradeBlock": {
         "title": "Downgrade diblokir",
-        "description": "Anda berada di paket {currentPlan} dengan lebih banyak tim daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} tim sebelum mengganti paket.",
-        "teamsHeading": "Tim saat ini",
+        "description": "Anda berada di paket {currentPlan} dengan lebih banyak %team% daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} %team% sebelum mengganti paket.",
+        "teamsHeading": "%Team% saat ini",
         "dismiss": "Mengerti",
-        "manageTeams": "Kelola tim"
+        "manageTeams": "Kelola %team%"
       },
       "editDialog": {
-        "title": "Edit tim",
+        "title": "Edit %team%",
         "submit": "Simpan perubahan",
         "saving": "Menyimpan…"
       }
     },
     "clients": {
-      "title": "Klien",
-      "listEmpty": "Anda belum memiliki klien apa pun.",
-      "listEmptyHint": "Tambahkan klien pertama Anda untuk mulai melacak pemesanan dan riwayat.",
+      "title": "%Client%",
+      "listEmpty": "Anda belum memiliki %client% apa pun.",
+      "listEmptyHint": "Tambahkan %client% pertama Anda untuk mulai melacak %booking% dan riwayat.",
       "toolbar": {
         "search": "Cari berdasarkan nama atau email",
-        "searchLabel": "Cari klien",
+        "searchLabel": "Cari %client%",
         "sourceAll": "Semua sumber",
         "tagsAll": "Semua tag",
         "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
         "showInactive": "Tampilkan tidak aktif",
-        "add": "Tambah Klien"
+        "add": "Tambah %Client%"
       },
       "sourceValues": {
         "form": "Formulir",
@@ -2212,7 +2212,7 @@
         "import": "Impor"
       },
       "table": {
-        "empty": "Tidak ada klien yang cocok dengan filter Anda.",
+        "empty": "Tidak ada %client% yang cocok dengan filter Anda.",
         "col": {
           "name": "Nama",
           "contact": "Kontak",
@@ -2220,10 +2220,10 @@
           "totalSpent": "Total Dihabiskan",
           "actions": "Aksi"
         },
-        "bookings": "{count} booking",
+        "bookings": "{count} %booking%",
         "lastBooking": "Terakhir: {date}",
-        "noBookings": "Belum ada booking",
-        "openMenu": "Buka aksi klien",
+        "noBookings": "Belum ada %booking%",
+        "openMenu": "Buka aksi %client%",
         "openClient": "Buka {name}",
         "view": "Lihat",
         "edit": "Ubah",
@@ -2231,8 +2231,8 @@
         "reactivate": "Aktifkan kembali"
       },
       "form": {
-        "addTitle": "Tambah Klien",
-        "editTitle": "Ubah Klien",
+        "addTitle": "Tambah %Client%",
+        "editTitle": "Ubah %Client%",
         "name": "Nama",
         "namePlaceholder": "mis. Maria Santos",
         "email": "Email",
@@ -2244,14 +2244,14 @@
         "tagsPlaceholder": "Tambahkan tag",
         "removeTag": "Hapus tag {tag}",
         "notes": "Catatan",
-        "notesPlaceholder": "Catatan apa pun tentang klien ini…",
+        "notesPlaceholder": "Catatan apa pun tentang %client% ini…",
         "save": "Simpan",
         "view": "Lihat",
         "saving": "Menyimpan…",
         "cancel": "Batal",
-        "createSuccess": "Klien dibuat.",
-        "linkSuccess": "Ditautkan ke klien yang ada.",
-        "updateSuccess": "Klien diperbarui.",
+        "createSuccess": "%Client% dibuat.",
+        "linkSuccess": "Ditautkan ke %client% yang ada.",
+        "updateSuccess": "%Client% diperbarui.",
         "error": "Ada yang salah. Coba lagi."
       },
       "detail": {
@@ -2259,13 +2259,13 @@
         "retry": "Coba lagi",
         "tabs": {
           "overview": "Ringkasan",
-          "bookings": "Booking",
+          "bookings": "%Booking%",
           "payments": "Pembayaran"
         },
         "overview": {
           "totalSpent": "Total Dihabiskan",
-          "bookingsCount": "Booking",
-          "lastBooking": "Booking Terakhir",
+          "bookingsCount": "%Booking%",
+          "lastBooking": "%Booking% Terakhir",
           "never": "Tidak pernah",
           "contact": "Kontak",
           "noEmail": "—",
@@ -2277,9 +2277,9 @@
           "noNotes": "Tidak ada catatan"
         },
         "bookings": {
-          "loading": "Memuat booking…",
-          "empty": "Belum ada booking.",
-          "error": "Gagal memuat booking."
+          "loading": "Memuat %booking%…",
+          "empty": "Belum ada %booking%.",
+          "error": "Gagal memuat %booking%."
         },
         "payments": {
           "empty": "Belum ada catatan pembayaran."
@@ -2290,38 +2290,38 @@
         "close": "Tutup"
       },
       "deactivate": {
-        "title": "Nonaktifkan klien ini?",
-        "body": "Klien ini akan disembunyikan dari daftar aktif. Anda dapat mengaktifkannya kembali kapan saja dengan mengaktifkan 'Tampilkan tidak aktif' di daftar klien.",
+        "title": "Nonaktifkan %client% ini?",
+        "body": "%Client% ini akan disembunyikan dari daftar aktif. Anda dapat mengaktifkannya kembali kapan saja dengan mengaktifkan 'Tampilkan tidak aktif' di daftar %client%.",
         "cancel": "Batal",
         "confirm": "Nonaktifkan"
       },
       "unsaved": {
         "title": "Buang perubahan Anda?",
-        "body": "Anda memiliki perubahan yang belum disimpan untuk klien ini. Perubahan akan hilang jika Anda menutup sekarang.",
+        "body": "Anda memiliki perubahan yang belum disimpan untuk %client% ini. Perubahan akan hilang jika Anda menutup sekarang.",
         "keep": "Lanjutkan mengubah",
         "discard": "Buang dan tutup"
       },
       "matchDialog": {
-        "title": "Apakah klien ini salah satu dari berikut?",
+        "title": "Apakah %client% ini salah satu dari berikut?",
         "bookingsCount": "{count, plural, one {# booking} other {# booking}}",
-        "escapeCreate": "Tidak, ini klien baru",
-        "escapeLink": "Tautkan ke klien baru",
+        "escapeCreate": "Tidak, ini %client% baru",
+        "escapeLink": "Tautkan ke %client% baru",
         "cancel": "Batal",
-        "submitCreate": "Simpan klien",
-        "submitLink": "Tautkan klien",
+        "submitCreate": "Simpan %client%",
+        "submitLink": "Tautkan %client%",
         "reconcileTitle": "{count} kolom berbeda - pilih yang ingin disimpan",
         "current": "Saat ini",
         "typed": "Yang Anda masukkan",
         "additiveTitle": "Akan ditambahkan (tidak ada konflik)"
       },
       "toasts": {
-        "reactivating": "Mengaktifkan kembali klien…",
-        "deactivating": "Menonaktifkan klien…"
+        "reactivating": "Mengaktifkan kembali %client%…",
+        "deactivating": "Menonaktifkan %client%…"
       }
     },
     "inquiries": {
-      "title": "Pertanyaan",
-      "subtitle": "Permintaan pemesanan dari portofolio publik Anda.",
+      "title": "%Inquiry%",
+      "subtitle": "Permintaan %booking% dari portofolio publik Anda.",
       "toolbar": {
         "from": "Dari",
         "to": "Sampai",
@@ -2331,15 +2331,15 @@
       },
       "tabs": {
         "all": "Semua",
-        "inquiry": "Pertanyaan",
+        "inquiry": "%Inquiry%",
         "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
-        "inquiry": "Pertanyaan",
+        "inquiry": "%Inquiry%",
         "archived": "Diarsipkan",
         "booked": "Dipesan",
-        "converted": "Dikonversi ke Pemesanan"
+        "converted": "Dikonversi ke %Booking%"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -2355,17 +2355,17 @@
         "either": "Salah satu"
       },
       "table": {
-        "empty": "Belum ada pertanyaan.",
-        "filteredEmpty": "Tidak ada pertanyaan yang cocok dengan filter Anda.",
+        "empty": "Belum ada %inquiry%.",
+        "filteredEmpty": "Tidak ada %inquiry% yang cocok dengan filter Anda.",
         "emptyHint": "Ketika seseorang mengisi formulir kontak portofolio Anda, permintaan mereka akan muncul di sini.",
         "viewPublicPage": "Lihat halaman publik Anda",
-        "open": "Buka pertanyaan dari {name}",
+        "open": "Buka %inquiry% dari {name}",
         "noDate": "Tidak ada tanggal",
         "directSource": "Langsung",
         "col": {
           "booked": "Dipesan pada",
           "status": "Status",
-          "client": "Klien",
+          "client": "%Client%",
           "eventDate": "Tanggal acara",
           "eventType": "Jenis",
           "submitted": "Dikirim",
@@ -2377,20 +2377,20 @@
         "conflict": "Konflik",
         "actions": {
           "view": "Lihat",
-          "menuLabel": "Buka tindakan pertanyaan"
+          "menuLabel": "Buka tindakan %inquiry%"
         }
       },
       "detail": {
-        "back": "Kembali ke pertanyaan",
-        "conflictBanner": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
-        "loadingTitle": "Permintaan",
-        "loading": "Memuat permintaan...",
-        "loadError": "Tidak dapat memuat permintaan ini.",
+        "back": "Kembali ke %inquiry%",
+        "conflictBanner": "Satu atau lebih sesi bertabrakan dengan %booking% yang ada.",
+        "loadingTitle": "%Inquiry%",
+        "loading": "Memuat %inquiry%...",
+        "loadError": "Tidak dapat memuat %inquiry% ini.",
         "retry": "Coba lagi",
         "submittedOn": "Dikirim {date}",
-        "notFound": "Pertanyaan tidak ditemukan.",
+        "notFound": "%Inquiry% tidak ditemukan.",
         "clientInfo": {
-          "title": "Info klien",
+          "title": "Info %client%",
           "name": "Nama",
           "email": "Email",
           "phone": "Telepon",
@@ -2402,9 +2402,9 @@
           "savedToast": "Telepon diperbarui."
         },
         "clientMatch": {
-          "warning": "Pertanyaan ini mungkin milik klien yang sudah ada",
-          "resolveButton": "Selesaikan klien",
-          "resolvedToast": "Klien diperbarui."
+          "warning": "%Inquiry% ini mungkin milik %client% yang sudah ada",
+          "resolveButton": "Selesaikan %client%",
+          "resolvedToast": "%Client% diperbarui."
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -2416,49 +2416,49 @@
           "none": "—"
         },
         "bookingDraft": {
-          "title": "Draf pemesanan",
-          "description": "Mengonversi ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
+          "title": "Draf %booking%",
+          "description": "Mengonversi ini akan membuat %booking% di kalender Anda. Tetapkan harga sekarang atau nanti.",
           "total": "Total",
           "deposit": "Deposit",
           "notes": "Catatan internal",
           "notesPlaceholder": "Catatan yang hanya dapat Anda lihat…",
           "save": "Simpan perubahan",
           "saving": "Menyimpan…",
-          "approve": "Konversi ke pemesanan",
+          "approve": "Konversi ke %booking%",
           "approving": "Mengonversi…",
           "approved": "Dikonversi",
-          "missing": "Tidak ada draf pemesanan yang terhubung untuk pertanyaan ini.",
-          "alreadyConverted": "Pertanyaan ini telah disetujui.",
-          "viewBooking": "Lihat pemesanan",
+          "missing": "Tidak ada draf %booking% yang terhubung untuk %inquiry% ini.",
+          "alreadyConverted": "%Inquiry% ini telah disetujui.",
+          "viewBooking": "Lihat %booking%",
           "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi %booking%.",
           "conflictBlocks": "Selesaikan konflik jadwal di atas sebelum mengonversi.",
-          "team": "Tim",
+          "team": "%Team%",
           "changedUnderneath": "Draf ini diubah oleh orang lain. Perubahan Anda tetap disimpan; periksa kolom lain sebelum menyimpan.",
-          "notDraft": "Pemesanan ini sudah disetujui. Muat ulang untuk melihat yang terbaru."
+          "notDraft": "%Booking% ini sudah disetujui. Muat ulang untuk melihat yang terbaru."
         },
         "actions": {
           "decline": "Tolak & beritahu",
-          "declinedToast": "Pertanyaan ditolak — klien telah diberitahu.",
+          "declinedToast": "%Inquiry% ditolak — %client% telah diberitahu.",
           "archive": "Arsipkan",
           "working": "Menyimpan…",
-          "archivedToast": "Pertanyaan diarsipkan.",
-          "approvedToast": "Dikonversi ke pemesanan.",
+          "archivedToast": "%Inquiry% diarsipkan.",
+          "approvedToast": "Dikonversi ke %booking%.",
           "errorToast": "Ada yang tidak beres. Silakan coba lagi."
         },
         "history": {
           "title": "Riwayat",
-          "submitted": "Pertanyaan dikirim",
-          "booked": "Disetujui menjadi pemesanan"
+          "submitted": "%Inquiry% dikirim",
+          "booked": "Disetujui menjadi %booking%"
         },
         "sessionsEditor": {
           "edit": "Edit sesi",
           "save": "Simpan perubahan",
           "saving": "Menyimpan…",
           "discard": "Buang",
-          "conflictBlocks": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+          "conflictBlocks": "Satu atau lebih sesi bertabrakan dengan %booking% yang ada.",
           "pastDate": "Sesi harus di masa depan.",
           "lockedConverted": "Sesi dikunci setelah konversi.",
           "lockedArchived": "Sesi dikunci (diarsipkan).",
@@ -2481,17 +2481,17 @@
         "calendar": "Kalender"
       },
       "calendar": {
-        "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan.",
+        "empty": "Tidak ada %inquiry% atau %booking% untuk ditampilkan.",
         "filters": {
-          "inquiry": "Pertanyaan",
+          "inquiry": "%Inquiry%",
           "booked": "Dipesan",
           "conflicted": "Konflik"
         },
-        "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
+        "rescheduleConflict": "Waktu ini bertentangan dengan %booking% yang ada — pemindahan dibatalkan",
         "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
         "updating": "Menjadwalkan ulang…",
         "updated": "Sesi dijadwalkan ulang",
-        "emptyPeriod": "Tidak ada pertanyaan pada periode ini"
+        "emptyPeriod": "Tidak ada %inquiry% pada periode ini"
       }
     },
     "pageBuilder": {
@@ -2706,7 +2706,7 @@
           "altHint": "Digunakan di setiap tempat foto ini muncul.",
           "dateLabel": "Tanggal",
           "locationLabel": "Lokasi",
-          "clientLabel": "Klien",
+          "clientLabel": "%Client%",
           "tagsLabel": "Tag",
           "tagsHint": "Pisahkan tag dengan koma, spasi, atau Enter.",
           "tagsPlaceholder": "mis. luar ruangan, matahari terbenam, tarian pertama",
@@ -2736,21 +2736,21 @@
           "fieldDate": "Tanggal",
           "fieldLocation": "Lokasi",
           "fieldLocationPlaceholder": "mis. Tagaytay, Filipina",
-          "fieldClient": "Klien",
+          "fieldClient": "%Client%",
           "fieldClientPlaceholder": "mis. Sarah & Miguel",
-          "hideClient": "Sembunyikan nama klien",
-          "hideClientHelp": "Jaga informasi klien tetap pribadi di mana pun foto ini muncul.",
-          "linkBooking": "Tautkan pemesanan",
-          "linkClient": "Tautkan klien",
-          "noBooking": "Tidak ada pemesanan tertaut",
-          "noClient": "Tidak ada klien tertaut",
+          "hideClient": "Sembunyikan nama %client%",
+          "hideClientHelp": "Jaga informasi %client% tetap pribadi di mana pun foto ini muncul.",
+          "linkBooking": "Tautkan %booking%",
+          "linkClient": "Tautkan %client%",
+          "noBooking": "Tidak ada %booking% tertaut",
+          "noClient": "Tidak ada %client% tertaut",
           "searchLinks": "Cari data",
           "noLinkMatches": "Tidak ada data yang cocok",
           "linksLoading": "Memuat data...",
-          "linksLoadError": "Tidak dapat memuat pemesanan dan klien.",
+          "linksLoadError": "Tidak dapat memuat %booking% dan %client%.",
           "retryLinks": "Coba lagi",
           "manualDetails": "Belum terdaftar di Gallurio? Masukkan atau edit detail secara manual di bawah.",
-          "linkedRecord": "Pemesanan tertaut",
+          "linkedRecord": "%Booking% tertaut",
           "fieldTags": "Tag",
           "fieldTagsPlaceholder": "Tambahkan tag lalu tekan Enter",
           "fieldTagsHint": "Hingga 20 tag.",
@@ -3364,9 +3364,9 @@
               "dimensions": "Gambar bagikan harus setidaknya 1200 × 630 px.",
               "upload": "Unggah gambar bagikan gagal. Silakan coba lagi."
             },
-            "inquiryRecipientLabel": "Email penerima inquiry",
+            "inquiryRecipientLabel": "Email penerima %inquiry%",
             "inquiryRecipientPlaceholder": "anda@contoh.com",
-            "inquiryRecipientHint": "Notifikasi inquiry baru akan dikirim ke sini."
+            "inquiryRecipientHint": "Notifikasi %inquiry% baru akan dikirim ke sini."
           },
           "done": {
             "title": "Halaman Anda siap untuk bersinar",
@@ -3543,23 +3543,23 @@
       "types": {
         "inquiry": {
           "created": {
-            "title": "Pertanyaan baru diterima",
-            "body": "Anda memiliki pertanyaan baru dari {clientName}."
+            "title": "%Inquiry% baru diterima",
+            "body": "Anda memiliki %inquiry% baru dari {clientName}."
           }
         },
         "booking": {
           "team_assigned": {
-            "title": "Pemesanan baru ditugaskan ke tim Anda",
-            "body": "{assignerName} menugaskan pemesanan ke tim Anda."
+            "title": "%Booking% baru ditugaskan ke %team% Anda",
+            "body": "{assignerName} menugaskan %booking% ke %team% Anda."
           },
           "status_changed": {
-            "title": "{newStatus, select, cancelled {Pemesanan dibatalkan} completed {Pemesanan selesai} booked {Pemesanan dikonfirmasi} other {Status pemesanan diperbarui}}",
-            "body": "{newStatus, select, cancelled {{actorName} membatalkan pemesanan.} completed {{actorName} menandai pemesanan selesai.} booked {{actorName} mengonfirmasi pemesanan.} other {{actorName} mengubah status pemesanan menjadi {newStatus}.}}"
+            "title": "{newStatus, select, cancelled {Pemesanan dibatalkan} completed {Pemesanan selesai} booked {Pemesanan dikonfirmasi} other {Status %booking% diperbarui}}",
+            "body": "{newStatus, select, cancelled {{actorName} membatalkan %booking%.} completed {{actorName} menandai %booking% selesai.} booked {{actorName} mengonfirmasi %booking%.} other {{actorName} mengubah status %booking% menjadi {newStatus}.}}"
           }
         },
         "team": {
           "invitation": {
-            "title": "Anda diundang ke tim",
+            "title": "Anda diundang ke %team%",
             "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
           },
           "invite_accepted": {
@@ -3567,11 +3567,11 @@
             "body": "Mereka telah bergabung dengan {teamName}."
           },
           "removed": {
-            "title": "Dihapus dari tim",
+            "title": "Dihapus dari %team%",
             "body": "Anda telah dihapus dari {teamName}."
           },
           "deleted": {
-            "title": "Tim dibubarkan",
+            "title": "%Team% dibubarkan",
             "body": "{teamName} telah dihapus."
           }
         }
@@ -3586,11 +3586,11 @@
       "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
       "workspace_not_found": "Ruang kerja tidak ditemukan.",
       "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
-      "resolve_failed": "Tidak dapat memperbarui klien. Silakan coba lagi.",
-      "client_match_lookup_failed": "Tidak dapat memeriksa klien yang ada. Silakan coba lagi.",
-      "needs_client_resolution": "Pertanyaan ini mungkin milik klien yang sudah ada. Buka dan selesaikan kliennya sebelum mengonversi.",
+      "resolve_failed": "Tidak dapat memperbarui %client%. Silakan coba lagi.",
+      "client_match_lookup_failed": "Tidak dapat memeriksa %client% yang ada. Silakan coba lagi.",
+      "needs_client_resolution": "%Inquiry% ini mungkin milik %client% yang sudah ada. Buka dan selesaikan kliennya sebelum mengonversi.",
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
-      "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
+      "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan %booking% ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
       "onboarding_plan_locked": "Paket Anda sudah aktif. Selesaikan onboarding untuk mengelolanya dari pengaturan tagihan.",
       "subscription_required": "Akses Pro Anda telah berakhir. Berlangganan untuk melanjutkan.",
@@ -3623,25 +3623,25 @@
       "email_send_failed": "Gagal mengirim email. Silakan coba lagi.",
       "onboarding_no_active_workspace": "Tidak ada ruang kerja aktif — mulai ulang orientasi.",
       "already_member_elsewhere": "Email ini sudah menjadi anggota workspace lain. Gunakan email lain untuk membuat yang baru.",
-      "client_create_failed": "Gagal membuat klien. Silakan coba lagi.",
-      "client_not_found": "Klien tidak ditemukan.",
-      "client_update_failed": "Gagal memperbarui klien. Silakan coba lagi.",
-      "client_deactivate_failed": "Gagal menonaktifkan klien. Silakan coba lagi.",
-      "client_has_active_bookings": "Klien ini memiliki pemesanan aktif dan tidak dapat dinonaktifkan.",
-      "client_reactivate_failed": "Gagal mengaktifkan kembali klien. Silakan coba lagi.",
-      "bookings_load_failed": "Gagal memuat pemesanan. Silakan coba lagi.",
-      "client_load_failed": "Gagal memuat klien. Silakan coba lagi.",
+      "client_create_failed": "Gagal membuat %client%. Silakan coba lagi.",
+      "client_not_found": "%Client% tidak ditemukan.",
+      "client_update_failed": "Gagal memperbarui %client%. Silakan coba lagi.",
+      "client_deactivate_failed": "Gagal menonaktifkan %client%. Silakan coba lagi.",
+      "client_has_active_bookings": "%Client% ini memiliki %booking% aktif dan tidak dapat dinonaktifkan.",
+      "client_reactivate_failed": "Gagal mengaktifkan kembali %client%. Silakan coba lagi.",
+      "bookings_load_failed": "Gagal memuat %booking%. Silakan coba lagi.",
+      "client_load_failed": "Gagal memuat %client%. Silakan coba lagi.",
       "invalid_id": "Permintaan tidak valid.",
       "not_found": "Tidak ditemukan.",
       "forbidden": "Anda tidak memiliki akses untuk melakukan itu.",
-      "team_not_found": "Tim tidak ditemukan.",
-      "team_deactivated": "Anda tidak dapat menugaskan pemesanan ke tim yang dinonaktifkan.",
+      "team_not_found": "%Team% tidak ditemukan.",
+      "team_deactivated": "Anda tidak dapat menugaskan %booking% ke %team% yang dinonaktifkan.",
       "session_crosses_midnight": "Sesi {index} melewati tengah malam di zona waktu ruang kerja.",
-      "client_change_multi_session": "Anda tidak dapat mengganti klien pada pemesanan multi-sesi.",
-      "invalid_client_id": "Klien tidak valid.",
-      "client_not_found_workspace": "Klien tidak ditemukan di ruang kerja ini.",
+      "client_change_multi_session": "Anda tidak dapat mengganti %client% pada %booking% multi-sesi.",
+      "invalid_client_id": "%Client% tidak valid.",
+      "client_not_found_workspace": "%Client% tidak ditemukan di ruang kerja ini.",
       "invalid_request": "Permintaan tidak valid.",
-      "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
+      "export_too_large": "Terlalu banyak %booking% untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
@@ -3649,7 +3649,7 @@
       "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
       "subscription_manage_unavailable": "Gagal membuka pengelolaan langganan. Silakan coba lagi.",
       "locked": "Item ini terkunci dan tidak dapat diedit saat ini.",
-      "conflict": "Waktu tersebut bertabrakan dengan pemesanan lain.",
+      "conflict": "Waktu tersebut bertabrakan dengan %booking% lain.",
       "edit_sessions_failed": "Gagal memperbarui sesi. Silakan coba lagi.",
       "session_index_out_of_range": "Sesi tersebut sudah tidak ada.",
       "invalid": "Periksa input Anda dan coba lagi.",
@@ -3991,7 +3991,7 @@
       "filmstripLabel": "Filmstrip foto",
       "dateLabel": "Tanggal",
       "locationLabel": "Lokasi",
-      "clientLabel": "Klien",
+      "clientLabel": "%Client%",
       "tagsLabel": "Tag"
     },
     "seoDefaults": {

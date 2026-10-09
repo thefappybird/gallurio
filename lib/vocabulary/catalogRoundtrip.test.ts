@@ -40,3 +40,54 @@ describe("en app catalog vocabulary tokens", () => {
     }
   });
 });
+
+describe("id app catalog vocabulary tokens", () => {
+  it("uses only known token forms", async () => {
+    const id = (await import("@/messages/id.json")).default;
+    const used = collect(id.app).flatMap((s) => s.match(/%[A-Za-z_]+%/g) ?? []);
+    expect(used.length).toBeGreaterThan(0);
+    expect(used.filter((t) => !KNOWN.has(t))).toEqual([]);
+  });
+
+  it("leaves no token after applying any preset", async () => {
+    const id = (await import("@/messages/id.json")).default;
+    for (const preset of VOCABULARY_PRESET_IDS) {
+      const out = collect(applyVocabulary(id as Record<string, unknown>, "id", preset).app);
+      expect(out.filter((s) => /%[A-Za-z_]+%/.test(s))).toEqual([]);
+    }
+  });
+});
+
+describe("ar app catalog vocabulary tokens", () => {
+  it("uses only known token forms", async () => {
+    const ar = (await import("@/messages/ar.json")).default;
+    const used = collect(ar.app).flatMap((s) => s.match(/%[A-Za-z_]+%/g) ?? []);
+    expect(used.length).toBeGreaterThan(0);
+    expect(used.filter((t) => !KNOWN.has(t))).toEqual([]);
+  });
+
+  it("leaves no token after applying any preset", async () => {
+    const ar = (await import("@/messages/ar.json")).default;
+    for (const preset of VOCABULARY_PRESET_IDS) {
+      const out = collect(applyVocabulary(ar as Record<string, unknown>, "ar", preset).app);
+      expect(out.filter((s) => /%[A-Za-z_]+%/.test(s))).toEqual([]);
+    }
+  });
+});
+
+describe("fil app catalog vocabulary tokens", () => {
+  it("uses only known token forms", async () => {
+    const fil = (await import("@/messages/fil.json")).default;
+    const used = collect(fil.app).flatMap((s) => s.match(/%[A-Za-z_]+%/g) ?? []);
+    expect(used.length).toBeGreaterThan(0);
+    expect(used.filter((t) => !KNOWN.has(t))).toEqual([]);
+  });
+
+  it("leaves no token after applying any preset", async () => {
+    const fil = (await import("@/messages/fil.json")).default;
+    for (const preset of VOCABULARY_PRESET_IDS) {
+      const out = collect(applyVocabulary(fil as Record<string, unknown>, "fil", preset).app);
+      expect(out.filter((s) => /%[A-Za-z_]+%/.test(s))).toEqual([]);
+    }
+  });
+});
