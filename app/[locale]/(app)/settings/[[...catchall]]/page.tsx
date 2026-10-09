@@ -13,6 +13,7 @@ import {
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
 import { User, type PlanTier } from "@/lib/db/models";
@@ -181,7 +182,16 @@ export default async function SettingsCatchallPage({
           slug: "customize",
           label: t("customize"),
           icon: <Palette className="size-4" />,
-          body: <CustomizePanel initialTimeFormat={initialTimeFormat} />,
+          body: (
+            <CustomizePanel
+              initialTimeFormat={initialTimeFormat}
+              role={role}
+              vocabularyPreset={workspace.vocabularyPreset ?? null}
+              businessPreset={resolveVocabularyPreset({
+                businessType: workspace.businessType,
+              })}
+            />
+          ),
         },
         {
           slug: "workspace",

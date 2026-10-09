@@ -1836,7 +1836,29 @@
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
         "time24h": "24h",
-        "time12h": "12h"
+        "time12h": "12h",
+        "vocabulary": {
+          "section": "Vocabulary",
+          "scope": "Whole workspace",
+          "hint": "Choose the words your workspace uses. The menu, page titles, buttons, notifications, and team emails all follow. Your data, links, and how things work stay exactly the same.",
+          "memberTitle": "Set by your workspace owner.",
+          "memberBody": "Everyone in this workspace sees the same words. Ask the owner if you'd like them changed.",
+          "matchTitle": "Match business type",
+          "matchHint": "Follows your workspace's business type, now {preset}. If the business type changes, the words follow.",
+          "previewTitle": "Menu preview",
+          "previewing": "Previewing {preset}",
+          "error": "Couldn't update the vocabulary. Your previous words are back. Try again.",
+          "presets": {
+            "standard": "Standard",
+            "photographer": "Photographer",
+            "venue": "Venue",
+            "planner": "Planner",
+            "stylist": "Stylist",
+            "catering": "Catering",
+            "entertainer": "Entertainer",
+            "artists": "Artists"
+          }
+        }
       },
       "publicPage": {
         "visibilitySection": "Visibility",

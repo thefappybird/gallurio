@@ -1836,7 +1836,29 @@
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
         "time24h": "24h",
-        "time12h": "12h"
+        "time12h": "12h",
+        "vocabulary": {
+          "section": "Bokabularyo",
+          "scope": "Buong workspace",
+          "hint": "Piliin ang mga salitang ginagamit ng workspace mo. Susunod ang menu, mga pamagat ng pahina, mga button, mga notification, at mga email ng team. Walang magbabago sa iyong data, mga link, at kung paano gumagana ang lahat.",
+          "memberTitle": "Itinakda ng may-ari ng workspace.",
+          "memberBody": "Pareho ang nakikitang mga salita ng lahat sa workspace na ito. Magtanong sa may-ari kung gusto mo itong baguhin.",
+          "matchTitle": "Sundin ang uri ng negosyo",
+          "matchHint": "Sinusunod ang uri ng negosyo ng workspace mo, ngayon ay {preset}. Kapag nagbago ang uri ng negosyo, susunod ang mga salita.",
+          "previewTitle": "Preview ng menu",
+          "previewing": "Pino-preview: {preset}",
+          "error": "Hindi ma-update ang bokabularyo. Ibinalik ang dating mga salita. Subukan ulit.",
+          "presets": {
+            "standard": "Standard",
+            "photographer": "Photographer",
+            "venue": "Venue",
+            "planner": "Planner",
+            "stylist": "Stylist",
+            "catering": "Catering",
+            "entertainer": "Entertainer",
+            "artists": "Artists"
+          }
+        }
       },
       "publicPage": {
         "visibilitySection": "Visibility",

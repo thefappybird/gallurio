@@ -1836,7 +1836,29 @@
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
         "time24h": "24h",
-        "time12h": "12h"
+        "time12h": "12h",
+        "vocabulary": {
+          "section": "Kosakata",
+          "scope": "Seluruh workspace",
+          "hint": "Pilih kata yang dipakai workspace Anda. Menu, judul halaman, tombol, notifikasi, dan email tim akan mengikuti. Data, tautan, dan cara kerjanya tetap sama.",
+          "memberTitle": "Diatur oleh pemilik workspace.",
+          "memberBody": "Semua orang di workspace ini melihat kata yang sama. Tanya pemilik jika ingin mengubahnya.",
+          "matchTitle": "Ikuti jenis usaha",
+          "matchHint": "Mengikuti jenis usaha workspace Anda, saat ini {preset}. Jika jenis usaha berubah, kata ikut berubah.",
+          "previewTitle": "Pratinjau menu",
+          "previewing": "Pratinjau {preset}",
+          "error": "Tidak dapat memperbarui kosakata. Kata sebelumnya dikembalikan. Coba lagi.",
+          "presets": {
+            "standard": "Standar",
+            "photographer": "Fotografer",
+            "venue": "Tempat acara",
+            "planner": "Perencana",
+            "stylist": "Penata gaya",
+            "catering": "Katering",
+            "entertainer": "Penghibur",
+            "artists": "Seniman"
+          }
+        }
       },
       "publicPage": {
         "visibilitySection": "Visibilitas",
