@@ -29,13 +29,15 @@ export function MarketingReveal() {
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
+          // Anything already scrolled past (late hydration, restored scroll) must
+          // not stay hidden when the visitor scrolls back up.
+          if (entry.isIntersecting || entry.boundingClientRect.bottom <= 0) {
             entry.target.classList.add("in");
             io.unobserve(entry.target);
           }
         }
       },
-      { threshold: 0.18, rootMargin: "0px 0px -8% 0px" },
+      { threshold: 0.18, rootMargin: "0px" },
     );
     targets.forEach((el) => io.observe(el));
 

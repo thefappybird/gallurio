@@ -356,7 +356,7 @@ export default async function Home({ params }: Props) {
             /\s/.test(w) ? (
               w
             ) : (
-              <span key={i} style={stagger(i / 2)} className="mk-w inline-block whitespace-pre">
+              <span key={i} style={stagger(i / 2)} className="mk-w inline-block max-w-full break-words">
                 {w}
               </span>
             ),
