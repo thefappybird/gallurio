@@ -1,11 +1,15 @@
 import { type ReactElement, type ReactNode } from "react";
 import { render, type RenderOptions } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import enMessagesRaw from "@/messages/en.json";
+import { applyVocabulary } from "@/lib/vocabulary/apply";
 import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { GalleryQueryProvider } from "@/lib/page-builder/galleryPicker/GalleryQueryProvider";
 
-type Messages = typeof enMessages;
+type Messages = typeof enMessagesRaw;
+
+// Catalog strings carry vocabulary %tokens%; tests see the standard-preset words.
+const enMessages = applyVocabulary(enMessagesRaw as Record<string, unknown>, "en", "standard") as Messages;
 
 // Every tree also gets a fresh AppQueryProvider (app-wide client + workspaceId).
 // Every renderWithProviders() tree gets a fresh GalleryQueryProvider (own
