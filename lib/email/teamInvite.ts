@@ -3,6 +3,8 @@ import { renderBilingualEmail, bilingualSubject } from "./layout";
 import { resolveWorkspaceBrand, type Brand } from "./brand";
 import { EMAIL_COPY } from "./messages";
 import { sendEmail, logEmailFailure, type SendEmailResult } from "./send";
+import { emailVocabulary } from "./vocabulary";
+import type { VocabularyPresetId } from "@/lib/vocabulary/presets";
 
 export type TeamInviteEmailInput = {
   to: string;
@@ -14,6 +16,8 @@ export type TeamInviteEmailInput = {
   /** Full partner brand resolved at call site via resolveWorkspaceBrand(). When
    *  absent a name-only partner brand is built from workspaceName. */
   brand?: Brand;
+  /** Workspace vocabulary preset (resolveVocabularyPreset). Defaults to "standard". */
+  vocabularyPreset?: VocabularyPresetId;
 };
 
 export async function sendTeamInviteEmail(
@@ -32,13 +36,14 @@ export async function sendTeamInviteEmail(
     secondaryLocale: locale,
     build: (loc) => {
       const copy = EMAIL_COPY.teamInvite[loc];
+      const { t, g } = emailVocabulary(input.vocabularyPreset, loc);
       return {
         title: copy.subject(input.workspaceName),
         blocks: [
           { type: "p", text: copy.greeting },
           { type: "p", text: copy.body(input.inviterName, input.workspaceName) },
           ...(teamsJoined
-            ? [{ type: "p" as const, text: copy.teamsIntro(teamsJoined, plural) }]
+            ? [{ type: "p" as const, text: t(copy.teamsIntro(g(teamsJoined), plural)) }]
             : []),
           { type: "p", text: copy.expiry },
           { type: "p", text: copy.footer },
