@@ -771,7 +771,7 @@
       "greeting": "Welcome back, {name}",
       "tabs": {
         "aria": "Switch dashboard",
-        "bookings": "Bookings",
+        "bookings": "%Bookings%",
         "portfolio": "Portfolio"
       },
       "dateFilter": {
@@ -797,28 +797,28 @@
       },
       "kpi": {
         "revenueThisMonth": "Collected revenue",
-        "activeBookings": "Scheduled bookings",
-        "newInquiries": "New inquiries",
+        "activeBookings": "Scheduled %bookings%",
+        "newInquiries": "New %inquiries%",
         "outstandingBalance": "Outstanding balance"
       },
       "sections": {
         "todaysEvents": "Today's events",
         "upcomingWeek": "Upcoming this week",
-        "recentInquiries": "Recent inquiries",
+        "recentInquiries": "Recent %inquiries%",
         "activity": "Recent activity",
         "revenueTrend": "Revenue",
-        "calendar": "Booking calendar",
+        "calendar": "%Booking% calendar",
         "eventTypes": "Event type breakdown",
-        "topClients": "Top clients by spend",
-        "teamPerformance": "Team performance",
-        "bookingsPerTeam": "Bookings by team",
+        "topClients": "Top %clients% by spend",
+        "teamPerformance": "%Team% performance",
+        "bookingsPerTeam": "%Bookings% by %team%",
         "operations": "Operations"
       },
       "quickAdd": {
         "title": "Quick add",
-        "booking": "New booking",
-        "client": "New client",
-        "inquiry": "View inquiries"
+        "booking": "New %booking%",
+        "client": "New %client%",
+        "inquiry": "View %inquiries%"
       },
       "empty": "Nothing here yet.",
       "filteredEmpty": "No data matches the selected date range.",
@@ -827,14 +827,14 @@
         "analyticsSoon": "Portfolio analytics are coming soon.",
         "totalViews": "Total views",
         "uniqueVisitors": "Unique visitors",
-        "inquiries": "Inquiries",
+        "inquiries": "%Inquiries%",
         "conversionRate": "Conversion rate",
         "viewsOverTime": "Views & visitors",
         "views": "Views",
         "visitors": "Visitors",
         "topSources": "Top sources",
         "perPage": "By page",
-        "siteInquiries": "Inquiries from your site",
+        "siteInquiries": "%Inquiries% from your site",
         "publishStatus": "Publish status",
         "published": "Published",
         "notPublished": "Not published yet",
@@ -843,34 +843,34 @@
         "openEditor": "Open editor",
         "noTraffic": "No visits yet in this period.",
         "directSource": "Direct",
-        "inquiryInsights": "Inquiry insights",
-        "inquiryToBooking": "Inquiry → booking",
-        "bookedFromInquiries": "Booked from inquiries",
-        "newClientsFromForm": "New clients from form",
+        "inquiryInsights": "%Inquiry% insights",
+        "inquiryToBooking": "%Inquiry% → %booking%",
+        "bookedFromInquiries": "Booked from %inquiries%",
+        "newClientsFromForm": "New %clients% from form",
         "visitorDays": "Visitor-days",
         "submissionRate": "Submission rate",
         "bookedLeads": "Booked leads",
-        "visitorsInquiriesTitle": "Visitors & inquiries over time",
+        "visitorsInquiriesTitle": "Visitors & %inquiries% over time",
         "funnel": {
           "title": "Conversion funnel",
           "visitorDays": "Visitor-days",
           "contactOpened": "Contact opened",
-          "inquirySubmitted": "Inquiry submitted",
+          "inquirySubmitted": "%Inquiry% submitted",
           "ofVisitors": "of visitors",
           "ofOpened": "of opened",
           "ofTotal": "of total",
           "collectingData": "Collecting data"
         },
         "pipeline": {
-          "title": "Inquiry pipeline",
+          "title": "%Inquiry% pipeline",
           "new": "New",
           "booked": "Booked",
           "archived": "Archived",
-          "total": "Total inquiries"
+          "total": "Total %inquiries%"
         },
         "demand": {
           "title": "Demand profile",
-          "eventTypeMix": "Event type (by inquiries)",
+          "eventTypeMix": "Event type (by %inquiries%)",
           "requestedMonth": "Requested event month",
           "medianLeadTime": "Median lead time",
           "days": "days",
@@ -878,54 +878,54 @@
         }
       },
       "team": {
-        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
+        "bookingsCount": "{count, plural, one {# %booking%} other {# %bookings%}}"
       },
       "showMore": "Show more",
       "showLess": "Show less",
       "hints": {
         "kpi": "Range-based dashboard totals. Arrows compare with the prior matching period; outstanding balance is a current snapshot.",
-        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each %inquiry%'s current status.",
         "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
-        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
-        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
-        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
-        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period. Visitor-days are daily totals, not unique visitors across the whole period.",
-        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries. Contact opens show Collecting data until tracking is available.",
-        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
-        "portfolioDemand": "What visitors are asking for: event types, requested months, and median lead time from inquiry to event date.",
+        "valueCollection": "Confirmed %booking% value and payments collected for the selected %booking% cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed %bookings% has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed %booking% value by event type over time for the selected %booking% cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and %inquiry% submissions over the selected period. Visitor-days are daily totals, not unique visitors across the whole period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted %inquiries%. Contact opens show Collecting data until tracking is available.",
+        "portfolioPipeline": "%Inquiries% created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "What visitors are asking for: event types, requested months, and median lead time from %inquiry% to event date.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when its published page was last updated.",
-        "calendar": "Bookings per day. Filter by team; tap a day to open the calendar there.",
-        "eventTypes": "Share of bookings by event type.",
-        "teamPerformance": "How each team is performing by revenue and booking volume.",
-        "bookingsPerTeam": "Number of bookings handled by each team.",
+        "calendar": "%Bookings% per day. Filter by %team%; tap a day to open the calendar there.",
+        "eventTypes": "Share of %bookings% by event type.",
+        "teamPerformance": "How each %team% is performing by revenue and %booking% volume.",
+        "bookingsPerTeam": "Number of %bookings% handled by each %team%.",
         "revenueTrend": "Paid revenue over the selected period.",
-        "inquiryInsights": "Conversion from visits and inquiries, plus new clients captured by your contact form.",
-        "topClients": "Clients ranked by total spend.",
-        "todaysEvents": "Bookings starting today.",
-        "upcomingWeek": "Confirmed bookings in the next 7 days.",
-        "recentInquiries": "Your latest inbound inquiries.",
+        "inquiryInsights": "Conversion from visits and %inquiries%, plus new %clients% captured by your contact form.",
+        "topClients": "%Clients% ranked by total spend.",
+        "todaysEvents": "%Bookings% starting today.",
+        "upcomingWeek": "Confirmed %bookings% in the next 7 days.",
+        "recentInquiries": "Your latest inbound %inquiries%.",
         "activity": "Recent changes across your workspace.",
-        "quickAdd": "Create a booking, client, or inquiry."
+        "quickAdd": "Create %a_booking%, %client%, or %inquiry%."
       },
       "totalLabel": "Total",
       "miniCalendar": {
         "today": "Today",
-        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}",
+        "monthTotal": "{count, plural, one {# %booking% this month} other {# %bookings% this month}}",
         "prevMonth": "Previous month",
         "nextMonth": "Next month",
         "jumpToToday": "Jump to current month",
-        "dayBookingCount": "{count, plural, one {# booking} other {# bookings}}",
+        "dayBookingCount": "{count, plural, one {# %booking%} other {# %bookings%}}",
         "loadError": "Couldn't load this month.",
         "retry": "Retry"
       },
       "calendarTeam": {
-        "label": "Filter by team",
-        "all": "All teams"
+        "label": "Filter by %team%",
+        "all": "All %teams%"
       },
       "activityEntity": {
-        "booking": "booking",
-        "client": "client",
-        "inquiry": "inquiry",
+        "booking": "%booking%",
+        "client": "%client%",
+        "inquiry": "%inquiry%",
         "gallery": "gallery",
         "transaction": "transaction",
         "workspace": "workspace"
@@ -935,7 +935,7 @@
         "updated": "updated",
         "deleted": "deleted",
         "status_changed": "status changed",
-        "client_changed": "client changed",
+        "client_changed": "%client% changed",
         "payment_added": "payment added",
         "payment_updated": "payment updated"
       },
@@ -958,7 +958,7 @@
           "title": "Collection coverage",
           "asOf": "as of",
           "confirmedValue": "Confirmed value",
-          "confirmedHint": "Total value of confirmed bookings",
+          "confirmedHint": "Total value of confirmed %bookings%",
           "paid": "Paid (collected)",
           "paidHint": "Payments received to date",
           "remaining": "Remaining balance",
@@ -971,7 +971,7 @@
           "next": "Next heatmap dates",
           "title": "Booked hours heatmap",
           "bookedHours": "Booked hours",
-          "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
+          "bookingsCount": "{count, plural, one {# %booking%} other {# %bookings%}}",
           "skipPrevious": "Skip back 5 pages",
           "skipNext": "Skip forward 5 pages",
           "weekdays": [
@@ -1016,28 +1016,28 @@
       "go": "Go"
     },
     "bookings": {
-      "title": "Bookings",
-      "titleForTeam": "{team}'s Bookings",
+      "title": "%Bookings%",
+      "titleForTeam": "{team}'s %Bookings%",
       "view": {
         "table": "Table",
         "card": "Card Mode",
         "calendar": "Calendar",
-        "inquiriesToggle": "Inquiries view toggle"
+        "inquiriesToggle": "%Inquiries% view toggle"
       },
       "toolbar": {
-        "search": "Search bookings",
+        "search": "Search %bookings%",
         "statusAll": "All statuses",
         "showCancelled": "Show cancelled",
         "showPast": "Show past",
         "import": "Import",
         "export": "Export",
-        "add": "New booking",
+        "add": "New %booking%",
         "invoiceTheme": "Invoice & Receipt Theme"
       },
       "exportDialog": {
-        "title": "Export bookings",
-        "teamLabel": "Team",
-        "allTeams": "All teams",
+        "title": "Export %bookings%",
+        "teamLabel": "%Team%",
+        "allTeams": "All %teams%",
         "rangeLabel": "Time range",
         "allTime": "All time",
         "dateRange": "Date range",
@@ -1053,19 +1053,19 @@
         "cancel": "Cancel"
       },
       "teamPicker": {
-        "allTeams": "All teams",
-        "allMyTeams": "All my teams",
-        "label": "Filter by team",
+        "allTeams": "All %teams%",
+        "allMyTeams": "All my %teams%",
+        "label": "Filter by %team%",
         "inactive": "Inactive",
         "legend": "Legend",
         "booked": "Booked",
         "conflicted": "Conflicted",
-        "countLabel": "{count, plural, one {# team} other {# teams}}",
+        "countLabel": "{count, plural, one {# %team%} other {# %teams%}}",
         "previousPage": "Previous page",
         "nextPage": "Next page"
       },
       "import": {
-        "title": "Import bookings",
+        "title": "Import %bookings%",
         "dropzone": "Drop a CSV or XLSX file here, or click to select",
         "dropzoneActive": "Drop to upload",
         "templateCsv": "Download CSV template",
@@ -1073,19 +1073,19 @@
         "preview": "{total} row(s) found",
         "validCount": "{count} valid",
         "invalidCount": "{count} with errors",
-        "importButton": "Import {count} booking(s)",
+        "importButton": "Import {count} %booking%(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
-        "success": "{bookings, plural, one {# booking} other {# bookings}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
-        "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
+        "success": "{bookings, plural, one {# %booking%} other {# %bookings%}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
+        "partialSuccess": "Imported {count} %booking%(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
         "previewMore": "{count} more rows not shown",
-        "groupBlocked": "Another row sharing this booking_id has an error, so the whole booking is held back.",
+        "groupBlocked": "Another row sharing this booking_id has an error, so the whole %booking% is held back.",
         "columns": {
           "row": "#",
           "title": "Title",
-          "client": "Client",
+          "client": "%Client%",
           "start": "Start",
           "error": "Error"
         },
@@ -1097,7 +1097,7 @@
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
         "showAll": "Show all {count}",
-          "untitled": "Untitled booking",
+          "untitled": "Untitled %booking%",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them.",
           "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
@@ -1106,12 +1106,12 @@
           "required": "required",
           "optional": "optional",
           "failedWithDetails": "Import failed — see details",
-          "teamLabel": "Assign to team",
-          "teamDefault": "Main team (default)",
+          "teamLabel": "Assign to %team%",
+          "teamDefault": "Main %team% (default)",
           "duplicateTitle": "Already imported?",
-          "duplicateBody": "{count, plural, one {# booking here matches one you already have. Import it again anyway?} other {# bookings here match ones you already have. Import them again anyway?}}",
-          "duplicateOnTeam": "On team {team}",
-          "duplicateNoTeam": "Team unknown",
+          "duplicateBody": "{count, plural, one {# %booking% here matches one you already have. Import it again anyway?} other {# %bookings% here match ones you already have. Import them again anyway?}}",
+          "duplicateOnTeam": "On %team% {team}",
+          "duplicateNoTeam": "%Team% unknown",
           "duplicateContinue": "Import anyway",
           "failedRetry": "Import failed. Please try again.",
           "close": "Close",
@@ -1119,10 +1119,10 @@
           "viewErrors": "View {n} error(s)",
           "spec": {
             "clientName": {
-              "note": "Full name of the client"
+              "note": "Full name of the %client%"
             },
             "clientEmail": {
-              "note": "Used to deduplicate existing clients"
+              "note": "Used to deduplicate existing %clients%"
             },
             "startAt": {
               "note": "ISO 8601 — e.g. 2026-06-15T09:00"
@@ -1131,7 +1131,7 @@
               "note": "Defaults to startAt if omitted"
             },
             "title": {
-              "note": "Booking title"
+              "note": "%Booking% title"
             },
             "eventType": {
               "note": "wedding, corporate, portrait, etc."
@@ -1140,7 +1140,7 @@
               "note": "booked, completed, cancelled"
             },
             "amountTotal": {
-              "note": "Total booking amount"
+              "note": "Total %booking% amount"
             },
             "amountDeposit": {
               "note": "Deposit amount"
@@ -1155,7 +1155,7 @@
               "note": "Internal notes"
             },
             "booking_id": {
-              "note": "From an export. Keep it to update that booking instead of creating a copy"
+              "note": "From an export. Keep it to update that %booking% instead of creating a copy"
             },
             "session_index": {
               "note": "Orders sessions when rows share one booking_id"
@@ -1164,7 +1164,7 @@
               "note": "From an export. Matched before clientEmail"
             },
             "clientPhone": {
-              "note": "Saved on a new client; fills a blank one, never overwrites"
+              "note": "Saved on a new %client%; fills a blank one, never overwrites"
             },
             "locationLat": {
               "note": "Map latitude, e.g. 14.5995"
@@ -1190,7 +1190,7 @@
           "columnsFound": "{count, plural, one {# column} other {# columns}}",
           "rowsFound": "{count, plural, one {# row} other {# rows}}",
           "sectionRequired": "Required",
-          "sectionCommon": "Booking details",
+          "sectionCommon": "%Booking% details",
           "sectionAdvanced": "Advanced and round-trip columns",
           "advancedHint": "Only needed when re-importing a file you exported from Gallurio.",
           "selectColumn": "Select a column from your file",
@@ -1198,7 +1198,7 @@
           "useFixedValue": "Use a fixed value",
           "fixedValueLabel": "Value for every row",
           "inferFromDate": "Work it out from the date",
-          "inferHint": "Past bookings that are fully paid become completed; everything else stays booked.",
+          "inferHint": "Past %bookings% that are fully paid become completed; everything else stays booked.",
           "alreadyUsed": "{column} (already used)",
           "sample": "First row: {value}",
           "sampleEmpty": "First row is empty",
@@ -1237,25 +1237,25 @@
           "continue": "Continue",
           "reviewMapping": "Columns matched automatically",
           "reviewMappingAction": "Review",
-          "committing": "Importing your bookings"
+          "committing": "Importing your %bookings%"
         }
       },
       "export": {
-        "tooltip": "Download bookings as CSV",
-        "empty": "No bookings to export"
+        "tooltip": "Download %bookings% as CSV",
+        "empty": "No %bookings% to export"
       },
       "table": {
-        "empty": "No bookings match your filters.",
-        "listEmpty": "No bookings yet.",
-        "listEmptyHint": "Bookings you create or accept from inquiries will show up here.",
+        "empty": "No %bookings% match your filters.",
+        "listEmpty": "No %bookings% yet.",
+        "listEmptyHint": "%Bookings% you create or accept from %inquiries% will show up here.",
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",
-        "pastBookingsHidden": "{count, plural, one {# past booking hidden} other {# past bookings hidden}}",
+        "pastBookingsHidden": "{count, plural, one {# past %booking% hidden} other {# past %bookings% hidden}}",
         "col": {
           "booked": "Booked on",
-          "title": "Booking",
-          "client": "Client",
+          "title": "%Booking%",
+          "client": "%Client%",
           "date": "Date",
           "status": "Status",
           "total": "Total",
@@ -1264,7 +1264,7 @@
         }
       },
       "row": {
-        "openMenu": "Open booking actions",
+        "openMenu": "Open %booking% actions",
         "view": "View",
         "edit": "Edit"
       },
@@ -1318,7 +1318,7 @@
         "hidePast": "Hide past sessions",
         "pastSessionsHidden": "{count, plural, one {# past session hidden — toggle to show} other {# past sessions hidden — toggle to show}}",
         "tabs": {
-          "client": "Client",
+          "client": "%Client%",
           "event": "Event",
           "pricing": "Pricing",
           "eventPricing": "Event",
@@ -1335,7 +1335,7 @@
         "fields": {
           "title": "Title",
           "titleRequired": "Title can't be empty.",
-          "clientName": "Client name",
+          "clientName": "%Client% name",
           "status": "Status",
           "eventType": "Event type",
           "date": "Date",
@@ -1366,15 +1366,15 @@
           "removeDraftSession": "Remove draft session",
           "email": "Email",
           "phone": "Phone",
-          "openClient": "Open client",
-          "viewClient": "View client",
-          "changeClient": "Change client",
+          "openClient": "Open %client%",
+          "viewClient": "View %client%",
+          "changeClient": "Change %client%",
           "changeClientCancel": "Keep current",
-          "changeClientSearch": "Search clients…",
+          "changeClientSearch": "Search %clients%…",
           "noEmail": "No email",
           "noPhone": "No phone",
-          "noClientResults": "No clients found",
-          "changeClientMultiSession": "Reassigning isn't available for multi-session bookings",
+          "noClientResults": "No %clients% found",
+          "changeClientMultiSession": "Reassigning isn't available for multi-session %bookings%",
           "searchFailed": "Search failed. Try again.",
           "editTitle": "Edit title",
           "confirmTitle": "Confirm",
@@ -1385,13 +1385,13 @@
           "callClient": "Call"
         },
         "cancelConfirm": {
-          "title": "Cancel this booking?",
-          "body": "We'll mark \"{title}\" as cancelled. The booking won't be deleted — you can restore it from this same window if your client comes back. Audit history stays intact either way.",
-          "keep": "Keep booking",
-          "confirm": "Yes, cancel booking"
+          "title": "Cancel this %booking%?",
+          "body": "We'll mark \"{title}\" as cancelled. The %booking% won't be deleted — you can restore it from this same window if your %client% comes back. Audit history stays intact either way.",
+          "keep": "Keep %booking%",
+          "confirm": "Yes, cancel %booking%"
         },
         "history": {
-          "title": "Booking history",
+          "title": "%Booking% history",
           "totalCount": "{count} entries",
           "pageOf": "Page {page} of {total}",
           "loadError": "Couldn't load the history.",
@@ -1402,7 +1402,7 @@
             "created": "Created",
             "updated": "Updated",
             "status_changed": "Status changed",
-            "client_changed": "Client changed",
+            "client_changed": "%Client% changed",
             "deleted": "Deleted",
             "payment_added": "Payment added",
             "payment_updated": "Payment updated"
@@ -1411,8 +1411,8 @@
           "yesterday": "Yesterday",
           "timelineLabel": "Activity timeline"
         },
-        "cancel": "Cancel booking",
-        "restore": "Restore booking",
+        "cancel": "Cancel %booking%",
+        "restore": "Restore %booking%",
         "invoice": "Download invoice",
         "receipt": "Download receipt",
         "discardChanges": "Discard changes",
@@ -1423,13 +1423,13 @@
         "discardDescription": "{count, plural, one {# unsaved change will be lost.} other {# unsaved changes will be lost.}}",
         "discardConfirm": "Discard and close",
         "keepEditing": "Keep editing",
-        "savedToast": "Booking updated.",
-        "cancelledToast": "Booking cancelled.",
-        "restoredToast": "Booking restored.",
+        "savedToast": "%Booking% updated.",
+        "cancelledToast": "%Booking% cancelled.",
+        "restoredToast": "%Booking% restored.",
         "actionFailed": "Something went wrong. Try again.",
-        "notFound": "Booking not found.",
-        "loadFailed": "Couldn't load this booking.",
-        "staleConflict": "This booking was changed by someone else. Your edit wasn't saved — review the latest version and try again.",
+        "notFound": "%Booking% not found.",
+        "loadFailed": "Couldn't load this %booking%.",
+        "staleConflict": "This %booking% was changed by someone else. Your edit wasn't saved — review the latest version and try again.",
         "staleNotice": "Updated by someone else — your unsaved edit is based on an older version.",
         "retry": "Retry",
         "editAll": "Edit all",
@@ -1464,11 +1464,11 @@
         "pastDateWarning": "Moved to a past date",
         "pastSplitWarning": "Past days preserved — only future days were updated",
         "thisDayOnlyOnPast": "Cannot edit a past day",
-        "updating": "Updating booking…",
-        "updated": "Booking updated",
-        "updateError": "Failed to update booking",
+        "updating": "Updating %booking%…",
+        "updated": "%Booking% updated",
+        "updateError": "Failed to update %booking%",
         "conflictCheckFailed": "Couldn't verify conflicts — please try again",
-        "overnightNotAllowed": "Bookings cannot span midnight — please adjust the time",
+        "overnightNotAllowed": "%Bookings% cannot span midnight — please adjust the time",
         "conflictBlockSubmit": "Resolve session conflicts before saving.",
         "conflictBlockDnd": "This time overlaps with \"{title}\" — move cancelled",
         "conflictBlockDndMany": "This time overlaps with \"{title}\" and {more} other shift(s) — move cancelled",
@@ -1479,13 +1479,13 @@
         "togglePast": "Past",
         "dropConflict": {
           "title": "Schedule conflict on {date}",
-          "description": "Moving this booking creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
+          "description": "Moving this %booking% creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
           "cancel": "Cancel",
           "moveAnyway": "Move anyway"
         },
         "pastDateConfirm": {
           "title": "Move to a past date?",
-          "description": "You're moving this booking to a date in the past. This is allowed but unusual — confirm to continue.",
+          "description": "You're moving this %booking% to a date in the past. This is allowed but unusual — confirm to continue.",
           "confirm": "Move to past",
           "cancel": "Cancel"
         },
@@ -1493,10 +1493,10 @@
         "hidePast": "Hide past",
         "filterByStatus": "Filter by status",
         "filterActive": "Filtering by {status} — tap again to clear",
-        "teamsLegend": "Teams",
-        "inactiveTeam": "Inactive team",
+        "teamsLegend": "%Teams%",
+        "inactiveTeam": "Inactive %team%",
         "conflict": "Conflict",
-        "emptyPeriod": "No bookings in this period"
+        "emptyPeriod": "No %bookings% in this period"
       },
       "sessions": {
         "label": "Session {n}",
@@ -1527,43 +1527,43 @@
         "frozenRate": "≈ {price} · rate {rate} · {date}",
         "frozenRateTrailing": "{date} · rate {rate} · ≈ {price}",
         "approx": "≈ {price}",
-        "empty": "No payments scheduled yet for this booking",
+        "empty": "No payments scheduled yet for this %booking%",
         "exceedsBalance": "Exceeds remaining balance",
         "titleRequired": "Title is required",
         "priceRequired": "Amount must be greater than 0"
       },
       "wizard": {
-        "createTitle": "New booking",
-        "editTitle": "Edit booking",
+        "createTitle": "New %booking%",
+        "editTitle": "Edit %booking%",
         "editTitleNamed": "Edit {title}",
-        "loading": "Loading booking…",
+        "loading": "Loading %booking%…",
         "previous": "Previous",
         "next": "Next",
         "cancel": "Cancel",
-        "create": "Create booking",
+        "create": "Create %booking%",
         "creating": "Creating…",
         "save": "Save changes",
         "saving": "Saving…",
-        "createdToast": "Booking created.",
-        "savedToast": "Booking updated.",
+        "createdToast": "%Booking% created.",
+        "savedToast": "%Booking% updated.",
         "depositExceedsTotal": "Deposit can't exceed total.",
         "unsavedConfirm": "You'll lose your progress if you exit now. Are you sure?",
         "hasErrors": "Has validation errors",
-        "viewBooking": "View booking",
+        "viewBooking": "View %booking%",
         "unsaved": {
           "title": "Discard your changes?",
-          "body": "You'll lose anything you've entered in this booking if you leave now. Your changes haven't been saved.",
+          "body": "You'll lose anything you've entered in this %booking% if you leave now. Your changes haven't been saved.",
           "keep": "Keep editing",
           "discard": "Discard and close"
         },
         "conflictConfirm": {
           "title": "Scheduling conflicts detected",
-          "description": "One or more sessions overlap with existing bookings. You can submit anyway or go back to adjust the dates.",
+          "description": "One or more sessions overlap with existing %bookings%. You can submit anyway or go back to adjust the dates.",
           "confirm": "Submit anyway",
           "cancel": "Go back"
         },
         "steps": {
-          "client": "Client",
+          "client": "%Client%",
           "event": "Event",
           "pricing": "Pricing",
           "eventPricing": "Event",
@@ -1572,13 +1572,13 @@
           "review": "Review"
         },
         "client": {
-          "tabExisting": "Existing client",
+          "tabExisting": "Existing %client%",
           "tabNew": "Create new",
           "searchPlaceholder": "Search by name or email",
-          "noResults": "No clients match. Try a different search.",
-          "selectRequired": "Pick a client to continue.",
-          "loadingClients": "Loading clients",
-          "loadError": "Couldn't load clients.",
+          "noResults": "No %clients% match. Try a different search.",
+          "selectRequired": "Pick %a_client% to continue.",
+          "loadingClients": "Loading %clients%",
+          "loadError": "Couldn't load %clients%.",
           "retry": "Retry",
           "name": "Name",
           "namePlaceholder": "e.g. Emma Carter",
@@ -1586,13 +1586,13 @@
           "emailPlaceholder": "emma@example.com",
           "phone": "Phone",
           "phonePlaceholder": "+63 917 555 0142",
-          "readOnlyLabel": "Client",
-          "readOnlyHint": "Re-assigning a booking to a different client isn't supported in this view yet.",
-          "multiSessionReadOnly": "Client is locked on multi-session bookings."
+          "readOnlyLabel": "%Client%",
+          "readOnlyHint": "Re-assigning %a_booking% to a different %client% isn't supported in this view yet.",
+          "multiSessionReadOnly": "%Client% is locked on multi-session %bookings%."
         },
         "event": {
           "title": "Title",
-          "titleRequired": "Give this booking a title.",
+          "titleRequired": "Give this %booking% a title.",
           "titlePlaceholder": "e.g. Carter Wedding — Pier 27",
           "eventType": "Event type",
           "startAt": "Shift start date",
@@ -1601,7 +1601,7 @@
           "endAt": "Shift end date",
           "endTime": "Shift end time",
           "conflictsLabel": "Shifts already on {date}:",
-          "allowPastDate": "Adding an old booking? Allow past dates",
+          "allowPastDate": "Adding an old %booking%? Allow past dates",
           "location": "Location",
           "checkingConflicts": "Checking for conflicts…",
           "repeatingSessions": "Repeating sessions",
@@ -1623,24 +1623,24 @@
           "total": "Total",
           "deposit": "Deposit",
           "currency": "Currency",
-          "hint": "Pricing in the workspace's default currency. You can change the currency per booking.",
+          "hint": "Pricing in the workspace's default currency. You can change the currency per %booking%.",
           "depositRequiresTotal": "Cannot add a deposit without setting a price."
         },
         "review": {
           "intro": "Quick check — confirm everything looks right before you save."
         },
-        "teamLabel": "Team",
-        "teamPlaceholder": "Select a team"
+        "teamLabel": "%Team%",
+        "teamPlaceholder": "Select %a_team%"
       }
     },
     "sidebar": {
       "dashboard": "Dashboard",
-      "bookings": "Bookings",
-      "clients": "Clients",
+      "bookings": "%Bookings%",
+      "clients": "%Clients%",
       "calendar": "Calendar",
-      "inquiries": "Inquiries",
+      "inquiries": "%Inquiries%",
       "gallery": "Gallery",
-      "teams": "Teams",
+      "teams": "%Teams%",
       "settings": "Settings",
       "account": "Account",
       "logOut": "Log out",
@@ -1735,7 +1735,7 @@
         "account": "Account",
         "customize": "Customize",
         "workspace": "Business Details",
-        "teams": "Teams",
+        "teams": "%Teams%",
         "publicPage": "Public page",
         "billing": "Billing",
         "devPlan": "Dev · plan",
@@ -1781,8 +1781,8 @@
         "title": "Dev plan switcher",
         "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
-        "teamsSuffix": "teams",
-        "perTeamSuffix": "members/team",
+        "teamsSuffix": "%teams%",
+        "perTeamSuffix": "members/%team%",
         "active": "Active",
         "switch": "Switch",
         "toasts": {
@@ -1797,7 +1797,7 @@
         "savedToast": "Workspace updated.",
         "currencyWarning": "Changing your currency recalculates every existing paid amount into the new currency and locks this field for 90 days afterward.",
         "currencyConfirmTitle": "Change workspace currency?",
-        "currencyConfirmBody": "{count, plural, =0 {No paid amounts need recalculating. You can change your currency again anytime.} one {# booking's totals will be recalculated. You won't be able to change the currency again until {date}.} other {# bookings' totals will be recalculated. You won't be able to change the currency again until {date}.}}",
+        "currencyConfirmBody": "{count, plural, =0 {No paid amounts need recalculating. You can change your currency again anytime.} one {# %booking%'s totals will be recalculated. You won't be able to change the currency again until {date}.} other {# %bookings%' totals will be recalculated. You won't be able to change the currency again until {date}.}}",
         "currencyConfirmConfirm": "Confirm change",
         "currencyConfirmCancel": "Cancel",
         "currencyLockedUntil": "Currency is locked until {date}.",
@@ -1876,7 +1876,7 @@
         "seoTitlePlaceholder": "Sarah Bell Photography — Wedding & Portrait",
         "seoDescription": "SEO description",
         "seoDescriptionPlaceholder": "Wedding and portrait photography across the Bay Area…",
-        "inquirySection": "Inquiry routing",
+        "inquirySection": "%Inquiry% routing",
         "inquirySectionHint": "Where submissions from your inquiry form are forwarded.",
         "inquiryRecipientEmail": "Recipient email",
         "inquiryRecipientEmailPlaceholder": "you@example.com",
@@ -1935,20 +1935,20 @@
       }
     },
     "teams": {
-      "title": "Teams",
-      "description": "Group teammates into teams. Each team has its own calendar. Members only see bookings from teams they belong to.",
-      "listEmpty": "You don't have any teams yet.",
-      "createButton": "Create team",
+      "title": "%Teams%",
+      "description": "Group teammates into %teams%. Each %team% has its own calendar. Members only see %bookings% from %teams% they belong to.",
+      "listEmpty": "You don't have any %teams% yet.",
+      "createButton": "Create %team%",
       "toolbar": {
-        "search": "Search teams",
-        "searchLabel": "Search teams by name",
+        "search": "Search %teams%",
+        "searchLabel": "Search %teams% by name",
         "showDeactivated": "Show deactivated"
       },
       "table": {
-        "empty": "No teams match your search.",
+        "empty": "No %teams% match your search.",
         "col": {
           "color": "Color",
-          "name": "Team",
+          "name": "%Team%",
           "members": "Members",
           "monthlyAverage": "Monthly Average",
           "actions": "Actions"
@@ -1962,38 +1962,38 @@
         "hexLabel": "Hex"
       },
       "createDialog": {
-        "title": "Create team",
-        "description": "Give the team a name and pick a color for its calendar chips.",
-        "nameLabel": "Team name",
+        "title": "Create %team%",
+        "description": "Give the %team% a name and pick a color for its calendar chips.",
+        "nameLabel": "%Team% name",
         "namePlaceholder": "e.g. Wedding crew",
         "colorLabel": "Color",
-        "submit": "Create team",
+        "submit": "Create %team%",
         "cancel": "Cancel",
         "creating": "Creating…"
       },
       "renameDialog": {
-        "title": "Rename team",
+        "title": "Rename %team%",
         "submit": "Save",
         "saving": "Saving…",
         "cancel": "Cancel"
       },
       "deactivateDialog": {
-        "title": "Deactivate team?",
-        "description": "\"{name}\" will be hidden from your active teams and can no longer take new bookings. Its members, bookings, and history are kept, and you can reactivate it anytime.",
-        "confirm": "Deactivate team",
+        "title": "Deactivate %team%?",
+        "description": "\"{name}\" will be hidden from your active %teams% and can no longer take new %bookings%. Its members, %bookings%, and history are kept, and you can reactivate it anytime.",
+        "confirm": "Deactivate %team%",
         "deactivating": "Deactivating…",
         "cancel": "Cancel"
       },
       "reactivateDialog": {
-        "title": "Reactivate team?",
-        "description": "\"{name}\" will become active again and can take new bookings. This counts toward your plan’s active-team limit.",
-        "confirm": "Reactivate team",
+        "title": "Reactivate %team%?",
+        "description": "\"{name}\" will become active again and can take new %bookings%. This counts toward your plan’s active-%team% limit.",
+        "confirm": "Reactivate %team%",
         "reactivating": "Reactivating…",
         "cancel": "Cancel"
       },
       "team": {
         "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
-        "monthlyBookings": "{count, plural, one {# booking/mo} other {# bookings/mo}}",
+        "monthlyBookings": "{count, plural, one {# %booking%/mo} other {# %bookings%/mo}}",
         "defaultBadge": "Default",
         "edit": "Edit",
         "rename": "Rename",
@@ -2005,71 +2005,71 @@
         "inactiveBadge": "Inactive"
       },
       "editDialog": {
-        "title": "Edit team",
+        "title": "Edit %team%",
         "submit": "Save changes",
         "saving": "Saving…"
       },
       "drawer": {
         "membersHeading": "Members",
         "memberCount": "{count}/{max} members",
-        "noMembers": "No members on this team yet.",
+        "noMembers": "No members on this %team% yet.",
         "addMemberLabel": "Add existing member",
         "addMemberPlaceholder": "Select a member…",
-        "noAssignableMembers": "Everyone in this workspace is already on this team.",
+        "noAssignableMembers": "Everyone in this workspace is already on this %team%.",
         "pendingHeading": "Pending invites",
-        "noPending": "No pending invites for this team.",
-        "inviteToTeam": "Invite to this team",
+        "noPending": "No pending invites for this %team%.",
+        "inviteToTeam": "Invite to this %team%",
         "leadToggleLabel": "Lead",
-        "leadOnlyOnePerTeam": "A team can only have one lead.",
+        "leadOnlyOnePerTeam": "%A_team% can only have one lead.",
         "removeFromTeam": "Remove",
-        "teamFull": "This team is full.",
+        "teamFull": "This %team% is full.",
         "close": "Close",
         "removeMemberFlow": {
           "confirmTitle": "Remove {name} from {team}?",
-          "confirmDescription": "They'll lose access to this team's calendar and bookings.",
-          "confirmButton": "Remove from team",
-          "removeFromTeamAndWorkspace": "Remove from team + workspace",
-          "otherTeamsBlocked": "This member belongs to other teams. Remove them from those teams first.",
+          "confirmDescription": "They'll lose access to this %team%'s calendar and %bookings%.",
+          "confirmButton": "Remove from %team%",
+          "removeFromTeamAndWorkspace": "Remove from %team% + workspace",
+          "otherTeamsBlocked": "This member belongs to other %teams%. Remove them from those %teams% first.",
           "removing": "Removing…",
           "workspacePromptTitle": "Also remove {name} from the workspace?",
-          "workspacePromptDescription": "They'll lose access to every team and to the workspace entirely. This can't be undone.",
+          "workspacePromptDescription": "They'll lose access to every %team% and to the workspace entirely. This can't be undone.",
           "dontAskAgain": "Don't ask me again",
           "removeFromWorkspaceButton": "Remove from workspace",
           "keepInWorkspaceButton": "Keep in workspace"
         }
       },
       "upsell": {
-        "atCapTitle": "You've reached your team limit",
-        "atCapBody": "Your {plan} plan allows {max} {max, plural, =1 {team} other {teams}}. Upgrade to add more.",
+        "atCapTitle": "You've reached your %team% limit",
+        "atCapBody": "Your {plan} plan allows {max} {max, plural, =1 {%team%} other {%teams%}}. Upgrade to add more.",
         "cta": "See plans",
-        "proAtCapBody": "Pro is capped at {max} teams. Contact support if you need more."
+        "proAtCapBody": "Pro is capped at {max} %teams%. Contact support if you need more."
       },
       "errors": {
-        "nameRequired": "Team name is required.",
-        "nameTooLong": "Team name must be 40 characters or fewer.",
-        "duplicateName": "A team with this name already exists in this workspace.",
-        "teamNotFound": "Team not found.",
+        "nameRequired": "%Team% name is required.",
+        "nameTooLong": "%Team% name must be 40 characters or fewer.",
+        "duplicateName": "%A_team% with this name already exists in this workspace.",
+        "teamNotFound": "%Team% not found.",
         "generic": "Something went wrong. Please try again.",
-        "cannotDeactivateDefault": "The default team can't be deactivated.",
-        "reactivateCapExceeded": "Reactivating would exceed your plan's active-team limit. Deactivate another team or upgrade your plan first."
+        "cannotDeactivateDefault": "The default %team% can't be deactivated.",
+        "reactivateCapExceeded": "Reactivating would exceed your plan's active-%team% limit. Deactivate another %team% or upgrade your plan first."
       },
       "toasts": {
-        "created": "Team created.",
-        "renamed": "Team renamed.",
+        "created": "%Team% created.",
+        "renamed": "%Team% renamed.",
         "colorChanged": "Color updated.",
-        "saved": "Team updated.",
-        "deactivated": "Team deactivated.",
-        "reactivated": "Team reactivated."
+        "saved": "%Team% updated.",
+        "deactivated": "%Team% deactivated.",
+        "reactivated": "%Team% reactivated."
       },
-      "teamsHeading": "Teams",
+      "teamsHeading": "%Teams%",
       "invite": {
         "button": "Invite member",
         "dialog": {
           "title": "Invite a teammate",
-          "description": "They'll get an email invitation. Once they accept, they'll appear in your member list assigned to the teams you choose.",
+          "description": "They'll get an email invitation. Once they accept, they'll appear in your member list assigned to the %teams% you choose.",
           "emailLabel": "Email address",
           "emailPlaceholder": "teammate@example.com",
-          "teamsLabel": "Add to these teams",
+          "teamsLabel": "Add to these %teams%",
           "leadLabel": "Lead",
           "teamFull": "Full",
           "submit": "Send invite",
@@ -2078,12 +2078,12 @@
         },
         "errors": {
           "emailRequired": "Enter a valid email address.",
-          "pickAtLeastOneTeam": "Pick at least one team to add them to.",
-          "teamFull": "These teams are full and can't accept new members: {teams}.",
-          "teamAlreadyHasLead": "These teams already have a lead assigned: {teams}.",
-          "teamNotFound": "One of the selected teams was not found.",
+          "pickAtLeastOneTeam": "Pick at least one %team% to add them to.",
+          "teamFull": "These %teams% are full and can't accept new members: {teams}.",
+          "teamAlreadyHasLead": "These %teams% already have a lead assigned: {teams}.",
+          "teamNotFound": "One of the selected %teams% was not found.",
           "alreadyInvitedOrMember": "That email already has an invite or is already a workspace member.",
-          "noTeamsExist": "Create a team first before inviting members."
+          "noTeamsExist": "Create %a_team% first before inviting members."
         },
         "toasts": {
           "sent": "Invite sent.",
@@ -2091,7 +2091,7 @@
         },
         "revokeDialog": {
           "title": "Revoke invite?",
-          "description": "The invite for {email} will be cancelled and the reserved team seats will be released.",
+          "description": "The invite for {email} will be cancelled and the reserved %team% seats will be released.",
           "confirm": "Revoke invite"
         }
       },
@@ -2102,7 +2102,7 @@
         "leadBadge": "Lead",
         "memberBadge": "Member",
         "pendingBadge": "Pending",
-        "manageTeams": "Manage teams",
+        "manageTeams": "Manage %teams%",
         "removeFromWorkspace": "Remove from workspace",
         "revokeInvite": "Revoke invite",
         "rowActionsLabel": "Actions for {name}",
@@ -2110,7 +2110,7 @@
         "inviteCountsLabel": "Invitation counts",
         "newlyAcceptedCount": "New {count}",
         "pendingCount": "Pending {count}",
-        "description": "Everyone with access to this workspace, across every team.",
+        "description": "Everyone with access to this workspace, across every %team%.",
         "modeLabel": "Member list",
         "active": "Active",
         "pending": "Pending",
@@ -2118,13 +2118,13 @@
         "noActiveMatches": "No members match your search.",
         "noPendingMatches": "No pending invites match your search.",
         "noPending": "No pending invites.",
-        "moreTeams": "+{count} more teams",
-        "ownerAllTeams": "Can oversee all teams",
-        "noTeams": "Not on any team",
+        "moreTeams": "+{count} more %teams%",
+        "ownerAllTeams": "Can oversee all %teams%",
+        "noTeams": "Not on any %team%",
         "removeFromWorkspaceLabel": "Remove {name} from workspace.",
         "removeDialog": {
           "title": "Remove member?",
-          "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
+          "description": "{name} will lose access to this workspace immediately. Their %bookings% stay; %team% seats are released. This cannot be undone.",
           "confirm": "Remove member"
         },
         "details": {
@@ -2133,8 +2133,8 @@
             "details": "Details",
             "history": "History"
           },
-          "teams": "Teams",
-          "noTeams": "No teams",
+          "teams": "%Teams%",
+          "noTeams": "No %teams%",
           "completed": "Completed",
           "workingNow": "Working now",
           "future": "Future",
@@ -2158,7 +2158,7 @@
         },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
-          "isTeamLead": "{name} is a team lead for at least one team. Remove their team lead status first in order to delete them."
+          "isTeamLead": "{name} is %a_team% lead for at least one %team%. Remove their %team% lead status first in order to delete them."
         },
         "toasts": {
           "removed": "Member removed."
@@ -2166,18 +2166,18 @@
       },
       "assignment": {
         "dialog": {
-          "title": "Manage team assignments",
-          "description": "Add or remove {name} from teams. Toggle the lead flag to give them edit rights within a team.",
+          "title": "Manage %team% assignments",
+          "description": "Add or remove {name} from %teams%. Toggle the lead flag to give them edit rights within %a_team%.",
           "add": "Add",
           "remove": "Remove",
           "done": "Done"
         },
         "errors": {
-          "alreadyOnTeam": "That member is already on this team."
+          "alreadyOnTeam": "That member is already on this %team%."
         },
         "toasts": {
-          "added": "Added to team.",
-          "removed": "Removed from team.",
+          "added": "Added to %team%.",
+          "removed": "Removed from %team%.",
           "promoted": "Promoted to lead.",
           "demoted": "Demoted to member.",
           "promoting": "Transferring lead…",
@@ -2186,24 +2186,24 @@
       },
       "downgradeBlock": {
         "title": "Downgrade blocked",
-        "description": "You're on the {currentPlan} plan with more teams than the {targetPlan} plan allows ({maxTeams} max). Delete {excess} team(s) before changing plans.",
-        "teamsHeading": "Current teams",
+        "description": "You're on the {currentPlan} plan with more %teams% than the {targetPlan} plan allows ({maxTeams} max). Delete {excess} %team%(s) before changing plans.",
+        "teamsHeading": "Current %teams%",
         "dismiss": "Got it",
-        "manageTeams": "Manage teams"
+        "manageTeams": "Manage %teams%"
       }
     },
     "clients": {
-      "title": "Clients",
-      "listEmpty": "You don't have any clients yet.",
-      "listEmptyHint": "Add your first client to start tracking bookings and history.",
+      "title": "%Clients%",
+      "listEmpty": "You don't have any %clients% yet.",
+      "listEmptyHint": "Add your first %client% to start tracking %bookings% and history.",
       "toolbar": {
         "search": "Search by name or email",
-        "searchLabel": "Search clients",
+        "searchLabel": "Search %clients%",
         "sourceAll": "All sources",
         "tagsAll": "All tags",
         "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
         "showInactive": "Show inactive",
-        "add": "Add Client"
+        "add": "Add %Client%"
       },
       "sourceValues": {
         "form": "Form",
@@ -2212,7 +2212,7 @@
         "import": "Import"
       },
       "table": {
-        "empty": "No clients match your filters.",
+        "empty": "No %clients% match your filters.",
         "col": {
           "name": "Name",
           "contact": "Contact",
@@ -2220,10 +2220,10 @@
           "totalSpent": "Total Spent",
           "actions": "Actions"
         },
-        "bookings": "{count} booking(s)",
+        "bookings": "{count} %booking%(s)",
         "lastBooking": "Last: {date}",
-        "noBookings": "No bookings yet",
-        "openMenu": "Open client actions",
+        "noBookings": "No %bookings% yet",
+        "openMenu": "Open %client% actions",
         "openClient": "Open {name}",
         "view": "View",
         "edit": "Edit",
@@ -2231,8 +2231,8 @@
         "reactivate": "Reactivate"
       },
       "form": {
-        "addTitle": "Add Client",
-        "editTitle": "Edit Client",
+        "addTitle": "Add %Client%",
+        "editTitle": "Edit %Client%",
         "name": "Name",
         "namePlaceholder": "e.g. Maria Santos",
         "email": "Email",
@@ -2244,14 +2244,14 @@
         "tagsPlaceholder": "Add a tag",
         "removeTag": "Remove tag {tag}",
         "notes": "Notes",
-        "notesPlaceholder": "Any notes about this client…",
+        "notesPlaceholder": "Any notes about this %client%…",
         "save": "Save",
         "view": "View",
         "saving": "Saving…",
         "cancel": "Cancel",
-        "createSuccess": "Client created.",
-        "linkSuccess": "Linked to existing client.",
-        "updateSuccess": "Client updated.",
+        "createSuccess": "%Client% created.",
+        "linkSuccess": "Linked to existing %client%.",
+        "updateSuccess": "%Client% updated.",
         "error": "Something went wrong. Try again."
       },
       "detail": {
@@ -2259,13 +2259,13 @@
         "retry": "Retry",
         "tabs": {
           "overview": "Overview",
-          "bookings": "Bookings",
+          "bookings": "%Bookings%",
           "payments": "Payments"
         },
         "overview": {
           "totalSpent": "Total Spent",
-          "bookingsCount": "Bookings",
-          "lastBooking": "Last Booking",
+          "bookingsCount": "%Bookings%",
+          "lastBooking": "Last %Booking%",
           "never": "Never",
           "contact": "Contact",
           "noEmail": "—",
@@ -2277,9 +2277,9 @@
           "noNotes": "No notes"
         },
         "bookings": {
-          "loading": "Loading bookings…",
-          "empty": "No bookings yet.",
-          "error": "Failed to load bookings."
+          "loading": "Loading %bookings%…",
+          "empty": "No %bookings% yet.",
+          "error": "Failed to load %bookings%."
         },
         "payments": {
           "empty": "No payment records yet."
@@ -2290,38 +2290,38 @@
         "close": "Close"
       },
       "deactivate": {
-        "title": "Deactivate this client?",
-        "body": "This client will be hidden from the active list. You can reactivate them at any time by enabling 'Show inactive' in the client list.",
+        "title": "Deactivate this %client%?",
+        "body": "This %client% will be hidden from the active list. You can reactivate them at any time by enabling 'Show inactive' in the %client% list.",
         "cancel": "Cancel",
         "confirm": "Deactivate"
       },
       "unsaved": {
         "title": "Discard your changes?",
-        "body": "You have unsaved changes to this client. They'll be lost if you close now.",
+        "body": "You have unsaved changes to this %client%. They'll be lost if you close now.",
         "keep": "Keep editing",
         "discard": "Discard and close"
       },
       "matchDialog": {
-        "title": "Is the client one of these?",
-        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
-        "escapeCreate": "No, this is a new client",
-        "escapeLink": "Link to new client",
+        "title": "Is the %client% one of these?",
+        "bookingsCount": "{count, plural, one {# %booking%} other {# %bookings%}}",
+        "escapeCreate": "No, this is a new %client%",
+        "escapeLink": "Link to new %client%",
         "cancel": "Cancel",
-        "submitCreate": "Save client",
-        "submitLink": "Link client",
+        "submitCreate": "Save %client%",
+        "submitLink": "Link %client%",
         "reconcileTitle": "{count, plural, one {# field differs - pick which to keep} other {# fields differ - pick which to keep}}",
         "current": "Current",
         "typed": "You entered",
         "additiveTitle": "Will be added (no conflict)"
       },
       "toasts": {
-        "reactivating": "Reactivating client…",
-        "deactivating": "Deactivating client…"
+        "reactivating": "Reactivating %client%…",
+        "deactivating": "Deactivating %client%…"
       }
     },
     "inquiries": {
-      "title": "Inquiries",
-      "subtitle": "Booking requests from your public portfolio.",
+      "title": "%Inquiries%",
+      "subtitle": "%Booking% requests from your public portfolio.",
       "toolbar": {
         "from": "From",
         "to": "To",
@@ -2331,15 +2331,15 @@
       },
       "tabs": {
         "all": "All",
-        "inquiry": "Inquiry",
+        "inquiry": "%Inquiry%",
         "booked": "Booked",
         "archived": "Archived"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
+        "inquiry": "%Inquiry%",
         "archived": "Archived",
         "booked": "Booked",
-        "converted": "Converted To Booking"
+        "converted": "Converted To %Booking%"
       },
       "eventTypes": {
         "wedding": "Wedding",
@@ -2355,17 +2355,17 @@
         "either": "Either"
       },
       "table": {
-        "empty": "No inquiries yet.",
-        "filteredEmpty": "No inquiries match your filters.",
+        "empty": "No %inquiries% yet.",
+        "filteredEmpty": "No %inquiries% match your filters.",
         "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
         "viewPublicPage": "View your public page",
-        "open": "Open inquiry from {name}",
+        "open": "Open %inquiry% from {name}",
         "noDate": "No date",
         "directSource": "Direct",
         "col": {
           "booked": "Booked on",
           "status": "Status",
-          "client": "Client",
+          "client": "%Client%",
           "eventDate": "Event date",
           "eventType": "Type",
           "submitted": "Submitted",
@@ -2377,20 +2377,20 @@
         "conflict": "Conflict",
         "actions": {
           "view": "View",
-          "menuLabel": "Open inquiry actions"
+          "menuLabel": "Open %inquiry% actions"
         }
       },
       "detail": {
-        "back": "Back to inquiries",
-        "conflictBanner": "One or more sessions conflict with existing bookings.",
-        "loadingTitle": "Inquiry",
-        "loading": "Loading inquiry...",
-        "loadError": "Couldn't load this inquiry.",
+        "back": "Back to %inquiries%",
+        "conflictBanner": "One or more sessions conflict with existing %bookings%.",
+        "loadingTitle": "%Inquiry%",
+        "loading": "Loading %inquiry%...",
+        "loadError": "Couldn't load this %inquiry%.",
         "retry": "Retry",
         "submittedOn": "Submitted {date}",
-        "notFound": "Inquiry not found.",
+        "notFound": "%Inquiry% not found.",
         "clientInfo": {
-          "title": "Client info",
+          "title": "%Client% info",
           "name": "Name",
           "email": "Email",
           "phone": "Phone",
@@ -2402,9 +2402,9 @@
           "savedToast": "Phone updated."
         },
         "clientMatch": {
-          "warning": "This inquiry may belong to an existing client",
-          "resolveButton": "Resolve client",
-          "resolvedToast": "Client updated."
+          "warning": "This %inquiry% may belong to an existing %client%",
+          "resolveButton": "Resolve %client%",
+          "resolvedToast": "%Client% updated."
         },
         "eventRequest": {
           "title": "Event request",
@@ -2416,49 +2416,49 @@
           "none": "—"
         },
         "bookingDraft": {
-          "title": "Booking draft",
-          "description": "Converting this creates a booking on your calendar. Set your price now or later.",
+          "title": "%Booking% draft",
+          "description": "Converting this creates %a_booking% on your calendar. Set your price now or later.",
           "total": "Total",
           "deposit": "Deposit",
           "notes": "Internal notes",
           "notesPlaceholder": "Notes only you can see…",
           "save": "Save edits",
           "saving": "Saving…",
-          "approve": "Convert to booking",
+          "approve": "Convert to %booking%",
           "approving": "Converting…",
           "approved": "Converted",
-          "missing": "No linked draft booking for this inquiry.",
-          "alreadyConverted": "This inquiry has been approved.",
-          "viewBooking": "View booking",
+          "missing": "No linked draft %booking% for this %inquiry%.",
+          "alreadyConverted": "This %inquiry% has been approved.",
+          "viewBooking": "View %booking%",
           "approveError": "Could not convert. Please try again.",
           "saveError": "Could not save. Please try again.",
           "savedToast": "Draft saved.",
-          "ownerOnly": "Only the workspace owner can convert bookings.",
+          "ownerOnly": "Only the workspace owner can convert %bookings%.",
           "conflictBlocks": "Resolve the scheduling conflict above before converting.",
-          "team": "Team",
+          "team": "%Team%",
           "changedUnderneath": "This draft was changed by someone else. Your edits are kept; review the other fields before saving.",
-          "notDraft": "This booking was already approved. Reload to see the latest."
+          "notDraft": "This %booking% was already approved. Reload to see the latest."
         },
         "actions": {
           "decline": "Decline & notify",
-          "declinedToast": "Inquiry declined — the client has been notified.",
+          "declinedToast": "%Inquiry% declined — the %client% has been notified.",
           "archive": "Archive",
           "working": "Saving…",
-          "archivedToast": "Inquiry archived.",
-          "approvedToast": "Converted to booking.",
+          "archivedToast": "%Inquiry% archived.",
+          "approvedToast": "Converted to %booking%.",
           "errorToast": "Something went wrong. Please try again."
         },
         "history": {
           "title": "History",
-          "submitted": "Inquiry submitted",
-          "booked": "Approved to booking"
+          "submitted": "%Inquiry% submitted",
+          "booked": "Approved to %booking%"
         },
         "sessionsEditor": {
           "edit": "Edit sessions",
           "save": "Save changes",
           "saving": "Saving…",
           "discard": "Discard",
-          "conflictBlocks": "One or more sessions conflict with existing bookings.",
+          "conflictBlocks": "One or more sessions conflict with existing %bookings%.",
           "pastDate": "Sessions must be in the future.",
           "lockedConverted": "Sessions locked after conversion.",
           "lockedArchived": "Sessions locked (archived).",
@@ -2481,17 +2481,17 @@
         "calendar": "Calendar"
       },
       "calendar": {
-        "empty": "No inquiries or bookings to show.",
+        "empty": "No %inquiries% or %bookings% to show.",
         "filters": {
-          "inquiry": "Inquiry",
+          "inquiry": "%Inquiry%",
           "booked": "Booked",
           "conflicted": "Conflicted"
         },
-        "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
+        "rescheduleConflict": "This time conflicts with an existing %booking%; the move was cancelled.",
         "rescheduleFailed": "Could not reschedule — please try again",
         "updating": "Rescheduling…",
         "updated": "Session rescheduled",
-        "emptyPeriod": "No inquiries in this period"
+        "emptyPeriod": "No %inquiries% in this period"
       }
     },
     "pageBuilder": {
@@ -2712,7 +2712,7 @@
           "altHint": "Used everywhere this photo appears.",
           "dateLabel": "Date",
           "locationLabel": "Location",
-          "clientLabel": "Client",
+          "clientLabel": "%Client%",
           "tagsLabel": "Tags",
           "tagsHint": "Separate tags with commas, spaces, or Enter.",
           "tagsPlaceholder": "e.g. outdoor, sunset, first dance",
@@ -2742,21 +2742,21 @@
           "fieldDate": "Date",
           "fieldLocation": "Location",
           "fieldLocationPlaceholder": "e.g. Tagaytay, Philippines",
-          "fieldClient": "Client",
+          "fieldClient": "%Client%",
           "fieldClientPlaceholder": "e.g. Sarah & Miguel",
-          "hideClient": "Hide client name",
-          "hideClientHelp": "Keep client information private wherever this photo appears.",
-          "linkBooking": "Link a booking",
-          "linkClient": "Link a client",
-          "noBooking": "No booking linked",
-          "noClient": "No client linked",
+          "hideClient": "Hide %client% name",
+          "hideClientHelp": "Keep %client% information private wherever this photo appears.",
+          "linkBooking": "Link %a_booking%",
+          "linkClient": "Link %a_client%",
+          "noBooking": "No %booking% linked",
+          "noClient": "No %client% linked",
           "searchLinks": "Search records",
           "noLinkMatches": "No matching records",
           "linksLoading": "Loading records...",
-          "linksLoadError": "Could not load bookings and clients.",
+          "linksLoadError": "Could not load %bookings% and %clients%.",
           "retryLinks": "Try again",
           "manualDetails": "Not registered in Gallurio? Enter or edit the details manually below.",
-          "linkedRecord": "Linked booking",
+          "linkedRecord": "Linked %booking%",
           "fieldTags": "Tags",
           "fieldTagsPlaceholder": "Add a tag and press Enter",
           "fieldTagsHint": "Up to 20 tags.",
@@ -3364,9 +3364,9 @@
               "dimensions": "Share image must be at least 1200 × 630 px.",
               "upload": "Share image upload failed. Please try again."
             },
-            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientLabel": "%Inquiry% recipient email",
             "inquiryRecipientPlaceholder": "you@example.com",
-            "inquiryRecipientHint": "New inquiry notifications will be sent here."
+            "inquiryRecipientHint": "New %inquiry% notifications will be sent here."
           },
           "done": {
             "title": "Your page is ready to shine",
@@ -3543,23 +3543,23 @@
       "types": {
         "inquiry": {
           "created": {
-            "title": "New inquiry received",
-            "body": "You have a new inquiry from {clientName}."
+            "title": "New %inquiry% received",
+            "body": "You have a new %inquiry% from {clientName}."
           }
         },
         "booking": {
           "team_assigned": {
-            "title": "New booking assigned to your team",
-            "body": "{assignerName} assigned a booking to your team."
+            "title": "New %booking% assigned to your %team%",
+            "body": "{assignerName} assigned %a_booking% to your %team%."
           },
           "status_changed": {
-            "title": "{newStatus, select, cancelled {Booking cancelled} completed {Booking completed} booked {Booking confirmed} other {Booking status updated}}",
-            "body": "{newStatus, select, cancelled {{actorName} cancelled a booking.} completed {{actorName} marked a booking completed.} booked {{actorName} confirmed a booking.} other {{actorName} changed a booking status to {newStatus}.}}"
+            "title": "{newStatus, select, cancelled {%Booking% cancelled} completed {%Booking% completed} booked {%Booking% confirmed} other {%Booking% status updated}}",
+            "body": "{newStatus, select, cancelled {{actorName} cancelled %a_booking%.} completed {{actorName} marked %a_booking% completed.} booked {{actorName} confirmed %a_booking%.} other {{actorName} changed %a_booking% status to {newStatus}.}}"
           }
         },
         "team": {
           "invitation": {
-            "title": "You've been invited to a team",
+            "title": "You've been invited to %a_team%",
             "body": "{inviterName} invited you to join {teamName}."
           },
           "invite_accepted": {
@@ -3567,11 +3567,11 @@
             "body": "{memberName} has accepted your invite as a {role, select, owner {workspace owner} staff {staff member} other {member}} in {teamName}. Click to view."
           },
           "removed": {
-            "title": "Removed from team",
+            "title": "Removed from %team%",
             "body": "You have been removed from {teamName}."
           },
           "deleted": {
-            "title": "Team disbanded",
+            "title": "%Team% disbanded",
             "body": "{teamName} has been deleted."
           }
         }
@@ -3586,11 +3586,11 @@
       "no_active_workspace": "No active workspace. Pick a workspace and try again.",
       "workspace_not_found": "Workspace not found.",
       "owner_only": "Only the workspace owner can do this.",
-      "resolve_failed": "Could not update the client. Please try again.",
-      "client_match_lookup_failed": "Could not check for existing clients. Please try again.",
-      "needs_client_resolution": "This inquiry may belong to an existing client. Open it and resolve the client before converting.",
+      "resolve_failed": "Could not update the %client%. Please try again.",
+      "client_match_lookup_failed": "Could not check for existing %clients%. Please try again.",
+      "needs_client_resolution": "This %inquiry% may belong to an existing %client%. Open it and resolve the %client% before converting.",
       "invalid_data": "Invalid data. Please check your input and try again.",
-      "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
+      "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this %booking%.",
       "onboarding_required": "Finish onboarding to continue.",
       "onboarding_plan_locked": "Your plan is already activated. Finish onboarding to manage it from billing settings.",
       "subscription_required": "Your Pro access has ended. Subscribe to continue.",
@@ -3623,25 +3623,25 @@
       "email_send_failed": "Couldn't send the email. Please try again.",
       "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
       "already_member_elsewhere": "This email is already a member of another workspace. Sign up with a different email to create a new one.",
-      "client_create_failed": "Couldn't create the client. Please try again.",
-      "client_not_found": "Client not found.",
-      "client_update_failed": "Couldn't update the client. Please try again.",
-      "client_deactivate_failed": "Couldn't deactivate the client. Please try again.",
-      "client_has_active_bookings": "This client has active bookings and can't be deactivated.",
-      "client_reactivate_failed": "Couldn't reactivate the client. Please try again.",
-      "bookings_load_failed": "Couldn't load bookings. Please try again.",
-      "client_load_failed": "Couldn't load the client. Please try again.",
+      "client_create_failed": "Couldn't create the %client%. Please try again.",
+      "client_not_found": "%Client% not found.",
+      "client_update_failed": "Couldn't update the %client%. Please try again.",
+      "client_deactivate_failed": "Couldn't deactivate the %client%. Please try again.",
+      "client_has_active_bookings": "This %client% has active %bookings% and can't be deactivated.",
+      "client_reactivate_failed": "Couldn't reactivate the %client%. Please try again.",
+      "bookings_load_failed": "Couldn't load %bookings%. Please try again.",
+      "client_load_failed": "Couldn't load the %client%. Please try again.",
       "invalid_id": "Invalid request.",
       "not_found": "Not found.",
       "forbidden": "You don't have access to do that.",
-      "team_not_found": "Team not found.",
-      "team_deactivated": "You can't assign a booking to a deactivated team.",
+      "team_not_found": "%Team% not found.",
+      "team_deactivated": "You can't assign %a_booking% to a deactivated %team%.",
       "session_crosses_midnight": "Session {index} crosses midnight in the workspace time zone.",
-      "client_change_multi_session": "You can't change the client on a multi-session booking.",
-      "invalid_client_id": "Invalid client.",
-      "client_not_found_workspace": "Client not found in this workspace.",
+      "client_change_multi_session": "You can't change the %client% on a multi-session %booking%.",
+      "invalid_client_id": "Invalid %client%.",
+      "client_not_found_workspace": "%Client% not found in this workspace.",
       "invalid_request": "Invalid request.",
-      "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
+      "export_too_large": "Too many %bookings% to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
       "no_verified_email": "Add and verify an email before subscribing.",
@@ -3649,7 +3649,7 @@
       "no_subscription": "You don't have an active subscription to manage.",
       "subscription_manage_unavailable": "Couldn't open subscription management. Please try again.",
       "locked": "This item is locked and can't be edited right now.",
-      "conflict": "That time conflicts with another booking.",
+      "conflict": "That time conflicts with another %booking%.",
       "edit_sessions_failed": "Couldn't update the sessions. Please try again.",
       "session_index_out_of_range": "That session no longer exists.",
       "invalid": "Please check your input and try again.",
