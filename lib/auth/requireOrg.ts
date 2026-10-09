@@ -121,3 +121,13 @@ export async function requireRole(role: "owner"): Promise<OrgContext> {
   }
   return ctx;
 }
+
+/**
+ * Non-redirecting read of the cached org context (same per-request cache as
+ * requireOrg). Returns null when signed out / no workspace. For read-only
+ * helpers (e.g. vocabulary resolution) that must not gate or redirect.
+ */
+export async function peekOrgContext(): Promise<OrgContext | null> {
+  const resolved = await resolveOrgContext();
+  return resolved.kind === "ok" ? resolved.ctx : null;
+}

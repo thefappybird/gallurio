@@ -11,6 +11,7 @@ import { Workspace, User } from "@/lib/db/models";
 import {
   updateWorkspaceBusinessSchema,
   publicPageSettingsSchema,
+  vocabularyPresetSchema,
   type UpdateWorkspaceBusinessInput,
   type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
@@ -306,6 +307,28 @@ export async function togglePublicPagePublishedAction(
   );
 
   revalidatePath("/settings/public-page", "page");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// CRM vocabulary preset (owner only). null = derive from businessType.
+// ---------------------------------------------------------------------------
+
+export async function updateVocabularyPresetAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = vocabularyPresetSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid vocabulary preset" };
+
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $set: { vocabularyPreset: parsed.data } },
+  );
+
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

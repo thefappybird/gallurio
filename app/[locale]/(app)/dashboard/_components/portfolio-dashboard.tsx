@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import {
   UsersIcon,
   MessageSquareIcon,
@@ -65,7 +65,7 @@ function MetricCard({
 }
 
 export async function PortfolioDashboard({ workspace, locale, range }: Props) {
-  const t = await getTranslations("app.dashboard");
+  const t = await getAppTranslations("app.dashboard");
   const wid = workspace._id;
   const tz = resolveWorkspaceTimezone(workspace);
 

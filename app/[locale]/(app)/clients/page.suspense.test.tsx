@@ -13,6 +13,9 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async () => (key: string) => `common:${key}`),
 }));
+vi.mock("@/lib/vocabulary/appTranslations", async () => ({
+  getAppTranslations: (await import("next-intl/server")).getTranslations,
+}));
 vi.mock("@/lib/i18n/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/auth/requireOrg", () => ({ requireOrg: vi.fn() }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn() }));

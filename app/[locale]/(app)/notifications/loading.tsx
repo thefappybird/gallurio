@@ -1,10 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const NOTIFICATION_ROWS = 6;
 
 export default async function NotificationsLoading() {
-  const t = await getTranslations("common");
+  const t = await getAppTranslations("common");
   return (
     <div className="flex flex-col gap-0" aria-busy="true" role="status">
       <span className="sr-only">{t("loading")}</span>

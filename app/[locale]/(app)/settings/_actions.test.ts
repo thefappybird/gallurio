@@ -118,6 +118,7 @@ import {
   updatePasswordAction,
   sendSetPasswordEmailAction,
   updateAvatarAction,
+  updateVocabularyPresetAction,
 } from "./_actions";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
@@ -1520,5 +1521,59 @@ describe("updatePublicPageSettingsAction — seo extended", () => {
     expect(calledPaths).not.toContain(`/w/${"sarah-photo"}`);
     expect(calledPaths).not.toContain(`/w/${"sarah-photo"}/gallery`);
     expect(calledPaths.every((p) => !String(p).startsWith("/w/"))).toBe(true);
+  });
+});
+
+// ---- updateVocabularyPresetAction -------------------------------------------
+
+describe("updateVocabularyPresetAction", () => {
+  it("owner sets the preset and a different workspace is untouched", async () => {
+    await seedWorkspaceA();
+    await seedWorkspaceB();
+
+    const result = await updateVocabularyPresetAction("venue");
+    expect(result.ok).toBe(true);
+
+    const a = await Workspace.findById(WS_A_ID).lean();
+    const b = await Workspace.findById(WS_B_ID).lean();
+    expect(a?.vocabularyPreset).toBe("venue");
+    expect(b?.vocabularyPreset ?? null).toBeNull();
+  });
+});
+
+describe("updateVocabularyPresetAction guards", () => {
+  it("null clears the preset", async () => {
+    await seedWorkspaceA();
+    await updateVocabularyPresetAction("venue");
+    const result = await updateVocabularyPresetAction(null);
+    expect(result.ok).toBe(true);
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.vocabularyPreset ?? null).toBeNull();
+  });
+
+  it("rejects an unknown preset and leaves the value unchanged", async () => {
+    await seedWorkspaceA();
+    await updateVocabularyPresetAction("venue");
+    const result = await updateVocabularyPresetAction("nonsense");
+    expect(result.error).toBeTruthy();
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.vocabularyPreset).toBe("venue");
+  });
+
+  it("rejects a non-owner member", async () => {
+    await seedWorkspaceA();
+    mockAuthAsMemberA();
+    await User.create({
+      workosUserId: MEMBER_WORKOS_ID,
+      email: "member@test.com",
+      name: "Member User",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [{ workspaceId: WS_A_ID, role: "staff" }],
+    });
+    const result = await updateVocabularyPresetAction("venue");
+    expect(result.error).toBe("owner_only");
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.vocabularyPreset ?? null).toBeNull();
   });
 });

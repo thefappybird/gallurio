@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -25,7 +26,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.clients");
+  const t = await getAppTranslations("app.clients");
   return { title: t("title") };
 }
 
@@ -52,7 +53,7 @@ export default async function ClientsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const sp = await searchParams;
-  const tCommon = await getTranslations("common");
+  const tCommon = await getAppTranslations("common");
 
   // Resolved before the Suspense boundary (a route-level loading.tsx can't see
   // ?limit) so the fallback skeleton renders the exact row count the table will.
@@ -88,7 +89,7 @@ async function ClientsContent({
   limit: number;
   fit: number | undefined;
 }) {
-  const t = await getTranslations("app.clients");
+  const t = await getAppTranslations("app.clients");
 
   const { workspace } = await requireOrg();
   await connectDB();

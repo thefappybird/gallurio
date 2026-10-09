@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import {
   Building2,
@@ -53,7 +54,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("settings") };
 }
 
@@ -81,7 +82,7 @@ export default async function SettingsCatchallPage({
     User.findOne({ workosUserId: userId }).lean(),
     getAuthMethods(userId),
     resolveActiveDraftId(workspace._id),
-    getTranslations("app.settings.tabs"),
+    getAppTranslations("app.settings.tabs"),
     getDisplayPricing(),
   ]);
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
