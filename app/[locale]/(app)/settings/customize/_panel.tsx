@@ -133,7 +133,7 @@ function VocabularySection({
     });
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>, i: number) {
+  function onKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, i: number) {
     const rtl = document.dir === "rtl" || e.currentTarget.closest("[dir=rtl]") !== null;
     let n: number | null = null;
     if (e.key === "ArrowDown" || e.key === (rtl ? "ArrowLeft" : "ArrowRight"))

@@ -44,6 +44,11 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn().mockResolvedValue((key: string) => key),
 }));
 
+vi.mock("@/lib/vocabulary/appTranslations", () => ({
+  getAppTranslations: vi.fn(async () => (key: string) => key),
+  getAppMessages: vi.fn(async () => ({})),
+}));
+
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
     get: vi.fn().mockReturnValue(undefined),
