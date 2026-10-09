@@ -159,6 +159,31 @@
       "intro": "Ingin tahu bagaimana Gallurio dibandingkan dengan yang Anda gunakan sekarang?",
       "linkLabel": "Lihat perbandingannya"
     },
+    "vocabulary": {
+      "title": "Venue menerima acara. Katering menerima pesanan. Gallurio paham keduanya.",
+      "body": "Pilih jenis bisnis Anda dan seluruh workspace otomatis berganti istilah: menu, judul halaman, tombol, notifikasi, dan email tim. Alatnya sama, data dan tautan Anda tidak berubah.",
+      "chipsLabel": "Jenis bisnis",
+      "pause": "Jeda tur",
+      "play": "Putar tur",
+      "footnote": "Ubah kapan saja di Pengaturan.",
+      "previewLabel": "Pratinjau workspace Gallurio dengan istilah berikut: {words}",
+      "universalNote": "Dashboard, Portofolio, Notifikasi, dan Pengaturan tetap sama",
+      "dashboard": "Dashboard",
+      "portfolio": "Portofolio",
+      "booked": "Terpesan",
+      "newItem": "{item} baru",
+      "searchItems": "Cari {items}",
+      "presets": {
+        "standard": "Standar",
+        "photographer": "Fotografer",
+        "venue": "Venue",
+        "planner": "Perencana",
+        "stylist": "Penata gaya",
+        "catering": "Katering",
+        "entertainer": "Penghibur",
+        "artists": "Seniman"
+      }
+    },
     "pricingTeaser": {
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",

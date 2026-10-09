@@ -159,6 +159,31 @@
       "intro": "Gusto mo bang malaman kung paano ihahambing ang Gallurio sa ginagamit mo ngayon?",
       "linkLabel": "Tingnan ang mga paghahambing"
     },
+    "vocabulary": {
+      "title": "Ang venue ay may mga event. Ang caterer ay may mga order. Parehong naiintindihan ng Gallurio.",
+      "body": "Piliin ang uri ng negosyo mo at mapapalitan ang buong workspace ng angkop na mga salita: ang menu, mga pamagat ng pahina, mga button, mga abiso, at mga email ng team. Iisang tool lang ito, at hindi nagbabago ang data at mga link mo.",
+      "chipsLabel": "Uri ng negosyo",
+      "pause": "I-pause ang tour",
+      "play": "I-play ang tour",
+      "footnote": "Puwede mo itong palitan anumang oras sa Settings.",
+      "previewLabel": "Preview ng Gallurio workspace gamit ang mga salitang ito: {words}",
+      "universalNote": "Hindi nagbabago ang Dashboard, Portfolio, Notifications, at Settings",
+      "dashboard": "Dashboard",
+      "portfolio": "Portfolio",
+      "booked": "Naka-book",
+      "newItem": "Bagong {item}",
+      "searchItems": "Maghanap ng {items}",
+      "presets": {
+        "standard": "Standard",
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Mga artist"
+      }
+    },
     "pricingTeaser": {
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",

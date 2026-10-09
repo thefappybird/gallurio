@@ -159,6 +159,31 @@
       "intro": "Curious how Gallurio stacks up against what you're using now?",
       "linkLabel": "See the comparisons"
     },
+    "vocabulary": {
+      "title": "A venue books events. A caterer takes orders. Gallurio speaks both.",
+      "body": "Pick your business type and the whole workspace renames itself to match: the menu, page titles, buttons, notifications, and team emails. Same tool underneath, and your data and links never change.",
+      "chipsLabel": "Business type",
+      "pause": "Pause tour",
+      "play": "Play tour",
+      "footnote": "Change it anytime in Settings.",
+      "previewLabel": "Gallurio workspace preview using these words: {words}",
+      "universalNote": "Dashboard, Portfolio, Notifications, Settings stay the same",
+      "dashboard": "Dashboard",
+      "portfolio": "Portfolio",
+      "booked": "Booked",
+      "newItem": "New {item}",
+      "searchItems": "Search {items}",
+      "presets": {
+        "standard": "Standard",
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Artists"
+      }
+    },
     "pricingTeaser": {
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
