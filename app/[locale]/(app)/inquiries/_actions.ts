@@ -18,6 +18,7 @@ import { getShiftsOnDates } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { sendInquiryDeclineClient } from "@/lib/email/booking/inquiryDecline";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
@@ -557,6 +558,7 @@ export async function approveInquiryBookingAction(
       clientName: booking.clientName,
       eventTitle: booking.title,
       bookingId: booking._id.toString(),
+      vocabularyPreset: resolveVocabularyPreset(ctx.workspace),
     }).catch(() => {});
   }
 

@@ -19,6 +19,7 @@ import { normalizePayments, isCompletionEligible, remainingBalance, type Payment
 import { resolveFxFreeze } from "@/lib/pricing/fxRates";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 
 export const runtime = "nodejs";
 
@@ -818,6 +819,7 @@ export async function PATCH(req: Request, { params }: Params) {
         clientName: (cancelClient?.name ?? existing.clientName ?? "") as string,
         eventTitle,
         bookingId: existing._id.toString(),
+        vocabularyPreset: resolveVocabularyPreset(ctx.workspace),
       }).catch(() => {});
     }
   }

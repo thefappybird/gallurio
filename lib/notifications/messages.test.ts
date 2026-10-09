@@ -9,9 +9,10 @@ import enMessagesRaw from '@/messages/en.json'
 
 vi.mock('next-intl/server', () => ({
   getTranslations: vi.fn(),
+  getMessages: vi.fn(),
 }))
 
-import { getTranslations } from 'next-intl/server'
+import { getMessages, getTranslations } from 'next-intl/server'
 import { buildNotificationContent } from './messages'
 
 // ---------------------------------------------------------------------------
@@ -94,6 +95,29 @@ describe('buildNotificationContent passes vars to title (line-26 coverage)', () 
     // Title must have received vars — the mock returns 'title:cancelled'
     expect(result.title).toBe('title:cancelled')
     expect(result.body).toBe('body:Alex')
+  })
+})
+
+describe('buildNotificationContent vocabulary preset', () => {
+  const tokenMessages = {
+    app: {
+      notifications: {
+        types: { inquiry: { created: { title: 'New %booking%', body: 'A %client% booked a %team%' } } },
+      },
+    },
+  }
+
+  it('venue preset swaps tokens to venue words', async () => {
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue(tokenMessages)
+    const result = await buildNotificationContent('inquiry.created', 'en', 'e1', 'inquiry', {}, 'venue')
+    expect(result.title).toBe('New event')
+    expect(result.body).toBe('A host booked a venue')
+  })
+
+  it('standard preset resolves tokens to default words', async () => {
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue(tokenMessages)
+    const result = await buildNotificationContent('inquiry.created', 'en', 'e1', 'inquiry', {}, 'standard')
+    expect(result.title).toBe('New booking')
   })
 })
 

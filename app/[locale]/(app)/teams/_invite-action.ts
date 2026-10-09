@@ -16,6 +16,7 @@ import { User } from "@/lib/db/models/User";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { sendNotification } from "@/lib/notifications/send";
@@ -224,6 +225,7 @@ export async function inviteMemberAction(
     acceptUrl,
     locale: inviteLocale,
     brand: workspaceBrand,
+    vocabularyPreset: resolveVocabularyPreset(ctx.workspace),
   });
 
   if (!emailResult.ok) {

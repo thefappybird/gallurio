@@ -25,6 +25,14 @@ vi.mock('@/lib/notifications/messages', () => ({
   buildNotificationContent: (...args: unknown[]) => buildNotificationContent(...args),
 }))
 
+const workspaceLean = vi.fn()
+const workspaceFindById = vi.fn((_id: unknown) => ({
+  select: () => ({ lean: () => workspaceLean() }),
+}))
+vi.mock('@/lib/db/models/Workspace', () => ({
+  Workspace: { findById: (id: unknown) => workspaceFindById(id) },
+}))
+
 vi.mock('@/lib/db/models/Notification', () => ({
   Notification: {
     insertMany: vi.fn(async (docs: unknown[]) => {
@@ -80,6 +88,7 @@ beforeEach(() => {
   })
   sendNotificationEmail.mockResolvedValue(undefined)
   mockTo.mockReturnValue({ emit: mockEmit })
+  workspaceLean.mockResolvedValue({ businessType: 'photographer' })
 })
 
 afterEach(() => {
@@ -307,6 +316,31 @@ describe('sendNotification', () => {
 
       const emitArgs = mockEmit.mock.calls[0] as [string, { params?: typeof vars }]
       expect(emitArgs[1].params).toEqual(vars)
+    })
+  })
+
+  describe('vocabulary preset', () => {
+    it('looks up the preset by opts.workspaceId and passes it to content builder', async () => {
+      workspaceLean.mockResolvedValue({ vocabularyPreset: 'venue', businessType: 'venue' })
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(workspaceFindById).toHaveBeenCalledWith(WS_ID)
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('venue')
+    })
+
+    it('falls back to standard for a non-vocabulary business type', async () => {
+      workspaceLean.mockResolvedValue({ businessType: 'plumber' })
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
     })
   })
 
