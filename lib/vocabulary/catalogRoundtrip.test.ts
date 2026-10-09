@@ -91,3 +91,20 @@ describe("fil app catalog vocabulary tokens", () => {
     }
   });
 });
+
+describe("th app catalog vocabulary tokens", () => {
+  it("uses only known token forms", async () => {
+    const th = (await import("@/messages/th.json")).default;
+    const used = collect(th.app).flatMap((s) => s.match(/%[A-Za-z_]+%/g) ?? []);
+    expect(used.length).toBeGreaterThan(0);
+    expect(used.filter((t) => !KNOWN.has(t))).toEqual([]);
+  });
+
+  it("leaves no token after applying any preset", async () => {
+    const th = (await import("@/messages/th.json")).default;
+    for (const preset of VOCABULARY_PRESET_IDS) {
+      const out = collect(applyVocabulary(th as Record<string, unknown>, "th", preset).app);
+      expect(out.filter((s) => /%[A-Za-z_]+%/.test(s))).toEqual([]);
+    }
+  });
+});

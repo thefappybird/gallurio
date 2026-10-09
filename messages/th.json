@@ -771,7 +771,7 @@
       "greeting": "ยินดีต้อนรับกลับมา {name}",
       "tabs": {
         "aria": "สลับแดชบอร์ด",
-        "bookings": "การจอง",
+        "bookings": "%booking%",
         "portfolio": "พอร์ตโฟลิโอ"
       },
       "dateFilter": {
@@ -797,28 +797,28 @@
       },
       "kpi": {
         "revenueThisMonth": "รายได้ที่เก็บได้",
-        "activeBookings": "การจองที่กำหนดการแล้ว",
-        "newInquiries": "คำขอจองใหม่",
+        "activeBookings": "%booking%ที่กำหนดการแล้ว",
+        "newInquiries": "%inquiry%ใหม่",
         "outstandingBalance": "ยอดค้างชำระ"
       },
       "sections": {
         "todaysEvents": "งานวันนี้",
         "upcomingWeek": "สัปดาห์นี้ที่จะถึง",
-        "recentInquiries": "คำขอจองล่าสุด",
+        "recentInquiries": "%inquiry%ล่าสุด",
         "activity": "กิจกรรมล่าสุด",
         "revenueTrend": "รายได้",
-        "calendar": "ปฏิทินการจอง",
+        "calendar": "ปฏิทิน%booking%",
         "eventTypes": "แจกแจงตามประเภทงาน",
-        "topClients": "ลูกค้าที่ใช้จ่ายสูงสุด",
-        "teamPerformance": "ประสิทธิภาพของทีม",
-        "bookingsPerTeam": "การจองตามทีม",
+        "topClients": "%client%ที่ใช้จ่ายสูงสุด",
+        "teamPerformance": "ประสิทธิภาพของ%team%",
+        "bookingsPerTeam": "%booking%ตาม%team%",
         "operations": "การดำเนินงาน"
       },
       "quickAdd": {
         "title": "เพิ่มด่วน",
-        "booking": "การจองใหม่",
-        "client": "ลูกค้าใหม่",
-        "inquiry": "ดูคำขอจอง"
+        "booking": "%booking%ใหม่",
+        "client": "%client%ใหม่",
+        "inquiry": "ดู%inquiry%"
       },
       "empty": "ยังไม่มีข้อมูลตรงนี้",
       "viewAll": "ดูทั้งหมด",
@@ -827,14 +827,14 @@
         "analyticsSoon": "การวิเคราะห์พอร์ตโฟลิโอกำลังจะมาเร็ว ๆ นี้",
         "totalViews": "จำนวนการเข้าชมทั้งหมด",
         "uniqueVisitors": "ผู้เข้าชมที่ไม่ซ้ำ",
-        "inquiries": "คำขอจอง",
+        "inquiries": "%inquiry%",
         "conversionRate": "อัตราการเปลี่ยนเป็นลูกค้า",
         "viewsOverTime": "การเข้าชมและผู้เข้าชม",
         "views": "การเข้าชม",
         "visitors": "ผู้เข้าชม",
         "topSources": "แหล่งที่มาสูงสุด",
         "perPage": "แยกตามหน้า",
-        "siteInquiries": "คำขอจองจากเว็บไซต์ของคุณ",
+        "siteInquiries": "%inquiry%จากเว็บไซต์ของคุณ",
         "publishStatus": "สถานะการเผยแพร่",
         "published": "เผยแพร่แล้ว",
         "notPublished": "ยังไม่ได้เผยแพร่",
@@ -843,34 +843,34 @@
         "openEditor": "เปิดตัวแก้ไข",
         "noTraffic": "ยังไม่มีผู้เข้าชมในช่วงนี้",
         "directSource": "โดยตรง",
-        "inquiryInsights": "ข้อมูลเชิงลึกคำขอจอง",
-        "inquiryToBooking": "คำขอจอง → การจอง",
-        "bookedFromInquiries": "จองสำเร็จจากคำขอจอง",
-        "newClientsFromForm": "ลูกค้าใหม่จากแบบฟอร์ม",
+        "inquiryInsights": "ข้อมูลเชิงลึก%inquiry%",
+        "inquiryToBooking": "%inquiry% → %booking%",
+        "bookedFromInquiries": "จองสำเร็จจาก%inquiry%",
+        "newClientsFromForm": "%client%ใหม่จากแบบฟอร์ม",
         "visitorDays": "ผู้เข้าชม-วัน",
         "submissionRate": "อัตราการส่งแบบฟอร์ม",
         "bookedLeads": "ลีดที่จองสำเร็จ",
-        "visitorsInquiriesTitle": "ผู้เข้าชมและคำขอจองตามช่วงเวลา",
+        "visitorsInquiriesTitle": "ผู้เข้าชมและ%inquiry%ตามช่วงเวลา",
         "funnel": {
           "title": "ช่องทางการเปลี่ยนเป็นลูกค้า",
           "visitorDays": "ผู้เข้าชม-วัน",
           "contactOpened": "เปิดฟอร์มติดต่อ",
-          "inquirySubmitted": "ส่งคำขอจองแล้ว",
+          "inquirySubmitted": "ส่ง%inquiry%แล้ว",
           "ofVisitors": "ของผู้เข้าชม",
           "ofOpened": "ของที่เปิดแล้ว",
           "ofTotal": "ของทั้งหมด",
           "collectingData": "กำลังรวบรวมข้อมูล"
         },
         "pipeline": {
-          "title": "ไปป์ไลน์คำขอจอง",
+          "title": "ไปป์ไลน์%inquiry%",
           "new": "ใหม่",
           "booked": "จองแล้ว",
           "archived": "เก็บถาวร",
-          "total": "คำขอจองทั้งหมด"
+          "total": "%inquiry%ทั้งหมด"
         },
         "demand": {
           "title": "ข้อมูลความต้องการ",
-          "eventTypeMix": "ประเภทงาน (ตามคำขอจอง)",
+          "eventTypeMix": "ประเภทงาน (ตาม%inquiry%)",
           "requestedMonth": "เดือนงานที่ขอ",
           "medianLeadTime": "ระยะเวลารอเฉลี่ย",
           "days": "วัน",
@@ -878,7 +878,7 @@
         }
       },
       "team": {
-        "bookingsCount": "{count, plural, one {# การจอง} other {# การจอง}}"
+        "bookingsCount": "{count, plural, one {# %booking%} other {# %booking%}}"
       },
       "showMore": "แสดงเพิ่มเติม",
       "showLess": "แสดงน้อยลง",
@@ -894,38 +894,38 @@
         "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "ยอดรวมของเดือนนี้ ลูกศรเปรียบเทียบกับเดือนที่แล้ว",
-        "calendar": "การจองต่อวัน กรองตามทีม แตะวันที่เพื่อเปิดปฏิทินที่วันนั้น",
-        "eventTypes": "สัดส่วนการจองตามประเภทงาน",
-        "teamPerformance": "แต่ละทีมทำผลงานอย่างไรในด้านรายได้และปริมาณการจอง",
-        "bookingsPerTeam": "จำนวนการจองที่แต่ละทีมดูแล",
+        "calendar": "%booking%ต่อวัน กรองตาม%team% แตะวันที่เพื่อเปิดปฏิทินที่วันนั้น",
+        "eventTypes": "สัดส่วน%booking%ตามประเภทงาน",
+        "teamPerformance": "แต่ละ%team%ทำผลงานอย่างไรในด้านรายได้และปริมาณ%booking%",
+        "bookingsPerTeam": "จำนวน%booking%ที่แต่ละ%team%ดูแล",
         "revenueTrend": "รายได้ที่ชำระแล้วในช่วงเวลาที่เลือก",
-        "inquiryInsights": "อัตราการเปลี่ยนจากผู้เข้าชมและคำขอจอง รวมถึงลูกค้าใหม่ที่ได้จากแบบฟอร์มติดต่อของคุณ",
-        "topClients": "ลูกค้าจัดอันดับตามยอดใช้จ่ายรวม",
-        "todaysEvents": "การจองที่เริ่มวันนี้",
-        "upcomingWeek": "การจองที่ยืนยันแล้วใน 7 วันข้างหน้า",
-        "recentInquiries": "คำขอจองล่าสุดของคุณ",
+        "inquiryInsights": "อัตราการเปลี่ยนจากผู้เข้าชมและ%inquiry% รวมถึง%client%ใหม่ที่ได้จากแบบฟอร์มติดต่อของคุณ",
+        "topClients": "%client%จัดอันดับตามยอดใช้จ่ายรวม",
+        "todaysEvents": "%booking%ที่เริ่มวันนี้",
+        "upcomingWeek": "%booking%ที่ยืนยันแล้วใน 7 วันข้างหน้า",
+        "recentInquiries": "%inquiry%ล่าสุดของคุณ",
         "activity": "การเปลี่ยนแปลงล่าสุดในเวิร์กสเปซของคุณ",
-        "quickAdd": "สร้างการจอง ลูกค้า หรือคำขอจอง"
+        "quickAdd": "สร้าง%booking% %client% หรือ%inquiry%"
       },
       "totalLabel": "รวม",
       "miniCalendar": {
         "today": "วันนี้",
-        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}",
+        "monthTotal": "{count, plural, other {# %booking%ในเดือนนี้}}",
         "prevMonth": "เดือนก่อนหน้า",
         "nextMonth": "เดือนถัดไป",
         "jumpToToday": "ไปที่เดือนปัจจุบัน",
-        "dayBookingCount": "{count, plural, other {# การจอง}}",
+        "dayBookingCount": "{count, plural, other {# %booking%}}",
         "loadError": "โหลดเดือนนี้ไม่สำเร็จ",
         "retry": "ลองอีกครั้ง"
       },
       "calendarTeam": {
-        "label": "กรองตามทีม",
-        "all": "ทุกทีม"
+        "label": "กรองตาม%team%",
+        "all": "ทุก%team%"
       },
       "activityEntity": {
-        "booking": "การจอง",
-        "client": "ลูกค้า",
-        "inquiry": "คำขอจอง",
+        "booking": "%booking%",
+        "client": "%client%",
+        "inquiry": "%inquiry%",
         "gallery": "แกลเลอรี",
         "transaction": "ธุรกรรม",
         "workspace": "เวิร์กสเปซ"
@@ -935,7 +935,7 @@
         "updated": "อัปเดตแล้ว",
         "deleted": "ลบแล้ว",
         "status_changed": "เปลี่ยนสถานะแล้ว",
-        "client_changed": "เปลี่ยนลูกค้าแล้ว",
+        "client_changed": "เปลี่ยน%client%แล้ว",
         "payment_added": "เพิ่มการชำระเงินแล้ว",
         "payment_updated": "อัปเดตการชำระเงินแล้ว"
       },
@@ -958,7 +958,7 @@
           "title": "ความครอบคลุมการเก็บเงิน",
           "asOf": "ณ วันที่",
           "confirmedValue": "มูลค่าที่ยืนยันแล้ว",
-          "confirmedHint": "มูลค่ารวมของการจองที่ยืนยันแล้ว",
+          "confirmedHint": "มูลค่ารวมของ%booking%ที่ยืนยันแล้ว",
           "paid": "ชำระแล้ว (เก็บได้)",
           "paidHint": "การชำระเงินที่ได้รับจนถึงปัจจุบัน",
           "remaining": "ยอดคงเหลือ",
@@ -971,7 +971,7 @@
           "next": "วันที่ถัดไปในฮีตแมป",
           "title": "แผนที่ความหนาแน่นชั่วโมงการจอง",
           "bookedHours": "ชั่วโมงที่จองแล้ว",
-          "bookingsCount": "{count, plural, other {# การจอง}}",
+          "bookingsCount": "{count, plural, other {# %booking%}}",
           "skipPrevious": "ย้อนกลับ 5 หน้า",
           "skipNext": "ข้ามไป 5 หน้า",
           "weekdays": [
@@ -1016,8 +1016,8 @@
       "go": "ไป"
     },
     "bookings": {
-      "title": "การจอง",
-      "titleForTeam": "การจองของ{team}",
+      "title": "%booking%",
+      "titleForTeam": "%booking%ของ{team}",
       "view": {
         "table": "ตาราง",
         "card": "โหมดการ์ด",
@@ -1025,19 +1025,19 @@
         "inquiriesToggle": "สลับมุมมองคำขอ"
       },
       "toolbar": {
-        "search": "ค้นหาการจอง",
+        "search": "ค้นหา%booking%",
         "statusAll": "ทุกสถานะ",
         "showCancelled": "แสดงที่ยกเลิก",
         "showPast": "แสดงที่ผ่านมา",
         "import": "นำเข้า",
         "export": "ส่งออก",
-        "add": "การจองใหม่",
+        "add": "%booking%ใหม่",
         "invoiceTheme": "ธีมใบแจ้งหนี้และใบเสร็จ"
       },
       "exportDialog": {
-        "title": "ส่งออกการจอง",
-        "teamLabel": "ทีม",
-        "allTeams": "ทุกทีม",
+        "title": "ส่งออก%booking%",
+        "teamLabel": "%team%",
+        "allTeams": "ทุก%team%",
         "rangeLabel": "ช่วงเวลา",
         "allTime": "ทั้งหมด",
         "dateRange": "ช่วงวันที่",
@@ -1053,19 +1053,19 @@
         "cancel": "ยกเลิก"
       },
       "teamPicker": {
-        "allTeams": "ทุกทีม",
-        "allMyTeams": "ทีมทั้งหมดของฉัน",
-        "label": "กรองตามทีม",
+        "allTeams": "ทุก%team%",
+        "allMyTeams": "%team%ทั้งหมดของฉัน",
+        "label": "กรองตาม%team%",
         "inactive": "ไม่ใช้งาน",
         "legend": "คำอธิบายสี",
         "booked": "จองแล้ว",
         "conflicted": "ขัดแย้ง",
-        "countLabel": "{count, plural, one {# ทีม} other {# ทีม}}",
+        "countLabel": "{count, plural, one {# %team%} other {# %team%}}",
         "previousPage": "หน้าก่อนหน้า",
         "nextPage": "หน้าถัดไป"
       },
       "import": {
-        "title": "นำเข้าการจอง",
+        "title": "นำเข้า%booking%",
         "dropzone": "วางไฟล์ CSV หรือ XLSX ที่นี่ หรือคลิกเพื่อเลือก",
         "dropzoneActive": "วางเพื่ออัปโหลด",
         "templateCsv": "ดาวน์โหลดเทมเพลต CSV",
@@ -1073,19 +1073,19 @@
         "preview": "พบ {total} แถว",
         "validCount": "{count} รายการถูกต้อง",
         "invalidCount": "{count} รายการมีข้อผิดพลาด",
-        "importButton": "นำเข้า {count} การจอง",
+        "importButton": "นำเข้า {count} %booking%",
         "importing": "กำลังนำเข้า…",
         "noValidRows": "ไม่มีแถวที่ถูกต้องให้นำเข้า แก้ไขข้อผิดพลาดด้านบนก่อน",
-        "success": "นำเข้า {bookings} การจองและ {shifts} กะงานสำเร็จแล้ว",
-        "partialSuccess": "นำเข้า {count} การจองแล้ว มี {failed} แถวที่นำเข้าไม่ได้",
+        "success": "นำเข้า {bookings} %booking%และ {shifts} กะงานสำเร็จแล้ว",
+        "partialSuccess": "นำเข้า {count} %booking%แล้ว มี {failed} แถวที่นำเข้าไม่ได้",
         "parseError": "ไม่สามารถอ่านไฟล์นี้ได้ ตรวจสอบว่าเป็นไฟล์ CSV หรือ XLSX ที่ถูกต้อง",
         "crossesMidnight": "เวลาเริ่มและสิ้นสุดต้องอยู่ในวันเดียวกันตามเขตเวลาของเวิร์กสเปซ ({tz})",
         "previewMore": "ยังมีอีก {count} แถวที่ไม่ได้แสดง",
-        "groupBlocked": "มีอีกแถวที่ใช้ booking_id เดียวกันเกิดข้อผิดพลาด จึงระงับการจองทั้งรายการไว้ก่อน",
+        "groupBlocked": "มีอีกแถวที่ใช้ booking_id เดียวกันเกิดข้อผิดพลาด จึงระงับ%booking%ทั้งรายการไว้ก่อน",
         "columns": {
           "row": "#",
           "title": "ชื่อรายการ",
-          "client": "ลูกค้า",
+          "client": "%client%",
           "start": "เริ่ม",
           "error": "ข้อผิดพลาด"
         },
@@ -1097,7 +1097,7 @@
           "line": "บรรทัด {csvLine}",
           "rawRow": "แถวข้อมูลดิบ",
         "showAll": "แสดงทั้งหมด {count}",
-          "untitled": "การจองที่ไม่มีชื่อ",
+          "untitled": "%booking%ที่ไม่มีชื่อ",
           "summary": "นำเข้าแล้ว {created} · อัปเดตแล้ว {updated} · ข้ามไป {skipped}",
           "hint": "แก้ไขแถวด้านบนแล้วอัปโหลดใหม่เพื่อนำเข้า",
           "previewHint": "ยังไม่มีการนำเข้าใด ๆ แก้ไขแถวเหล่านี้แล้วอัปโหลดไฟล์อีกครั้ง"
@@ -1106,12 +1106,12 @@
           "required": "จำเป็น",
           "optional": "ไม่บังคับ",
           "failedWithDetails": "นำเข้าไม่สำเร็จ — ดูรายละเอียด",
-          "teamLabel": "กำหนดให้ทีม",
-          "teamDefault": "ทีมหลัก (ค่าเริ่มต้น)",
+          "teamLabel": "กำหนดให้%team%",
+          "teamDefault": "%team%หลัก (ค่าเริ่มต้น)",
           "duplicateTitle": "นำเข้าแล้วหรือไม่?",
-          "duplicateBody": "{count, plural, other {มี # การจองที่ตรงกับที่มีอยู่แล้ว นำเข้าอีกครั้งหรือไม่?}}",
-          "duplicateOnTeam": "อยู่ในทีม {team}",
-          "duplicateNoTeam": "ไม่ทราบทีม",
+          "duplicateBody": "{count, plural, other {มี # %booking%ที่ตรงกับที่มีอยู่แล้ว นำเข้าอีกครั้งหรือไม่?}}",
+          "duplicateOnTeam": "อยู่ใน%team% {team}",
+          "duplicateNoTeam": "ไม่ทราบ%team%",
           "duplicateContinue": "นำเข้าต่อไป",
           "failedRetry": "นำเข้าไม่สำเร็จ โปรดลองอีกครั้ง",
           "close": "ปิด",
@@ -1119,10 +1119,10 @@
           "viewErrors": "ดูข้อผิดพลาด {n} รายการ",
           "spec": {
             "clientName": {
-              "note": "ชื่อเต็มของลูกค้า"
+              "note": "ชื่อเต็มของ%client%"
             },
             "clientEmail": {
-              "note": "ใช้เพื่อตรวจสอบลูกค้าซ้ำ"
+              "note": "ใช้เพื่อตรวจสอบ%client%ซ้ำ"
             },
             "startAt": {
               "note": "รูปแบบ ISO 8601 — เช่น 2026-06-15T09:00"
@@ -1131,7 +1131,7 @@
               "note": "ใช้ค่าเดียวกับ startAt หากไม่ระบุ"
             },
             "title": {
-              "note": "ชื่อการจอง"
+              "note": "ชื่อ%booking%"
             },
             "eventType": {
               "note": "wedding, corporate, portrait ฯลฯ"
@@ -1140,7 +1140,7 @@
               "note": "booked, completed, cancelled"
             },
             "amountTotal": {
-              "note": "ยอดรวมการจอง"
+              "note": "ยอดรวม%booking%"
             },
             "amountDeposit": {
               "note": "ยอดมัดจำ"
@@ -1155,7 +1155,7 @@
               "note": "หมายเหตุภายใน"
             },
             "booking_id": {
-              "note": "จากไฟล์ส่งออก เก็บไว้เพื่ออัปเดตการจองนั้นแทนการสร้างซ้ำ"
+              "note": "จากไฟล์ส่งออก เก็บไว้เพื่ออัปเดต%booking%นั้นแทนการสร้างซ้ำ"
             },
             "session_index": {
               "note": "จัดลำดับเซสชันเมื่อหลายแถวใช้ booking_id เดียวกัน"
@@ -1164,7 +1164,7 @@
               "note": "จากไฟล์ส่งออก จับคู่ก่อน clientEmail"
             },
             "clientPhone": {
-              "note": "บันทึกให้ลูกค้าใหม่ เติมช่องว่าง ไม่เขียนทับ"
+              "note": "บันทึกให้%client%ใหม่ เติมช่องว่าง ไม่เขียนทับ"
             },
             "locationLat": {
               "note": "ละติจูดบนแผนที่ เช่น 14.5995"
@@ -1190,7 +1190,7 @@
           "columnsFound": "{count, plural, other {# คอลัมน์}}",
           "rowsFound": "{count, plural, other {# แถว}}",
           "sectionRequired": "จำเป็น",
-          "sectionCommon": "รายละเอียดการจอง",
+          "sectionCommon": "รายละเอียด%booking%",
           "sectionAdvanced": "คอลัมน์ขั้นสูงและคอลัมน์สำหรับนำกลับเข้า",
           "advancedHint": "ต้องใช้เฉพาะเมื่อนำเข้าไฟล์ที่คุณส่งออกจาก Gallurio อีกครั้ง",
           "selectColumn": "เลือกคอลัมน์จากไฟล์ของคุณ",
@@ -1198,7 +1198,7 @@
           "useFixedValue": "ใช้ค่าคงที่",
           "fixedValueLabel": "ค่าสำหรับทุกแถว",
           "inferFromDate": "อนุมานจากวันที่",
-          "inferHint": "การจองที่ผ่านมาแล้วและชำระครบจะเป็นเสร็จสิ้น ส่วนที่เหลือยังคงเป็นจองแล้ว",
+          "inferHint": "%booking%ที่ผ่านมาแล้วและชำระครบจะเป็นเสร็จสิ้น ส่วนที่เหลือยังคงเป็นจองแล้ว",
           "alreadyUsed": "{column} (ใช้ไปแล้ว)",
           "sample": "แถวแรก: {value}",
           "sampleEmpty": "แถวแรกว่างเปล่า",
@@ -1237,25 +1237,25 @@
           "continue": "ไปต่อ",
           "reviewMapping": "จับคู่คอลัมน์ให้อัตโนมัติแล้ว",
           "reviewMappingAction": "ตรวจทาน",
-          "committing": "กำลังนำเข้าการจองของคุณ"
+          "committing": "กำลังนำเข้า%booking%ของคุณ"
         }
       },
       "export": {
-        "tooltip": "ดาวน์โหลดการจองเป็น CSV",
-        "empty": "ไม่มีการจองให้ส่งออก"
+        "tooltip": "ดาวน์โหลด%booking%เป็น CSV",
+        "empty": "ไม่มี%booking%ให้ส่งออก"
       },
       "table": {
-        "listEmpty": "ยังไม่มีการจอง",
-        "listEmptyHint": "การจองที่คุณสร้างหรือรับจากคำสอบถามจะแสดงที่นี่",
-        "empty": "ไม่มีการจองที่ตรงกับตัวกรองของคุณ",
+        "listEmpty": "ยังไม่มี%booking%",
+        "listEmptyHint": "%booking%ที่คุณสร้างหรือรับจากคำสอบถามจะแสดงที่นี่",
+        "empty": "ไม่มี%booking%ที่ตรงกับตัวกรองของคุณ",
         "past": "ผ่านมาแล้ว",
         "showPast": "แสดงที่ผ่านมา",
         "hidePast": "ซ่อนที่ผ่านมา",
-        "pastBookingsHidden": "{count, plural, one {ซ่อนการจองที่ผ่านมา # รายการ} other {ซ่อนการจองที่ผ่านมา # รายการ}}",
+        "pastBookingsHidden": "{count, plural, one {ซ่อน%booking%ที่ผ่านมา # รายการ} other {ซ่อน%booking%ที่ผ่านมา # รายการ}}",
         "col": {
           "booked": "จองเมื่อ",
-          "title": "การจอง",
-          "client": "ลูกค้า",
+          "title": "%booking%",
+          "client": "%client%",
           "date": "วันที่",
           "status": "สถานะ",
           "total": "ยอดรวม",
@@ -1264,7 +1264,7 @@
         }
       },
       "row": {
-        "openMenu": "เปิดเมนูการจอง",
+        "openMenu": "เปิดเมนู%booking%",
         "view": "ดู",
         "edit": "แก้ไข"
       },
@@ -1318,7 +1318,7 @@
         "hidePast": "ซ่อนเซสชันที่ผ่านมา",
         "pastSessionsHidden": "{count, plural, one {ซ่อนเซสชันที่ผ่านมา # รายการ — สลับเพื่อแสดง} other {ซ่อนเซสชันที่ผ่านมา # รายการ — สลับเพื่อแสดง}}",
         "tabs": {
-          "client": "ลูกค้า",
+          "client": "%client%",
           "event": "งาน",
           "pricing": "ราคา",
           "eventPricing": "งาน",
@@ -1335,7 +1335,7 @@
         "fields": {
           "title": "ชื่อรายการ",
           "titleRequired": "ชื่อรายการห้ามว่าง",
-          "clientName": "ชื่อลูกค้า",
+          "clientName": "ชื่อ%client%",
           "status": "สถานะ",
           "eventType": "ประเภทงาน",
           "date": "วันที่",
@@ -1366,15 +1366,15 @@
           "removeDraftSession": "ลบเซสชันแบบร่าง",
           "email": "อีเมล",
           "phone": "โทรศัพท์",
-          "openClient": "เปิดลูกค้า",
-          "viewClient": "ดูลูกค้า",
-          "changeClient": "เปลี่ยนลูกค้า",
+          "openClient": "เปิด%client%",
+          "viewClient": "ดู%client%",
+          "changeClient": "เปลี่ยน%client%",
           "changeClientCancel": "คงลูกค้าเดิม",
-          "changeClientSearch": "ค้นหาลูกค้า…",
+          "changeClientSearch": "ค้นหา%client%…",
           "noEmail": "ไม่มีอีเมล",
           "noPhone": "ไม่มีเบอร์โทรศัพท์",
-          "noClientResults": "ไม่พบลูกค้า",
-          "changeClientMultiSession": "ไม่สามารถเปลี่ยนลูกค้าสำหรับการจองหลายเซสชันได้",
+          "noClientResults": "ไม่พบ%client%",
+          "changeClientMultiSession": "ไม่สามารถเปลี่ยน%client%สำหรับ%booking%หลายเซสชันได้",
           "searchFailed": "การค้นหาล้มเหลว โปรดลองอีกครั้ง",
           "editTitle": "แก้ไขชื่อรายการ",
           "confirmTitle": "ยืนยัน",
@@ -1385,13 +1385,13 @@
           "callClient": "โทร"
         },
         "cancelConfirm": {
-          "title": "ยกเลิกการจองนี้หรือไม่?",
-          "body": "เราจะทำเครื่องหมาย \"{title}\" ว่ายกเลิก การจองจะไม่ถูกลบ — คุณสามารถกู้คืนได้จากหน้าต่างนี้หากลูกค้ากลับมา ประวัติการตรวจสอบยังคงอยู่ครบถ้วนไม่ว่ากรณีใด",
-          "keep": "คงการจองไว้",
-          "confirm": "ใช่ ยกเลิกการจอง"
+          "title": "ยกเลิก%booking%นี้หรือไม่?",
+          "body": "เราจะทำเครื่องหมาย \"{title}\" ว่ายกเลิก %booking%จะไม่ถูกลบ — คุณสามารถกู้คืนได้จากหน้าต่างนี้หาก%client%กลับมา ประวัติการตรวจสอบยังคงอยู่ครบถ้วนไม่ว่ากรณีใด",
+          "keep": "คง%booking%ไว้",
+          "confirm": "ใช่ ยกเลิก%booking%"
         },
         "history": {
-          "title": "ประวัติการจอง",
+          "title": "ประวัติ%booking%",
           "totalCount": "{count} รายการ",
           "pageOf": "หน้า {page} จาก {total}",
           "loadError": "ไม่สามารถโหลดประวัติได้",
@@ -1402,7 +1402,7 @@
             "created": "สร้างแล้ว",
             "updated": "อัปเดตแล้ว",
             "status_changed": "เปลี่ยนสถานะแล้ว",
-            "client_changed": "เปลี่ยนลูกค้าแล้ว",
+            "client_changed": "เปลี่ยน%client%แล้ว",
             "deleted": "ลบแล้ว",
             "payment_added": "เพิ่มการชำระเงินแล้ว",
             "payment_updated": "อัปเดตการชำระเงินแล้ว"
@@ -1411,8 +1411,8 @@
           "yesterday": "เมื่อวาน",
           "timelineLabel": "ไทม์ไลน์กิจกรรม"
         },
-        "cancel": "ยกเลิกการจอง",
-        "restore": "กู้คืนการจอง",
+        "cancel": "ยกเลิก%booking%",
+        "restore": "กู้คืน%booking%",
         "invoice": "ดาวน์โหลดใบแจ้งหนี้",
         "receipt": "ดาวน์โหลดใบเสร็จ",
         "discardChanges": "ยกเลิกการเปลี่ยนแปลง",
@@ -1423,13 +1423,13 @@
         "discardDescription": "{count, plural, one {การเปลี่ยนแปลงที่ยังไม่บันทึก # รายการจะหายไป} other {การเปลี่ยนแปลงที่ยังไม่บันทึก # รายการจะหายไป}}",
         "discardConfirm": "ยกเลิกและปิด",
         "keepEditing": "แก้ไขต่อ",
-        "savedToast": "อัปเดตการจองแล้ว",
-        "cancelledToast": "ยกเลิกการจองแล้ว",
-        "restoredToast": "กู้คืนการจองแล้ว",
+        "savedToast": "อัปเดต%booking%แล้ว",
+        "cancelledToast": "ยกเลิก%booking%แล้ว",
+        "restoredToast": "กู้คืน%booking%แล้ว",
         "actionFailed": "เกิดข้อผิดพลาดบางอย่าง โปรดลองอีกครั้ง",
-        "notFound": "ไม่พบการจอง",
-        "loadFailed": "ไม่สามารถโหลดการจองนี้ได้",
-        "staleConflict": "มีคนอื่นแก้ไขการจองนี้แล้ว การแก้ไขของคุณไม่ได้รับการบันทึก — โปรดตรวจสอบเวอร์ชันล่าสุดแล้วลองอีกครั้ง",
+        "notFound": "ไม่พบ%booking%",
+        "loadFailed": "ไม่สามารถโหลด%booking%นี้ได้",
+        "staleConflict": "มีคนอื่นแก้ไข%booking%นี้แล้ว การแก้ไขของคุณไม่ได้รับการบันทึก — โปรดตรวจสอบเวอร์ชันล่าสุดแล้วลองอีกครั้ง",
         "staleNotice": "มีคนอื่นอัปเดตแล้ว — การแก้ไขที่ยังไม่ได้บันทึกของคุณอิงจากเวอร์ชันที่เก่ากว่า",
         "retry": "ลองอีกครั้ง",
         "editAll": "แก้ไขทั้งหมด",
@@ -1464,11 +1464,11 @@
         "pastDateWarning": "ย้ายไปยังวันที่ผ่านมาแล้ว",
         "pastSplitWarning": "วันที่ผ่านมาแล้วยังคงเดิม — อัปเดตเฉพาะวันในอนาคต",
         "thisDayOnlyOnPast": "ไม่สามารถแก้ไขวันที่ผ่านมาแล้วได้",
-        "updating": "กำลังอัปเดตการจอง…",
-        "updated": "อัปเดตการจองแล้ว",
-        "updateError": "อัปเดตการจองไม่สำเร็จ",
+        "updating": "กำลังอัปเดต%booking%…",
+        "updated": "อัปเดต%booking%แล้ว",
+        "updateError": "อัปเดต%booking%ไม่สำเร็จ",
         "conflictCheckFailed": "ไม่สามารถตรวจสอบความขัดแย้งได้ — โปรดลองอีกครั้ง",
-        "overnightNotAllowed": "การจองต้องไม่ข้ามเที่ยงคืน — โปรดปรับเวลา",
+        "overnightNotAllowed": "%booking%ต้องไม่ข้ามเที่ยงคืน — โปรดปรับเวลา",
         "conflictBlockSubmit": "แก้ไขความขัดแย้งของเซสชันก่อนบันทึก",
         "conflictBlockDnd": "เวลานี้ทับซ้อนกับ \"{title}\" — ยกเลิกการย้ายแล้ว",
         "conflictBlockDndMany": "เวลานี้ทับซ้อนกับ \"{title}\" และอีก {more} กะ — ยกเลิกการย้ายแล้ว",
@@ -1479,13 +1479,13 @@
         "togglePast": "ที่ผ่านมา",
         "dropConflict": {
           "title": "ตารางขัดแย้งกันในวันที่ {date}",
-          "description": "การย้ายการจองนี้จะทำให้เกิดการทับซ้อนกับกะที่มีอยู่แล้วอย่างน้อยหนึ่งรายการ คุณสามารถย้ายต่อไปหรือยกเลิกได้",
+          "description": "การย้าย%booking%นี้จะทำให้เกิดการทับซ้อนกับกะที่มีอยู่แล้วอย่างน้อยหนึ่งรายการ คุณสามารถย้ายต่อไปหรือยกเลิกได้",
           "cancel": "ยกเลิก",
           "moveAnyway": "ย้ายต่อไป"
         },
         "pastDateConfirm": {
           "title": "ย้ายไปยังวันที่ผ่านมาแล้วหรือไม่?",
-          "description": "คุณกำลังย้ายการจองนี้ไปยังวันที่ในอดีต การกระทำนี้ทำได้แต่ไม่ปกติ — ยืนยันเพื่อดำเนินการต่อ",
+          "description": "คุณกำลังย้าย%booking%นี้ไปยังวันที่ในอดีต การกระทำนี้ทำได้แต่ไม่ปกติ — ยืนยันเพื่อดำเนินการต่อ",
           "confirm": "ย้ายไปยังอดีต",
           "cancel": "ยกเลิก"
         },
@@ -1493,10 +1493,10 @@
         "hidePast": "ซ่อนที่ผ่านมา",
         "filterByStatus": "กรองตามสถานะ",
         "filterActive": "กำลังกรองตาม {status} — แตะอีกครั้งเพื่อล้าง",
-        "teamsLegend": "ทีม",
-        "inactiveTeam": "ทีมไม่ใช้งาน",
+        "teamsLegend": "%team%",
+        "inactiveTeam": "%team%ไม่ใช้งาน",
         "conflict": "ขัดแย้ง",
-        "emptyPeriod": "ไม่มีการจองในช่วงเวลานี้"
+        "emptyPeriod": "ไม่มี%booking%ในช่วงเวลานี้"
       },
       "sessions": {
         "label": "เซสชัน {n}",
@@ -1527,43 +1527,43 @@
         "frozenRate": "≈ {price} · อัตรา {rate} · {date}",
         "frozenRateTrailing": "{date} · อัตรา {rate} · ≈ {price}",
         "approx": "≈ {price}",
-        "empty": "ยังไม่มีการชำระเงินที่กำหนดไว้สำหรับการจองนี้",
+        "empty": "ยังไม่มีการชำระเงินที่กำหนดไว้สำหรับ%booking%นี้",
         "exceedsBalance": "เกินยอดคงเหลือ",
         "titleRequired": "ต้องระบุชื่อรายการ",
         "priceRequired": "ยอดเงินต้องมากกว่า 0"
       },
       "wizard": {
-        "createTitle": "การจองใหม่",
-        "editTitle": "แก้ไขการจอง",
+        "createTitle": "%booking%ใหม่",
+        "editTitle": "แก้ไข%booking%",
         "editTitleNamed": "แก้ไข {title}",
-        "loading": "กำลังโหลดการจอง…",
+        "loading": "กำลังโหลด%booking%…",
         "previous": "ก่อนหน้า",
         "next": "ถัดไป",
         "cancel": "ยกเลิก",
-        "create": "สร้างการจอง",
+        "create": "สร้าง%booking%",
         "creating": "กำลังสร้าง…",
         "save": "บันทึกการเปลี่ยนแปลง",
         "saving": "กำลังบันทึก…",
-        "createdToast": "สร้างการจองแล้ว",
-        "savedToast": "อัปเดตการจองแล้ว",
+        "createdToast": "สร้าง%booking%แล้ว",
+        "savedToast": "อัปเดต%booking%แล้ว",
         "depositExceedsTotal": "มัดจำต้องไม่เกินยอดรวม",
         "unsavedConfirm": "คุณจะสูญเสียความคืบหน้าหากออกตอนนี้ แน่ใจหรือไม่?",
         "hasErrors": "มีข้อผิดพลาดในการตรวจสอบ",
-        "viewBooking": "ดูการจอง",
+        "viewBooking": "ดู%booking%",
         "unsaved": {
           "title": "ยกเลิกการเปลี่ยนแปลงของคุณหรือไม่?",
-          "body": "คุณจะสูญเสียข้อมูลที่กรอกไว้ในการจองนี้หากออกตอนนี้ การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก",
+          "body": "คุณจะสูญเสียข้อมูลที่กรอกไว้ใน%booking%นี้หากออกตอนนี้ การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก",
           "keep": "แก้ไขต่อ",
           "discard": "ยกเลิกและปิด"
         },
         "conflictConfirm": {
           "title": "ตรวจพบความขัดแย้งของตารางเวลา",
-          "description": "มีเซสชันอย่างน้อยหนึ่งรายการทับซ้อนกับการจองที่มีอยู่แล้ว คุณสามารถส่งต่อไปหรือย้อนกลับไปปรับวันที่",
+          "description": "มีเซสชันอย่างน้อยหนึ่งรายการทับซ้อนกับ%booking%ที่มีอยู่แล้ว คุณสามารถส่งต่อไปหรือย้อนกลับไปปรับวันที่",
           "confirm": "ส่งต่อไป",
           "cancel": "ย้อนกลับ"
         },
         "steps": {
-          "client": "ลูกค้า",
+          "client": "%client%",
           "event": "งาน",
           "pricing": "ราคา",
           "eventPricing": "งาน",
@@ -1572,13 +1572,13 @@
           "review": "ตรวจสอบ"
         },
         "client": {
-          "tabExisting": "ลูกค้าเดิม",
+          "tabExisting": "%client%เดิม",
           "tabNew": "สร้างใหม่",
           "searchPlaceholder": "ค้นหาด้วยชื่อหรืออีเมล",
-          "noResults": "ไม่พบลูกค้าที่ตรงกัน ลองค้นหาด้วยคำอื่น",
-          "selectRequired": "เลือกลูกค้าเพื่อดำเนินการต่อ",
-          "loadingClients": "กำลังโหลดลูกค้า",
-          "loadError": "ไม่สามารถโหลดลูกค้าได้",
+          "noResults": "ไม่พบ%client%ที่ตรงกัน ลองค้นหาด้วยคำอื่น",
+          "selectRequired": "เลือก%client%เพื่อดำเนินการต่อ",
+          "loadingClients": "กำลังโหลด%client%",
+          "loadError": "ไม่สามารถโหลด%client%ได้",
           "retry": "ลองอีกครั้ง",
           "name": "ชื่อ",
           "namePlaceholder": "เช่น เอ็มม่า คาร์เตอร์",
@@ -1586,13 +1586,13 @@
           "emailPlaceholder": "emma@example.com",
           "phone": "โทรศัพท์",
           "phonePlaceholder": "+66 81 234 5678",
-          "readOnlyLabel": "ลูกค้า",
-          "readOnlyHint": "ยังไม่รองรับการมอบหมายการจองใหม่ให้ลูกค้าอื่นในมุมมองนี้",
-          "multiSessionReadOnly": "ลูกค้าถูกล็อกไว้สำหรับการจองหลายเซสชัน"
+          "readOnlyLabel": "%client%",
+          "readOnlyHint": "ยังไม่รองรับการมอบหมาย%booking%ใหม่ให้%client%อื่นในมุมมองนี้",
+          "multiSessionReadOnly": "%client%ถูกล็อกไว้สำหรับ%booking%หลายเซสชัน"
         },
         "event": {
           "title": "ชื่อรายการ",
-          "titleRequired": "ตั้งชื่อการจองนี้",
+          "titleRequired": "ตั้งชื่อ%booking%นี้",
           "titlePlaceholder": "เช่น งานแต่งคาร์เตอร์ — ท่าเรือ 27",
           "eventType": "ประเภทงาน",
           "startAt": "วันที่เริ่มกะ",
@@ -1601,7 +1601,7 @@
           "endAt": "วันที่สิ้นสุดกะ",
           "endTime": "เวลาสิ้นสุดกะ",
           "conflictsLabel": "กะที่มีอยู่แล้วในวันที่ {date}:",
-          "allowPastDate": "กำลังเพิ่มการจองเก่าอยู่ใช่ไหม? อนุญาตวันที่ผ่านมาแล้ว",
+          "allowPastDate": "กำลังเพิ่ม%booking%เก่าอยู่ใช่ไหม? อนุญาตวันที่ผ่านมาแล้ว",
           "location": "สถานที่",
           "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…",
           "repeatingSessions": "เซสชันซ้ำ",
@@ -1623,24 +1623,24 @@
           "total": "ยอดรวม",
           "deposit": "มัดจำ",
           "currency": "สกุลเงิน",
-          "hint": "ราคาเป็นสกุลเงินหลักของเวิร์กสเปซ คุณสามารถเปลี่ยนสกุลเงินได้ต่อการจอง",
+          "hint": "ราคาเป็นสกุลเงินหลักของเวิร์กสเปซ คุณสามารถเปลี่ยนสกุลเงินได้ต่อ%booking%",
           "depositRequiresTotal": "ไม่สามารถเพิ่มมัดจำได้หากยังไม่ได้ตั้งราคา"
         },
         "review": {
           "intro": "ตรวจสอบอีกครั้ง — ยืนยันว่าทุกอย่างถูกต้องก่อนบันทึก"
         },
-        "teamLabel": "ทีม",
-        "teamPlaceholder": "เลือกทีม"
+        "teamLabel": "%team%",
+        "teamPlaceholder": "เลือก%team%"
       }
     },
     "sidebar": {
       "dashboard": "แดชบอร์ด",
-      "bookings": "การจอง",
-      "clients": "ลูกค้า",
+      "bookings": "%booking%",
+      "clients": "%client%",
       "calendar": "ปฏิทิน",
-      "inquiries": "คำขอจอง",
+      "inquiries": "%inquiry%",
       "gallery": "แกลเลอรี",
-      "teams": "ทีม",
+      "teams": "%team%",
       "settings": "การตั้งค่า",
       "account": "บัญชี",
       "logOut": "ออกจากระบบ",
@@ -1735,7 +1735,7 @@
         "account": "บัญชี",
         "customize": "ปรับแต่ง",
         "workspace": "รายละเอียดธุรกิจ",
-        "teams": "ทีม",
+        "teams": "%team%",
         "publicPage": "หน้าเว็บสาธารณะ",
         "billing": "การเรียกเก็บเงิน",
         "devPlan": "Dev · แพ็กเกจ",
@@ -1781,8 +1781,8 @@
         "title": "ตัวสลับแพ็กเกจสำหรับนักพัฒนา",
         "description": "สลับ workspace.plan โดยไม่ต้องผ่าน Lemon Squeezy ถูกบล็อกในระบบจริง ใช้แท็บการเรียกเก็บเงินสำหรับการจัดการการสมัครสมาชิกจริง",
         "currentLabel": "แพ็กเกจปัจจุบัน",
-        "teamsSuffix": "ทีม",
-        "perTeamSuffix": "สมาชิก/ทีม",
+        "teamsSuffix": "%team%",
+        "perTeamSuffix": "สมาชิก/%team%",
         "active": "ใช้งานอยู่",
         "switch": "สลับ",
         "toasts": {
@@ -1797,7 +1797,7 @@
         "savedToast": "อัปเดตเวิร์กสเปซแล้ว",
         "currencyWarning": "การเปลี่ยนสกุลเงินจะคำนวณยอดเงินที่ชำระแล้วทั้งหมดใหม่เป็นสกุลเงินใหม่ และจะล็อกช่องนี้เป็นเวลา 90 วันหลังจากนั้น",
         "currencyConfirmTitle": "เปลี่ยนสกุลเงินของพื้นที่ทำงานหรือไม่?",
-        "currencyConfirmBody": "{count, plural, =0 {ไม่มียอดรวมที่จะเปลี่ยนแปลง คุณสามารถเปลี่ยนสกุลเงินได้ทุกเมื่อ} other {จะคำนวณยอดใหม่สำหรับ # การจอง หลังจากนี้ คุณจะไม่สามารถเปลี่ยนสกุลเงินได้อีกจนถึงวันที่ {date}}}",
+        "currencyConfirmBody": "{count, plural, =0 {ไม่มียอดรวมที่จะเปลี่ยนแปลง คุณสามารถเปลี่ยนสกุลเงินได้ทุกเมื่อ} other {จะคำนวณยอดใหม่สำหรับ # %booking% หลังจากนี้ คุณจะไม่สามารถเปลี่ยนสกุลเงินได้อีกจนถึงวันที่ {date}}}",
         "currencyConfirmConfirm": "ยืนยันการเปลี่ยนแปลง",
         "currencyConfirmCancel": "ยกเลิก",
         "currencyLockedUntil": "สกุลเงินถูกล็อกจนถึงวันที่ {date}",
@@ -1876,7 +1876,7 @@
         "seoTitlePlaceholder": "Sarah Bell Photography — งานแต่งงานและภาพบุคคล",
         "seoDescription": "คำอธิบาย SEO",
         "seoDescriptionPlaceholder": "รับถ่ายภาพงานแต่งงานและภาพบุคคลทั่ว Bay Area…",
-        "inquirySection": "การส่งต่อคำขอจอง",
+        "inquirySection": "การส่งต่อ%inquiry%",
         "inquirySectionHint": "ที่ที่ข้อมูลจากฟอร์มคำขอจองของคุณจะถูกส่งต่อไป",
         "inquiryRecipientEmail": "อีเมลผู้รับ",
         "inquiryRecipientEmailPlaceholder": "you@example.com",
@@ -1935,20 +1935,20 @@
       }
     },
     "teams": {
-      "title": "ทีม",
-      "description": "จัดกลุ่มเพื่อนร่วมทีมเป็นทีมต่าง ๆ แต่ละทีมมีปฏิทินของตัวเอง สมาชิกจะเห็นเฉพาะการจองของทีมที่ตนสังกัด",
-      "listEmpty": "คุณยังไม่มีทีม",
-      "createButton": "สร้างทีม",
+      "title": "%team%",
+      "description": "จัดกลุ่มเพื่อนร่วม%team%เป็น%team%ต่าง ๆ แต่ละ%team%มีปฏิทินของตัวเอง สมาชิกจะเห็นเฉพาะ%booking%ของ%team%ที่ตนสังกัด",
+      "listEmpty": "คุณยังไม่มี%team%",
+      "createButton": "สร้าง%team%",
       "toolbar": {
-        "search": "ค้นหาทีม",
-        "searchLabel": "ค้นหาทีมตามชื่อ",
+        "search": "ค้นหา%team%",
+        "searchLabel": "ค้นหา%team%ตามชื่อ",
         "showDeactivated": "แสดงที่ปิดใช้งาน"
       },
       "table": {
-        "empty": "ไม่มีทีมที่ตรงกับการค้นหาของคุณ",
+        "empty": "ไม่มี%team%ที่ตรงกับการค้นหาของคุณ",
         "col": {
           "color": "สี",
-          "name": "ทีม",
+          "name": "%team%",
           "members": "สมาชิก",
           "monthlyAverage": "ค่าเฉลี่ยรายเดือน",
           "actions": "การดำเนินการ"
@@ -1962,38 +1962,38 @@
         "hexLabel": "รหัสเฮกซ์"
       },
       "createDialog": {
-        "title": "สร้างทีม",
-        "description": "ตั้งชื่อทีมและเลือกสีสำหรับชิปในปฏิทิน",
-        "nameLabel": "ชื่อทีม",
+        "title": "สร้าง%team%",
+        "description": "ตั้งชื่อ%team%และเลือกสีสำหรับชิปในปฏิทิน",
+        "nameLabel": "ชื่อ%team%",
         "namePlaceholder": "เช่น ทีมงานแต่งงาน",
         "colorLabel": "สี",
-        "submit": "สร้างทีม",
+        "submit": "สร้าง%team%",
         "cancel": "ยกเลิก",
         "creating": "กำลังสร้าง…"
       },
       "renameDialog": {
-        "title": "เปลี่ยนชื่อทีม",
+        "title": "เปลี่ยนชื่อ%team%",
         "submit": "บันทึก",
         "saving": "กำลังบันทึก…",
         "cancel": "ยกเลิก"
       },
       "deactivateDialog": {
-        "title": "ปิดใช้งานทีมนี้หรือไม่?",
-        "description": "\"{name}\" จะถูกซ่อนจากรายการทีมที่ใช้งานอยู่และไม่สามารถรับการจองใหม่ได้อีก สมาชิก การจอง และประวัติของทีมยังคงถูกเก็บไว้ และคุณสามารถเปิดใช้งานอีกครั้งได้ทุกเมื่อ",
-        "confirm": "ปิดใช้งานทีม",
+        "title": "ปิดใช้งาน%team%นี้หรือไม่?",
+        "description": "\"{name}\" จะถูกซ่อนจากรายการ%team%ที่ใช้งานอยู่และไม่สามารถรับ%booking%ใหม่ได้อีก สมาชิก %booking% และประวัติของ%team%ยังคงถูกเก็บไว้ และคุณสามารถเปิดใช้งานอีกครั้งได้ทุกเมื่อ",
+        "confirm": "ปิดใช้งาน%team%",
         "deactivating": "กำลังปิดใช้งาน…",
         "cancel": "ยกเลิก"
       },
       "reactivateDialog": {
-        "title": "เปิดใช้งานทีมอีกครั้งหรือไม่?",
-        "description": "\"{name}\" จะกลับมาใช้งานได้อีกครั้งและรับการจองใหม่ได้ สิ่งนี้นับรวมในขีดจำกัดทีมที่ใช้งานได้ของแพ็กเกจของคุณ",
-        "confirm": "เปิดใช้งานทีมอีกครั้ง",
+        "title": "เปิดใช้งาน%team%อีกครั้งหรือไม่?",
+        "description": "\"{name}\" จะกลับมาใช้งานได้อีกครั้งและรับ%booking%ใหม่ได้ สิ่งนี้นับรวมในขีดจำกัด%team%ที่ใช้งานได้ของแพ็กเกจของคุณ",
+        "confirm": "เปิดใช้งาน%team%อีกครั้ง",
         "reactivating": "กำลังเปิดใช้งาน…",
         "cancel": "ยกเลิก"
       },
       "team": {
         "memberCount": "{count, plural, =0 {ยังไม่มีสมาชิก} =1 {1 สมาชิก} other {# สมาชิก}}",
-        "monthlyBookings": "{count, number} การจอง/เดือน",
+        "monthlyBookings": "{count, number} %booking%/เดือน",
         "defaultBadge": "ค่าเริ่มต้น",
         "edit": "แก้ไข",
         "rename": "เปลี่ยนชื่อ",
@@ -2005,71 +2005,71 @@
         "inactiveBadge": "ไม่ใช้งาน"
       },
       "editDialog": {
-        "title": "แก้ไขทีม",
+        "title": "แก้ไข%team%",
         "submit": "บันทึกการเปลี่ยนแปลง",
         "saving": "กำลังบันทึก…"
       },
       "drawer": {
         "membersHeading": "สมาชิก",
         "memberCount": "{count}/{max} สมาชิก",
-        "noMembers": "ทีมนี้ยังไม่มีสมาชิก",
+        "noMembers": "%team%นี้ยังไม่มีสมาชิก",
         "addMemberLabel": "เพิ่มสมาชิกที่มีอยู่",
         "addMemberPlaceholder": "เลือกสมาชิก…",
-        "noAssignableMembers": "ทุกคนในเวิร์กสเปซนี้อยู่ในทีมนี้แล้ว",
+        "noAssignableMembers": "ทุกคนในเวิร์กสเปซนี้อยู่ใน%team%นี้แล้ว",
         "pendingHeading": "คำเชิญที่รอดำเนินการ",
-        "noPending": "ไม่มีคำเชิญที่รอดำเนินการสำหรับทีมนี้",
-        "inviteToTeam": "เชิญเข้าร่วมทีมนี้",
+        "noPending": "ไม่มีคำเชิญที่รอดำเนินการสำหรับ%team%นี้",
+        "inviteToTeam": "เชิญเข้าร่วม%team%นี้",
         "leadToggleLabel": "หัวหน้า",
-        "leadOnlyOnePerTeam": "ทีมหนึ่งมีหัวหน้าได้เพียงคนเดียว",
+        "leadOnlyOnePerTeam": "%team%หนึ่งมีหัวหน้าได้เพียงคนเดียว",
         "removeFromTeam": "ลบออก",
-        "teamFull": "ทีมนี้เต็มแล้ว",
+        "teamFull": "%team%นี้เต็มแล้ว",
         "close": "ปิด",
         "removeMemberFlow": {
           "confirmTitle": "ลบ {name} ออกจาก {team} หรือไม่?",
-          "confirmDescription": "พวกเขาจะเสียสิทธิ์เข้าถึงปฏิทินและการจองของทีมนี้",
-          "confirmButton": "ลบออกจากทีม",
-          "removeFromTeamAndWorkspace": "ลบออกจากทีม + เวิร์กสเปซ",
-          "otherTeamsBlocked": "สมาชิกคนนี้อยู่ในทีมอื่นด้วย โปรดลบออกจากทีมนั้นก่อน",
+          "confirmDescription": "พวกเขาจะเสียสิทธิ์เข้าถึงปฏิทินและ%booking%ของ%team%นี้",
+          "confirmButton": "ลบออกจาก%team%",
+          "removeFromTeamAndWorkspace": "ลบออกจาก%team% + เวิร์กสเปซ",
+          "otherTeamsBlocked": "สมาชิกคนนี้อยู่ใน%team%อื่นด้วย โปรดลบออกจาก%team%นั้นก่อน",
           "removing": "กำลังลบ…",
           "workspacePromptTitle": "ลบ {name} ออกจากเวิร์กสเปซด้วยหรือไม่?",
-          "workspacePromptDescription": "พวกเขาจะเสียสิทธิ์เข้าถึงทุกทีมและเวิร์กสเปซทั้งหมด ไม่สามารถย้อนกลับได้",
+          "workspacePromptDescription": "พวกเขาจะเสียสิทธิ์เข้าถึงทุก%team%และเวิร์กสเปซทั้งหมด ไม่สามารถย้อนกลับได้",
           "dontAskAgain": "ไม่ต้องถามอีก",
           "removeFromWorkspaceButton": "ลบออกจากเวิร์กสเปซ",
           "keepInWorkspaceButton": "คงไว้ในเวิร์กสเปซ"
         }
       },
       "upsell": {
-        "atCapTitle": "คุณถึงขีดจำกัดจำนวนทีมแล้ว",
-        "atCapBody": "แพ็กเกจ {plan} ของคุณรองรับได้ {max} {max, plural, =1 {ทีม} other {ทีม}} อัปเกรดเพื่อเพิ่มได้อีก",
+        "atCapTitle": "คุณถึงขีดจำกัดจำนวน%team%แล้ว",
+        "atCapBody": "แพ็กเกจ {plan} ของคุณรองรับได้ {max} {max, plural, =1 {%team%} other {%team%}} อัปเกรดเพื่อเพิ่มได้อีก",
         "cta": "ดูแพ็กเกจ",
-        "proAtCapBody": "แพ็กเกจ Pro รองรับได้สูงสุด {max} ทีม ติดต่อฝ่ายสนับสนุนหากต้องการมากกว่านี้"
+        "proAtCapBody": "แพ็กเกจ Pro รองรับได้สูงสุด {max} %team% ติดต่อฝ่ายสนับสนุนหากต้องการมากกว่านี้"
       },
       "errors": {
-        "nameRequired": "ต้องระบุชื่อทีม",
-        "nameTooLong": "ชื่อทีมต้องมีความยาวไม่เกิน 40 ตัวอักษร",
-        "duplicateName": "มีทีมชื่อนี้อยู่แล้วในเวิร์กสเปซนี้",
-        "teamNotFound": "ไม่พบทีม",
+        "nameRequired": "ต้องระบุชื่อ%team%",
+        "nameTooLong": "ชื่อ%team%ต้องมีความยาวไม่เกิน 40 ตัวอักษร",
+        "duplicateName": "มี%team%ชื่อนี้อยู่แล้วในเวิร์กสเปซนี้",
+        "teamNotFound": "ไม่พบ%team%",
         "generic": "เกิดข้อผิดพลาดบางอย่าง โปรดลองอีกครั้ง",
-        "cannotDeactivateDefault": "ไม่สามารถปิดใช้งานทีมค่าเริ่มต้นได้",
-        "reactivateCapExceeded": "การเปิดใช้งานอีกครั้งจะเกินขีดจำกัดทีมที่ใช้งานได้ของแพ็กเกจของคุณ ปิดใช้งานทีมอื่นหรืออัปเกรดแพ็กเกจของคุณก่อน"
+        "cannotDeactivateDefault": "ไม่สามารถปิดใช้งาน%team%ค่าเริ่มต้นได้",
+        "reactivateCapExceeded": "การเปิดใช้งานอีกครั้งจะเกินขีดจำกัด%team%ที่ใช้งานได้ของแพ็กเกจของคุณ ปิดใช้งาน%team%อื่นหรืออัปเกรดแพ็กเกจของคุณก่อน"
       },
       "toasts": {
-        "created": "สร้างทีมแล้ว",
-        "renamed": "เปลี่ยนชื่อทีมแล้ว",
+        "created": "สร้าง%team%แล้ว",
+        "renamed": "เปลี่ยนชื่อ%team%แล้ว",
         "colorChanged": "อัปเดตสีแล้ว",
-        "saved": "อัปเดตทีมแล้ว",
-        "deactivated": "ปิดใช้งานทีมแล้ว",
-        "reactivated": "เปิดใช้งานทีมอีกครั้งแล้ว"
+        "saved": "อัปเดต%team%แล้ว",
+        "deactivated": "ปิดใช้งาน%team%แล้ว",
+        "reactivated": "เปิดใช้งาน%team%อีกครั้งแล้ว"
       },
-      "teamsHeading": "ทีม",
+      "teamsHeading": "%team%",
       "invite": {
         "button": "เชิญสมาชิก",
         "dialog": {
           "title": "เชิญเพื่อนร่วมทีม",
-          "description": "พวกเขาจะได้รับคำเชิญทางอีเมล เมื่อยอมรับแล้ว พวกเขาจะปรากฏในรายชื่อสมาชิกของคุณโดยกำหนดในทีมที่คุณเลือก",
+          "description": "พวกเขาจะได้รับคำเชิญทางอีเมล เมื่อยอมรับแล้ว พวกเขาจะปรากฏในรายชื่อสมาชิกของคุณโดยกำหนดใน%team%ที่คุณเลือก",
           "emailLabel": "ที่อยู่อีเมล",
           "emailPlaceholder": "teammate@example.com",
-          "teamsLabel": "เพิ่มเข้าทีมเหล่านี้",
+          "teamsLabel": "เพิ่มเข้า%team%เหล่านี้",
           "leadLabel": "หัวหน้า",
           "teamFull": "เต็ม",
           "submit": "ส่งคำเชิญ",
@@ -2078,12 +2078,12 @@
         },
         "errors": {
           "emailRequired": "กรอกที่อยู่อีเมลที่ถูกต้อง",
-          "pickAtLeastOneTeam": "เลือกอย่างน้อยหนึ่งทีมที่จะเพิ่มพวกเขาเข้าไป",
-          "teamFull": "ทีมเหล่านี้เต็มแล้วและไม่สามารถรับสมาชิกใหม่ได้: {teams}",
-          "teamAlreadyHasLead": "ทีมเหล่านี้มีหัวหน้าอยู่แล้ว: {teams}",
-          "teamNotFound": "ไม่พบหนึ่งในทีมที่เลือก",
+          "pickAtLeastOneTeam": "เลือกอย่างน้อยหนึ่ง%team%ที่จะเพิ่มพวกเขาเข้าไป",
+          "teamFull": "%team%เหล่านี้เต็มแล้วและไม่สามารถรับสมาชิกใหม่ได้: {teams}",
+          "teamAlreadyHasLead": "%team%เหล่านี้มีหัวหน้าอยู่แล้ว: {teams}",
+          "teamNotFound": "ไม่พบหนึ่งใน%team%ที่เลือก",
           "alreadyInvitedOrMember": "อีเมลนี้มีคำเชิญอยู่แล้วหรือเป็นสมาชิกเวิร์กสเปซอยู่แล้ว",
-          "noTeamsExist": "สร้างทีมก่อนเชิญสมาชิก"
+          "noTeamsExist": "สร้าง%team%ก่อนเชิญสมาชิก"
         },
         "toasts": {
           "sent": "ส่งคำเชิญแล้ว",
@@ -2091,7 +2091,7 @@
         },
         "revokeDialog": {
           "title": "เพิกถอนคำเชิญหรือไม่?",
-          "description": "คำเชิญสำหรับ {email} จะถูกยกเลิกและที่นั่งทีมที่จองไว้จะถูกปล่อยคืน",
+          "description": "คำเชิญสำหรับ {email} จะถูกยกเลิกและที่นั่ง%team%ที่จองไว้จะถูกปล่อยคืน",
           "confirm": "เพิกถอนคำเชิญ"
         }
       },
@@ -2102,7 +2102,7 @@
         "leadBadge": "หัวหน้า",
         "memberBadge": "สมาชิก",
         "pendingBadge": "รอดำเนินการ",
-        "manageTeams": "จัดการทีม",
+        "manageTeams": "จัดการ%team%",
         "removeFromWorkspace": "ลบออกจากเวิร์กสเปซ",
         "revokeInvite": "เพิกถอนคำเชิญ",
         "rowActionsLabel": "การดำเนินการสำหรับ {name}",
@@ -2110,7 +2110,7 @@
         "inviteCountsLabel": "จำนวนคำเชิญ",
         "newlyAcceptedCount": "ใหม่ {count}",
         "pendingCount": "รอดำเนินการ {count}",
-        "description": "ทุกคนที่มีสิทธิ์เข้าถึงเวิร์กสเปซนี้ ในทุกทีม",
+        "description": "ทุกคนที่มีสิทธิ์เข้าถึงเวิร์กสเปซนี้ ในทุก%team%",
         "modeLabel": "รายการสมาชิก",
         "active": "ใช้งานอยู่",
         "pending": "รอดำเนินการ",
@@ -2118,13 +2118,13 @@
         "noActiveMatches": "ไม่มีสมาชิกที่ตรงกับการค้นหาของคุณ",
         "noPendingMatches": "ไม่มีคำเชิญที่รอดำเนินการตรงกับการค้นหาของคุณ",
         "noPending": "ไม่มีคำเชิญที่รอดำเนินการ",
-        "moreTeams": "+{count} ทีมเพิ่มเติม",
-        "ownerAllTeams": "สามารถดูแลทุกทีมได้",
-        "noTeams": "ไม่ได้อยู่ในทีมใด",
+        "moreTeams": "+{count} %team%เพิ่มเติม",
+        "ownerAllTeams": "สามารถดูแลทุก%team%ได้",
+        "noTeams": "ไม่ได้อยู่ใน%team%ใด",
         "removeFromWorkspaceLabel": "ลบ {name} ออกจากเวิร์กสเปซ",
         "removeDialog": {
           "title": "ลบสมาชิกหรือไม่?",
-          "description": "{name} จะเสียสิทธิ์เข้าถึงเวิร์กสเปซนี้ทันที การจองของพวกเขายังคงอยู่ ที่นั่งทีมจะถูกปล่อยคืน ไม่สามารถย้อนกลับได้",
+          "description": "{name} จะเสียสิทธิ์เข้าถึงเวิร์กสเปซนี้ทันที %booking%ของพวกเขายังคงอยู่ ที่นั่ง%team%จะถูกปล่อยคืน ไม่สามารถย้อนกลับได้",
           "confirm": "ลบสมาชิก"
         },
         "details": {
@@ -2133,8 +2133,8 @@
             "details": "รายละเอียด",
             "history": "ประวัติ"
           },
-          "teams": "ทีม",
-          "noTeams": "ไม่มีทีม",
+          "teams": "%team%",
+          "noTeams": "ไม่มี%team%",
           "completed": "เสร็จสิ้น",
           "workingNow": "กำลังดำเนินการ",
           "future": "ในอนาคต",
@@ -2158,7 +2158,7 @@
         },
         "errors": {
           "cannotRemoveOwner": "ไม่สามารถลบเจ้าของเวิร์กสเปซได้",
-          "isTeamLead": "{name} เป็นหัวหน้าทีมอย่างน้อยหนึ่งทีม โปรดยกเลิกสถานะหัวหน้าทีมของเขาก่อนลบ"
+          "isTeamLead": "{name} เป็นหัวหน้า%team%อย่างน้อยหนึ่ง%team% โปรดยกเลิกสถานะหัวหน้า%team%ของเขาก่อนลบ"
         },
         "toasts": {
           "removed": "ลบสมาชิกแล้ว"
@@ -2166,18 +2166,18 @@
       },
       "assignment": {
         "dialog": {
-          "title": "จัดการการมอบหมายทีม",
-          "description": "เพิ่มหรือลบ {name} จากทีม สลับสถานะหัวหน้าเพื่อให้สิทธิ์แก้ไขภายในทีม",
+          "title": "จัดการการมอบหมาย%team%",
+          "description": "เพิ่มหรือลบ {name} จาก%team% สลับสถานะหัวหน้าเพื่อให้สิทธิ์แก้ไขภายใน%team%",
           "add": "เพิ่ม",
           "remove": "ลบ",
           "done": "เสร็จสิ้น"
         },
         "errors": {
-          "alreadyOnTeam": "สมาชิกคนนี้อยู่ในทีมนี้อยู่แล้ว"
+          "alreadyOnTeam": "สมาชิกคนนี้อยู่ใน%team%นี้อยู่แล้ว"
         },
         "toasts": {
-          "added": "เพิ่มเข้าทีมแล้ว",
-          "removed": "ลบออกจากทีมแล้ว",
+          "added": "เพิ่มเข้า%team%แล้ว",
+          "removed": "ลบออกจาก%team%แล้ว",
           "promoted": "เลื่อนเป็นหัวหน้าแล้ว",
           "demoted": "ปรับเป็นสมาชิกแล้ว",
           "promoting": "กำลังโอนบทบาทหัวหน้า…",
@@ -2186,24 +2186,24 @@
       },
       "downgradeBlock": {
         "title": "การปรับลดแพ็กเกจถูกบล็อก",
-        "description": "คุณอยู่ในแพ็กเกจ {currentPlan} ซึ่งมีทีมมากกว่าที่แพ็กเกจ {targetPlan} รองรับ (สูงสุด {maxTeams} ทีม) ลบทีม {excess} ทีมก่อนเปลี่ยนแพ็กเกจ",
-        "teamsHeading": "ทีมปัจจุบัน",
+        "description": "คุณอยู่ในแพ็กเกจ {currentPlan} ซึ่งมี%team%มากกว่าที่แพ็กเกจ {targetPlan} รองรับ (สูงสุด {maxTeams} %team%) ลบ%team% {excess} %team%ก่อนเปลี่ยนแพ็กเกจ",
+        "teamsHeading": "%team%ปัจจุบัน",
         "dismiss": "รับทราบ",
-        "manageTeams": "จัดการทีม"
+        "manageTeams": "จัดการ%team%"
       }
     },
     "clients": {
-      "title": "ลูกค้า",
-      "listEmpty": "คุณยังไม่มีลูกค้า",
-      "listEmptyHint": "เพิ่มลูกค้ารายแรกของคุณเพื่อเริ่มติดตามการจองและประวัติ",
+      "title": "%client%",
+      "listEmpty": "คุณยังไม่มี%client%",
+      "listEmptyHint": "เพิ่ม%client%รายแรกของคุณเพื่อเริ่มติดตาม%booking%และประวัติ",
       "toolbar": {
         "search": "ค้นหาตามชื่อหรืออีเมล",
-        "searchLabel": "ค้นหาลูกค้า",
+        "searchLabel": "ค้นหา%client%",
         "sourceAll": "ทุกแหล่งที่มา",
         "tagsAll": "ทุกแท็ก",
         "tagsSelected": "{count} {count, plural, one {แท็ก} other {แท็ก}}",
         "showInactive": "แสดงที่ไม่ใช้งาน",
-        "add": "เพิ่มลูกค้า"
+        "add": "เพิ่ม%client%"
       },
       "sourceValues": {
         "form": "แบบฟอร์ม",
@@ -2212,7 +2212,7 @@
         "import": "นำเข้า"
       },
       "table": {
-        "empty": "ไม่มีลูกค้าที่ตรงกับตัวกรองของคุณ",
+        "empty": "ไม่มี%client%ที่ตรงกับตัวกรองของคุณ",
         "col": {
           "name": "ชื่อ",
           "contact": "ติดต่อ",
@@ -2220,10 +2220,10 @@
           "totalSpent": "ยอดใช้จ่ายรวม",
           "actions": "การดำเนินการ"
         },
-        "bookings": "{count} การจอง",
+        "bookings": "{count} %booking%",
         "lastBooking": "ล่าสุด: {date}",
-        "noBookings": "ยังไม่มีการจอง",
-        "openMenu": "เปิดเมนูลูกค้า",
+        "noBookings": "ยังไม่มี%booking%",
+        "openMenu": "เปิดเมนู%client%",
         "openClient": "เปิด {name}",
         "view": "ดู",
         "edit": "แก้ไข",
@@ -2231,8 +2231,8 @@
         "reactivate": "เปิดใช้งานอีกครั้ง"
       },
       "form": {
-        "addTitle": "เพิ่มลูกค้า",
-        "editTitle": "แก้ไขลูกค้า",
+        "addTitle": "เพิ่ม%client%",
+        "editTitle": "แก้ไข%client%",
         "name": "ชื่อ",
         "namePlaceholder": "เช่น มาเรีย ซานโตส",
         "email": "อีเมล",
@@ -2244,14 +2244,14 @@
         "tagsPlaceholder": "เพิ่มแท็ก",
         "removeTag": "ลบแท็ก {tag}",
         "notes": "หมายเหตุ",
-        "notesPlaceholder": "หมายเหตุใด ๆ เกี่ยวกับลูกค้ารายนี้…",
+        "notesPlaceholder": "หมายเหตุใด ๆ เกี่ยวกับ%client%รายนี้…",
         "save": "บันทึก",
         "view": "ดู",
         "saving": "กำลังบันทึก…",
         "cancel": "ยกเลิก",
-        "createSuccess": "สร้างลูกค้าแล้ว",
-        "linkSuccess": "เชื่อมกับลูกค้าที่มีอยู่แล้ว",
-        "updateSuccess": "อัปเดตลูกค้าแล้ว",
+        "createSuccess": "สร้าง%client%แล้ว",
+        "linkSuccess": "เชื่อมกับ%client%ที่มีอยู่แล้ว",
+        "updateSuccess": "อัปเดต%client%แล้ว",
         "error": "เกิดข้อผิดพลาดบางอย่าง โปรดลองอีกครั้ง"
       },
       "detail": {
@@ -2259,13 +2259,13 @@
         "retry": "ลองอีกครั้ง",
         "tabs": {
           "overview": "ภาพรวม",
-          "bookings": "การจอง",
+          "bookings": "%booking%",
           "payments": "การชำระเงิน"
         },
         "overview": {
           "totalSpent": "ยอดใช้จ่ายรวม",
-          "bookingsCount": "การจอง",
-          "lastBooking": "การจองล่าสุด",
+          "bookingsCount": "%booking%",
+          "lastBooking": "%booking%ล่าสุด",
           "never": "ไม่เคย",
           "contact": "ติดต่อ",
           "noEmail": "—",
@@ -2277,9 +2277,9 @@
           "noNotes": "ไม่มีหมายเหตุ"
         },
         "bookings": {
-          "loading": "กำลังโหลดการจอง…",
-          "empty": "ยังไม่มีการจอง",
-          "error": "โหลดการจองไม่สำเร็จ"
+          "loading": "กำลังโหลด%booking%…",
+          "empty": "ยังไม่มี%booking%",
+          "error": "โหลด%booking%ไม่สำเร็จ"
         },
         "payments": {
           "empty": "ยังไม่มีบันทึกการชำระเงิน"
@@ -2290,38 +2290,38 @@
         "close": "ปิด"
       },
       "deactivate": {
-        "title": "ปิดใช้งานลูกค้ารายนี้หรือไม่?",
-        "body": "ลูกค้ารายนี้จะถูกซ่อนจากรายการที่ใช้งานอยู่ คุณสามารถเปิดใช้งานอีกครั้งได้ทุกเมื่อโดยเปิด 'แสดงที่ไม่ใช้งาน' ในรายการลูกค้า",
+        "title": "ปิดใช้งาน%client%รายนี้หรือไม่?",
+        "body": "%client%รายนี้จะถูกซ่อนจากรายการที่ใช้งานอยู่ คุณสามารถเปิดใช้งานอีกครั้งได้ทุกเมื่อโดยเปิด 'แสดงที่ไม่ใช้งาน' ในรายการ%client%",
         "cancel": "ยกเลิก",
         "confirm": "ปิดใช้งาน"
       },
       "unsaved": {
         "title": "ยกเลิกการเปลี่ยนแปลงของคุณหรือไม่?",
-        "body": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึกสำหรับลูกค้ารายนี้ จะหายไปหากคุณปิดตอนนี้",
+        "body": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึกสำหรับ%client%รายนี้ จะหายไปหากคุณปิดตอนนี้",
         "keep": "แก้ไขต่อ",
         "discard": "ยกเลิกและปิด"
       },
       "matchDialog": {
-        "title": "ลูกค้ารายนี้เป็นหนึ่งในรายชื่อนี้หรือไม่?",
-        "bookingsCount": "{count, plural, other {# การจอง}}",
-        "escapeCreate": "ไม่ใช่ นี่คือลูกค้าใหม่",
-        "escapeLink": "เชื่อมโยงกับลูกค้าใหม่",
+        "title": "%client%รายนี้เป็นหนึ่งในรายชื่อนี้หรือไม่?",
+        "bookingsCount": "{count, plural, other {# %booking%}}",
+        "escapeCreate": "ไม่ใช่ นี่คือ%client%ใหม่",
+        "escapeLink": "เชื่อมโยงกับ%client%ใหม่",
         "cancel": "ยกเลิก",
-        "submitCreate": "บันทึกลูกค้า",
-        "submitLink": "เชื่อมโยงลูกค้า",
+        "submitCreate": "บันทึก%client%",
+        "submitLink": "เชื่อมโยง%client%",
         "reconcileTitle": "{count} ฟิลด์แตกต่างกัน - เลือกค่าที่ต้องการเก็บไว้",
         "current": "ค่าปัจจุบัน",
         "typed": "ค่าที่คุณป้อน",
         "additiveTitle": "จะถูกเพิ่ม (ไม่มีความขัดแย้ง)"
       },
       "toasts": {
-        "reactivating": "กำลังเปิดใช้งานลูกค้าอีกครั้ง…",
-        "deactivating": "กำลังปิดใช้งานลูกค้า…"
+        "reactivating": "กำลังเปิดใช้งาน%client%อีกครั้ง…",
+        "deactivating": "กำลังปิดใช้งาน%client%…"
       }
     },
     "inquiries": {
-      "title": "คำขอจอง",
-      "subtitle": "คำขอจองจากพอร์ตโฟลิโอสาธารณะของคุณ",
+      "title": "%inquiry%",
+      "subtitle": "%inquiry%จากพอร์ตโฟลิโอสาธารณะของคุณ",
       "toolbar": {
         "from": "จาก",
         "to": "ถึง",
@@ -2331,15 +2331,15 @@
       },
       "tabs": {
         "all": "ทั้งหมด",
-        "inquiry": "คำขอจอง",
+        "inquiry": "%inquiry%",
         "booked": "จองแล้ว",
         "archived": "เก็บถาวร"
       },
       "statusValues": {
-        "inquiry": "คำขอจอง",
+        "inquiry": "%inquiry%",
         "archived": "เก็บถาวร",
         "booked": "จองแล้ว",
-        "converted": "แปลงเป็นการจองแล้ว"
+        "converted": "แปลงเป็น%booking%แล้ว"
       },
       "eventTypes": {
         "wedding": "งานแต่งงาน",
@@ -2355,17 +2355,17 @@
         "either": "ทั้งสองอย่าง"
       },
       "table": {
-        "empty": "ยังไม่มีคำขอจอง",
+        "empty": "ยังไม่มี%inquiry%",
         "filteredEmpty": "ไม่มีคำขอที่ตรงกับตัวกรองของคุณ",
         "emptyHint": "เมื่อมีผู้ส่งแบบฟอร์มติดต่อในพอร์ตโฟลิโอของคุณ คำขอของพวกเขาจะปรากฏที่นี่",
         "viewPublicPage": "ดูหน้าเว็บสาธารณะของคุณ",
-        "open": "เปิดคำขอจองจาก {name}",
+        "open": "เปิด%inquiry%จาก {name}",
         "noDate": "ไม่มีวันที่",
         "directSource": "โดยตรง",
         "col": {
           "booked": "จองเมื่อ",
           "status": "สถานะ",
-          "client": "ลูกค้า",
+          "client": "%client%",
           "eventDate": "วันที่งาน",
           "eventType": "ประเภท",
           "submitted": "ส่งเมื่อ",
@@ -2377,20 +2377,20 @@
         "conflict": "ขัดแย้ง",
         "actions": {
           "view": "ดู",
-          "menuLabel": "เปิดเมนูการดำเนินการของคำขอจอง"
+          "menuLabel": "เปิดเมนูการดำเนินการของ%inquiry%"
         }
       },
       "detail": {
-        "back": "กลับไปยังคำขอจอง",
-        "conflictBanner": "มีอย่างน้อยหนึ่งเซสชันขัดแย้งกับการจองที่มีอยู่แล้ว",
+        "back": "กลับไปยัง%inquiry%",
+        "conflictBanner": "มีอย่างน้อยหนึ่งเซสชันขัดแย้งกับ%booking%ที่มีอยู่แล้ว",
         "loadingTitle": "คำขอ",
         "loading": "กำลังโหลดคำขอ...",
         "loadError": "ไม่สามารถโหลดคำขอนี้ได้",
         "retry": "ลองอีกครั้ง",
         "submittedOn": "ส่งเมื่อ {date}",
-        "notFound": "ไม่พบคำขอจอง",
+        "notFound": "ไม่พบ%inquiry%",
         "clientInfo": {
-          "title": "ข้อมูลลูกค้า",
+          "title": "ข้อมูล%client%",
           "name": "ชื่อ",
           "email": "อีเมล",
           "phone": "โทรศัพท์",
@@ -2402,9 +2402,9 @@
           "savedToast": "อัปเดตเบอร์โทรศัพท์แล้ว"
         },
         "clientMatch": {
-          "warning": "คำขอนี้อาจเป็นของลูกค้าที่มีอยู่แล้ว",
-          "resolveButton": "จัดการลูกค้า",
-          "resolvedToast": "อัปเดตลูกค้าแล้ว"
+          "warning": "คำขอนี้อาจเป็นของ%client%ที่มีอยู่แล้ว",
+          "resolveButton": "จัดการ%client%",
+          "resolvedToast": "อัปเดต%client%แล้ว"
         },
         "eventRequest": {
           "title": "คำขอสำหรับงาน",
@@ -2416,49 +2416,49 @@
           "none": "—"
         },
         "bookingDraft": {
-          "title": "ฉบับร่างการจอง",
-          "description": "การแปลงคำขอนี้จะสร้างการจองในปฏิทินของคุณ ตั้งราคาตอนนี้หรือภายหลังก็ได้",
+          "title": "ฉบับร่าง%booking%",
+          "description": "การแปลงคำขอนี้จะสร้าง%booking%ในปฏิทินของคุณ ตั้งราคาตอนนี้หรือภายหลังก็ได้",
           "total": "ยอดรวม",
           "deposit": "มัดจำ",
           "notes": "หมายเหตุภายใน",
           "notesPlaceholder": "หมายเหตุที่เห็นได้เฉพาะคุณ…",
           "save": "บันทึกการแก้ไข",
           "saving": "กำลังบันทึก…",
-          "approve": "แปลงเป็นการจอง",
+          "approve": "แปลงเป็น%booking%",
           "approving": "กำลังแปลง…",
           "approved": "แปลงแล้ว",
-          "missing": "ไม่มีฉบับร่างการจองที่เชื่อมโยงกับคำขอนี้",
+          "missing": "ไม่มีฉบับร่าง%booking%ที่เชื่อมโยงกับคำขอนี้",
           "alreadyConverted": "คำขอนี้ได้รับการอนุมัติแล้ว",
-          "viewBooking": "ดูการจอง",
+          "viewBooking": "ดู%booking%",
           "approveError": "ไม่สามารถแปลงได้ โปรดลองอีกครั้ง",
           "saveError": "ไม่สามารถบันทึกได้ โปรดลองอีกครั้ง",
           "savedToast": "บันทึกฉบับร่างแล้ว",
-          "ownerOnly": "เฉพาะเจ้าของเวิร์กสเปซเท่านั้นที่สามารถแปลงการจองได้",
+          "ownerOnly": "เฉพาะเจ้าของเวิร์กสเปซเท่านั้นที่สามารถแปลง%booking%ได้",
           "conflictBlocks": "แก้ไขความขัดแย้งของตารางเวลาด้านบนก่อนแปลง",
-          "team": "ทีม",
+          "team": "%team%",
           "changedUnderneath": "มีผู้อื่นแก้ไขฉบับร่างนี้ การแก้ไขของคุณยังอยู่ ตรวจสอบช่องอื่นก่อนบันทึก",
-          "notDraft": "การจองนี้ได้รับการอนุมัติแล้ว โหลดใหม่เพื่อดูข้อมูลล่าสุด"
+          "notDraft": "%booking%นี้ได้รับการอนุมัติแล้ว โหลดใหม่เพื่อดูข้อมูลล่าสุด"
         },
         "actions": {
           "decline": "ปฏิเสธและแจ้งเตือน",
-          "declinedToast": "ปฏิเสธคำขอจองแล้ว — ลูกค้าได้รับแจ้งแล้ว",
+          "declinedToast": "ปฏิเสธ%inquiry%แล้ว — %client%ได้รับแจ้งแล้ว",
           "archive": "เก็บถาวร",
           "working": "กำลังบันทึก…",
-          "archivedToast": "เก็บถาวรคำขอจองแล้ว",
-          "approvedToast": "แปลงเป็นการจองแล้ว",
+          "archivedToast": "เก็บถาวร%inquiry%แล้ว",
+          "approvedToast": "แปลงเป็น%booking%แล้ว",
           "errorToast": "เกิดข้อผิดพลาดบางอย่าง โปรดลองอีกครั้ง"
         },
         "history": {
           "title": "ประวัติ",
-          "submitted": "ส่งคำขอจองแล้ว",
-          "booked": "อนุมัติเป็นการจองแล้ว"
+          "submitted": "ส่ง%inquiry%แล้ว",
+          "booked": "อนุมัติเป็น%booking%แล้ว"
         },
         "sessionsEditor": {
           "edit": "แก้ไขเซสชัน",
           "save": "บันทึกการเปลี่ยนแปลง",
           "saving": "กำลังบันทึก…",
           "discard": "ยกเลิก",
-          "conflictBlocks": "มีอย่างน้อยหนึ่งเซสชันขัดแย้งกับการจองที่มีอยู่แล้ว",
+          "conflictBlocks": "มีอย่างน้อยหนึ่งเซสชันขัดแย้งกับ%booking%ที่มีอยู่แล้ว",
           "pastDate": "เซสชันต้องอยู่ในอนาคต",
           "lockedConverted": "เซสชันถูกล็อกหลังจากแปลงแล้ว",
           "lockedArchived": "เซสชันถูกล็อก (เก็บถาวรแล้ว)",
@@ -2481,17 +2481,17 @@
         "calendar": "ปฏิทิน"
       },
       "calendar": {
-        "empty": "ไม่มีคำขอจองหรือการจองให้แสดง",
+        "empty": "ไม่มี%inquiry%หรือ%booking%ให้แสดง",
         "filters": {
-          "inquiry": "คำขอจอง",
+          "inquiry": "%inquiry%",
           "booked": "จองแล้ว",
           "conflicted": "ขัดแย้ง"
         },
-        "rescheduleConflict": "เวลานี้ขัดแย้งกับการจองที่มีอยู่แล้ว การย้ายจึงถูกยกเลิก",
+        "rescheduleConflict": "เวลานี้ขัดแย้งกับ%booking%ที่มีอยู่แล้ว การย้ายจึงถูกยกเลิก",
         "rescheduleFailed": "ไม่สามารถเลื่อนกำหนดการได้ — โปรดลองอีกครั้ง",
         "updating": "กำลังเลื่อนกำหนดการ…",
         "updated": "เลื่อนกำหนดการเซสชันแล้ว",
-        "emptyPeriod": "ไม่มีคำขอจองในช่วงเวลานี้"
+        "emptyPeriod": "ไม่มี%inquiry%ในช่วงเวลานี้"
       }
     },
     "pageBuilder": {
@@ -2706,7 +2706,7 @@
           "altHint": "ใช้ในทุกที่ที่ภาพนี้ปรากฏ",
           "dateLabel": "วันที่",
           "locationLabel": "สถานที่",
-          "clientLabel": "ลูกค้า",
+          "clientLabel": "%client%",
           "tagsLabel": "แท็ก",
           "tagsHint": "คั่นแท็กด้วยเครื่องหมายจุลภาค เว้นวรรค หรือ Enter",
           "tagsPlaceholder": "เช่น กลางแจ้ง, พระอาทิตย์ตก, เต้นรำครั้งแรก",
@@ -2736,21 +2736,21 @@
           "fieldDate": "วันที่",
           "fieldLocation": "สถานที่",
           "fieldLocationPlaceholder": "เช่น ตากายไต ประเทศฟิลิปปินส์",
-          "fieldClient": "ลูกค้า",
+          "fieldClient": "%client%",
           "fieldClientPlaceholder": "เช่น ซาราห์และมิเกล",
-          "hideClient": "ซ่อนชื่อลูกค้า",
-          "hideClientHelp": "เก็บข้อมูลลูกค้าเป็นส่วนตัวทุกที่ที่รูปภาพนี้ปรากฏ",
-          "linkBooking": "เชื่อมโยงการจอง",
-          "linkClient": "เชื่อมโยงลูกค้า",
-          "noBooking": "ไม่ได้เชื่อมโยงการจอง",
-          "noClient": "ไม่ได้เชื่อมโยงลูกค้า",
+          "hideClient": "ซ่อนชื่อ%client%",
+          "hideClientHelp": "เก็บข้อมูล%client%เป็นส่วนตัวทุกที่ที่รูปภาพนี้ปรากฏ",
+          "linkBooking": "เชื่อมโยง%booking%",
+          "linkClient": "เชื่อมโยง%client%",
+          "noBooking": "ไม่ได้เชื่อมโยง%booking%",
+          "noClient": "ไม่ได้เชื่อมโยง%client%",
           "searchLinks": "ค้นหารายการ",
           "noLinkMatches": "ไม่พบรายการที่ตรงกัน",
           "linksLoading": "กำลังโหลดรายการ...",
-          "linksLoadError": "ไม่สามารถโหลดการจองและลูกค้าได้",
+          "linksLoadError": "ไม่สามารถโหลด%booking%และ%client%ได้",
           "retryLinks": "ลองอีกครั้ง",
           "manualDetails": "ยังไม่ได้ลงทะเบียนใน Gallurio? กรอกหรือแก้ไขรายละเอียดด้วยตนเองด้านล่าง",
-          "linkedRecord": "การจองที่เชื่อมโยง",
+          "linkedRecord": "%booking%ที่เชื่อมโยง",
           "fieldTags": "แท็ก",
           "fieldTagsPlaceholder": "เพิ่มแท็กแล้วกด Enter",
           "fieldTagsHint": "สูงสุด 20 แท็ก",
@@ -3364,9 +3364,9 @@
               "dimensions": "ภาพสำหรับแชร์ต้องมีขนาดอย่างน้อย 1200 × 630 พิกเซล",
               "upload": "อัปโหลดภาพสำหรับแชร์ไม่สำเร็จ โปรดลองอีกครั้ง"
             },
-            "inquiryRecipientLabel": "อีเมลผู้รับคำขอจอง",
+            "inquiryRecipientLabel": "อีเมลผู้รับ%inquiry%",
             "inquiryRecipientPlaceholder": "you@example.com",
-            "inquiryRecipientHint": "การแจ้งเตือนคำขอจองใหม่จะถูกส่งมาที่นี่"
+            "inquiryRecipientHint": "การแจ้งเตือน%inquiry%ใหม่จะถูกส่งมาที่นี่"
           },
           "done": {
             "title": "หน้าเว็บของคุณพร้อมโดดเด่นแล้ว",
@@ -3543,23 +3543,23 @@
       "types": {
         "inquiry": {
           "created": {
-            "title": "ได้รับคำขอจองใหม่",
-            "body": "คุณมีคำขอจองใหม่จาก {clientName}"
+            "title": "ได้รับ%inquiry%ใหม่",
+            "body": "คุณมี%inquiry%ใหม่จาก {clientName}"
           }
         },
         "booking": {
           "team_assigned": {
-            "title": "มีการมอบหมายการจองใหม่ให้ทีมของคุณ",
-            "body": "{assignerName} มอบหมายการจองให้ทีมของคุณ"
+            "title": "มีการมอบหมาย%booking%ใหม่ให้%team%ของคุณ",
+            "body": "{assignerName} มอบหมาย%booking%ให้%team%ของคุณ"
           },
           "status_changed": {
-            "title": "{newStatus, select, cancelled {ยกเลิกการจองแล้ว} completed {การจองเสร็จสิ้นแล้ว} booked {ยืนยันการจองแล้ว} other {อัปเดตสถานะการจองแล้ว}}",
-            "body": "{newStatus, select, cancelled {{actorName} ยกเลิกการจอง} completed {{actorName} ทำเครื่องหมายการจองว่าเสร็จสิ้น} booked {{actorName} ยืนยันการจอง} other {{actorName} เปลี่ยนสถานะการจองเป็น {newStatus}}}"
+            "title": "{newStatus, select, cancelled {ยกเลิก%booking%แล้ว} completed {%booking%เสร็จสิ้นแล้ว} booked {ยืนยัน%booking%แล้ว} other {อัปเดตสถานะ%booking%แล้ว}}",
+            "body": "{newStatus, select, cancelled {{actorName} ยกเลิก%booking%} completed {{actorName} ทำเครื่องหมาย%booking%ว่าเสร็จสิ้น} booked {{actorName} ยืนยัน%booking%} other {{actorName} เปลี่ยนสถานะ%booking%เป็น {newStatus}}}"
           }
         },
         "team": {
           "invitation": {
-            "title": "คุณได้รับเชิญเข้าทีม",
+            "title": "คุณได้รับเชิญเข้า%team%",
             "body": "{inviterName} เชิญคุณเข้าร่วม {teamName}"
           },
           "invite_accepted": {
@@ -3567,11 +3567,11 @@
             "body": "เข้าร่วม {teamName} แล้ว"
           },
           "removed": {
-            "title": "ถูกลบออกจากทีม",
+            "title": "ถูกลบออกจาก%team%",
             "body": "คุณถูกลบออกจาก {teamName} แล้ว"
           },
           "deleted": {
-            "title": "ทีมถูกยุบ",
+            "title": "%team%ถูกยุบ",
             "body": "{teamName} ถูกลบแล้ว"
           }
         }
@@ -3586,11 +3586,11 @@
       "no_active_workspace": "ไม่มีเวิร์กสเปซที่ใช้งานอยู่ เลือกเวิร์กสเปซแล้วลองอีกครั้ง",
       "workspace_not_found": "ไม่พบเวิร์กสเปซ",
       "owner_only": "เฉพาะเจ้าของเวิร์กสเปซเท่านั้นที่สามารถทำสิ่งนี้ได้",
-      "resolve_failed": "ไม่สามารถอัปเดตลูกค้าได้ โปรดลองอีกครั้ง",
-      "client_match_lookup_failed": "ไม่สามารถตรวจสอบลูกค้าที่มีอยู่ได้ โปรดลองอีกครั้ง",
-      "needs_client_resolution": "คำถามนี้อาจเป็นของลูกค้าที่มีอยู่แล้ว เปิดและจัดการลูกค้าก่อนแปลง",
+      "resolve_failed": "ไม่สามารถอัปเดต%client%ได้ โปรดลองอีกครั้ง",
+      "client_match_lookup_failed": "ไม่สามารถตรวจสอบ%client%ที่มีอยู่ได้ โปรดลองอีกครั้ง",
+      "needs_client_resolution": "คำถามนี้อาจเป็นของ%client%ที่มีอยู่แล้ว เปิดและจัดการ%client%ก่อนแปลง",
       "invalid_data": "ข้อมูลไม่ถูกต้อง โปรดตรวจสอบข้อมูลที่กรอกแล้วลองอีกครั้ง",
-      "completion_requires_full_payment": "ทำเครื่องหมายการชำระเงินทั้งหมดว่าชำระแล้วและกระทบยอดรวมก่อนทำการจองนี้ให้เสร็จสิ้น",
+      "completion_requires_full_payment": "ทำเครื่องหมายการชำระเงินทั้งหมดว่าชำระแล้วและกระทบยอดรวมก่อนทำ%booking%นี้ให้เสร็จสิ้น",
       "onboarding_required": "ทำการตั้งค่าเริ่มต้นให้เสร็จสิ้นเพื่อดำเนินการต่อ",
       "onboarding_plan_locked": "แพ็กเกจของคุณเปิดใช้งานแล้ว ทำขั้นตอนการเริ่มต้นให้เสร็จเพื่อจัดการได้จากการตั้งค่าการเรียกเก็บเงิน",
       "subscription_required": "สิทธิ์เข้าถึง Pro ของคุณสิ้นสุดแล้ว สมัครสมาชิกเพื่อดำเนินการต่อ",
@@ -3623,25 +3623,25 @@
       "email_send_failed": "ไม่สามารถส่งอีเมลได้ โปรดลองอีกครั้ง",
       "onboarding_no_active_workspace": "ไม่มีเวิร์กสเปซที่ใช้งานอยู่ — เริ่มการตั้งค่าใหม่",
       "already_member_elsewhere": "อีเมลนี้เป็นสมาชิกของเวิร์กสเปซอื่นอยู่แล้ว สมัครด้วยอีเมลอื่นเพื่อสร้างเวิร์กสเปซใหม่",
-      "client_create_failed": "ไม่สามารถสร้างลูกค้าได้ โปรดลองอีกครั้ง",
-      "client_not_found": "ไม่พบลูกค้า",
-      "client_update_failed": "ไม่สามารถอัปเดตลูกค้าได้ โปรดลองอีกครั้ง",
-      "client_deactivate_failed": "ไม่สามารถปิดใช้งานลูกค้าได้ โปรดลองอีกครั้ง",
-      "client_has_active_bookings": "ลูกค้ารายนี้มีการจองที่ใช้งานอยู่และไม่สามารถปิดใช้งานได้",
-      "client_reactivate_failed": "ไม่สามารถเปิดใช้งานลูกค้าอีกครั้งได้ โปรดลองอีกครั้ง",
-      "bookings_load_failed": "ไม่สามารถโหลดการจองได้ โปรดลองอีกครั้ง",
-      "client_load_failed": "ไม่สามารถโหลดลูกค้าได้ โปรดลองอีกครั้ง",
+      "client_create_failed": "ไม่สามารถสร้าง%client%ได้ โปรดลองอีกครั้ง",
+      "client_not_found": "ไม่พบ%client%",
+      "client_update_failed": "ไม่สามารถอัปเดต%client%ได้ โปรดลองอีกครั้ง",
+      "client_deactivate_failed": "ไม่สามารถปิดใช้งาน%client%ได้ โปรดลองอีกครั้ง",
+      "client_has_active_bookings": "%client%รายนี้มี%booking%ที่ใช้งานอยู่และไม่สามารถปิดใช้งานได้",
+      "client_reactivate_failed": "ไม่สามารถเปิดใช้งาน%client%อีกครั้งได้ โปรดลองอีกครั้ง",
+      "bookings_load_failed": "ไม่สามารถโหลด%booking%ได้ โปรดลองอีกครั้ง",
+      "client_load_failed": "ไม่สามารถโหลด%client%ได้ โปรดลองอีกครั้ง",
       "invalid_id": "คำขอไม่ถูกต้อง",
       "not_found": "ไม่พบข้อมูล",
       "forbidden": "คุณไม่มีสิทธิ์เข้าถึงเพื่อทำสิ่งนี้",
-      "team_not_found": "ไม่พบทีม",
-      "team_deactivated": "ไม่สามารถมอบหมายการจองให้ทีมที่ปิดใช้งานได้",
+      "team_not_found": "ไม่พบ%team%",
+      "team_deactivated": "ไม่สามารถมอบหมาย%booking%ให้%team%ที่ปิดใช้งานได้",
       "session_crosses_midnight": "เซสชัน {index} ข้ามเที่ยงคืนตามเขตเวลาของเวิร์กสเปซ",
-      "client_change_multi_session": "ไม่สามารถเปลี่ยนลูกค้าสำหรับการจองหลายเซสชันได้",
-      "invalid_client_id": "ลูกค้าไม่ถูกต้อง",
-      "client_not_found_workspace": "ไม่พบลูกค้าในเวิร์กสเปซนี้",
+      "client_change_multi_session": "ไม่สามารถเปลี่ยน%client%สำหรับ%booking%หลายเซสชันได้",
+      "invalid_client_id": "%client%ไม่ถูกต้อง",
+      "client_not_found_workspace": "ไม่พบ%client%ในเวิร์กสเปซนี้",
       "invalid_request": "คำขอไม่ถูกต้อง",
-      "export_too_large": "มีการจองมากเกินไปที่จะส่งออก ลดขอบเขตตัวกรองของคุณแล้วลองอีกครั้ง",
+      "export_too_large": "มี%booking%มากเกินไปที่จะส่งออก ลดขอบเขตตัวกรองของคุณแล้วลองอีกครั้ง",
       "free_plan_no_checkout": "แพ็กเกจฟรีไม่จำเป็นต้องชำระเงิน",
       "lemonsqueezy_variant_not_configured": "แพ็กเกจนี้ยังไม่พร้อมใช้งานในขณะนี้ โปรดติดต่อฝ่ายสนับสนุน",
       "no_verified_email": "เพิ่มและยืนยันอีเมลก่อนสมัครสมาชิก",
@@ -3649,7 +3649,7 @@
       "no_subscription": "คุณไม่มีการสมัครสมาชิกที่ใช้งานอยู่ให้จัดการ",
       "subscription_manage_unavailable": "ไม่สามารถเปิดการจัดการการสมัครสมาชิกได้ โปรดลองอีกครั้ง",
       "locked": "รายการนี้ถูกล็อกและไม่สามารถแก้ไขได้ในขณะนี้",
-      "conflict": "เวลานี้ขัดแย้งกับการจองอื่น",
+      "conflict": "เวลานี้ขัดแย้งกับ%booking%อื่น",
       "edit_sessions_failed": "ไม่สามารถอัปเดตเซสชันได้ โปรดลองอีกครั้ง",
       "session_index_out_of_range": "เซสชันนั้นไม่มีอยู่แล้ว",
       "invalid": "โปรดตรวจสอบข้อมูลที่กรอกแล้วลองอีกครั้ง",
