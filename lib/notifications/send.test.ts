@@ -369,6 +369,20 @@ describe('sendNotification', () => {
       )
       expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
     })
+
+    it('still persists the notification with the standard preset when the workspace lookup throws', async () => {
+      vi.spyOn(Workspace, 'findById').mockReturnValue({
+        select: () => ({ lean: () => Promise.reject(new Error('db down')) }),
+      } as never)
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
+      expect(Notification.insertMany).toHaveBeenCalledOnce()
+    })
   })
 
   describe('tenant isolation', () => {

@@ -52,7 +52,7 @@ export default async function AppLayout({
 
   const appMessages = await getAppMessages(resolveVocabularyPreset(workspace));
 
-  const sidebarState =cookieStore.get("sidebar_state");
+  const sidebarState = cookieStore.get("sidebar_state");
   const defaultOpen = sidebarState ? sidebarState.value === "true" : true;
   const showBetaEndingBanner =
     workspace.plan === "beta" &&

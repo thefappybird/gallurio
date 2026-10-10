@@ -182,6 +182,7 @@ Composed, app-specific shared components.
 | `lib/auth/session.ts` | `getAuthUser` | **Single** authoritative identity reader (wraps `withAuth`) — never call `withAuth` elsewhere |
 | `lib/auth/activeWorkspace.ts` | `getActiveWorkspaceId`, `setActiveWorkspace`, `clearActiveWorkspace` | Resolve/set/clear active-workspace cookie (re-validated vs DB) |
 | `lib/auth/requireOrg.ts` | `requireOrg`, `requireRole` | Page-level context guard (redirects); role hard-gate. `requireOrg(opts)` wraps a React-`cache()`d argument-free `resolveOrgContext()` (one session/DB resolution per request); gates/redirects apply per call |
+| `lib/auth/requireOrg.ts` | `peekOrgContext()` | Non-redirecting read of the same per-request cached org context; returns `null` when signed out / no workspace. For read-only helpers (e.g. vocabulary resolution) that must not gate or redirect. |
 | `lib/auth/ownerContext.ts` | `ownerContext` | Server-action context guard (returns `{error}`) |
 | `lib/auth/assertCanAddTeam.ts` | `assertCanAddTeam`, `createTeamWithCapEnforcement` | Team-cap preflight + atomic create |
 | `lib/auth/assertCanAddTeamMember.ts` | `assertCanAddTeamMember`, `releaseTeamSeat` | Atomic seat reserve / rollback |
@@ -224,6 +225,14 @@ Composed, app-specific shared components.
 | `lib/email/booking/bookingCancelled.ts` | `sendBookingCancelledClient(params)`, `sendBookingCancelledOwner(params)`, `BookingCancelledClientParams`, `BookingCancelledOwnerParams` | Branded booking-cancelled emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/inquiryDecline.ts` | `sendInquiryDeclineClient(params)`, `InquiryDeclineClientParams` | Branded inquiry-decline email to the client when an inquiry is declined. |
 | `lib/email/lifecycle.ts` | `sendLifecycleEmail(stage, to, country)`, `LifecycleEmailStage` | Platform-branded lapse-lifecycle email (`preExpiry`/`expired`/`remind1`/`remind2`), locale via `emailLocale(country)`, CTA always to absolute `/subscribe`. Sent by `lib/db/jobs/billing-lifecycle-sweep.ts`. |
+
+### `lib/vocabulary/` (workspace vocabulary presets; spec: `docs/vocabulary/vocabulary-presets.md`)
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/vocabulary/resolve.ts` | `resolveVocabularyPreset(workspace)`, `isVocabularyPresetId` | Single resolver for a workspace's preset: explicit `vocabularyPreset`, else `businessType` if it is a preset id, else `"standard"`. Use at every server call site that renders tenant-facing copy (actions, routes, notifications, emails). |
+| `lib/vocabulary/appTranslations.ts` | `getAppTranslations(namespace?)`, `getAppMessages(...)` | Drop-in for `getTranslations` / message loading that applies the active workspace's vocabulary so `%token%` placeholders never leak. Use instead of raw `getTranslations("app.*")` in server components. |
+| `lib/email/vocabulary.ts` | `emailVocabulary(preset, locale)` | Vocabulary tokens for transactional email copy (`EMAIL_COPY`) so emails match the workspace's terminology. |
+| `app/[locale]/(marketing)/_components/vocabulary-showcase.tsx` | `VocabularyShowcase` | Marketing-home auto-cycling preset demo (reads only the `marketing.vocabulary` message namespace). |
 
 ### `lib/notifications/`
 | Import | Export | Purpose |

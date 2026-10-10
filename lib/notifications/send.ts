@@ -13,9 +13,11 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
   await connectDB()
 
   // Server-resolved, workspace-scoped; never from client input.
+  // Vocabulary is cosmetic: a failed lookup must not drop the notification.
   const ws = await Workspace.findById(opts.workspaceId)
     .select({ vocabularyPreset: 1, businessType: 1 })
     .lean()
+    .catch(() => null)
   const preset = resolveVocabularyPreset(ws ?? {})
 
   const payloads = await Promise.all(
