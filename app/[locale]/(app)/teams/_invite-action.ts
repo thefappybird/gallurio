@@ -73,7 +73,7 @@ export async function inviteMemberAction(
 
   const teamObjectIds = teamIds.map(toObjectId);
   if (teamObjectIds.some((id) => id === null)) {
-    return { error: "Invalid team id" };
+    return { error: "INVALID_TEAM_ID" };
   }
 
   const validIds = teamObjectIds.filter(
@@ -299,7 +299,7 @@ export async function revokeInviteAction(
   const { invitationId } = parsed.data;
 
   const invObjId = toObjectId(invitationId);
-  if (!invObjId) return { error: "Invalid invitation id" };
+  if (!invObjId) return { error: "INVALID_INVITATION_ID" };
 
   const invitation = await Invitation.findOne({
     _id: invObjId,

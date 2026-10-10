@@ -883,15 +883,15 @@
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "hints": {
-        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "portfolioKpi": "إجماليات المعرض للفترة المحددة. أيام الزوار إجماليات يومية، وتعتمد الفرص المحجوزة على الحالة الحالية لكل %inquiry%.",
         "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
-        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
-        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
-        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
-        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
-        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
-        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
-        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "valueCollection": "قيمة ال%booking% المؤكدة والمدفوعات المحصّلة لمجموعة ال%bookings% المحددة، مجمّعة حسب الأسبوع.",
+        "collectionCoverage": "مقدار القيمة المحصّلة حتى الآن من ال%bookings% المؤكدة، مع الرصيد المتبقي المستحق.",
+        "eventTypeTrend": "قيمة ال%bookings% المؤكدة حسب نوع الفعالية عبر الزمن لمجموعة ال%bookings% المحددة.",
+        "portfolioVisitorsInquiries": "أيام زوار المعرض وإرسالات ال%inquiries% خلال الفترة المحددة.",
+        "portfolioFunnel": "أيام الزوار، وفتحات نموذج التواصل، و%inquiries% المرسلة.",
+        "portfolioPipeline": "ال%inquiries% المنشأة في الفترة المحددة، مجمّعة حسب حالتها الحالية في المسار.",
+        "portfolioDemand": "أنواع الفعاليات والأشهر المطلوبة ووسيط المهلة من %inquiry% إلى تاريخ الفعالية.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "إجماليات هذا الشهر. الأسهم تقارن بالشهر الماضي.",
         "calendar": "ال%bookings% لكل يوم. صفِّ حسب ال%team%؛ اضغط على يوم لفتح التقويم عنده.",
@@ -3364,9 +3364,9 @@
               "dimensions": "Share image must be at least 1200 × 630 px.",
               "upload": "Share image upload failed. Please try again."
             },
-            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientLabel": "البريد الإلكتروني لمستلم ال%inquiry%",
             "inquiryRecipientPlaceholder": "you@example.com",
-            "inquiryRecipientHint": "New inquiry notifications will be sent here."
+            "inquiryRecipientHint": "سيتم إرسال إشعارات ال%inquiries% الجديدة إلى هنا."
           },
           "done": {
             "title": "صفحتك جاهزة لتتألق",

@@ -39,7 +39,8 @@ export function mapActionError(error: string, t: Translator): string {
       return t("errors.cannotDeactivateDefault");
     case "REACTIVATE_CAP_EXCEEDED":
       return t("errors.reactivateCapExceeded");
-    case "Team not found":
+    case "INVALID_TEAM_ID":
+    case "TEAM_NOT_FOUND":
       return t("errors.teamNotFound");
     default:
       return t("errors.generic");

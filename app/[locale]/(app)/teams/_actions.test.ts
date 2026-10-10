@@ -120,7 +120,7 @@ describe("renameTeamAction", () => {
     const foreign = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID, name: "Foreign" });
     const { renameTeamAction } = await import("./_actions");
     const result = await renameTeamAction({ teamId: String(foreign._id), name: "Hijacked" });
-    expect(result.error).toBe("Team not found");
+    expect(result.error).toBe("TEAM_NOT_FOUND");
     const after = await Team.findById(foreign._id).lean();
     expect(after?.name).toBe("Foreign");
   });
@@ -147,7 +147,7 @@ describe("setTeamColorAction", () => {
     const foreign = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID, color: "#000000" });
     const { setTeamColorAction } = await import("./_actions");
     const result = await setTeamColorAction({ teamId: String(foreign._id), color: "#ffffff" });
-    expect(result.error).toBe("Team not found");
+    expect(result.error).toBe("TEAM_NOT_FOUND");
     const after = await Team.findById(foreign._id).lean();
     expect(after?.color).toBe("#000000");
   });
@@ -198,7 +198,7 @@ describe("deactivateTeamAction", () => {
     const foreign = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID });
     const { deactivateTeamAction } = await import("./_actions");
     const result = await deactivateTeamAction({ teamId: String(foreign._id) });
-    expect(result.error).toBe("Team not found");
+    expect(result.error).toBe("TEAM_NOT_FOUND");
     const after = await Team.findById(foreign._id).lean();
     expect(after?.isActive).toBe(true);
   });
@@ -247,7 +247,7 @@ describe("reactivateTeamAction", () => {
     });
     const { reactivateTeamAction } = await import("./_actions");
     const result = await reactivateTeamAction({ teamId: String(foreign._id) });
-    expect(result.error).toBe("Team not found");
+    expect(result.error).toBe("TEAM_NOT_FOUND");
     const after = await Team.findById(foreign._id).lean();
     expect(after?.isActive).toBe(false);
   });

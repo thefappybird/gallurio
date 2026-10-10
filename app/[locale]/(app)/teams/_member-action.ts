@@ -97,7 +97,7 @@ export async function assignMemberToTeamAction(
   }
   const { workosUserId, teamId, role } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne({
     _id: teamObjectId,
@@ -176,7 +176,7 @@ export async function removeMemberFromTeamAction(
   }
   const { workosUserId, teamId } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne(
     { _id: teamObjectId, workspaceId: ctx.workspace._id },
@@ -247,7 +247,7 @@ export async function removeMemberFromTeamAndWorkspaceAction(
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   const { workosUserId, teamId } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
   if (workosUserId === ctx.workspace.ownerUserId) return { error: "CANNOT_REMOVE_OWNER" };
 
   const memberships = await TeamMembership.find({
@@ -304,7 +304,7 @@ export async function setLeadFlagAction(
   }
   const { workosUserId, teamId, isLead } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   // Promote by atomically transferring the sole lead role. The selected member
   // becomes lead and any prior lead is demoted in the same transaction.
