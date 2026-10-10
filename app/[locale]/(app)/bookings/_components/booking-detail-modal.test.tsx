@@ -24,8 +24,11 @@ import {
   within,
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import type { TimeMode } from "@/lib/utils/time-format";
+import { act } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { BookingDetailModal } from "./booking-detail-modal";
 import { formatMoney } from "@/lib/utils/format-currency";
 
@@ -33,6 +36,7 @@ import { formatMoney } from "@/lib/utils/format-currency";
 // Lets individual tests flip the saved time-format preference (mirrors the
 // pattern used in booking-draft-card.test.tsx).
 let _timeMode: TimeMode = "24h";
+let _search = "";
 vi.mock("@/lib/time-format/context", () => ({
   useTimeFormat: vi.fn(() => _timeMode),
   useTimeFormatContext: vi.fn(() => ({ timeMode: _timeMode, setTimeMode: vi.fn() })),
@@ -41,7 +45,7 @@ vi.mock("@/lib/time-format/context", () => ({
 
 // ── Navigation stubs ─────────────────────────────────────────────────────────
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(_search),
   usePathname: () => "/bookings",
   useRouter: () => ({
     push: vi.fn(),
@@ -74,11 +78,18 @@ vi.mock("@/lib/actions/clients", () => ({
   getClientBookingsAction: vi.fn().mockResolvedValue([]),
 }));
 
+const { pushSpy, refreshSpy, invalidateSpy } = vi.hoisted(() => ({
+  pushSpy: vi.fn(),
+  refreshSpy: vi.fn(),
+  invalidateSpy: vi.fn(),
+}));
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
+
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: pushSpy,
     replace: vi.fn(),
-    refresh: vi.fn(),
+    refresh: refreshSpy,
     back: vi.fn(),
     forward: vi.fn(),
     prefetch: vi.fn(),
@@ -92,6 +103,28 @@ vi.mock("@/lib/i18n/navigation", () => ({
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
+
+// jsdom has no exit animation, so Base UI completes instantly. Tests can hold
+// the completion callback and fire it by hand.
+const dialogHold = vi.hoisted(() => ({
+  hold: false,
+  complete: null as null | ((open: boolean) => void),
+}));
+vi.mock("@/components/ui/dialog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/ui/dialog")>();
+  return {
+    ...actual,
+    Dialog: ({ onOpenChangeComplete, ...props }: React.ComponentProps<typeof actual.Dialog>) =>
+      React.createElement(actual.Dialog, {
+        ...props,
+        onOpenChangeComplete: dialogHold.hold && onOpenChangeComplete
+          ? (o: boolean) => {
+              if (!o) dialogHold.complete = () => onOpenChangeComplete?.(o);
+            }
+          : onOpenChangeComplete,
+      }),
+  };
+});
 
 // The Event tab now renders the LocationPicker, which dynamically imports a
 // Leaflet map. Stub it — this suite covers session/pricing logic, not the map
@@ -173,11 +206,19 @@ function makeFetch({
       return { ok: true, json: async () => ({ entries: [], total: 0 }) };
     }
     if (url.includes("/api/bookings/shifts-on-date")) {
-      return { ok: true, json: async () => ({ shifts }) };
+      // Batched contract: one key per requested date (same hits for each).
+      const dates = (new URL(url, "http://test").searchParams.get("dates") ?? "").split(",").filter(Boolean);
+      return {
+        ok: true,
+        json: async () => ({ shifts, byDate: Object.fromEntries(dates.map((d) => [d, shifts])) }),
+      };
     }
-    if (url === `/api/bookings/${BOOKING_ID}`) {
+    if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
       if (!init || init.method !== "PATCH") {
-        return { ok: true, json: async () => booking };
+        return {
+          ok: true,
+          json: async () => ({ ...booking, activity: { entries: [], total: 0, page: 1, pageSize: 5, actorNames: {} } }),
+        };
       }
       return { ok: true, json: async () => patchResponse };
     }
@@ -191,7 +232,9 @@ function makeFetch({
 function renderModal(props: { businessComplete?: boolean; workspaceId?: string } = {}) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
+      <AppQueryProvider workspaceId="ws-test">
+        <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
+      </AppQueryProvider>
     </NextIntlClientProvider>
   );
 }
@@ -200,7 +243,9 @@ function renderReadOnlyModal(booking = MOCK_BOOKING) {
   vi.stubGlobal("fetch", makeFetch({ booking }));
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
+      <AppQueryProvider workspaceId="ws-test">
+        <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
+      </AppQueryProvider>
     </NextIntlClientProvider>
   );
 }
@@ -213,6 +258,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   _timeMode = "24h";
+  _search = "";
+  pushSpy.mockClear();
+  refreshSpy.mockClear();
+  invalidateSpy.mockClear();
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -636,6 +685,22 @@ describe("Issue 2 — session edits are deferred (pendingSessionEdits)", () => {
     expect(patchCalls).toHaveLength(0);
   });
 
+  it("flags an edited-but-unconfirmed session in the footer and clears it after confirm", async () => {
+    vi.stubGlobal("fetch", makeFetch());
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    expect(screen.queryByRole("status")).toBeNull();
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 5);
+    expect(await screen.findByRole("status")).toHaveTextContent("1 change isn't confirmed yet");
+
+    await clickConfirm();
+    await waitFor(() => {
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+  });
+
   it("fires a single PATCH with sessions payload when Save changes is clicked", async () => {
     const fetchMock = makeFetch();
     vi.stubGlobal("fetch", fetchMock);
@@ -714,9 +779,9 @@ describe("Session remove — scoped busy state", () => {
           return { ok: true, json: async () => ({ entries: [], total: 0 }) };
         }
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => ({ shifts: [], byDate: {} }) };
         }
-        if (url === `/api/bookings/${BOOKING_ID}`) {
+        if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
           if (init?.method === "PATCH") {
             await patchGate;
             return { ok: true, json: async () => TWO_SESSION_BOOKING };
@@ -776,9 +841,9 @@ describe("Session remove — scoped busy state", () => {
           return { ok: true, json: async () => ({ entries: [], total: 0 }) };
         }
         if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
+          return { ok: true, json: async () => ({ shifts: [], byDate: {} }) };
         }
-        if (url === `/api/bookings/${BOOKING_ID}`) {
+        if (url === `/api/bookings/${BOOKING_ID}` || url === `/api/bookings/${BOOKING_ID}?include=activity`) {
           if (init?.method === "PATCH") {
             await patchGate;
             return { ok: true, json: async () => TWO_SESSION_BOOKING };
@@ -1070,6 +1135,43 @@ describe("Issue 4 — AlertDialog for close-with-unsaved", () => {
 
     // No AlertDialog should appear.
     expect(screen.queryByText("Discard changes?")).not.toBeInTheDocument();
+  });
+
+  it("keeps ?detail until the exit animation completes, then strips it", async () => {
+    window.history.replaceState(null, "", `/bookings?detail=${BOOKING_ID}&view=table`);
+    dialogHold.hold = true;
+    dialogHold.complete = null;
+    renderModal();
+    await waitForLoad();
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    fireEvent.click(getHeaderCloseButton());
+    await waitFor(() => expect(dialogHold.complete).not.toBeNull());
+    expect(pushState).not.toHaveBeenCalled();
+
+    dialogHold.complete!(false);
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/bookings?view=table");
+    pushState.mockRestore();
+    dialogHold.hold = false;
+  });
+
+  it("does not strip another booking's ?detail opened during the exit animation", async () => {
+    window.history.replaceState(null, "", `/bookings?detail=${BOOKING_ID}`);
+    dialogHold.hold = true;
+    dialogHold.complete = null;
+    renderModal();
+    await waitForLoad();
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    fireEvent.click(getHeaderCloseButton());
+    await waitFor(() => expect(dialogHold.complete).not.toBeNull());
+    window.history.replaceState(null, "", "/bookings?detail=other-booking");
+    dialogHold.complete!(false);
+
+    expect(pushState).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?detail=other-booking");
+    pushState.mockRestore();
+    dialogHold.hold = false;
   });
 });
 
@@ -1474,6 +1576,23 @@ describe("Event tab — event-type field", () => {
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
     expect(screen.getByRole("combobox")).toHaveTextContent("Wedding");
+  });
+
+  it("shows an unconfirmed-edits status in the footer only while an inline editor is dirty", async () => {
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: /payments/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^edit total$/i }));
+    expect(screen.queryByText(/isn't confirmed yet|aren't confirmed yet/i)).toBeNull();
+
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "99999" } });
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("1 change isn't confirmed yet");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/isn't confirmed yet/i)).toBeNull();
+    });
   });
 
   it("does NOT render an event-type control in the header", async () => {
@@ -2882,5 +3001,349 @@ describe("Frozen FX rate subtitle", () => {
     expect(
       screen.getByText(expectedFxSubtitle(10000, 0.5, "USD"))
     ).toBeInTheDocument();
+  });
+});
+
+// ─── react-query load ─────────────────────────────────────────────────────────
+
+describe("BookingDetailModal — single load request", () => {
+  it("issues exactly one booking request on open (booking + activity + actor names together)", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForHeaderOnly();
+    await new Promise((r) => setTimeout(r, 50));
+    const bookingCalls = (fetchMock as Mock).mock.calls
+      .map((args: unknown[]) => String(args[0]))
+      .filter((u) => !u.includes("shifts-on-date"));
+    expect(bookingCalls).toEqual([`/api/bookings/${BOOKING_ID}?include=activity`]);
+  });
+});
+
+describe("BookingDetailModal — load error", () => {
+  it("shows an error state with Retry that refetches and then renders the booking", async () => {
+    let fail = true;
+    const base = makeFetch();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (fail && String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+          return { ok: false, status: 500, json: async () => ({}) };
+        }
+        return base(url, init);
+      })
+    );
+    renderModal();
+    const retry = await screen.findByRole("button", { name: "Retry" }, { timeout: 4000 });
+    expect(screen.getByText("Couldn't load this booking.")).toBeInTheDocument();
+    fail = false;
+    fireEvent.click(retry);
+    await waitForHeaderOnly();
+  }, 10000);
+});
+
+describe("BookingDetailModal — 404", () => {
+  it("closes the modal and strips ?detail when the booking does not exist", async () => {
+    _search = `detail=${BOOKING_ID}&view=table`;
+    window.history.replaceState(null, "", `/bookings?${_search}`);
+    const pushState = vi.spyOn(window.history, "pushState");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: "not_found" }) }))
+    );
+    renderModal();
+    await waitFor(() => expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/bookings?view=table"));
+    expect(pushSpy).not.toHaveBeenCalled();
+    pushState.mockRestore();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+});
+
+describe("BookingDetailModal — background refetch", () => {
+  it("does not overwrite an in-progress edit when the booking query refetches", async () => {
+    const { useQueryClient } = await import("@tanstack/react-query");
+    const { act } = await import("@testing-library/react");
+    let qc!: ReturnType<typeof useQueryClient>;
+    function Grab() {
+      qc = useQueryClient();
+      return null;
+    }
+    const base = makeFetch();
+    let serverTitle = "Test Wedding";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+          const res = await base(url, init);
+          const body = await res.json();
+          return { ok: true, json: async () => ({ ...body, title: serverTitle }) };
+        }
+        return base(url, init);
+      })
+    );
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AppQueryProvider workspaceId="ws-test">
+          <Grab />
+          <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+        </AppQueryProvider>
+      </NextIntlClientProvider>
+    );
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+
+    serverTitle = "Changed Elsewhere";
+    await act(async () => {
+      await qc.invalidateQueries();
+    });
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Changed Elsewhere" })).not.toBeInTheDocument();
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+  });
+});
+
+describe("BookingDetailModal — conflict preview batching", () => {
+  it("issues ONE shifts-on-date request for N session dates", async () => {
+    const s2 = makeFutureSession(5);
+    const s3 = makeFutureSession(7);
+    const booking = { ...MOCK_BOOKING, sessions: [FUTURE_SESSION, s2, s3] };
+    const fetchMock = makeFetch({ booking });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await new Promise((r) => setTimeout(r, 50));
+    const shiftCalls = (fetchMock as Mock).mock.calls
+      .map((a: unknown[]) => String(a[0]))
+      .filter((u) => u.includes("shifts-on-date"));
+    expect(shiftCalls).toHaveLength(1);
+    const dates = new URL(shiftCalls[0], "http://test").searchParams.get("dates")!.split(",");
+    expect(dates).toHaveLength(3);
+  });
+
+  it("scopes the shifts-on-date request to the booking's team (none when teamless)", async () => {
+    const fetchMock = makeFetch({});
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await new Promise((r) => setTimeout(r, 50));
+    const shiftCall = (fetchMock as Mock).mock.calls
+      .map((a: unknown[]) => String(a[0]))
+      .find((u) => u.includes("shifts-on-date"))!;
+    expect(new URL(shiftCall, "http://test").searchParams.get("teamId")).toBe("none");
+  });
+
+  it("marks the session conflict alert as role=alert", async () => {
+    vi.stubGlobal("fetch", makeFetch({ shifts: [CONFLICT_SHIFT] }));
+    renderModal();
+    await waitForLoad();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Other Event/);
+  });
+});
+
+describe("BookingDetailModal — save reconciliation", () => {
+  it("after a successful save broadcasts booking.updated (no direct router.refresh)", async () => {
+    const patchResponse = { ...MOCK_BOOKING, createdFromInquiryId: "inq-1" };
+    vi.stubGlobal("fetch", makeFetch({ patchResponse: patchResponse as unknown as typeof MOCK_BOOKING }));
+    renderModal();
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        type: "booking.updated",
+        bookingId: BOOKING_ID,
+        clientId: CLIENT_ID,
+        inquiryId: "inq-1",
+      })
+    );
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("BookingDetailModal — optimistic concurrency", () => {
+  const T1 = "2026-03-01T10:00:00.000Z";
+  const T2 = "2026-03-01T11:00:00.000Z";
+
+  it("sends the loaded updatedAt as expectedUpdatedAt on Save", async () => {
+    const booking = { ...MOCK_BOOKING, updatedAt: T1 };
+    const fetchMock = makeFetch({
+      booking: booking as unknown as typeof MOCK_BOOKING,
+      patchResponse: { ...booking, updatedAt: T2 } as unknown as typeof MOCK_BOOKING,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find((c) => c[1]?.method === "PATCH");
+      expect(patch).toBeTruthy();
+      expect(JSON.parse(patch![1].body).expectedUpdatedAt).toBe(T1);
+    });
+  });
+
+  function renderWithServer(getServer: () => Record<string, unknown>, patch?: () => Response | Record<string, unknown>) {
+    let qc!: import("@tanstack/react-query").QueryClient;
+    function Grab() {
+      qc = useQueryClient();
+      return null;
+    }
+    const base = makeFetch();
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).startsWith(`/api/bookings/${BOOKING_ID}?include=activity`)) {
+        return {
+          ok: true,
+          json: async () => ({ ...getServer(), activity: { entries: [], total: 0, page: 1, pageSize: 5, actorNames: {} } }),
+        };
+      }
+      if (init?.method === "PATCH" && patch) {
+        const r = patch();
+        return r instanceof Response ? r : { ok: true, status: 200, json: async () => r };
+      }
+      return base(url, init);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AppQueryProvider workspaceId="ws-test">
+          <Grab />
+          <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+        </AppQueryProvider>
+      </NextIntlClientProvider>
+    );
+    return { getQc: () => qc, fetchMock };
+  }
+
+  it("re-seeds from a newer server copy when the modal has no edits", async () => {
+    let server: Record<string, unknown> = { ...MOCK_BOOKING, updatedAt: T1 };
+    const { getQc } = renderWithServer(() => server);
+    await waitForLoad();
+    server = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    await act(async () => {
+      await getQc().invalidateQueries();
+    });
+    expect(await screen.findByRole("heading", { name: "Changed Elsewhere" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("keeps in-progress edits and shows a status notice when a newer copy arrives", async () => {
+    let server: Record<string, unknown> = { ...MOCK_BOOKING, updatedAt: T1 };
+    const { getQc } = renderWithServer(() => server);
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    server = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    await act(async () => {
+      await getQc().invalidateQueries();
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent(/Updated by someone else/);
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+  });
+
+  it("on 409 stale swaps in the server booking, drops the edit and shows the stale copy", async () => {
+    const newer = { ...MOCK_BOOKING, title: "Changed Elsewhere", updatedAt: T2 };
+    const { fetchMock } = renderWithServer(
+      () => ({ ...MOCK_BOOKING, updatedAt: T1 }),
+      () => new Response(JSON.stringify({ error: "stale", booking: newer }), { status: 409 })
+    );
+    await waitForLoad();
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 4);
+    await clickConfirm();
+    await waitFor(() => expect(screen.getByText("Unsaved")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    expect(await screen.findByRole("heading", { name: "Changed Elsewhere" })).toBeInTheDocument();
+    expect(screen.queryByText("Unsaved")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/changed by someone else/i).length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.filter((c) => c[1]?.method === "PATCH")).toHaveLength(1);
+  });
+});
+
+describe("SessionCard end time follows start time", () => {
+  it("moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+
+  it("snaps end to start + 1h on blur when end is at or before start", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(start, { target: { value: "10:00" } });
+    fireEvent.change(end, { target: { value: "09:00" } });
+    fireEvent.blur(end);
+
+    expect(end.value).toBe("11:00");
+  });
+
+  it("leaves end alone when start moves but end is still later", async () => {
+    renderModal();
+    await waitForLoad();
+
+    clickEditSession(1);
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "17:00" } });
+    fireEvent.change(start, { target: { value: "12:00" } });
+
+    expect(end.value).toBe("17:00");
+  });
+
+  it("DraftSessionCard moves end to start + 1h when start is changed past end", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "11:00" } });
+    fireEvent.change(start, { target: { value: "14:00" } });
+
+    expect(end.value).toBe("15:00");
+  });
+
+  it("DraftSessionCard snaps end to start + 1h on blur when end is before start", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(start, { target: { value: "10:00" } });
+    fireEvent.change(end, { target: { value: "09:00" } });
+    fireEvent.blur(end);
+
+    expect(end.value).toBe("11:00");
+  });
+
+  it("DraftSessionCard leaves end alone when start moves but end is still later", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: /add session/i }));
+    const [start, end] = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+    fireEvent.change(end, { target: { value: "17:00" } });
+    fireEvent.change(start, { target: { value: "12:00" } });
+
+    expect(end.value).toBe("17:00");
   });
 });

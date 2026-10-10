@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import {
   Building2,
@@ -12,6 +13,7 @@ import {
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
 import { User, type PlanTier } from "@/lib/db/models";
@@ -53,7 +55,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("settings") };
 }
 
@@ -75,10 +77,16 @@ export default async function SettingsCatchallPage({
 
   await connectDB();
 
-  // Load full user doc for MFA state
-  const userDoc = await User.findOne({ workosUserId: userId }).lean();
+  // Independent reads: MFA state, auth methods, active draft, tab labels and
+  // pricing (billing panel is preloaded client-side, so it is always needed).
+  const [userDoc, { hasOAuth }, draftId, t, proPricing] = await Promise.all([
+    User.findOne({ workosUserId: userId }).lean(),
+    getAuthMethods(userId),
+    resolveActiveDraftId(workspace._id),
+    getAppTranslations("app.settings.tabs"),
+    getDisplayPricing(),
+  ]);
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
-  const { hasOAuth } = await getAuthMethods(userId);
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -99,7 +107,6 @@ export default async function SettingsCatchallPage({
   const currencyLockedUntil =
     currencyChangeLockedUntil(workspace.currencyChangedAt ?? null)?.toISOString() ?? null;
 
-  const draftId = await resolveActiveDraftId(workspace._id);
   const settingsDraftFields = normalizeSettingsSeoFields(
     workspace.publicPage?.settingsDraft ?? workspace.publicPage
   );
@@ -145,8 +152,6 @@ export default async function SettingsCatchallPage({
     },
   };
 
-  const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getDisplayPricing();
   const portfolioDomain = portfolioBaseDomain();
 
   // Active slug: null means base /settings -> render account tab
@@ -177,7 +182,16 @@ export default async function SettingsCatchallPage({
           slug: "customize",
           label: t("customize"),
           icon: <Palette className="size-4" />,
-          body: <CustomizePanel initialTimeFormat={initialTimeFormat} />,
+          body: (
+            <CustomizePanel
+              initialTimeFormat={initialTimeFormat}
+              role={role}
+              vocabularyPreset={workspace.vocabularyPreset ?? null}
+              businessPreset={resolveVocabularyPreset({
+                businessType: workspace.businessType,
+              })}
+            />
+          ),
         },
         {
           slug: "workspace",

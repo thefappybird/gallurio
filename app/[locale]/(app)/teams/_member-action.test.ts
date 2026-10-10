@@ -16,6 +16,13 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+const evict = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/sockets/evictUserFromWorkspace", () => ({ evictUserFromWorkspace: evict }));
+vi.mock("@/lib/notifications/send", () => ({ sendNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("next-intl/server", () => ({ getLocale: vi.fn().mockResolvedValue("en") }));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -40,6 +47,8 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  emit.mockClear();
+  evict.mockClear();
 });
 
 async function makeTeam() {
@@ -127,6 +136,66 @@ describe("assignMemberToTeamAction — workspace-member guard", () => {
     }).lean();
     expect(row).toBeTruthy();
     expect(row?.role).toBe("member");
+  });
+});
+
+describe("member actions — data:changed", () => {
+  it("assign emits team.updated on success and not when the user is outside the workspace", async () => {
+    const team = await makeTeam();
+    const { assignMemberToTeamAction } = await import("./_member-action");
+    await assignMemberToTeamAction({ workosUserId: "user_nobody", teamId: String(team._id), role: "member" });
+    expect(emit).not.toHaveBeenCalled();
+    await seedMemberUser("user_m1");
+    await assignMemberToTeamAction({ workosUserId: "user_m1", teamId: String(team._id), role: "member" });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+  });
+
+  it("setLead (promote and demote) emits team.updated, none when membership is missing", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_m2");
+    const { setLeadFlagAction } = await import("./_member-action");
+    await setLeadFlagAction({ workosUserId: "user_m2", teamId: String(team._id), isLead: true });
+    expect(emit).not.toHaveBeenCalled();
+    await TeamMembership.create({ workspaceId: WORKSPACE_ID, teamId: team._id, workosUserId: "user_m2", role: "member" });
+    await setLeadFlagAction({ workosUserId: "user_m2", teamId: String(team._id), isLead: true });
+    await setLeadFlagAction({ workosUserId: "user_m2", teamId: String(team._id), isLead: false });
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+  });
+
+  it("removeMemberFromTeam emits team.updated on success, none when membership is missing", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_m3");
+    const { removeMemberFromTeamAction } = await import("./_member-action");
+    await removeMemberFromTeamAction({ workosUserId: "user_m3", teamId: String(team._id) });
+    expect(emit).not.toHaveBeenCalled();
+    await TeamMembership.create({ workspaceId: WORKSPACE_ID, teamId: team._id, workosUserId: "user_m3", role: "member" });
+    await Team.updateOne({ _id: team._id }, { $inc: { memberCount: 1 } });
+    await removeMemberFromTeamAction({ workosUserId: "user_m3", teamId: String(team._id) });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+  });
+
+  it("removeMemberFromTeamAndWorkspace emits team.updated on success", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_m4");
+    await TeamMembership.create({ workspaceId: WORKSPACE_ID, teamId: team._id, workosUserId: "user_m4", role: "member" });
+    await Team.updateOne({ _id: team._id }, { $inc: { memberCount: 1 } });
+    const { removeMemberFromTeamAndWorkspaceAction } = await import("./_member-action");
+    const res = await removeMemberFromTeamAndWorkspaceAction({ workosUserId: "user_m4", teamId: String(team._id) });
+    expect(res.ok).toBe(true);
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: String(team._id) });
+    expect(evict).toHaveBeenCalledWith(String(WORKSPACE_ID), "user_m4");
+  });
+
+  it("removeMemberFromWorkspace emits team.updated on success, none when removing the owner", async () => {
+    const { removeMemberFromWorkspaceAction } = await import("./_member-action");
+    await removeMemberFromWorkspaceAction({ workosUserId: OWNER_USER_ID });
+    expect(emit).not.toHaveBeenCalled();
+    expect(evict).not.toHaveBeenCalled();
+    await seedMemberUser("user_m5");
+    await removeMemberFromWorkspaceAction({ workosUserId: "user_m5" });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: null });
+    expect(evict).toHaveBeenCalledWith(String(WORKSPACE_ID), "user_m5");
   });
 });
 

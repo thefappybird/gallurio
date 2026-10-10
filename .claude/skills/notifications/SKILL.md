@@ -72,10 +72,28 @@ entityId, entityType, read, readAt, silent?, createdAt }`.
 ## Transport (socket.io)
 
 - Server singleton via `lib/sockets/io.ts` (`getIO()`); rooms are
-  `user:<workosUserId>`.
-- `NotificationProvider` connects on mount and listens for `notification:new`,
-  `notification:read`, `notification:readAll`; falls back to DB fetch when the
-  socket is unavailable.
+  `user:<workosUserId>` and `workspace:<workspaceId>` (joined from the signed handshake
+  token, whose workspace is resolved from DB memberships; removed members are evicted via
+  `evictUserFromWorkspace`).
+- `NotificationProvider` takes a `workspaceId` prop, connects on mount and listens for
+  `notification:new`, `notification:read`, `notification:readAll`; falls back to DB fetch when
+  the socket is unavailable.
+- It also listens for `data:changed` (`lib/data-events.ts`, emitted by
+  `emitDataChanged(workspaceId, event)` after a mutation commits). Payloads for another
+  workspace are ignored; the rest go through `useApplyDataEvent` -> `invalidateFor`
+  (react-query invalidation + debounced `router.refresh()`), skipping the actor's own echo.
+  This replaced the old `useLiveRefresh` hook (removed). Payloads carry only a type and opaque
+  ids, never entity data.
+- **Scoped audience**: `emitDataChanged(ws, event, { teamIds })` for `booking.created/updated`
+  sends the full event only to owners + members of the booking's old/new teams (`user:<id>`
+  rooms) and `client.statsChanged` to everyone else (staff still see client stats on /clients).
+  Any resolution error falls back to a full workspace broadcast (fail open); events without
+  `teamIds` stay workspace-wide.
+- **Echo suppression is order-safe**: remote arrivals are recorded, so a late local mark never
+  swallows a teammate's identical event.
+- **Reconnect catch-up**: the socket reconnects without limit (backoff); after a gap
+  (reconnect, or tab visible while disconnected) the client invalidates all workspace queries
+  and refreshes.
 
 ## Types & triggers
 

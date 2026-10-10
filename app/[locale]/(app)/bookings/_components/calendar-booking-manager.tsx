@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
-import { useBookingsToolbarPending } from "./bookings-pending-shell";
-import { CalendarView, type ClientHit } from "./calendar-view";
+import { useBookingsToolbarPending, useBookingsWindowPending } from "./bookings-pending-shell";
+import { CalendarView } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -17,7 +15,6 @@ type Props = {
   defaultCurrency: SupportedCurrency;
   locale: string;
   workspaceTimezone?: string;
-  initialClients?: ClientHit[];
   messages: React.ComponentProps<typeof CalendarView>["messages"];
   /** Whether the current user may create bookings (owner-only in Phase 4). */
   canCreate: boolean;
@@ -38,6 +35,8 @@ type Props = {
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window: { start: string; end: string };
 };
 
 /**
@@ -51,7 +50,6 @@ export function CalendarBookingManager({
   defaultCurrency,
   locale,
   workspaceTimezone,
-  initialClients,
   messages,
   canCreate,
   defaultTeamId,
@@ -63,11 +61,10 @@ export function CalendarBookingManager({
   teamColorMap,
   initialInvoiceTheme,
   invoiceThemeBusiness,
+  window,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const onPendingChange = useBookingsToolbarPending();
+  const onWindowPendingChange = useBookingsWindowPending();
 
   // Incrementing nonce signals CalendarView to open a fresh add modal.
   const nonceRef = useRef(0);
@@ -77,14 +74,16 @@ export function CalendarBookingManager({
     if (!canCreate) return;
     nonceRef.current += 1;
     setAddNonce(nonceRef.current);
-    // Side-effect: set ?add=1 for shareability.
-    const sp = new URLSearchParams(searchParams.toString());
+    // Side-effect: set ?add=1 for shareability. Keeps `date` (the window anchor:
+    // dropping it snaps the calendar to today) and uses a history-only replace so
+    // no RSC round-trip fires (Next syncs useSearchParams with the History API).
+    // `window` is shadowed by the window prop, hence globalThis.
+    const { location, history } = globalThis;
+    const sp = new URLSearchParams(location.search);
     sp.set("add", "1");
-    sp.delete("date");
     sp.delete("time");
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [canCreate, router, pathname, searchParams]);
+    history.replaceState(history.state, "", `${location.pathname}?${sp.toString()}`);
+  }, [canCreate]);
 
   return (
     <>
@@ -107,7 +106,6 @@ export function CalendarBookingManager({
         defaultCurrency={defaultCurrency}
         locale={locale}
         workspaceTimezone={workspaceTimezone}
-        initialClients={initialClients}
         messages={messages}
         externalAddNonce={addNonce}
         canCreate={canCreate}
@@ -118,6 +116,8 @@ export function CalendarBookingManager({
         teams={teams}
         selectedTeams={selectedTeams}
         isOwner={isOwner}
+        window={window}
+        onWindowPendingChange={onWindowPendingChange}
       />
     </>
   );

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { SessionsLocationStep } from "./sessions-location-step";
 import type { WizardValues } from "./types";
 
@@ -115,5 +115,46 @@ describe("SessionsLocationStep endTime validation", () => {
     const message = document.getElementById(describedBy!);
     expect(message).toHaveAttribute("role", "alert");
     expect(message).toHaveTextContent(/end time must be after start time/i);
+  });
+});
+
+describe("SessionsLocationStep end follows start", () => {
+  it("moves end to start + 1h when start changes past end", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <EndTimeHarness startTime="10:00" endTime="11:00" />
+      </NextIntlClientProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText(/shift start time/i), { target: { value: "14:00" } });
+
+    expect(screen.getByLabelText(/shift end time/i)).toHaveValue("15:00");
+  });
+
+  it("snaps end to start + 1h on blur when end is at or before start", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <EndTimeHarness startTime="10:00" endTime="11:00" />
+      </NextIntlClientProvider>
+    );
+
+    const end = screen.getByLabelText(/shift end time/i);
+    fireEvent.change(end, { target: { value: "09:00" } });
+    expect(end).toHaveValue("09:00");
+    fireEvent.blur(end);
+
+    expect(end).toHaveValue("11:00");
+  });
+
+  it("leaves end alone when start moves but end is still later", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <EndTimeHarness startTime="10:00" endTime="17:00" />
+      </NextIntlClientProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText(/shift start time/i), { target: { value: "12:00" } });
+
+    expect(screen.getByLabelText(/shift end time/i)).toHaveValue("17:00");
   });
 });

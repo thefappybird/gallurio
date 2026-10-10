@@ -16,7 +16,7 @@ export function UpcomingWeekList({ bookings, locale, title, empty, viewAll }: Pr
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h3" className="text-sm font-medium">{title}</CardTitle>
         <span className="flex items-center gap-2">
           <Link
             href="/bookings"

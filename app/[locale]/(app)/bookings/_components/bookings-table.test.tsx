@@ -32,6 +32,7 @@ const futureRow: BookingRow = {
   status: "booked",
   total: 75_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const pastRow: BookingRow = {
@@ -43,6 +44,7 @@ const pastRow: BookingRow = {
   status: "completed",
   total: 25_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const cancelledRow: BookingRow = {
@@ -54,6 +56,7 @@ const cancelledRow: BookingRow = {
   status: "cancelled",
   total: 10_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 const partiallyPastRow: BookingRow = {
@@ -68,6 +71,7 @@ const partiallyPastRow: BookingRow = {
   status: "booked",
   total: 50_000,
   currency: "PHP",
+  bookedAt: "2026-01-05T08:00:00.000Z",
 };
 
 describe("BookingsTable", () => {
@@ -85,6 +89,47 @@ describe("BookingsTable", () => {
     expect(screen.getAllByText(/75,000/).length).toBeGreaterThan(0);
   });
 
+  it("desktop table does not force max-content width", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    expect(screen.getByRole("table")).not.toHaveClass("min-w-max");
+  });
+
+  it("desktop table uses fixed layout with a fixed-width status column", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const table = screen.getByRole("table");
+    expect(table).toHaveClass("table-fixed");
+    const statusTh = within(table)
+      .getAllByRole("columnheader")
+      .find((th) => /status/i.test(th.textContent ?? ""));
+    expect(statusTh).toHaveClass("w-[10rem]");
+  });
+
+  it("desktop title cell truncates and exposes the full title", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const cell = within(screen.getByRole("table")).getByTitle("Carter Wedding");
+    expect(cell).toHaveClass("truncate");
+  });
+
+  it("opens a card's detail with history.pushState, not a router push", () => {
+    window.history.replaceState(null, "", "/en/bookings?view=table");
+    const pushState = vi.spyOn(window.history, "pushState");
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+
+    fireEvent.click(within(screen.getByTestId("bookings-card-list")).getByRole("button", { name: /Carter Wedding/ }));
+
+    expect(pushState).toHaveBeenCalledWith(window.history.state, "", "/en/bookings?view=table&detail=1");
+    expect(mockPush).not.toHaveBeenCalled();
+    pushState.mockRestore();
+  });
+
   it("renders empty state when rows is empty", () => {
     renderWithProviders(
       <BookingsTable
@@ -95,6 +140,19 @@ describe("BookingsTable", () => {
       />
     );
     expect(screen.getByText("No rows")).toBeInTheDocument();
+  });
+
+  it("renders the empty hint as description when provided", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[]}
+        locale="en"
+        empty="No bookings yet."
+        emptyHint="Create one to see it here."
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    expect(screen.getByText("Create one to see it here.")).toBeInTheDocument();
   });
 
   it("renders a mobile card list alongside the desktop table markup", () => {
@@ -289,6 +347,124 @@ describe("BookingsTable", () => {
     const [totalValue] = screen.getAllByText(/75,000/);
     expect(totalValue.className).not.toMatch(/text-right/);
     expect(totalValue.className).toMatch(/tabular-nums/);
+  });
+
+  it("reserves status pill width for every status label and the Past slot", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const label = within(screen.getByRole("table")).getByText("Booked");
+    const pill = label.parentElement as HTMLElement;
+    const ghosts = Array.from(
+      pill.querySelectorAll('[aria-hidden="true"][data-label]')
+    );
+    expect(ghosts.map((g) => g.getAttribute("data-label"))).toEqual([
+      "Booked",
+      "Completed",
+      "Cancelled",
+    ]);
+    const slot = pill.parentElement!.querySelector(
+      // reserved Past slot sits beside the pill
+
+      '[data-label="Past"]'
+    ) as HTMLElement;
+    expect(slot.className).toMatch(/\binvisible\b/);
+  });
+
+  it("does not end-align the Total cell value", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const totalValue = within(screen.getByRole("table")).getByText(/75,000/);
+    expect(totalValue.className).not.toMatch(/text-end/);
+  });
+
+  it("sets scope=col on every header and aria-sort only on sortable columns", () => {
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
+      />
+    );
+    const ths = Array.from(container.querySelectorAll("thead th"));
+    expect(ths.every((th) => th.getAttribute("scope") === "col")).toBe(true);
+    expect(ths.map((th) => th.getAttribute("aria-sort"))).toEqual([
+      "none",
+      "none",
+      "none",
+      "descending",
+      "none",
+      "none",
+      null,
+    ]);
+  });
+
+  it("resets sort (null) when the active desc header is clicked", () => {
+    const onSortChange = vi.fn();
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
+        onSortChange={onSortChange}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const th = within(table).getByRole("columnheader", { name: /booked/i });
+    fireEvent.click(within(th).getByRole("button", { name: /booked/i }));
+    expect(onSortChange).toHaveBeenCalledWith(null);
+  });
+
+  it("fires onSortChange asc first when a new header is clicked", () => {
+    const onSortChange = vi.fn();
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+        sortKey="bookedAt"
+        sortDir="desc"
+        onSortChange={onSortChange}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const dateTh = within(table).getByRole("columnheader", { name: /date/i });
+    fireEvent.click(within(dateTh).getByRole("button", { name: /date/i }));
+    expect(onSortChange).toHaveBeenCalledWith({ key: "date", dir: "asc" });
+  });
+
+  it("shows the booked date in the workspace timezone and a dash when missing", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[
+          { ...futureRow, id: "a", bookedAt: "2026-01-05T20:00:00.000Z" },
+          { ...pastRow, id: "b", bookedAt: null },
+        ]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone="Asia/Manila"
+      />
+    );
+    expect(screen.getAllByText("Jan 6, 2026").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("renders a row action trigger", () => {

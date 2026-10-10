@@ -10,8 +10,50 @@ import {
   detectConflictIds,
   toCalendarGridDate,
   fromCalendarGridDate,
+  workspaceNowAsLocal,
 } from "./calendar-helpers";
 import type { CalendarEvent } from "../booking-calendar";
+
+describe("workspaceNowAsLocal", () => {
+  it("returns the workspace wall clock as a local Date for a tz ahead of UTC", () => {
+    // 20:00Z Sep 30 is already 04:00 Oct 1 in Manila (UTC+8).
+    const d = workspaceNowAsLocal(new Date("2026-09-30T20:00:00Z"), "Asia/Manila");
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([
+      2026, 9, 1, 4, 0,
+    ]);
+  });
+
+  it("returns the previous day for a tz behind UTC", () => {
+    // 03:00Z Oct 1 is 20:00 Sep 30 in Los Angeles (UTC-7).
+    const d = workspaceNowAsLocal(new Date("2026-10-01T03:00:00Z"), "America/Los_Angeles");
+    expect([d.getMonth(), d.getDate(), d.getHours()]).toEqual([8, 30, 20]);
+  });
+
+  it("reads 01:30 wall time on both sides of a DST fall-back", () => {
+    const edt = workspaceNowAsLocal(new Date("2026-11-01T05:30:00Z"), "America/New_York");
+    const est = workspaceNowAsLocal(new Date("2026-11-01T06:30:00Z"), "America/New_York");
+    expect([edt.getDate(), edt.getHours(), edt.getMinutes()]).toEqual([1, 1, 30]);
+    expect([est.getDate(), est.getHours(), est.getMinutes()]).toEqual([1, 1, 30]);
+  });
+
+  it("snaps a wall time inside the browser's own DST gap to the gap's end, same day", () => {
+    // Browser in New York: 02:00-03:00 on 2026-03-08 does not exist locally.
+    // Manila is at 02:30 that day (18:30Z on Mar 7).
+    const prevTz = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    try {
+      const d = workspaceNowAsLocal(new Date("2026-03-07T18:30:00Z"), "Asia/Manila");
+      expect([d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2, 8, 3, 0]);
+    } finally {
+      process.env.TZ = prevTz;
+    }
+  });
+
+  it("does not render midnight as hour 24", () => {
+    const d = workspaceNowAsLocal(new Date("2026-09-30T16:00:00Z"), "Asia/Manila");
+    expect([d.getDate(), d.getHours()]).toEqual([1, 0]);
+  });
+});
 
 // ── toMinutes ─────────────────────────────────────────────────────────────────
 
@@ -199,7 +241,6 @@ function makeEvent(
     end: endAt,
     status: "booked",
     clientName: "Test Client",
-    clientEmail: null,
     rangeStart: startAt,
     rangeEnd: endAt,
     sessionIndex,
@@ -364,18 +405,18 @@ function makeConflictEvent(
   bookingId: string,
   start: Date,
   end: Date,
-  kind?: 'inquiry' | 'booking'
+  kind?: 'inquiry' | 'booking',
+  teamId: string | null = null
 ): CalendarEvent {
   return {
     id,
     bookingId,
-    teamId: null,
+    teamId,
     title: 'Event',
     start,
     end,
     status: 'booked',
     clientName: 'Client',
-    clientEmail: null,
     rangeStart: start,
     rangeEnd: end,
     sessionIndex: 0,
@@ -389,6 +430,30 @@ function makeConflictEvent(
 
 describe('detectConflictIds', () => {
   const t = (h: number, m = 0) => new Date(2026, 4, 25, h, m, 0);
+
+  it('flags overlapping bookings of the same team', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14), undefined, 'teamA'),
+      makeConflictEvent('b', 'b2', t(12), t(16), undefined, 'teamA'),
+    ];
+    expect(detectConflictIds(events).size).toBe(2);
+  });
+
+  it('flags an inquiry overlapping a booking of another team', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'i1', t(10), t(14), 'inquiry', null),
+      makeConflictEvent('b', 'b1', t(12), t(16), undefined, 'teamB'),
+    ];
+    expect(detectConflictIds(events).size).toBe(2);
+  });
+
+  it('does NOT flag overlapping bookings of different teams', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14), undefined, 'teamA'),
+      makeConflictEvent('b', 'b2', t(12), t(16), undefined, 'teamB'),
+    ];
+    expect(detectConflictIds(events).size).toBe(0);
+  });
 
   it('returns empty for non-overlapping events', () => {
     const events: CalendarEvent[] = [

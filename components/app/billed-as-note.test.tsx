@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { BilledAsNote } from "./billed-as-note";
 
 function wrapper({ children }: { children: React.ReactNode }) {

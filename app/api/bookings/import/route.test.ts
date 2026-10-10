@@ -39,6 +39,8 @@ const fx = vi.hoisted(() => ({
     base === target ? { rate: 1, target } : null
   ),
 }));
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
 vi.mock("@/lib/pricing/fxRates", () => ({
   resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
 }));
@@ -55,6 +57,7 @@ beforeEach(async () => {
   // without this the suite exhausts its own window part-way through.
   const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
   __resetRateLimitForTests();
+  emit.mockClear();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   fx.resolveFxFreeze.mockReset();
@@ -385,6 +388,73 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
     expect(after?.title).toBe("Untouchable");
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
+
+  it("refuses a booking_id that addresses an inquiry draft and leaves it untouched", async () => {
+    // Promoting a draft belongs to the approve flow (transaction + conflict
+    // checks); a CSV row must not be able to flip it to booked.
+    const client = await Client.create({ workspaceId: WS_ID, name: "Jane Smith", source: "manual" });
+    const draft = await Booking.create({
+      workspaceId: WS_ID,
+      clientId: client._id,
+      clientName: "Jane Smith",
+      title: "Pending Inquiry",
+      status: "draft",
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+
+    const res = await callImport([{ ...VALID_ROW, bookingId: draft._id.toString() }]);
+    const body = await res.json();
+
+    expect(body.updated).toBe(0);
+    expect(body.errors[0].message).toContain("booking_not_found_in_workspace");
+    const after = await Booking.findById(draft._id).lean();
+    expect(after?.status).toBe("draft");
+    expect(after?.title).toBe("Pending Inquiry");
+    expect(after?.bookedAt ?? null).toBeNull();
+  });
+
+  async function seedBooked(bookedAt: Date | null) {
+    const client = await Client.create({ workspaceId: WS_ID, name: "Jane Smith", source: "manual" });
+    return Booking.create({
+      workspaceId: WS_ID,
+      clientId: client._id,
+      clientName: "Jane Smith",
+      title: "Old Title",
+      status: "booked",
+      bookedAt,
+      amount: { total: 50000, deposit: 10000, currency: "PHP" },
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+  }
+
+  it("stamps bookedAt on an updated booking that has none", async () => {
+    const existing = await seedBooked(null);
+    await callImport([{ ...VALID_ROW, bookingId: existing._id.toString() }]);
+    const after = await Booking.findById(existing._id).lean();
+    expect(after?.bookedAt).toBeInstanceOf(Date);
+  });
+
+  it("keeps an already-stamped bookedAt on update", async () => {
+    const stamped = new Date("2026-01-02T03:04:05.000Z");
+    const existing = await seedBooked(stamped);
+    await callImport([{ ...VALID_ROW, bookingId: existing._id.toString() }]);
+    const after = await Booking.findById(existing._id).lean();
+    expect(after?.bookedAt?.toISOString()).toBe(stamped.toISOString());
+  });
 });
 
 describe("POST /api/bookings/import", () => {
@@ -404,6 +474,24 @@ describe("POST /api/bookings/import", () => {
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBe("jane@example.com");
     expect(client?.source).toBe("import");
+  });
+
+  it("stamps bookedAt on an imported non-draft booking", async () => {
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.bookedAt).toBeInstanceOf(Date);
+  });
+
+  it("emits bookings.imported once after a successful import", async () => {
+    await callImport([VALID_ROW]);
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenCalledWith(String(WS_ID), { type: "bookings.imported" });
+  });
+
+  it("does not emit when every row fails", async () => {
+    const missing = new Types.ObjectId().toHexString();
+    await callImport([{ ...VALID_ROW, bookingId: missing, sessionIndex: "0" }]);
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("strips the exporter's formula guard so a round-trip is lossless", async () => {

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 
@@ -28,7 +29,7 @@ export type AuthUser = {
  *   user.firstName/lastName → name (space-joined, trimmed)
  *   user.profilePictureUrl → avatarUrl
  */
-export async function getAuthUser(): Promise<AuthUser | null> {
+export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
   // withAuth() throws a plain Error when the current request wasn't covered
   // by AuthKit's middleware (e.g. a 404 rendered under a public path that
   // proxy.ts deliberately skips authkit for). Mirror AuthKit's own check so
@@ -51,4 +52,4 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     name,
     avatarUrl: user.profilePictureUrl ?? null,
   };
-}
+});

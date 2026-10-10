@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { queryKeys } from "@/lib/query/keys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
@@ -20,6 +23,8 @@ type Props = {
   teams: BookingTeamOption[];
 };
 
+const EMPTY_DAYS: CalendarDayCount[] = [];
+
 function isoDate(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -38,73 +43,65 @@ export function MiniBookingCalendar({
   const [month, setMonth] = useState<Date>(
     new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1)
   );
-  const [days, setDays] = useState<CalendarDayCount[]>(initialDays);
-  const [loading, setLoading] = useState(false);
   // "" = all teams (the server first-paint).
   const [teamId, setTeamId] = useState("");
+  const workspaceId = useAppWorkspaceId();
 
   const initialKey = `${initialMonth.getFullYear()}-${initialMonth.getMonth()}`;
   const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
-  const isInitial = monthKey === initialKey;
+  // The server first-paint covers only the initial month with all teams.
+  const useServerPaint = monthKey === initialKey && teamId === "";
 
-  useEffect(() => {
-    let cancelled = false;
-    // The server first-paint covers only the initial month with all teams.
-    const useServerPaint = isInitial && teamId === "";
-    const days0 = initialDays;
-    const year = month.getFullYear();
-    const mon = month.getMonth();
-    Promise.resolve().then(() => {
-      if (cancelled) return;
-      if (useServerPaint) {
-        setDays(days0);
-        return;
-      }
-      setLoading(true);
+  const query = useQuery<CalendarDayCount[]>({
+    queryKey: queryKeys(workspaceId).dashboardMiniCalendar(monthKey, teamId ? [teamId] : []),
+    queryFn: async ({ signal }) => {
       const teamParam = teamId ? `&team=${encodeURIComponent(teamId)}` : "";
-      fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((rows: CalendarDayCount[]) => {
-          if (cancelled) return;
-          setDays(rows ?? []);
-          setLoading(false);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setLoading(false);
-        });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [monthKey, isInitial, initialDays, month, teamId]);
+      const r = await fetch(
+        `/api/bookings/by-day?year=${month.getFullYear()}&month=${month.getMonth()}${teamParam}`,
+        { signal }
+      );
+      if (!r.ok) throw new Error(`bookings-by-day request failed: ${r.status}`);
+      return ((await r.json()) as CalendarDayCount[] | null) ?? [];
+    },
+    initialData: useServerPaint ? initialDays : undefined,
+    placeholderData: keepPreviousData,
+  });
+  const days = query.data ?? EMPTY_DAYS;
+  const loading = query.isPending || query.isPlaceholderData;
 
-  const counts = new Map(days.map((d) => [d.date, d.count]));
-  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-  const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  const startWeekday = monthStart.getDay();
-  const totalDays = monthEnd.getDate();
+  const counts = useMemo(() => new Map(days.map((d) => [d.date, d.count])), [days]);
   const today = isoDate(new Date());
 
-  const cells: Array<{
-    key: string;
-    iso: string | null;
-    day: number | null;
-    count: number;
-  }> = [];
-  for (let i = 0; i < startWeekday; i += 1) {
-    cells.push({ key: `pad-${i}`, iso: null, day: null, count: 0 });
-  }
-  for (let d = 1; d <= totalDays; d += 1) {
-    const date = new Date(month.getFullYear(), month.getMonth(), d);
-    const iso = isoDate(date);
-    cells.push({ key: iso, iso, day: d, count: counts.get(iso) ?? 0 });
-  }
+  const cells = useMemo(() => {
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const startWeekday = monthStart.getDay();
+    const totalDays = monthEnd.getDate();
+    const built: Array<{
+      key: string;
+      iso: string | null;
+      day: number | null;
+      count: number;
+    }> = [];
+    for (let i = 0; i < startWeekday; i += 1) {
+      built.push({ key: `pad-${i}`, iso: null, day: null, count: 0 });
+    }
+    for (let d = 1; d <= totalDays; d += 1) {
+      const date = new Date(month.getFullYear(), month.getMonth(), d);
+      const iso = isoDate(date);
+      built.push({ key: iso, iso, day: d, count: counts.get(iso) ?? 0 });
+    }
+    return built;
+  }, [month, counts]);
 
-  const weekdayLabels = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(2024, 5, 2 + i); // 2024-06-02 was a Sunday
-    return d.toLocaleDateString(locale, { weekday: "narrow" });
-  });
+  const weekdayLabels = useMemo(
+    () =>
+      Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(2024, 5, 2 + i); // 2024-06-02 was a Sunday
+        return d.toLocaleDateString(locale, { weekday: "narrow" });
+      }),
+    [locale]
+  );
 
   const totalBookings = days.reduce((s, d) => s + d.count, 0);
 
@@ -121,7 +118,7 @@ export function MiniBookingCalendar({
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <span className="flex items-center gap-1.5">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle as="h3" className="text-sm font-medium">{title}</CardTitle>
           <DashboardInfoHint hint="calendar" />
         </span>
         <div className="flex items-center gap-0.5">
@@ -131,7 +128,7 @@ export function MiniBookingCalendar({
             size="icon-xs"
             onClick={() => shiftMonth(-1)}
             disabled={loading}
-            aria-label="Previous month"
+            aria-label={t("miniCalendar.prevMonth")}
           >
             <ChevronLeftIcon className="size-3.5" />
           </Button>
@@ -140,7 +137,7 @@ export function MiniBookingCalendar({
             onClick={goToToday}
             disabled={loading}
             className="min-w-20 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Jump to current month"
+            aria-label={t("miniCalendar.jumpToToday")}
           >
             {month.toLocaleDateString(locale, { month: "short", year: "numeric" })}
           </button>
@@ -150,7 +147,7 @@ export function MiniBookingCalendar({
             size="icon-xs"
             onClick={() => shiftMonth(1)}
             disabled={loading}
-            aria-label="Next month"
+            aria-label={t("miniCalendar.nextMonth")}
           >
             <ChevronRightIcon className="size-3.5" />
           </Button>
@@ -173,6 +170,23 @@ export function MiniBookingCalendar({
             ))}
           </select>
         )}
+        {query.isError ? (
+          <div
+            role="alert"
+            className="mb-2 flex items-center justify-between gap-2 text-[11px] text-destructive"
+          >
+            <span>{t("miniCalendar.loadError")}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => void query.refetch()}
+              disabled={query.isFetching}
+            >
+              {t("miniCalendar.retry")}
+            </Button>
+          </div>
+        ) : null}
         <div
           className={`grid grid-cols-7 gap-px bg-border transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
         >
@@ -208,7 +222,7 @@ export function MiniBookingCalendar({
                         ? "bg-brand-foreground text-brand"
                         : "bg-brand text-brand-foreground group-hover/cell:bg-background group-hover/cell:text-foreground"
                     }`}
-                    aria-label={`${cell.count} ${cell.count === 1 ? "booking" : "bookings"}`}
+                    aria-label={t("miniCalendar.dayBookingCount", { count: cell.count })}
                   >
                     {cell.count > 9 ? "9+" : cell.count}
                   </span>

@@ -4,24 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
-import { BookingWizardModal } from "./booking-wizard-modal";
+import { BookingWizardLazy } from "./booking-wizard-dynamic";
 import { useBookingsToolbarPending } from "./bookings-pending-shell";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
 import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
 
-type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
-
 type Props = {
   defaultCurrency: SupportedCurrency;
   locale: string;
   workspaceTimezone?: string;
-  clients: ClientHit[];
   /** Whether the current user may create bookings (owner-only in Phase 4). */
   canCreate: boolean;
   /** The Main team id to attach new bookings to (null when canCreate is false). */
@@ -51,7 +43,6 @@ export function TableBookingManager({
   defaultCurrency,
   locale,
   workspaceTimezone,
-  clients,
   canCreate,
   defaultTeamId,
   teams,
@@ -134,13 +125,12 @@ export function TableBookingManager({
         onPendingChange={onPendingChange}
       />
       {addOpen ? (
-        <BookingWizardModal
+        <BookingWizardLazy
           key={nonce}
           mode="create"
           defaultCurrency={defaultCurrency}
           locale={locale}
           workspaceTimezone={workspaceTimezone}
-          clients={clients}
           teamId={defaultTeamId ?? undefined}
           teams={writableTeams}
           onClose={handleClose}

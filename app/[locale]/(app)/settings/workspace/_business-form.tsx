@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { FormField, useFieldError } from "@/components/ui/form-field";
@@ -104,6 +105,7 @@ export function WorkspaceBusinessForm({
   portfolioDomain?: string | null;
 }) {
   const t = useTranslations("app.settings.workspace");
+  const invalidateFor = useInvalidateFor();
   const tOnb = useTranslations("onboarding.business");
   const currencyLockedUntilLabel = currencyLockedUntil
     ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
@@ -182,6 +184,7 @@ export function WorkspaceBusinessForm({
       return;
     }
     if (!toastActionResult(result, t("savedToast"))) return;
+    invalidateFor({ type: "workspace.updated" });
     reset(data);
   }
 

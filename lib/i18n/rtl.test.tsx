@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { isRtl, useIsRtl, resolveEffectiveDir } from "./rtl";
 
 describe("isRtl", () => {

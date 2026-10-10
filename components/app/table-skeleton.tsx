@@ -1,19 +1,22 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
 import { cn } from "@/lib/utils";
 
 type Props = {
   columns: number;
   rows?: number;
   cardRows?: number;
+  /** Desktop row height in px; pass the real table's measured row height so
+   * loading -> loaded doesn't shift. Default matches the clients/teams rows. */
+  rowHeight?: number;
+  /** Label/value pairs per mobile card (default 4). */
+  cardFields?: number;
   className?: string;
 };
 
 // Slight width variance per column position makes the skeleton feel more natural.
 const COL_WIDTHS = ["w-2/5", "w-1/3", "w-1/4", "w-1/5", "w-1/6", "w-1/6", "w-1/6"];
-const TABLE_HEADER_HEIGHT = 32;
 const TABLE_ROW_HEIGHT = 41;
 
 export function calculateTableSkeletonRows({
@@ -28,7 +31,13 @@ export function calculateTableSkeletonRows({
   return Math.max(0, Math.floor((availableHeight - headerHeight) / rowHeight));
 }
 
-function CardCollectionSkeleton({ rows }: { rows: number }) {
+function CardCollectionSkeleton({
+  rows,
+  fields,
+}: {
+  rows: number;
+  fields: number;
+}) {
   return (
     <div
       className="flex flex-col gap-3 lg:hidden"
@@ -49,7 +58,7 @@ function CardCollectionSkeleton({ rows }: { rows: number }) {
             <Skeleton className="size-8 shrink-0" />
           </div>
           <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
-            {Array.from({ length: 4 }).map((__, fieldIdx) => (
+            {Array.from({ length: fields }).map((__, fieldIdx) => (
               <div key={fieldIdx} className="flex flex-col gap-2">
                 <Skeleton className="h-3 w-16" />
                 <Skeleton
@@ -71,22 +80,16 @@ export function TableSkeleton({
   columns,
   rows = 8,
   cardRows,
+  rowHeight = TABLE_ROW_HEIGHT,
+  cardFields = 4,
   className,
 }: Props) {
   const showResponsiveCards = typeof cardRows === "number" && cardRows > 0;
-  const { ref, remainingHeight } = useViewportRemainingHeight<HTMLDivElement>();
-  const visibleRows =
-    remainingHeight === null
-      ? rows
-      : calculateTableSkeletonRows({
-          availableHeight: remainingHeight,
-          headerHeight: TABLE_HEADER_HEIGHT,
-          rowHeight: TABLE_ROW_HEIGHT,
-        });
-
   return (
-    <div ref={ref} className="min-w-0">
-      {showResponsiveCards ? <CardCollectionSkeleton rows={cardRows} /> : null}
+    <div className="min-w-0">
+      {showResponsiveCards ? (
+        <CardCollectionSkeleton rows={cardRows} fields={cardFields} />
+      ) : null}
       <div
         className={cn(
           "border border-border bg-card overflow-x-auto",
@@ -107,8 +110,12 @@ export function TableSkeleton({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: visibleRows }).map((_, rowIdx) => (
-              <tr key={rowIdx} className="border-b border-border last:border-b-0">
+            {Array.from({ length: rows }).map((_, rowIdx) => (
+              <tr
+                key={rowIdx}
+                className="border-b border-border last:border-b-0"
+                style={{ height: rowHeight }}
+              >
                 {Array.from({ length: columns }).map((_, colIdx) => (
                   <td key={colIdx} className="px-3 py-2.5 align-middle">
                     <Skeleton

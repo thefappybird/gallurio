@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { ImportResultsDialog } from "./import-results-dialog";
 import type { ImportErrorEntry } from "@/app/api/bookings/import/route";
 
@@ -89,6 +89,19 @@ describe("ImportResultsDialog", () => {
     expect(screen.queryByText(/"clientName"/)).toBeNull();
     fireEvent.click(toggles[0]);
     expect(screen.getByText(/"clientName"/)).toBeDefined();
+  });
+
+  it("lists the first 50 errors and reveals the rest behind Show all", () => {
+    const many: ImportErrorEntry[] = Array.from({ length: 120 }, (_, i) => ({
+      index: i,
+      row: { title: `Row ${i}` },
+      kind: "validation" as const,
+      message: `Bad value ${i}`,
+    }));
+    renderDialog(true, many);
+    expect(screen.getAllByText(/^Bad value \d+$/)).toHaveLength(50);
+    fireEvent.click(screen.getByRole("button", { name: /show all 120/i }));
+    expect(screen.getAllByText(/^Bad value \d+$/)).toHaveLength(120);
   });
 
   it("does not render when closed", () => {

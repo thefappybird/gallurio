@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTranslator } from 'next-intl'
 import enMessagesRaw from '@/messages/en.json'
+import { applyVocabulary } from '@/lib/vocabulary/apply'
 
 // Stub server-only getTranslations — ICU resolution is tested directly via
 // createTranslator (pure function, no Next.js request context needed).
@@ -8,10 +9,10 @@ import enMessagesRaw from '@/messages/en.json'
 // to verify that vars are forwarded to the title (the line-26 change).
 
 vi.mock('next-intl/server', () => ({
-  getTranslations: vi.fn(),
+  getMessages: vi.fn(),
 }))
 
-import { getTranslations } from 'next-intl/server'
+import { getMessages } from 'next-intl/server'
 import { buildNotificationContent } from './messages'
 
 // ---------------------------------------------------------------------------
@@ -28,7 +29,7 @@ function makeT(): (key: string, vars?: Record<string, unknown>) => string {
   return createTranslator({
     locale: 'en',
     namespace: 'app.notifications',
-    messages: enMessages,
+    messages: applyVocabulary(enMessages, 'en', 'standard'),
   }) as unknown as (key: string, vars?: Record<string, unknown>) => string
 }
 
@@ -75,13 +76,10 @@ describe('booking.status_changed ICU select — body', () => {
 })
 
 describe('buildNotificationContent passes vars to title (line-26 coverage)', () => {
-  it('calls getTranslations and forwards vars to title resolution', async () => {
-    const mockT = vi.fn((key: string, vars?: Record<string, string>) => {
-      if (key === 'types.booking.status_changed.title') return `title:${vars?.newStatus ?? ''}`
-      if (key === 'types.booking.status_changed.body') return `body:${vars?.actorName ?? ''}`
-      return ''
+  it('resolves messages and forwards vars to title resolution', async () => {
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue({
+      app: { notifications: { types: { booking: { status_changed: { title: 'title:{newStatus}', body: 'body:{actorName}' } } } } },
     })
-    ;(getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(mockT)
 
     const result = await buildNotificationContent(
       'booking.status_changed',
@@ -97,9 +95,32 @@ describe('buildNotificationContent passes vars to title (line-26 coverage)', () 
   })
 })
 
+describe('buildNotificationContent vocabulary preset', () => {
+  const tokenMessages = {
+    app: {
+      notifications: {
+        types: { inquiry: { created: { title: 'New %booking%', body: 'A %client% booked a %team%' } } },
+      },
+    },
+  }
+
+  it('venue preset swaps tokens to venue words', async () => {
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue(tokenMessages)
+    const result = await buildNotificationContent('inquiry.created', 'en', 'e1', 'inquiry', {}, 'venue')
+    expect(result.title).toBe('New event')
+    expect(result.body).toBe('A host booked a venue')
+  })
+
+  it('standard preset resolves tokens to default words', async () => {
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue(tokenMessages)
+    const result = await buildNotificationContent('inquiry.created', 'en', 'e1', 'inquiry', {}, 'standard')
+    expect(result.title).toBe('New booking')
+  })
+})
+
 describe('team.invite_accepted notification', () => {
   it('describes the accepted role and deep-links to the matching active member', async () => {
-    ;(getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT())
+    ;(getMessages as ReturnType<typeof vi.fn>).mockResolvedValue(enMessages)
 
     const result = await buildNotificationContent(
       'team.invite_accepted',

@@ -102,6 +102,72 @@
         "value": "plus jakarta sans",
         "createdAt": "2026-09-13T09:49:11.609Z",
         "reason": "Lowercase spelling of the same mandated app font, as it appears in the Google Fonts href"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "createdAt": "2026-10-08T08:54:08.433Z",
+        "reason": "Established micro-label sizes (status/past tags, card field labels) used across the app"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "createdAt": "2026-10-08T08:54:08.433Z",
+        "reason": "Established micro-label sizes (status/past tags, card field labels) used across the app"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "18px",
+        "createdAt": "2026-10-08T09:58:45.088Z",
+        "reason": "incumbent: settings customize _panel.tsx section h2 uses text-lg (18px)"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0 0 0 / 10%)",
+        "createdAt": "2026-10-08T09:58:45.388Z",
+        "reason": "DESIGN.md sanctions bg-black/10 dialog scrim and shadow-md/lg on floating sheets/toasts; these are those shadow/scrim alphas"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0 0 0 / 25%)",
+        "createdAt": "2026-10-08T09:58:45.693Z",
+        "reason": "DESIGN.md sanctions bg-black/10 dialog scrim and shadow-md/lg on floating sheets/toasts; these are those shadow/scrim alphas"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0 0 0 / 30%)",
+        "createdAt": "2026-10-08T09:58:45.938Z",
+        "reason": "DESIGN.md sanctions bg-black/10 dialog scrim and shadow-md/lg on floating sheets/toasts; these are those shadow/scrim alphas"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0.70 0.12 195)",
+        "createdAt": "2026-10-08T09:58:46.129Z",
+        "reason": "documented dark-mode --brand value (DESIGN.md Studio Teal dark counterpart), used in mockup reviewer chrome"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0.70 0.12 195 / 22%)",
+        "createdAt": "2026-10-08T09:58:46.302Z",
+        "reason": "documented dark-mode --brand value (DESIGN.md Studio Teal dark counterpart), used in mockup reviewer chrome"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "36px",
+        "createdAt": "2026-10-08T10:03:08.816Z",
+        "reason": "incumbent marketing page.tsx display sizes (text-4xl/5xl/6xl hero, manifesto, final CTA)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "48px",
+        "createdAt": "2026-10-08T10:03:09.011Z",
+        "reason": "incumbent marketing page.tsx display sizes (text-4xl/5xl/6xl hero, manifesto, final CTA)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "60px",
+        "createdAt": "2026-10-08T10:03:09.191Z",
+        "reason": "incumbent marketing page.tsx display sizes (text-4xl/5xl/6xl hero, manifesto, final CTA)"
       }
     ]
   }

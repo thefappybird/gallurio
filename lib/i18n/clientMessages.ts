@@ -87,6 +87,7 @@ export const MARKETING_CLIENT_MESSAGE_KEYS: readonly string[] = [
   "marketing.terms.title",
   "marketing.privacy.title",
   "marketing.pricingTeaser",
+  "marketing.vocabulary",
   "marketing.pricing",
   "marketing.bookDemo.form",
   "marketing.bookDemo.success",

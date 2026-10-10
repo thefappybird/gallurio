@@ -11,6 +11,7 @@ import { Workspace, User } from "@/lib/db/models";
 import {
   updateWorkspaceBusinessSchema,
   publicPageSettingsSchema,
+  vocabularyPresetSchema,
   type UpdateWorkspaceBusinessInput,
   type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
@@ -28,6 +29,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 
 // ---------------------------------------------------------------------------
 // Workspace business settings
@@ -166,6 +168,7 @@ export async function updateWorkspaceBusinessAction(
     }
   }
 
+  emitDataChanged(workspaceId, { type: "workspace.updated" });
   revalidatePath("/settings/workspace", "page");
   return { ok: true };
 }
@@ -304,6 +307,32 @@ export async function togglePublicPagePublishedAction(
   );
 
   revalidatePath("/settings/public-page", "page");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// CRM vocabulary preset (owner only). null = derive from businessType.
+// ---------------------------------------------------------------------------
+
+export async function updateVocabularyPresetAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = vocabularyPresetSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid vocabulary preset" };
+
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $set: { vocabularyPreset: parsed.data } },
+  );
+
+  emitDataChanged(String(ctx.workspace._id), { type: "workspace.updated" });
+
+  // Route groups like (app) are not part of the URL pattern, so the narrowest
+  // addressable layout that wraps every (app) page is the [locale] segment.
+  revalidatePath("/[locale]", "layout");
   return { ok: true };
 }
 

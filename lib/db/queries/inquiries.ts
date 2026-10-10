@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, type InquiryDoc, type BookingDoc } from "@/lib/db/models";
 import { INQUIRY_STATUSES } from "@/lib/db/models/Inquiry";
 import { getInquiryStatusFilter } from "@/lib/inquiries/status";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import type { SortDir } from "@/lib/tables/sort";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -16,6 +18,8 @@ export type InquiryListFilters = {
 export type InquiryListPagination = {
   page?: number;
   limit?: number;
+  // Table sort (see lib/tables/sort.ts). Absent keeps createdAt desc.
+  sort?: { field: string; dir: SortDir; text?: boolean };
 };
 
 export type InquiryListResult = {
@@ -45,10 +49,18 @@ export async function listInquiries(
     query.createdAt = range;
   }
 
-  const base = Inquiry.find(query).sort({ createdAt: -1 });
+  const sort = pagination?.sort;
+  let base = Inquiry.find(query);
+  if (sort) {
+    const d = sort.dir === "asc" ? 1 : -1;
+    base = base.sort({ [sort.field]: d, _id: d });
+    if (sort.text) base = base.collation({ locale: "en", strength: 2 });
+  } else {
+    base = base.sort({ createdAt: -1 });
+  }
 
   if (pagination) {
-    const { page = 1, limit = 25 } = pagination;
+    const { page = 1, limit = DEFAULT_PAGE_SIZE } = pagination;
     const skip = (page - 1) * limit;
     const [rows, total] = await Promise.all([
       base.skip(skip).limit(limit).lean(),

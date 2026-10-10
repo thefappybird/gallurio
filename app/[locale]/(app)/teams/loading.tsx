@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 
@@ -6,7 +6,7 @@ import { TableSkeleton } from "@/components/app/table-skeleton";
 const TEAMS_TABLE_COLUMNS = 5;
 
 export default async function TeamsLoading() {
-  const t = await getTranslations("common");
+  const t = await getAppTranslations("common");
   return (
     <div className="flex min-w-0 flex-col gap-4" aria-busy="true" role="status">
       <span className="sr-only">{t("loading")}</span>

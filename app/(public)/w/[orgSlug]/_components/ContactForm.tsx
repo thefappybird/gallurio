@@ -21,7 +21,7 @@ import {
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
-import { DEFAULT_TIME_MODE, TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
+import { DEFAULT_TIME_MODE, TIME_INPUT_LANG, syncEndTime, type TimeMode } from "@/lib/utils/time-format";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/ui/turnstile-widget";
 
@@ -238,11 +238,20 @@ export function ContactForm({
   const {
     register,
     control,
+    getValues,
+    setValue,
     handleSubmit,
     setError,
     trigger,
     formState: { errors, isSubmitting },
   } = form;
+
+  // End never sits at/before start: pull it to start+1h (start is never adjusted).
+  const syncSessionEnd = (index: number, start: string) => {
+    const end = getValues(`sessions.${index}.endTime`);
+    const next = syncEndTime(start, end);
+    if (next !== end) setValue(`sessions.${index}.endTime`, next, { shouldDirty: true, shouldValidate: true });
+  };
 
   const errorStyle: CSSProperties = {
     fontSize: "0.75rem",
@@ -413,7 +422,7 @@ export function ContactForm({
         }
       `}</style>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "event" | "location")}>
-        <TabsList>
+        <TabsList className="h-auto items-stretch">
           {(["client", "event", "location"] as const).map((tabValue) => {
             const isActive = activeTab === tabValue;
             const label = tabValue === "client" ? labels.tabClient : tabValue === "event" ? labels.tabEvent : labels.tabLocation;
@@ -436,7 +445,12 @@ export function ContactForm({
                   ...(isSubtle ? { opacity: 0.55 } : {}),
                 };
             return (
-              <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
+              <TabsTab
+                key={tabValue}
+                value={tabValue}
+                style={tabStyle}
+                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal break-words px-2 py-1 text-center leading-tight"
+              >
                 {label}
               </TabsTab>
             );
@@ -559,7 +573,7 @@ export function ContactForm({
                   <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
-                      <input id={`cf-stime-${index}`} type="time" disabled={preview} lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
+                      <input id={`cf-stime-${index}`} type="time" disabled={preview} lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const, { onChange: (e) => syncSessionEnd(index, e.target.value) })} />
                     </div>
                     <div>
                       <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
@@ -571,7 +585,7 @@ export function ContactForm({
                         style={fieldStyle}
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
                         aria-describedby={errors.sessions?.[index]?.endTime ? `cf-etime-${index}-error` : undefined}
-                        {...register(`sessions.${index}.endTime` as const)}
+                        {...register(`sessions.${index}.endTime` as const, { onBlur: () => syncSessionEnd(index, getValues(`sessions.${index}.startTime`)) })}
                       />
                       {errors.sessions?.[index]?.endTime && <p id={`cf-etime-${index}-error`} style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
                     </div>

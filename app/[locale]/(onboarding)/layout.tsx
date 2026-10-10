@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { applyVocabulary } from "@/lib/vocabulary/apply";
 import { NextIntlClientProvider } from "next-intl";
 import { LogOutIcon } from "lucide-react";
 import { getAuthUser } from "@/lib/auth/session";
@@ -17,12 +18,13 @@ export default async function OnboardingLayout({
   if (!authUser) redirect("/sign-in");
 
   const t = await getTranslations("app.sidebar");
+  const locale = await getLocale();
+  const messages = applyVocabulary((await getMessages()) as Record<string, unknown>, locale, "standard");
 
   return (
-    // Bare provider (no `messages`) — inherits the full request-locale
-    // catalog, restoring today's behaviour now that the root layout's
-    // provider is scoped down. See lib/i18n/clientMessages.ts.
-    <NextIntlClientProvider>
+    // Full request-locale catalog (see lib/i18n/clientMessages.ts) with the
+    // standard vocabulary preset applied so `app.*` %tokens% never leak.
+    <NextIntlClientProvider messages={messages}>
       <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden overscroll-none bg-onboarding-bg">
         <AmbientBackground />
         {/* Header row: theme/locale controls opposite the escape hatch — lets a

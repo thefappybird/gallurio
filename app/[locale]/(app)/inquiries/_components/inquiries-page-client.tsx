@@ -1,25 +1,44 @@
 "use client";
 
-import { useState, useTransition, useRef, useMemo } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useLiveRefresh } from "@/hooks/use-live-refresh";
-import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
+import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { MobileSortControl } from "@/components/app/table-sort";
+import { useTableFitCookie } from "@/hooks/use-table-fit-cookie";
+import { INQUIRIES_SKELETON } from "@/lib/tables/skeleton-metrics";
+import type { SortDir } from "@/lib/tables/sort";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
 import { applyOptimisticPatch, type InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import type { InquiryStatusCounts } from "@/lib/db/queries/inquiries";
-import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detail-modal";
+import type { InquiryDetailModalData } from "./inquiry-detail-modal";
+import { InquiryDetailModalLazy } from "./inquiry-detail-dynamic";
+import { useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { EDITABLE_QUERY_OPTIONS, queryKeys } from "@/lib/query/keys";
 import { InquiryViewToggle, type InquiriesView } from "./inquiry-view-toggle";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import { getInquiryDetailAction } from "../_actions";
 
-const INQUIRY_TABLE_COLUMNS = 6;
+// InquiryTable columns: status, client, title, type, event date, submitted, booked, actions = 8
+const INQUIRY_TABLE_COLUMNS = 8;
+
+const SORT_OPTION_KEYS = [
+  ["submitted", "submitted"],
+  ["bookedAt", "booked"],
+  ["eventDate", "eventDate"],
+  ["status", "status"],
+  ["client", "client"],
+  ["eventTitle", "eventTitle"],
+  ["eventType", "eventType"],
+  ["source", "source"],
+] as const;
 
 const TABS = ["all", "inquiry", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
@@ -29,6 +48,11 @@ type Props = {
   total: number;
   page: number;
   limit: number;
+  pageSizeOptions: number[];
+  sortKey: string;
+  sortDir: SortDir;
+  /** False when URL has no valid sort: no header shows as sorted. */
+  sortExplicit: boolean;
   locale: string;
   status: string;
   counts: InquiryStatusCounts;
@@ -42,6 +66,8 @@ type Props = {
   teams?: BookingTeamOption[];
   isOwner?: boolean;
   workspaceTz?: string;
+  calendarWindow?: { start: string; end: string };
+  calendarDate?: Date;
 };
 
 export function InquiriesPageClient({
@@ -49,6 +75,10 @@ export function InquiriesPageClient({
   total,
   page,
   limit,
+  pageSizeOptions,
+  sortKey,
+  sortDir,
+  sortExplicit,
   locale,
   status,
   counts,
@@ -62,27 +92,42 @@ export function InquiriesPageClient({
   teams = [],
   isOwner = false,
   workspaceTz,
+  calendarWindow,
+  calendarDate,
 }: Props) {
   const t = useTranslations("app.inquiries");
-  const tc = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const [detail, setDetail] = useState(initialDetail);
+  const fitRef = useTableFitCookie<HTMLDivElement>("inquiries", INQUIRIES_SKELETON.rowHeight);
+  const ws = useAppWorkspaceId();
+  const [selectedId, setSelectedId] = useState<string | null>(initialDetail?.inquiryId ?? null);
   const [syncedInitialDetailId, setSyncedInitialDetailId] = useState(
     initialDetail?.inquiryId ?? null
   );
-  const detailOpen = detail !== null;
-  const detailRequest = useRef(0);
   const isCalendar = view === "calendar";
-  // A direct URL/deep link supplies its detail from the server. Table clicks
-  // load only the selected inquiry via a server action, leaving the table intact.
+  // A direct URL/deep link supplies its detail from the server (seeded into the
+  // query as initialData). Table clicks load only the selected inquiry through
+  // the query, so reopening one is served from cache and the table stays intact.
   const initialDetailId = initialDetail?.inquiryId ?? null;
   if (initialDetailId !== syncedInitialDetailId) {
     setSyncedInitialDetailId(initialDetailId);
-    setDetail(initialDetail);
+    setSelectedId(initialDetailId);
   }
-  useLiveRefresh(["inquiry", "booking"], detailOpen);
+  const detailQuery = useQuery({
+    queryKey: queryKeys(ws).inquiry(selectedId ?? ""),
+    queryFn: async () => {
+      const result = await getInquiryDetailAction(selectedId as string, locale);
+      if (!("ok" in result)) throw new Error(result.error);
+      return result.detail;
+    },
+    enabled: selectedId !== null,
+    initialData: initialDetail && initialDetail.inquiryId === selectedId ? initialDetail : undefined,
+    ...EDITABLE_QUERY_OPTIONS,
+  });
+  const detail = selectedId !== null ? (detailQuery.data ?? null) : null;
+  const detailOpen = selectedId !== null;
+  const detailLoadState = detail ? undefined : detailQuery.isError ? "error" : "loading";
 
   function readCurrentParams() {
     return new URLSearchParams(window.location.search);
@@ -96,42 +141,31 @@ export function InquiriesPageClient({
   // can skip router.refresh() when nothing changed.
   const hasChanges = useRef(false);
 
-  // Prune-on-match: derive the active patch map by dropping entries whose fields
-  // the server row now reflects. Using useMemo instead of useEffect+setState avoids
-  // the react-hooks/set-state-in-effect rule and prevents cascading renders.
-  // The raw optimisticUpdates state is still the write-target; prunedUpdates is the
-  // read-only view used for rendering and for the applyOptimisticPatch call below.
-  const prunedUpdates = useMemo<Record<string, InquiryOptimisticPatch>>(() => {
-    const keys = Object.keys(optimisticUpdates);
-    if (keys.length === 0) return optimisticUpdates;
-
+  // Prune-on-match: drop entries whose fields the server row now reflects, from the
+  // state itself (render-phase compare against the server rows). A patch must never
+  // outlive the first server row that matches it, or a later teammate change to the
+  // same field would be overwritten by the stale patch.
+  let prunedUpdates = optimisticUpdates;
+  if (Object.keys(optimisticUpdates).length > 0) {
     const rowMap = new Map(rows.map((r) => [r.id, r]));
-    let changed = false;
     const next: Record<string, InquiryOptimisticPatch> = {};
-
-    for (const id of keys) {
+    let changed = false;
+    for (const id of Object.keys(optimisticUpdates)) {
       const patch = optimisticUpdates[id];
       const serverRow = rowMap.get(id) as Record<string, unknown> | undefined;
-
-      if (!serverRow) {
-        next[id] = patch;
-        continue;
-      }
-
-      const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
-        (field) => !(field in serverRow) || serverRow[field] === patch[field]
-      );
-
-      if (allCaughtUp) {
-        changed = true;
-      } else {
-        next[id] = patch;
-      }
+      const allCaughtUp =
+        !!serverRow &&
+        (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
+          (field) => !(field in serverRow) || serverRow[field] === patch[field]
+        );
+      if (allCaughtUp) changed = true;
+      else next[id] = patch;
     }
-
-    // Return the same reference when nothing was pruned — stable identity for deps.
-    return changed ? next : optimisticUpdates;
-  }, [rows, optimisticUpdates]);
+    if (changed) {
+      prunedUpdates = next;
+      setOptimisticUpdates(next);
+    }
+  }
 
   const localRows = applyOptimisticPatch(rows, prunedUpdates);
 
@@ -150,8 +184,7 @@ export function InquiriesPageClient({
     // Convert closes the modal directly and handles its own refresh path;
     // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
     hasChanges.current = false;
-    detailRequest.current += 1;
-    setDetail(null);
+    setSelectedId(null);
     // Strip the inquiryId param so that the revalidatePath re-render does not
     // re-supply a truthy initialDetail and re-open the modal via the deep-link
     // sync block.
@@ -204,8 +237,8 @@ export function InquiriesPageClient({
     });
   }
 
-  async function openInquiry(inquiryId: string) {
-    if (detail?.inquiryId === inquiryId) return;
+  function openInquiry(inquiryId: string) {
+    if (selectedId === inquiryId) return;
 
     const params = readCurrentParams();
     params.set("inquiryId", inquiryId);
@@ -216,12 +249,7 @@ export function InquiriesPageClient({
       "",
       next ? `${pathname}?${next}` : pathname
     );
-
-    const request = detailRequest.current + 1;
-    detailRequest.current = request;
-    const result = await getInquiryDetailAction(inquiryId, locale);
-    if (detailRequest.current !== request) return;
-    if ("ok" in result) setDetail(result.detail);
+    setSelectedId(inquiryId);
   }
 
   function selectTab(tab: TabKey) {
@@ -233,7 +261,23 @@ export function InquiriesPageClient({
   }
 
   function goToPage(p: number) {
-    pushParams((params) => params.set("page", String(p)));
+    pushParams((params) => {
+      params.set("page", String(p));
+      params.set("limit", String(limit));
+    });
+  }
+
+  function changeSort(next: { key: string; dir: SortDir } | null) {
+    pushParams((params) => {
+      if (next) {
+        params.set("sort", next.key);
+        params.set("dir", next.dir);
+      } else {
+        params.delete("sort");
+        params.delete("dir");
+      }
+      params.set("page", "1");
+    });
   }
 
   function stripInquiryParam() {
@@ -274,7 +318,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} window={calendarWindow} defaultDate={calendarDate} onOpenInquiry={openInquiry} />
       ) : (
         <>
           {/* Status tabs + Date popover tab */}
@@ -371,64 +415,68 @@ export function InquiriesPageClient({
             </Popover>
           </div>
 
-          {isPending ? (
-            <TableSkeleton
-              columns={INQUIRY_TABLE_COLUMNS}
-              rows={Math.min(limit, 8)}
-              cardRows={Math.min(limit, 4)}
+          {total > 0 && (
+            <MobileSortControl
+              options={SORT_OPTION_KEYS.map(([key, col]) => ({
+                key,
+                label: t(`table.col.${col}`),
+              }))}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSortChange={(key, dir) => changeSort({ key, dir })}
             />
-          ) : (
-            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} onOpenInquiry={openInquiry} />
           )}
 
+          <div ref={fitRef} className="min-w-0">
+            {isPending ? (
+              <TableSkeleton
+                columns={INQUIRY_TABLE_COLUMNS}
+                rows={limit}
+                cardRows={Math.min(limit, 4)}
+                {...INQUIRIES_SKELETON}
+              />
+            ) : (
+              <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} workspaceTz={workspaceTz} onOpenInquiry={openInquiry} sortKey={sortExplicit ? sortKey : null} sortDir={sortDir} onSortChange={changeSort} />
+            )}
+          </div>
+
           {total > 0 && (
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm text-muted-foreground">
-                {tc("showing", { from: fromRow, to: toRow, total })}
-              </span>
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <PageSizeSelect value={limit} />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(page - 1)}
-                  disabled={page <= 1}
-                  className="min-h-11 sm:min-h-0"
-                >
-                  {tc("previous")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(page + 1)}
-                  disabled={page >= totalPages}
-                  className="min-h-11 sm:min-h-0"
-                >
-                  {tc("next")}
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              from={fromRow}
+              to={toRow}
+              total={total}
+              onPageChange={goToPage}
+              className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              actionsClassName="flex min-w-0 flex-wrap items-center gap-2"
+            >
+              <PageSizeSelect value={limit} options={pageSizeOptions} />
+            </Pagination>
           )}
         </>
       )}
 
-      <InquiryDetailModal
-        detail={detail}
-        open={detailOpen}
-        teams={teams}
-        onClose={() => {
-          detailRequest.current += 1;
-          setDetail(null);
-          if (hasChanges.current) {
-            hasChanges.current = false;
-            replaceWithoutInquiryParam();
-          } else {
-            stripInquiryParam();
-          }
-        }}
-        onConverted={handleConverted}
-        onInquiryChanged={handleInquiryChanged}
-      />
+      {detailOpen ? (
+        <InquiryDetailModalLazy
+          detail={detail}
+          open
+          loadState={detailLoadState}
+          onRetry={() => void detailQuery.refetch()}
+          teams={teams}
+          onClose={() => {
+            setSelectedId(null);
+            if (hasChanges.current) {
+              hasChanges.current = false;
+              replaceWithoutInquiryParam();
+            } else {
+              stripInquiryParam();
+            }
+          }}
+          onConverted={handleConverted}
+          onInquiryChanged={handleInquiryChanged}
+        />
+      ) : null}
     </div>
   );
 }

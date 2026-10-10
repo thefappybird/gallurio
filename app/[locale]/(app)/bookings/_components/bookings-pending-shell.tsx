@@ -9,6 +9,7 @@ import {
 import { ViewToggle, type BookingsView } from "./view-toggle";
 
 const BookingsToolbarPendingContext = createContext<((pending: boolean) => void) | null>(null);
+const BookingsWindowPendingContext = createContext<((pending: boolean) => void) | null>(null);
 
 type Props = {
   title: ReactNode;
@@ -24,6 +25,16 @@ export function useBookingsToolbarPending() {
   return context;
 }
 
+/** Setter for the calendar's "window refetch in flight" flag (separate from the
+ *  toolbar's so the two sources never clobber each other). */
+export function useBookingsWindowPending() {
+  const context = useContext(BookingsWindowPendingContext);
+  if (context === null) {
+    throw new Error("useBookingsWindowPending must be used within BookingsPendingShell");
+  }
+  return context;
+}
+
 /**
  * Client shell owning the pending state for the view-toggle (table/calendar
  * switch) and whichever manager's toolbar is currently active (filter
@@ -34,7 +45,8 @@ export function useBookingsToolbarPending() {
 export function BookingsPendingShell({ title, view, children }: Props) {
   const [viewPending, setViewPending] = useState(false);
   const [toolbarPending, setToolbarPending] = useState(false);
-  const pending = viewPending || toolbarPending;
+  const [windowPending, setWindowPending] = useState(false);
+  const pending = viewPending || toolbarPending || windowPending;
 
   return (
     <>
@@ -48,7 +60,9 @@ export function BookingsPendingShell({ title, view, children }: Props) {
         className={pending ? "pointer-events-none opacity-60 transition-opacity" : "transition-opacity"}
       >
         <BookingsToolbarPendingContext.Provider value={setToolbarPending}>
-          {children}
+          <BookingsWindowPendingContext.Provider value={setWindowPending}>
+            {children}
+          </BookingsWindowPendingContext.Provider>
         </BookingsToolbarPendingContext.Provider>
       </div>
     </>

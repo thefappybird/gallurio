@@ -11,6 +11,7 @@ import {
   POPUP_LAYOUTS,
   IMAGE_MODAL_LAYOUTS,
 } from "@/lib/page-builder/types";
+import { VOCABULARY_PRESET_IDS } from "@/lib/vocabulary/presets";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
@@ -88,6 +89,9 @@ const workspaceSchema = new Schema(
       enum: ["photographer", "venue", "planner", "stylist", "catering", "entertainer", "artists", "other"],
       default: "other",
     },
+    // Owner-chosen CRM vocabulary (inquiry/booking/client/team terms). null =
+    // derive from businessType (lib/vocabulary/resolve.ts).
+    vocabularyPreset: { type: String, enum: [...VOCABULARY_PRESET_IDS], default: null },
     // Free-text label captured when businessType is "other" — internal
     // data-gathering only, never surfaced on the public page.
     businessTypeOther: { type: String, default: "" },

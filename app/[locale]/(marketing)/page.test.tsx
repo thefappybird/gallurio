@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
-import filMessages from "@/messages/fil.json";
-import idMessages from "@/messages/id.json";
-import arMessages from "@/messages/ar.json";
-import thMessages from "@/messages/th.json";
+import { enMessages } from "@/test-utils/messages";
+import { filMessages } from "@/test-utils/messages";
+import { idMessages } from "@/test-utils/messages";
+import { arMessages } from "@/test-utils/messages";
+import { thMessages } from "@/test-utils/messages";
 
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),

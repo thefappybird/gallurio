@@ -1,12 +1,22 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { listClients, getWorkspaceTags, getClientById } from "./_data/clients-queries";
+import { listClients, getWorkspaceTags, resolveDetailClient } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
-import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import {
+  TABLE_FIT_COOKIE,
+  parseFitCookie,
+  resolveLimit,
+  resolvePageSize,
+} from "@/lib/tables/page-fit";
 import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 
 export async function generateMetadata({
@@ -16,7 +26,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.clients");
+  const t = await getAppTranslations("app.clients");
   return { title: t("title") };
 }
 
@@ -30,6 +40,9 @@ type SearchParams = {
   client?: string;
 };
 
+// ClientsTable columns: name, contact, source, totalSpent, actions = 5
+const CLIENTS_TABLE_COLUMNS = 5;
+
 export default async function ClientsPage({
   params,
   searchParams,
@@ -39,18 +52,53 @@ export default async function ClientsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.clients");
+  const sp = await searchParams;
+  const tCommon = await getAppTranslations("common");
+
+  // Resolved before the Suspense boundary (a route-level loading.tsx can't see
+  // ?limit) so the fallback skeleton renders the exact row count the table will.
+  const fit = parseFitCookie((await cookies()).get(TABLE_FIT_COOKIE.clients)?.value);
+  const limit = resolveLimit(sp.limit, fit);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-w-0 flex-col gap-4" aria-busy="true" role="status">
+          <span className="sr-only">{tCommon("loading")}</span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton className="h-9 w-full sm:w-72" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+          <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={limit} cardRows={4} />
+        </div>
+      }
+    >
+      <ClientsContent locale={locale} sp={sp} limit={limit} fit={fit} />
+    </Suspense>
+  );
+}
+
+async function ClientsContent({
+  locale,
+  sp,
+  limit,
+  fit,
+}: {
+  locale: string;
+  sp: SearchParams;
+  limit: number;
+  fit: number | undefined;
+}) {
+  const t = await getAppTranslations("app.clients");
 
   const { workspace } = await requireOrg();
   await connectDB();
 
-  const sp = await searchParams;
   // parseInt("abc") → NaN, Math.max(1, NaN) → NaN; clamp explicitly so a
   // malformed `?page=` can't flow into Mongo's skip() as NaN.
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
-  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+  const pageSizeOptions = resolvePageSize(fit).options;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   // Total spent is rendered labelled with the workspace currency below, so a
@@ -137,15 +185,15 @@ export default async function ClientsPage({
     );
     const cleanQuery = Object.fromEntries(cleanParams.entries());
 
-    let found: Awaited<ReturnType<typeof getClientById>> = null;
+    let found: Awaited<ReturnType<typeof resolveDetailClient>> = null;
     try {
-      found = await getClientById(workspace._id, sp.client, fxPromise);
+      found = await resolveDetailClient(workspace._id, sp.client, items, fxPromise);
     } catch (err) {
       // Unexpected error (e.g. transient DB failure) — log with context, then
       // treat as not-found and strip the stale param rather than crashing the
       // page. (redirect() below is outside this try, so NEXT_REDIRECT is never
       // swallowed here.)
-      console.error("[clients] getClientById failed", {
+      console.error("[clients] resolveDetailClient failed", {
         clientId: sp.client,
         workspaceId: String(workspace._id),
         err,
@@ -167,6 +215,7 @@ export default async function ClientsPage({
         total={total}
         page={page}
         limit={limit}
+        pageSizeOptions={pageSizeOptions}
         locale={locale}
         availableTags={availableTags}
         empty={t("table.empty")}

@@ -23,6 +23,8 @@ vi.mock("../../_actions", () => ({
 }));
 
 const refresh = vi.fn();
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ refresh }),
   Link: ({ children, href }: { children: ReactNode; href: string }) =>
@@ -55,6 +57,11 @@ beforeEach(() => {
   editInquirySessionsAction.mockReset();
   editInquirySessionsAction.mockResolvedValue({ ok: true });
   refresh.mockReset();
+  invalidateSpy.mockReset();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: async () => ({ byDate: {} }) })
+  );
 });
 
 describe("BookingDraftCard", () => {
@@ -65,12 +72,8 @@ describe("BookingDraftCard", () => {
     fireEvent.click(approve);
 
     await waitFor(() => expect(approveInquiryBookingAction).toHaveBeenCalledOnce());
-    expect(approveInquiryBookingAction).toHaveBeenCalledWith("abc", {
-      total: 5000,
-      deposit: 1000,
-      notes: "",
-      teamId: null,
-    });
+    // Nothing edited: nothing overwritten.
+    expect(approveInquiryBookingAction).toHaveBeenCalledWith("abc", {});
     // Optimistic success banner.
     expect(await screen.findByText("This inquiry has been approved.")).toBeInTheDocument();
   });
@@ -141,7 +144,7 @@ describe("BookingDraftCard", () => {
   it("calls onInquiryChanged with draft patch after a successful save", async () => {
     const onInquiryChanged = vi.fn();
     renderWithProviders(
-      <BookingDraftCard {...baseProps} initialTotal={1000} onInquiryChanged={onInquiryChanged} />
+      <BookingDraftCard {...baseProps} clientId="cl_1" initialTotal={1000} onInquiryChanged={onInquiryChanged} />
     );
     fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2500" } });
     fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
@@ -149,6 +152,15 @@ describe("BookingDraftCard", () => {
     expect(onInquiryChanged).toHaveBeenCalledWith(
       "abc",
       expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
+    );
+    // Echo fingerprints match the server's key sets exactly; the action already revalidated this route.
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false }
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "booking.updated", bookingId: "bk_1", clientId: "cl_1", inquiryId: "abc" },
+      { refresh: false }
     );
   });
 
@@ -176,7 +188,42 @@ describe("BookingDraftCard", () => {
     }));
   });
 
-  it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {
+  it("moves end to start + 1h when start is changed past end", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "11:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const [start, end] = Array.from(container.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+  fireEvent.change(start, { target: { value: "14:00" } });
+
+  expect(end.value).toBe("15:00");
+});
+
+it("snaps end to start + 1h on blur when end is at or before start", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "11:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const end = container.querySelectorAll('input[type="time"]')[1] as HTMLInputElement;
+  fireEvent.change(end, { target: { value: "09:00" } });
+  expect(end.value).toBe("09:00");
+  fireEvent.blur(end);
+
+  expect(end.value).toBe("11:00");
+});
+
+it("leaves end alone when start moves but end is still later", () => {
+  const session = { startDate: "2099-12-31", startTime: "10:00", endTime: "17:00" };
+  const { container } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[session]} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+  const [start, end] = Array.from(container.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+  fireEvent.change(start, { target: { value: "12:00" } });
+
+  expect(end.value).toBe("17:00");
+});
+
+it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {
     const onInquiryChanged = vi.fn();
     const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
     renderWithProviders(
@@ -194,63 +241,108 @@ describe("BookingDraftCard", () => {
     expect(onInquiryChanged).toHaveBeenCalledWith("abc", {
       eventDate: "2099-12-31T00:00:00.000Z",
     });
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false }
+    );
   });
 
-  it("shows a loading indicator while checking session conflicts and discards a stale response", async () => {
-    let resolveFirst!: () => void;
-    let resolveSecond!: () => void;
-    let calls = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => {
-        calls += 1;
-        if (calls === 1) {
-          return new Promise((resolve) => {
-            resolveFirst = () =>
-              resolve({
-                ok: true,
-                json: async () => ({
-                  shifts: [{ id: "x", title: "Other", shiftStart: "09:00", shiftEnd: "11:00" }],
-                }),
-              });
-          });
-        }
-        return new Promise((resolve) => {
-          resolveSecond = () => resolve({ ok: true, json: async () => ({ shifts: [] }) });
-        });
-      })
-    );
+  it("announces inquiry.updated and booking.updated after approving", async () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /convert to booking/i }));
 
-    const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
-    const { container } = renderWithProviders(
-      <BookingDraftCard {...baseProps} sessions={[futureSession]} />
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenLastCalledWith(
+        { type: "booking.updated", bookingId: "bk_1", clientId: null, inquiryId: "abc" },
+        { refresh: false },
+      )
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" },
+      { refresh: false },
+    );
+  });
+
+  it("checks every session date with ONE batched request and flags the overlapping session", async () => {
+    let resolveFetch!: () => void;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () =>
+            resolve({
+              ok: true,
+              json: async () => ({
+                byDate: {
+                  "2099-12-30": [{ id: "x", title: "Other", shiftStart: "09:00", shiftEnd: "11:00" }],
+                  "2099-12-31": [],
+                },
+              }),
+            });
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sessions = [
+      { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" },
+      { startDate: "2099-12-30", startTime: "10:00", endTime: "12:00" },
+      { startDate: "2099-12-31", startTime: "14:00", endTime: "15:00" },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} sessions={sessions} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
 
-    const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-    fireEvent.change(dateInput, { target: { value: "2099-12-30" } });
+    await waitFor(() => expect(screen.getByText("Checking for conflicts…")).toBeInTheDocument());
+    resolveFetch();
+    await waitFor(() => expect(screen.queryByText("Checking for conflicts…")).not.toBeInTheDocument());
 
-    // Loading indicator appears while the first check is in flight.
-    await waitFor(() => {
-      expect(screen.getByText("Checking for conflicts…")).toBeInTheDocument();
-    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/bookings/shifts-on-date?dates=2099-12-30,2099-12-31&excludeId=bk_1"
+    );
+    expect(screen.getAllByText("conflict")).toHaveLength(1);
+  });
 
-    // A second, superseding change fires before the first request resolves.
-    fireEvent.change(dateInput, { target: { value: "2099-12-29" } });
+  it("re-syncs untouched fields when the server copy changes", () => {
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} />);
+    rerender(<BookingDraftCard {...baseProps} initialTotal={9000} />);
+    expect(screen.getByLabelText(/Total/i)).toHaveValue(9000);
+  });
 
-    // Resolve the SECOND (current) request first — no conflict.
-    resolveSecond();
-    await waitFor(() => {
-      expect(screen.queryByText("Checking for conflicts…")).not.toBeInTheDocument();
-    });
-    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
+  it("keeps a dirty edit and announces the draft changed underneath", () => {
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "6000" } });
+    rerender(<BookingDraftCard {...baseProps} initialTotal={9000} />);
+    expect(screen.getByLabelText(/Total/i)).toHaveValue(6000);
+    expect(screen.getByRole("status")).toHaveTextContent(/changed/i);
+  });
 
-    // The stale FIRST response arrives late — it must be discarded, not overwrite
-    // the current (conflict-free) result.
-    resolveFirst();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
+  it("save sends only the field the user changed, against the re-synced server values", async () => {
+    const { rerender } = renderWithProviders(
+      <BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={100} />
+    );
+    rerender(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={300} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "7000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() => expect(saveDraftBookingFieldsAction).toHaveBeenCalledWith("abc", { total: 7000 }));
+  });
+
+  it("maps not_draft to the already-approved copy and invalidates", async () => {
+    const { toast } = await import("sonner");
+    saveDraftBookingFieldsAction.mockResolvedValue({ error: "not_draft" });
+    renderWithProviders(<BookingDraftCard {...baseProps} />);
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "10" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("This booking was already approved. Reload to see the latest.")
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "abc", bookingId: "bk_1" });
+  });
+
+  it("re-syncs the sessions list from props while not editing sessions", () => {
+    const a = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
+    const { rerender } = renderWithProviders(<BookingDraftCard {...baseProps} sessions={[a]} />);
+    rerender(<BookingDraftCard {...baseProps} sessions={[{ ...a, startTime: "13:00", endTime: "15:00" }]} />);
+    expect(screen.getByText(/13:00/)).toBeInTheDocument();
   });
 
   it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {

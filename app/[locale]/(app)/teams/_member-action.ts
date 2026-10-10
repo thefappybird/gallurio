@@ -17,6 +17,8 @@ import { User } from "@/lib/db/models/User";
 import { ActivityLog } from "@/lib/db/models/ActivityLog";
 import { connectDB } from "@/lib/db/mongoose";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
+import { evictUserFromWorkspace } from "@/lib/sockets/evictUserFromWorkspace";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -95,7 +97,7 @@ export async function assignMemberToTeamAction(
   }
   const { workosUserId, teamId, role } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne({
     _id: teamObjectId,
@@ -157,6 +159,7 @@ export async function assignMemberToTeamAction(
     throw err;
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -173,7 +176,7 @@ export async function removeMemberFromTeamAction(
   }
   const { workosUserId, teamId } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne(
     { _id: teamObjectId, workspaceId: ctx.workspace._id },
@@ -226,6 +229,7 @@ export async function removeMemberFromTeamAction(
     });
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -243,7 +247,7 @@ export async function removeMemberFromTeamAndWorkspaceAction(
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   const { workosUserId, teamId } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
   if (workosUserId === ctx.workspace.ownerUserId) return { error: "CANNOT_REMOVE_OWNER" };
 
   const memberships = await TeamMembership.find({
@@ -282,6 +286,8 @@ export async function removeMemberFromTeamAndWorkspaceAction(
     await session.endSession();
   }
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
+  await evictUserFromWorkspace(ctx.workspaceId, workosUserId);
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -298,7 +304,7 @@ export async function setLeadFlagAction(
   }
   const { workosUserId, teamId, isLead } = parsed.data;
   const teamObjectId = toObjectId(teamId);
-  if (!teamObjectId) return { error: "Invalid team id" };
+  if (!teamObjectId) return { error: "INVALID_TEAM_ID" };
 
   // Promote by atomically transferring the sole lead role. The selected member
   // becomes lead and any prior lead is demoted in the same transaction.
@@ -326,6 +332,7 @@ export async function setLeadFlagAction(
     } finally {
       await session.endSession();
     }
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
     revalidatePath("/[locale]/teams", "page");
     return { ok: true };
   }
@@ -339,6 +346,7 @@ export async function setLeadFlagAction(
     .lean();
   if (!updated) return { error: "MEMBERSHIP_NOT_FOUND" };
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(teamObjectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -412,6 +420,8 @@ export async function removeMemberFromWorkspaceAction(
     memberships.map((m) => releaseTeamSeat(m.teamId, ctx.workspace._id)),
   );
 
+  await evictUserFromWorkspace(ctx.workspaceId, workosUserId);
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: null });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }

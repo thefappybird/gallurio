@@ -798,6 +798,139 @@ html[data-radius="rounded"] {
   .animate-marquee-scroll { animation: none; }
 }
 
+/* ===== MARKETING MOTION (home page) =====
+   Content is visible by default. MarketingReveal sets html[data-mk-motion]
+   (never under prefers-reduced-motion) and adds `.in` per [data-r] element as
+   it scrolls into view; only then does the hidden "before" state apply, so
+   no-JS and reduced-motion visitors see the final state. Flat: opacity /
+   transform / clip only, no shadows. Stagger index comes from inline --i. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-mk-motion] [data-r] {
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+  html[data-mk-motion] [data-r="rise"]:not(.in) { opacity: 0; transform: translateY(32px); }
+  html[data-mk-motion] [data-r="soft"]:not(.in) { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  html[data-mk-motion] [data-r="card"]:not(.in) { opacity: 0; transform: translateY(70px); }
+
+  /* Sections that animate only their children: wrapper itself stays put. */
+  html[data-mk-motion] [data-r="group"],
+  html[data-mk-motion] [data-r="lines"] { transition: none; }
+
+  /* Hero + final headline: lines slide up from behind a mask. */
+  html[data-mk-motion] .mk-ln {
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(120ms + var(--i, 0) * 110ms);
+  }
+  html[data-mk-motion] [data-r="lines"]:not(.in) .mk-ln { transform: translateY(110%); }
+  html[data-mk-motion] .mk-hero-in {
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--d, 0ms);
+  }
+  html[data-mk-motion] [data-r="lines"]:not(.in) .mk-hero-in { opacity: 0; transform: translateY(14px); }
+  html[data-mk-motion] [data-r="lines"]:not(.in) .mk-hero-eyebrow { transform: translateY(-8px); }
+
+  /* Trust ticks draw themselves in sequence. */
+  html[data-mk-motion] .mk-trust {
+    transition: opacity 0.4s ease-out;
+    transition-delay: calc(700ms + var(--i, 0) * 120ms);
+  }
+  html[data-mk-motion] .mk-trust svg path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(760ms + var(--i, 0) * 120ms);
+  }
+  html[data-mk-motion] [data-r="lines"]:not(.in) .mk-trust { opacity: 0; }
+  html[data-mk-motion] [data-r="lines"]:not(.in) .mk-trust svg path { stroke-dashoffset: 24; }
+
+  /* Feature screenshots wipe open from the side they sit on (clip lives on the
+     inner frame: an IntersectionObserver target hidden by its own clip never fires). */
+  html[data-mk-motion] [data-r="wipe-start"],
+  html[data-mk-motion] [data-r="wipe-end"] { transition: none; }
+  html[data-mk-motion] .mk-frame {
+    clip-path: inset(0 0 0 0);
+    transition:
+      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      clip-path 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  html[data-mk-motion] [data-r="wipe-start"]:not(.in) .mk-frame { clip-path: inset(0 100% 0 0); }
+  html[data-mk-motion] [data-r="wipe-end"]:not(.in) .mk-frame { clip-path: inset(0 0 0 100%); }
+  html[data-mk-motion] [data-r="wipe-start"]:dir(rtl):not(.in) .mk-frame { clip-path: inset(0 0 0 100%); }
+  html[data-mk-motion] [data-r="wipe-end"]:dir(rtl):not(.in) .mk-frame { clip-path: inset(0 100% 0 0); }
+
+  /* Checklists tick in one by one, sliding from the inline-start side. */
+  html[data-mk-motion] [data-r="checks"] { transition: none; }
+  html[data-mk-motion] [data-r="checks"] li {
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(250ms + var(--i, 0) * 80ms);
+  }
+  html[data-mk-motion] [data-r="checks"]:not(.in) li { opacity: 0; transform: translateX(-10px); }
+  html[data-mk-motion] [data-r="checks"]:dir(rtl):not(.in) li { transform: translateX(10px); }
+
+  /* Migration: connector draws, then steps land 1 -> 2 -> 3. */
+  html[data-mk-motion] [data-r="steps"] { transition: none; }
+  html[data-mk-motion] [data-r="steps"] .mk-connector {
+    transform-origin: left center;
+    transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  html[data-mk-motion] [data-r="steps"]:dir(rtl) .mk-connector { transform-origin: right center; }
+  html[data-mk-motion] [data-r="steps"]:not(.in) .mk-connector { transform: scaleX(0); }
+  html[data-mk-motion] [data-r="steps"] .mk-step {
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 260ms);
+  }
+  html[data-mk-motion] [data-r="steps"]:not(.in) .mk-step { opacity: 0; transform: translateY(40px); }
+
+  /* Transparency: badges stamp in, items follow. */
+  html[data-mk-motion] [data-r="stamp"] { transition: none; }
+  html[data-mk-motion] [data-r="stamp"] .mk-item {
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 140ms);
+  }
+  html[data-mk-motion] [data-r="stamp"] .mk-badge {
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+    transition-delay: calc(var(--i, 0) * 140ms);
+  }
+  html[data-mk-motion] [data-r="stamp"]:not(.in) .mk-item { opacity: 0; }
+  html[data-mk-motion] [data-r="stamp"]:not(.in) .mk-badge { opacity: 0; transform: scale(0.3) rotate(-25deg); }
+
+  /* Manifesto: words surface one at a time. */
+  html[data-mk-motion] [data-r="words"] { transition: none; }
+  html[data-mk-motion] [data-r="words"] .mk-w {
+    transition:
+      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 45ms);
+  }
+  html[data-mk-motion] [data-r="words"]:not(.in) .mk-w { opacity: 0; transform: translateY(0.4em); filter: blur(6px); }
+
+  /* Speaks-your-trade: rows re-enter on every preset change; chip timer bar. */
+  html[data-mk-motion] .mk-row {
+    animation: mk-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(120ms + var(--r, 0) * 60ms);
+  }
+  .mk-prog {
+    transform: scaleX(0);
+    transform-origin: left center;
+    animation: mk-prog var(--cycle, 3200ms) linear forwards;
+  }
+  .mk-prog:dir(rtl) { transform-origin: right center; }
+}
+@keyframes mk-row-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+}
+@keyframes mk-prog {
+  to { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-prog { display: none; }
+}
+
 /* Ambient background drift -- slow scale/pan on the onboarding/auth/marketing
    hero backdrop. Combines the old motion/react scale+x+y keyframes into one
    ~30s alternating loop (was 3 separate infinite tweens). */

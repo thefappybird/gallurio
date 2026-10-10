@@ -1,5 +1,6 @@
 import "server-only";
 import mongoose from "mongoose";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { isWorkspaceGated } from "@/lib/billing/access";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
@@ -9,6 +10,7 @@ import {
 } from "@/lib/validators/inquiry";
 import { FALLBACK_TZ, localDayStart } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendNotification } from "@/lib/notifications/send";
@@ -60,6 +62,8 @@ export async function submitInquiry(
       currency: 1,
       timezone: 1,
       country: 1,
+      vocabularyPreset: 1,
+      businessType: 1,
       plan: 1,
       everSubscribed: 1,
       lsSubscriptionId: 1,
@@ -102,6 +106,7 @@ export async function submitInquiry(
   let inquiryId: mongoose.Types.ObjectId | null = null;
   let draftBookingId: mongoose.Types.ObjectId | null = null;
   let clientId: mongoose.Types.ObjectId | null = null;
+  let clientIsNew = false;
 
   try {
     await session.withTransaction(async () => {
@@ -127,6 +132,7 @@ export async function submitInquiry(
         );
         resolvedClientId = created._id;
         resolvedClientName = created.name;
+        clientIsNew = true;
       }
 
       const [inquiry] = await Inquiry.create(
@@ -212,6 +218,20 @@ export async function submitInquiry(
     console.error("[inquiry] rollup inquiry counter failed (non-fatal):", err);
   }
 
+  // Emitted after the (non-fatal) counter bump so a teammate's refetch sees the
+  // dashboard count; a bump failure is caught above and never suppresses these.
+  const wsIdStr = String(workspaceId);
+  emitDataChanged(wsIdStr, { type: "inquiry.created", inquiryId: String(inquiryId) });
+  // The draft booking has no team yet: owners get the full event, staff only a client-stats refresh.
+  emitDataChanged(
+    wsIdStr,
+    { type: "booking.created", bookingId: String(draftBookingId), clientId: String(clientId) },
+    { teamIds: [null] }
+  );
+  if (clientIsNew) {
+    emitDataChanged(wsIdStr, { type: "client.created", clientId: String(clientId) });
+  }
+
   const recipient =
     normalizeOptional(workspace.publicPage?.inquiryRecipientEmail) ??
     normalizeOptional(workspace.contact?.email);
@@ -233,6 +253,7 @@ export async function submitInquiry(
         description,
         sessions: payload.sessions,
         isRecipientGated: isWorkspaceGated(workspace),
+        vocabularyPreset: resolveVocabularyPreset(workspace),
       });
     } catch (err) {
       console.error("[inquiry] notification failed (non-fatal):", err);

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { useActionError } from "./actionError";
 
 function wrapper({ children }: { children: React.ReactNode }) {

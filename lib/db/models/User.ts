@@ -55,6 +55,9 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
+// Backs the owner lookup in emitDataChanged (team-scoped booking broadcasts).
+userSchema.index({ "memberships.workspaceId": 1 });
+
 export type UserDoc = InferSchemaType<typeof userSchema> & { _id: mongoose.Types.ObjectId };
 
 export const User: Model<UserDoc> =

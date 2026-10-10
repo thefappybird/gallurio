@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
 import type { PickerItem } from "./types";
 
@@ -87,7 +88,7 @@ beforeEach(() => {
 function open(items: PickerItem[] = [itemA, itemB], overrides: Partial<React.ComponentProps<typeof ImageMetaWizard>> = {}) {
   const onOpenChange = vi.fn();
   const onSaved = vi.fn();
-  render(
+  renderWithProviders(
     <ImageMetaWizard items={items} open onOpenChange={onOpenChange} onSaved={onSaved} labels={labels} initialLinkOptions={{ bookings: [], clients: [] }} {...overrides} />
   );
   return { onOpenChange, onSaved };
@@ -342,7 +343,7 @@ describe("ImageMetaWizard", () => {
   });
 
   it("returns null when there are no items", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <ImageMetaWizard items={[]} open onOpenChange={vi.fn()} onSaved={vi.fn()} labels={labels} />
     );
     expect(container.firstChild).toBeNull();

@@ -123,7 +123,7 @@ export const EMAIL_COPY = {
       body: (inviter: string, ws: string) =>
         `${inviter} has invited you to join the workspace ${ws} on Gallurio.`,
       teamsIntro: (teamsJoined: string, plural: boolean) =>
-        `You'll be added to the following team${plural ? "s" : ""}: ${teamsJoined}.`,
+        `You'll be added to the following ${plural ? "%teams%" : "%team%"}: ${teamsJoined}.`,
       cta: "Accept invite",
       expiry: "This invite expires in 7 days.",
       footer: "If you did not expect this invitation, you can safely ignore this email.",
@@ -134,7 +134,7 @@ export const EMAIL_COPY = {
       body: (inviter: string, ws: string) =>
         `Inimbitahan ka ni ${inviter} na sumali sa workspace na ${ws} sa Gallurio.`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Idadagdag ka sa sumusunod na koponan: ${teamsJoined}.`,
+        `Idadagdag ka sa sumusunod na %team%: ${teamsJoined}.`,
       cta: "Tanggapin ang imbitasyon",
       expiry: "Mag-eexpire ang imbitasyong ito sa loob ng 7 araw.",
       footer: "Kung hindi mo inaasahan ang imbitasyong ito, maaari mong balewalain ang email na ito.",
@@ -145,7 +145,7 @@ export const EMAIL_COPY = {
       body: (inviter: string, ws: string) =>
         `${inviter} ได้เชิญคุณให้เข้าร่วมพื้นที่ทำงาน ${ws} บน Gallurio`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `คุณจะถูกเพิ่มเข้าทีมต่อไปนี้: ${teamsJoined}`,
+        `คุณจะถูกเพิ่มเข้า%team%ต่อไปนี้: ${teamsJoined}`,
       cta: "ยอมรับคำเชิญ",
       expiry: "คำเชิญนี้จะหมดอายุใน 7 วัน",
       footer: "หากคุณไม่ได้คาดหวังคำเชิญนี้ คุณสามารถละเว้นอีเมลนี้ได้อย่างปลอดภัย",
@@ -156,7 +156,7 @@ export const EMAIL_COPY = {
       body: (inviter: string, ws: string) =>
         `${inviter} mengundang Anda untuk bergabung dengan workspace ${ws} di Gallurio.`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Anda akan ditambahkan ke tim berikut: ${teamsJoined}.`,
+        `Anda akan ditambahkan ke %team% berikut: ${teamsJoined}.`,
       cta: "Terima undangan",
       expiry: "Undangan ini akan kedaluwarsa dalam 7 hari.",
       footer: "Jika Anda tidak mengharapkan undangan ini, Anda bisa mengabaikan email ini.",

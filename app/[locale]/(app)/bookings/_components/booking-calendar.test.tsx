@@ -2,10 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 
 // react-big-calendar tries to import CSS in the test environment which fails.
 // Stub out both stylesheet imports before the component loads.
+vi.mock("@/lib/time-format/context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/time-format/context")>();
+  return { ...actual, useTimeFormat: vi.fn(actual.useTimeFormat) };
+});
 vi.mock("react-big-calendar/lib/css/react-big-calendar.css", () => ({}));
 vi.mock("react-big-calendar/lib/addons/dragAndDrop/styles.css", () => ({}));
 
@@ -56,6 +60,7 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 import { groupEventsForMonth, MonthBookingEvent, TimeBookingEvent, BookingCalendar } from "./booking-calendar";
 import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
 import { formatTimeRange } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 
 const calendarMessages = {
   today: "Today",
@@ -86,7 +91,6 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     end,
     status: "booked",
     clientName: "Emma Carter",
-    clientEmail: "emma@example.com",
     rangeStart: start,
     rangeEnd: end,
     sessionIndex: 0,
@@ -790,6 +794,51 @@ describe("BookingCalendar grid positioning (timezone-correct startAccessor/endAc
   });
 });
 
+describe("BookingCalendar workspace-tz today", () => {
+  it("passes getNow on the workspace wall clock, not the browser's", () => {
+    capturedDnDProps = null;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 20:00Z Sep 30: still Sep 30 in UTC, already Oct 1 04:00 in Manila.
+    vi.setSystemTime(new Date("2026-09-30T20:00:00Z"));
+    try {
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <BookingCalendar events={[]} messages={calendarMessages} workspaceTimezone="Asia/Manila" />
+        </NextIntlClientProvider>
+      );
+      const now = (capturedDnDProps!.getNow as () => Date)();
+      expect([now.getMonth(), now.getDate(), now.getHours()]).toEqual([9, 1, 4]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("week/day view snap targets the workspace date", () => {
+    capturedDnDProps = null;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-30T20:00:00Z"));
+    try {
+      const onVisibleChange = vi.fn();
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <BookingCalendar
+            events={[]}
+            messages={calendarMessages}
+            workspaceTimezone="Asia/Manila"
+            onVisibleChange={onVisibleChange}
+          />
+        </NextIntlClientProvider>
+      );
+      onVisibleChange.mockClear();
+      (capturedDnDProps!.onView as (v: string) => void)("week");
+      const { date } = onVisibleChange.mock.calls[0][0] as { date: Date };
+      expect([date.getMonth(), date.getDate()]).toEqual([9, 1]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("BookingCalendar mobile view constraints", () => {
   it("forces day view and removes month/week views on small screens", async () => {
     capturedDnDProps = null;
@@ -811,5 +860,143 @@ describe("BookingCalendar mobile view constraints", () => {
       expect(capturedDnDProps?.view).toBe("day");
       expect(capturedDnDProps?.views).toEqual(["day"]);
     });
+  });
+});
+
+describe("BookingCalendar visible-range reporting", () => {
+  it("reports the new date + view to onVisibleChange when rbc navigates", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const onVisibleChange = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={[makeEvent()]} messages={calendarMessages} onVisibleChange={onVisibleChange} />
+      </NextIntlClientProvider>
+    );
+    const next = new Date(2027, 0, 10, 12);
+    (capturedDnDProps!.onNavigate as (d: Date, v: string) => void)(next, "month");
+    expect(onVisibleChange).toHaveBeenCalledWith({ date: next, view: "month" });
+  });
+});
+
+describe("BookingCalendar candle memoization", () => {
+  it("does not re-render a candle when an unrelated prop changes", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const ev = makeEvent({ start: new Date("2090-01-01T10:00:00"), end: new Date("2090-01-01T12:00:00") });
+    renderedDnDEvent = ev;
+    const events = [ev];
+    const ui = (pendingIds: Set<string>) => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={events} messages={calendarMessages} pendingIds={pendingIds} />
+      </NextIntlClientProvider>
+    );
+    const view = render(ui(new Set()));
+    const spy = vi.mocked(useTimeFormat);
+    const before = spy.mock.calls.length;
+    view.rerender(ui(new Set(["other"])));
+    expect(spy.mock.calls.length).toBe(before);
+    renderedDnDEvent = null;
+  });
+
+  it("does not re-render a candle when the parent passes an equal-but-new messages object", () => {
+    capturedDnDProps = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+    const ev = makeEvent({ start: new Date("2090-01-01T10:00:00"), end: new Date("2090-01-01T12:00:00") });
+    renderedDnDEvent = ev;
+    const events = [ev];
+    const ui = () => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={events} messages={{ ...calendarMessages }} />
+      </NextIntlClientProvider>
+    );
+    const view = render(ui());
+    const spy = vi.mocked(useTimeFormat);
+    const before = spy.mock.calls.length;
+    view.rerender(ui());
+    expect(spy.mock.calls.length).toBe(before);
+    renderedDnDEvent = null;
+  });
+});
+
+describe("candle aria-label", () => {
+  it("month candle announces localized conflict and past state", () => {
+    const ev = makeEvent({ hasConflict: true, end: new Date("2020-01-01T13:00:00") });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    expect((container.firstElementChild as HTMLElement).getAttribute("aria-label")).toBe(
+      "Carter Wedding · Booked · Conflict · Past"
+    );
+  });
+});
+
+describe("BookingCalendar empty-period pill", () => {
+  const noCompact = () =>
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+    );
+  const ui = (events: CalendarEvent[], emptyMessage?: string) => (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <BookingCalendar
+        events={events}
+        messages={calendarMessages}
+        defaultDate={new Date(2090, 0, 15, 12)}
+        workspaceTimezone="UTC"
+        emptyMessage={emptyMessage}
+      />
+    </NextIntlClientProvider>
+  );
+
+  it("shows a non-blocking role=status pill inside the grid when nothing falls in the visible range", () => {
+    noCompact();
+    render(ui([makeEvent({ workspaceTz: "UTC" })], "No bookings in this period"));
+    const pill = screen.getByRole("status");
+    expect(pill).toHaveTextContent("No bookings in this period");
+    expect(pill.className).toContain("absolute");
+    expect(pill.className).toContain("pointer-events-none");
+  });
+
+  it("hides the pill when a candle sits in the visible range, or when no message is given (loading)", () => {
+    noCompact();
+    const inRange = makeEvent({
+      workspaceTz: "UTC",
+      start: new Date("2090-01-10T10:00:00Z"),
+      end: new Date("2090-01-10T12:00:00Z"),
+    });
+    const view = render(ui([inRange], "No bookings in this period"));
+    expect(screen.queryByRole("status")).toBeNull();
+    view.rerender(ui([], undefined));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("BookingCalendar fallbackClassName", () => {
+  it("applies fallbackClassName to the container instead of the default height", () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar
+          events={[]}
+          messages={calendarMessages}
+          fallbackClassName="h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-188px)]"
+        />
+      </NextIntlClientProvider>
+    );
+    expect((container.firstElementChild as HTMLElement).className).toContain(
+      "lg:h-[calc(100dvh-188px)]"
+    );
   });
 });

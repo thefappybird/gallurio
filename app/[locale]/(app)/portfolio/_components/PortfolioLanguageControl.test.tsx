@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 
 function wrapper({ children }: { children: React.ReactNode }) {

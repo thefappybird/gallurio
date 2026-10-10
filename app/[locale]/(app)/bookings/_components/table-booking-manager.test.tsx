@@ -44,7 +44,6 @@ function renderManager() {
       <TableBookingManager
         defaultCurrency="PHP"
         locale="en"
-        clients={[]}
         canCreate
         defaultTeamId="507f1f77bcf86cd799439011"
         teams={[]}
@@ -63,10 +62,11 @@ describe("TableBookingManager", () => {
     mockSearchParams = new URLSearchParams("add=1&detail=booking_1&edit=booking_1&date=2026-08-15&time=10:00");
   });
 
-  it("clears add, date, time, edit, and detail params when the modal closes", () => {
+  it("clears add, date, time, edit, and detail params when the modal closes", async () => {
     renderManager();
 
-    fireEvent.click(screen.getByRole("button", { name: /close booking wizard/i }));
+    // The wizard is a lazy chunk: it mounts asynchronously.
+    fireEvent.click(await screen.findByRole("button", { name: /close booking wizard/i }));
 
     expect(replaceSpy).toHaveBeenCalledWith("/bookings", { scroll: false });
   });

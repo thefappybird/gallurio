@@ -33,6 +33,7 @@ async function seedInquiry(
     status: string;
     eventType: string;
     createdAt: Date;
+    bookedAt: Date | null;
   }> = {}
 ) {
   // Insert via the raw driver so we control createdAt exactly — Mongoose's
@@ -44,6 +45,7 @@ async function seedInquiry(
     email: overrides.email ?? "emma@example.com",
     status: overrides.status ?? "inquiry",
     eventType: overrides.eventType ?? "wedding",
+    bookedAt: overrides.bookedAt ?? null,
     createdAt,
     updatedAt: createdAt,
   });
@@ -51,6 +53,47 @@ async function seedInquiry(
 }
 
 describe("listInquiries", () => {
+  it("sorts by bookedAt desc and never leaks another workspace", async () => {
+    const d = (n: number) => new Date(Date.now() + n * 86_400_000);
+    await seedInquiry(workspaceId, { name: "old", bookedAt: d(-5) });
+    await seedInquiry(workspaceId, { name: "new", bookedAt: d(-1) });
+    await seedInquiry(otherWorkspaceId, { name: "theirs", bookedAt: d(-0.5) });
+
+    const { rows, total } = await listInquiries(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "bookedAt", dir: "desc" } }
+    );
+    expect(rows.map((r) => r.name)).toEqual(["new", "old"]);
+    expect(total).toBe(2);
+  });
+
+  it("sorts text fields case-insensitively when sort.text is set", async () => {
+    await seedInquiry(workspaceId, { name: "bravo" });
+    await seedInquiry(workspaceId, { name: "Alpha" });
+    await seedInquiry(workspaceId, { name: "charlie" });
+
+    const { rows } = await listInquiries(
+      workspaceId,
+      {},
+      { page: 1, limit: 10, sort: { field: "name", dir: "asc", text: true } }
+    );
+    expect(rows.map((r) => r.name)).toEqual(["Alpha", "bravo", "charlie"]);
+  });
+
+  it("breaks sort ties by _id so pages never repeat or skip rows", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      ids.push((await seedInquiry(workspaceId, { name: "Same" }))._id.toString());
+    }
+    const sort = { field: "name", dir: "asc" as const, text: true };
+    const p1 = await listInquiries(workspaceId, {}, { page: 1, limit: 2, sort });
+    const p2 = await listInquiries(workspaceId, {}, { page: 2, limit: 2, sort });
+    const p3 = await listInquiries(workspaceId, {}, { page: 3, limit: 2, sort });
+    const seen = [...p1.rows, ...p2.rows, ...p3.rows].map((r) => r._id.toString());
+    expect(seen).toEqual(ids);
+  });
+
   it("returns inquiries newest-first", async () => {
     await seedInquiry(workspaceId, { createdAt: new Date("2026-01-01") });
     await seedInquiry(workspaceId, { createdAt: new Date("2026-03-01") });
@@ -102,6 +145,12 @@ describe("listInquiries", () => {
     expect(p1.total).toBe(7);
     const p2 = await listInquiries(workspaceId, {}, { page: 2, limit: 5 });
     expect(p2.rows).toHaveLength(2);
+  });
+
+  it("defaults the page size to DEFAULT_PAGE_SIZE (10)", async () => {
+    for (let i = 0; i < 12; i += 1) await seedInquiry(workspaceId);
+    const p1 = await listInquiries(workspaceId, {}, { page: 1 });
+    expect(p1.rows).toHaveLength(10);
   });
 });
 

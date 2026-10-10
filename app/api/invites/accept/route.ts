@@ -12,6 +12,7 @@ import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import mongoose from "mongoose";
 
 // Runtime must be Node — uses crypto + Mongoose transactions.
@@ -248,6 +249,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   } finally {
     await session.endSession();
+  }
+
+  // Workspace id comes from the server-side invitation record, never the request.
+  if (acceptedNow) {
+    emitDataChanged(String(workspaceId), { type: "team.updated", teamId: null });
   }
 
   // Notify the person who sent this invitation only after the transaction has

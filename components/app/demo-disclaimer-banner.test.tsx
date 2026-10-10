@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it } from "vitest";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { DEMO_PROMO_CLAIMED_EVENT, markDemoPromoClaimed } from "@/lib/page-builder/demoSession";
 import { DemoDisclaimerBanner } from "./demo-disclaimer-banner";
 

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import {
   removeMemberFromTeamAction,
   removeMemberFromTeamAndWorkspaceAction,
@@ -47,6 +48,7 @@ export function RemoveMemberDialog({
   teamName,
 }: Props) {
   const t = useTranslations("app.teams");
+  const invalidateFor = useInvalidateFor();
   const [pending, setPending] = useState<"team" | "team-and-workspace" | "workspace" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +93,9 @@ export function RemoveMemberDialog({
       );
       return;
     }
+    // Server emits the teamId for team-scoped removals, null for workspace-only.
+    // All three actions revalidate /teams, so the response already carries fresh RSC.
+    invalidateFor({ type: "team.updated", teamId: action === "workspace" ? null : teamId }, { refresh: false });
     onOpenChange(false);
   }
 
@@ -130,7 +135,7 @@ export function RemoveMemberDialog({
               <Button
                 variant="destructive"
                 disabled={pending !== null || Boolean(disabledReason)}
-                aria-describedby={disabledReason ? "team-workspace-removal-help" : undefined}
+                aria-describedby={isTeamMode && hasOtherTeams ? "team-workspace-removal-help" : undefined}
                 onClick={() => void run("team-and-workspace")}
               >
                 {pending === "team-and-workspace"

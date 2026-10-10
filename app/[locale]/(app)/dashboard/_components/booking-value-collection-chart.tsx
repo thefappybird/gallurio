@@ -37,7 +37,7 @@ export function BookingValueCollectionChart({ data, currency, locale, labels }: 
   const isRtl = useIsRtl();
   const header = labels.title ? (
     <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
-      <CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="valueCollection" />
+      <CardTitle as="h2" className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="valueCollection" />
     </CardHeader>
   ) : null;
 

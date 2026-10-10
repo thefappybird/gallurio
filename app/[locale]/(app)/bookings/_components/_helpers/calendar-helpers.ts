@@ -63,6 +63,43 @@ export function isoDateInTz(d: Date, timeZone: string): string {
 }
 
 /**
+ * Local-noon Date carrying the wall Y/M/D that `d` has in `tz`. The calendar's
+ * `?date` arrives as the workspace-tz noon instant, but react-big-calendar and
+ * `visibleGridRange` read LOCAL Y/M/D, so re-anchor before handing it to them.
+ */
+export function wallDateAsLocal(d: Date, tz: string): Date {
+  const [y, m, day] = isoDateInTz(d, tz).split("-").map(Number);
+  return new Date(y, m - 1, day, 12);
+}
+
+/**
+ * "Now" on the workspace wall clock, re-anchored as a LOCAL Date (hours and
+ * minutes kept) for react-big-calendar's `getNow`: Today button, today-cell
+ * highlight and the current-time indicator then follow the workspace tz, not
+ * the browser's. A wall time that doesn't exist in the browser tz (its own
+ * DST gap) has no slot in the grid; it snaps to the gap's end on the same day
+ * instead of running ahead by the gap length.
+ */
+export function workspaceNowAsLocal(now: Date, tz: string): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const n = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  const local = new Date(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second"));
+  // Gap: the engine rolled forward past the missing wall time. Pin to the top of
+  // the hour it landed in (the gap's end) so the time indicator isn't an hour early.
+  if (local.getHours() !== n("hour")) local.setMinutes(0, 0, 0);
+  return local;
+}
+
+/**
  * Return minutes-since-midnight for a UTC Date as seen in `timeZone`.
  * Used so the client-side overlap comparison uses the same TZ reference as the
  * server's shiftStart/shiftEnd HH:MM strings.
@@ -156,6 +193,10 @@ export function fromCalendarGridDate(displayDate: Date, timeZone: string): Date 
  * least one other event from a different booking. Used to render a conflict
  * indicator (&#9888;) on calendar candles.
  *
+ * Booking vs. booking only conflicts when both share the same teamId (null and
+ * null count as the same team). An inquiry vs. a booking conflicts on any
+ * overlap regardless of team; inquiry vs. inquiry never conflicts.
+ *
  * Overlap test: standard half-open interval — adjacent-exact boundaries do NOT
  * conflict, which matches `overlappingShifts()`.
  */
@@ -169,6 +210,9 @@ export function detectConflictIds(events: CalendarEvent[]): Set<string> {
       // Two inquiry candles overlapping each other are not a conflict;
       // only an inquiry vs. a real booking (or booking vs. booking) counts.
       if (a.kind === "inquiry" && b.kind === "inquiry") continue;
+      // Booking vs. booking only conflicts within the same team (null === null
+      // counts as the same, legacy teamless bookings).
+      if (a.kind !== "inquiry" && b.kind !== "inquiry" && a.teamId !== b.teamId) continue;
       if (a.start < b.end && b.start < a.end) {
         ids.add(a.id);
         ids.add(b.id);

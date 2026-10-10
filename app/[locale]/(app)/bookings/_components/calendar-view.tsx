@@ -5,43 +5,41 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import {
+import type {
   BookingCalendar,
-  type CalendarEvent,
-  type AnyCalendarEvent,
+  CalendarEvent,
+  AnyCalendarEvent,
 } from "./booking-calendar";
+import { BookingCalendarLazy } from "./booking-calendar-dynamic";
 import { TeamFilterControl } from "./team-filter-control";
 import type { BookingTeamOption } from "../_data/team-options";
-import { BookingWizardModal } from "./booking-wizard-modal";
+import { BookingWizardLazy } from "./booking-wizard-dynamic";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
-import { Views, type View } from "react-big-calendar";
+import type { View } from "react-big-calendar";
 import {
   type Session,
 } from "@/lib/bookings/session-edits";
 import {
   type ShiftHit,
-  overlappingShifts,
   isoDate,
   isoDateInTz,
-  dateToTzMinutes,
+  wallDateAsLocal,
   reconstructSessions,
   detectConflictIds,
 } from "./_helpers/calendar-helpers";
+import { buildBookingCalendarEvents, type BookingEventInput } from "@/lib/bookings/build-booking-events";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
+import { setUrlParams } from "@/lib/utils/url-params";
+import { isRangeInsideWindow, visibleGridRange } from "@/lib/bookings/calendar-window";
+import { BOOKINGS_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
+import { useCalendarWindowNav } from "./_helpers/use-calendar-window-nav";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
-
-export type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
 
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   messages: React.ComponentProps<typeof BookingCalendar>["messages"];
-  initialClients?: ClientHit[];
   defaultCurrency?: SupportedCurrency;
   locale?: string;
   workspaceTimezone?: string;
@@ -69,69 +67,75 @@ type Props = {
   selectedTeams?: string[];
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
+  /** ISO bounds of the candle window the server loaded around `?date`. */
+  window: { start: string; end: string };
+  /** Reports "window refetch in flight" so the shell can dim the grid. */
+  onWindowPendingChange?: (pending: boolean) => void;
 };
-
-/**
- * Fetch shifts on a date, excluding the specific session being dragged via its
- * shift key (`<bookingId>:<sessionIndex>`). Using excludeShiftKey (per-session
- * exclusion) means sibling sessions of the same booking CAN trigger a conflict
- * when the user drags one candle onto the exact time slot another session of
- * the same booking already occupies — which is the correct behaviour.
- *
- * Returns null on non-2xx response or network error — callers must treat
- * null as "check unavailable" and abort the operation.
- */
-async function fetchConflicts(
-  dateStr: string,
-  bookingId: string,
-  sessionIndex: number
-): Promise<ShiftHit[] | null> {
-  try {
-    const shiftKey = `${bookingId}:${sessionIndex}`;
-    const r = await fetch(
-      `/api/bookings/shifts-on-date?date=${dateStr}&excludeShiftKey=${encodeURIComponent(shiftKey)}`
-    );
-    if (!r.ok) {
-      console.error("[fetchConflicts] non-ok response", { status: r.status, dateStr });
-      return null;
-    }
-    const data: { shifts: ShiftHit[] } = await r.json();
-    return data.shifts ?? [];
-  } catch (err) {
-    console.error("[fetchConflicts] request failed", { dateStr, err });
-    return null;
-  }
-}
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+type PatchResult =
+  | { kind: "ok"; booking: BookingEventInput & { clientId?: string | null; createdFromInquiryId?: string | null } }
+  | { kind: "conflict"; conflicts: ShiftHit[] }
+  | { kind: "stale"; booking: { clientId?: string | null; createdFromInquiryId?: string | null } | null }
+  | { kind: "error" };
+
 /**
- * PATCH `/api/bookings/{id}` with the full sessions array.
- * Returns true on success, false on failure.
+ * PATCH `/api/bookings/{id}` with the full sessions array in ONE request.
+ * `rejectOnConflict` makes the server check overlaps and answer 409 (no write)
+ * instead of the client pre-flighting shifts-on-date. A 409 is also used for
+ * `completed_booking_read_only`, so branch on the `error` code.
  */
 async function patchBookingSessions(
   bookingId: string,
-  sessions: Session[]
-): Promise<boolean> {
+  sessions: Session[],
+  expectedUpdatedAt?: string
+): Promise<PatchResult> {
   const body = sessions.map((s) => ({
     startAt: s.startAt.toISOString(),
     endAt: s.endAt.toISOString(),
   }));
-  const res = await fetch(`/api/bookings/${bookingId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessions: body }),
-  });
-  return res.ok;
+  try {
+    const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessions: body, rejectOnConflict: true, expectedUpdatedAt }),
+    });
+    if (res.ok) return { kind: "ok", booking: await res.json() };
+    if (res.status === 409) {
+      const data = (await res.json().catch(() => null)) as
+        | { error?: string; conflicts?: ShiftHit[]; booking?: { clientId?: string | null; createdFromInquiryId?: string | null } }
+        | null;
+      // Someone else changed the booking since this candle was loaded.
+      if (data?.error === "stale") return { kind: "stale", booking: data.booking ?? null };
+      if (data?.error === "conflict") {
+        // The server may report the same shift more than once.
+        const seen = new Set<string>();
+        const conflicts = (data.conflicts ?? []).filter((c) => {
+          const key = `${c.bookingId}:${c.sessionIndex}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return { kind: "conflict", conflicts };
+      }
+    }
+  } catch (err) {
+    console.error("[calendar-view] patchBookingSessions request failed", { bookingId, err });
+  }
+  return { kind: "error" };
 }
+
+// Stable default: a fresh `[]` per render would defeat the memoized toolbar below.
+const NO_TEAMS: string[] = [];
 
 export function CalendarView({
   events,
   defaultDate,
   messages,
-  initialClients,
   defaultCurrency = "PHP",
   locale = "en",
   workspaceTimezone,
@@ -142,15 +146,20 @@ export function CalendarView({
   teamColorMap,
   teams,
   writableTeams,
-  selectedTeams = [],
+  selectedTeams = NO_TEAMS,
   isOwner = true,
+  window: eventsWindow,
+  onWindowPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
+  const tCal = useTranslations("app.bookings.calendar");
+  const tDetail = useTranslations("app.bookings.detail");
 
   const [, startTransition] = useTransition();
+  const invalidateFor = useInvalidateFor();
 
   // Local state for the add/edit wizard modals. Using local state (not URL)
   // ensures the modal always opens on click, even when the URL already contains
@@ -210,25 +219,6 @@ export function CalendarView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("edit")]);
 
-  const [clients, setClients] = useState<ClientHit[]>(initialClients ?? []);
-
-  const refetchClients = useCallback(async () => {
-    const r = await fetch("/api/clients?limit=1000");
-    if (r.ok) {
-      const data = await r.json();
-      setClients(Array.isArray(data) ? data : (data.clients ?? []));
-    }
-  }, []);
-
-  // If no initial clients were server-rendered, fetch on mount.
-  useEffect(() => {
-    if (!initialClients) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: fetches clients from API and sets state; async callback pattern avoids cascading renders
-      refetchClients();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
 
@@ -244,8 +234,35 @@ export function CalendarView({
   // that gap. pendingIds remains the source of truth for the visual dim.
   const inFlightRef = useRef<Set<string>>(new Set());
 
-  const [view, setView] = useState<View>(Views.MONTH);
-  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
+  const [view, setView] = useState<View>("month");
+  // `defaultDate` is the noon instant of the requested wall date in the WORKSPACE tz;
+  // react-big-calendar reads local Y/M/D, so re-anchor the wall date to local noon.
+  const anchorDate = defaultDate ? wallDateAsLocal(defaultDate, workspaceTimezone || FALLBACK_TZ) : undefined;
+  const [date, setDate] = useState<Date>(anchorDate ?? new Date());
+
+  // Candles exist only inside the server window; leaving it refetches via ?date.
+  const { onVisibleChange, isPending: windowPending } = useCalendarWindowNav({
+    window: eventsWindow,
+    tz: workspaceTimezone || FALLBACK_TZ,
+  });
+  useEffect(() => {
+    onWindowPendingChange?.(windowPending);
+  }, [windowPending, onWindowPendingChange]);
+
+  // Follow ?date when it moves the calendar somewhere the user isn't looking
+  // (browser back/forward). Our own replace / slot clicks land inside the
+  // visible grid, so they never yank the view.
+  const urlDateKey = anchorDate ? isoDate(anchorDate) : null;
+  const [syncedUrlDateKey, setSyncedUrlDateKey] = useState(urlDateKey);
+  if (urlDateKey !== syncedUrlDateKey) {
+    setSyncedUrlDateKey(urlDateKey);
+    if (anchorDate) {
+      const tzForRange = workspaceTimezone || FALLBACK_TZ;
+      const shown = visibleGridRange(date, view, tzForRange);
+      const target = visibleGridRange(anchorDate, "day", tzForRange);
+      if (!isRangeInsideWindow(target, shown)) setDate(anchorDate);
+    }
+  }
   // Opt-out convention (see parseBookingsToggleFilters): absent -> ON.
   const showPast = searchParams.get("showPast") !== "0";
 
@@ -254,20 +271,27 @@ export function CalendarView({
   useEffect(() => {
     if (events !== prevEventsRef.current) {
       prevEventsRef.current = events;
-      setOptimisticEvents(events);
+      // A booking mid-PATCH keeps its optimistic candles: dropping them would
+      // snap it back to the old slot until the PATCH settles.
+      const inFlight = inFlightRef.current;
+      setOptimisticEvents((cur) =>
+        inFlight.size === 0
+          ? events
+          : [
+              ...events.filter((e) => !inFlight.has(e.bookingId)),
+              ...cur.filter((e) => inFlight.has(e.bookingId)),
+            ]
+      );
     }
   }, [events]);
 
   // Tracks the CalendarEvent currently being dragged out of the overflow popover.
   const externalDragRef = useRef<CalendarEvent | null>(null);
 
+  // History API: BookingUrlModals mounts client-side, so no RSC round-trip.
   const openDetailById = useCallback(
-    (bookingId: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("detail", bookingId);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [router, pathname, searchParams]
+    (bookingId: string) => setUrlParams((p) => p.set("detail", bookingId)),
+    []
   );
 
   const openDetail = useCallback(
@@ -277,17 +301,19 @@ export function CalendarView({
     [openDetailById]
   );
 
-  const clearWizardParams = useCallback(
-    (extra: string[] = []) => {
-      const params = new URLSearchParams(searchParams.toString());
-      for (const k of ["add", "date", "time", "edit", ...extra]) params.delete(k);
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      });
-    },
-    [router, pathname, searchParams]
-  );
+  // Keeps `date` (the window anchor): dropping it would snap the page back to
+  // today's window. Wizard params are not server data, so a history-only replace
+  // avoids an RSC round-trip (Next syncs useSearchParams with the History API).
+  const clearWizardParams = useCallback((extra: string[] = []) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const k of ["add", "time", "edit", ...extra]) params.delete(k);
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+    );
+  }, []);
 
   const openAddForDate = useCallback(
     (date: Date, time?: string) => {
@@ -328,7 +354,9 @@ export function CalendarView({
       newCandleStart: Date,
       newCandleEnd: Date
     ) => {
-      const prev = optimisticEvents;
+      // Roll back only this booking's candles: restoring the whole array would
+      // clobber server events that arrived while the PATCH was in flight.
+      const prevCandles = optimisticEvents.filter((e) => e.bookingId === event.bookingId);
 
       const newSession: Session = { startAt: newCandleStart, endAt: newCandleEnd };
       const newSessions = bookingSessions.map((s, idx) =>
@@ -349,30 +377,69 @@ export function CalendarView({
       );
 
       setPendingIds((s) => new Set(s).add(event.bookingId));
-      try {
-        await toast.promise(
-          (async () => {
-            const ok = await patchBookingSessions(event.bookingId, newSessions);
-            if (!ok) throw new Error("PATCH returned non-ok");
-          })(),
-          {
-            loading: t("updating"),
-            success: t("updated"),
-            error: (err: unknown) => {
-              const errInfo =
-                err instanceof Error
-                  ? { name: err.name, message: err.message, stack: err.stack }
-                  : String(err);
-              console.error("[calendar-view] patchBookingSessions failed", {
-                bookingId: event.bookingId,
-                newSessions,
-                err: errInfo,
-              });
-              setOptimisticEvents(prev);
-              return t("updateError");
-            },
+      // Own the request promise so the pending/in-flight guards outlive the
+      // whole round-trip (toast.promise's return value is not awaitable).
+      const request = patchBookingSessions(event.bookingId, newSessions, event.updatedAt).then((result) => {
+        if (result.kind === "ok") return result.booking;
+        throw result;
+      });
+      toast.promise(request, {
+        loading: t("updating"),
+        success: t("updated"),
+        error: (err: unknown) => {
+          setOptimisticEvents((cur) => [...cur.filter((e) => e.bookingId !== event.bookingId), ...prevCandles]);
+          const failure = err as PatchResult;
+          if (failure?.kind === "stale") {
+            // Reload the fresh window so the candle shows the teammate's version.
+            invalidateFor({
+              type: "booking.updated",
+              bookingId: event.bookingId,
+              clientId: failure.booking?.clientId ?? null,
+              inquiryId: failure.booking?.createdFromInquiryId ?? null,
+            });
+            return tDetail("staleConflict");
           }
+          if (failure?.kind === "conflict" && failure.conflicts.length > 0) {
+            const first = failure.conflicts[0];
+            const more = failure.conflicts.length - 1;
+            return more > 0
+              ? t("conflictBlockDndMany", { title: first.title, more })
+              : t("conflictBlockDnd", { title: first.title });
+          }
+          console.error("[calendar-view] patchBookingSessions failed", {
+            bookingId: event.bookingId,
+            newSessions,
+          });
+          return t("updateError");
+        },
+      });
+      try {
+        const booking = await request;
+        // Authoritative candles for this booking replace the optimistic guess;
+        // the events-prop resync then reconciles once the refresh lands.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const rebuilt = buildBookingCalendarEvents([booking], {
+          today,
+          tz: workspaceTimezone || FALLBACK_TZ,
+        });
+        setOptimisticEvents((cur) => [
+          ...cur.filter((e) => e.bookingId !== event.bookingId),
+          ...rebuilt,
+        ]);
+        // Ids mirror the server broadcast so the socket echo is suppressed. Candles
+        // are already rebuilt above, so no page refresh (other tabs refresh via socket).
+        invalidateFor(
+          {
+            type: "booking.updated",
+            bookingId: event.bookingId,
+            clientId: booking.clientId ?? null,
+            inquiryId: booking.createdFromInquiryId ?? null,
+          },
+          { refresh: false },
         );
+      } catch {
+        // Reverted + toasted in the toast.promise error callback.
       } finally {
         setPendingIds((s) => {
           const next = new Set(s);
@@ -381,7 +448,7 @@ export function CalendarView({
         });
       }
     },
-    [optimisticEvents, t]
+    [optimisticEvents, t, tDetail, workspaceTimezone, invalidateFor]
   );
 
   // ─── Universal drag handler ───────────────────────────────────────────────
@@ -395,9 +462,7 @@ export function CalendarView({
    *   2b. Reject overnight moves — bookings cannot span midnight.
    *   3. Past-date check → PastDateConfirmDialog (skipped when the session's
    *      current startAt is already in the past — user already accepted it).
-   *   4. Conflict check (single date only, overnight is rejected above).
-   *   4b. Hard-block conflicting shifts with a toast.
-   *   5. Apply.
+   *   4. Apply: ONE PATCH with rejectOnConflict; a 409 reverts + toasts.
    */
   const handleAnyDrop = useCallback(
     async (
@@ -477,32 +542,7 @@ export function CalendarView({
           }
         }
 
-        // 4. Conflict check — fetch shifts for the (single) date.
-        const startDateStr = isoDateInTz(newCandleStart, tz);
-        const aStart = dateToTzMinutes(newCandleStart, tz);
-        const aEnd = dateToTzMinutes(newCandleEnd, tz);
-
-        const allShifts = await fetchConflicts(startDateStr, event.bookingId, event.sessionIndex);
-        if (allShifts === null) {
-          toast.error(t("conflictCheckFailed"));
-          return;
-        }
-
-        const conflicts = overlappingShifts(allShifts, aStart, aEnd);
-
-        // 4b. Hard block — overlapping shifts are forbidden.
-        if (conflicts.length > 0) {
-          const first = conflicts[0];
-          const more = conflicts.length - 1;
-          toast.error(
-            more > 0
-              ? t("conflictBlockDndMany", { title: first.title, more })
-              : t("conflictBlockDnd", { title: first.title })
-          );
-          return;
-        }
-
-        // 5. Apply.
+        // 4. Apply (server-side conflict check via rejectOnConflict).
         await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
       } finally {
         inFlightRef.current.delete(event.bookingId);
@@ -643,17 +683,33 @@ export function CalendarView({
     [router, pathname, searchParams]
   );
 
+  const toolbarTrailing = useMemo(
+    () =>
+      teams ? (
+        <TeamFilterControl
+          teams={teams}
+          selected={selectedTeams}
+          isOwner={isOwner}
+          onChange={setTeamFilter}
+        />
+      ) : undefined,
+    [teams, selectedTeams, isOwner, setTeamFilter]
+  );
+
   return (
     <>
-      <BookingCalendar
+      <BookingCalendarLazy
+        fallbackClassName={BOOKINGS_CALENDAR_FALLBACK}
         events={eventsWithConflicts}
         defaultDate={defaultDate}
         view={view}
         onViewChange={setView}
         date={date}
         onDateChange={setDate}
+        onVisibleChange={onVisibleChange}
+        emptyMessage={windowPending ? undefined : tCal("emptyPeriod")}
         onSelectEvent={openDetail}
-        onSelectSlot={(d, time) => openAddForDate(d, time)}
+        onSelectSlot={openAddForDate}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventResize}
         onExternalDragStart={handleExternalDragStart}
@@ -665,19 +721,10 @@ export function CalendarView({
         showPast={showPast}
         colorMode={colorMode}
         teamColorMap={teamColorMap}
-        toolbarTrailing={
-          teams && teams.length > 1 ? (
-            <TeamFilterControl
-              teams={teams}
-              selected={selectedTeams}
-              isOwner={isOwner}
-              onChange={setTeamFilter}
-            />
-          ) : undefined
-        }
+        toolbarTrailing={toolbarTrailing}
       />
       {addState ? (
-        <BookingWizardModal
+        <BookingWizardLazy
           key={`add-${addState.nonce}`}
           mode="create"
           defaultDate={addState.date || undefined}
@@ -685,10 +732,8 @@ export function CalendarView({
           defaultCurrency={defaultCurrency}
           locale={locale}
           workspaceTimezone={workspaceTimezone}
-          clients={clients}
           teamId={defaultTeamId ?? undefined}
           teams={writableTeams}
-          onClientCreated={refetchClients}
           onClose={() => {
             setAddState(null);
             clearWizardParams();
@@ -696,15 +741,13 @@ export function CalendarView({
         />
       ) : null}
       {editState ? (
-        <BookingWizardModal
+        <BookingWizardLazy
           key={`edit-${editState.bookingId}`}
           mode="edit"
           bookingId={editState.bookingId}
           defaultCurrency={defaultCurrency}
           locale={locale}
           workspaceTimezone={workspaceTimezone}
-          clients={clients}
-          onClientCreated={refetchClients}
           onClose={() => {
             setEditState(null);
             clearWizardParams();

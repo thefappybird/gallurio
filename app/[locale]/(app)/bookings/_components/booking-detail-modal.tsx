@@ -6,13 +6,18 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { setUrlParams } from "@/lib/utils/url-params";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { queryKeys } from "@/lib/query/keys";
+import { StaleBookingError, isNewerUpdatedAt, throwIfStale } from "@/lib/bookings/stale-booking";
+import { BookingNotFoundError, useBookingQuery, type BookingActivityBlock } from "./use-booking-query";
 import {
   ArrowUpRightIcon,
   CalendarDaysIcon,
@@ -87,7 +92,7 @@ import {
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { FxSubtitle } from "@/components/app/fx-subtitle";
-import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, syncEndTime, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
@@ -124,6 +129,7 @@ type BookingDoc = {
   title: string;
   clientName: string;
   clientId: string;
+  createdFromInquiryId?: string | null;
   client: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventType: string;
   status: string;
@@ -152,6 +158,8 @@ type BookingDoc = {
     fxAt?: string | null;
   }[];
   notes: string;
+  /** Optimistic-concurrency token (ISO); sent back as `expectedUpdatedAt`. */
+  updatedAt?: string;
 };
 
 function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
@@ -262,23 +270,24 @@ export function BookingDetailModal({
   businessComplete = true,
   workspaceId = "",
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
   const tPayments = useTranslations("app.bookings.payments");
   const tDnd = useTranslations("app.bookings.dnd");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const errMsg = useActionError();
-  const [, startTransition] = useTransition();
 
   const eventTypeOptions = useMemo(
     () => EVENT_TYPES.map((e) => ({ value: e, label: safeT(tEvent, e, e) })),
     [tEvent]
   );
 
+  const workspaceIdForQueries = useAppWorkspaceId();
+  const queryClient = useQueryClient();
+  const invalidateFor = useInvalidateFor();
+  const bookingKey = queryKeys(workspaceIdForQueries).booking(bookingId);
+
   const [open, setOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDoc | null>(null);
   const [viewClient, setViewClient] = useState<ClientRow | null>(null);
   const [viewClientOpen, setViewClientOpen] = useState(false);
@@ -360,26 +369,6 @@ export function BookingDetailModal({
   const [editorResetNonce, setEditorResetNonce] = useState(0);
 
   /**
-   * Shifts keyed by YYYY-MM-DD date. Treated as a cache — entries are added on
-   * demand and never evicted (harmless; small footprint). Each card derives its
-   * own conflict list by looking up its current effective date in this map.
-   */
-  const [shiftsByDate, setShiftsByDate] = useState<Map<string, ShiftHit[]>>(
-    new Map()
-  );
-  /** Dates currently being fetched for conflict check — used to show inline loading.
-   *  Only contains dates that are genuinely in-flight, never cached dates. */
-  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
-  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
-  const reqIdRef = useRef(0);
-  /**
-   * Mirror of shiftsByDate kept in a ref so the fetch effect can check cached
-   * keys without adding shiftsByDate to its dependency array (which would
-   * re-trigger the effect on every cache write, defeating the cache).
-   */
-  const shiftsByDateRef = useRef<Map<string, ShiftHit[]>>(new Map());
-
-  /**
    * In-flight draft dates: tracks the date currently typed in an open session
    * editor before the user clicks ✓ (commit).
    *
@@ -406,29 +395,41 @@ export function BookingDetailModal({
   );
 
   const close = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("detail");
-    params.delete("edit");
-    const qs = params.toString();
     setDraftSessions([]);
     setOpen(false);
-    startTransition(() => {
-      router.push(qs ? `${pathname}?${qs}` : pathname);
-    });
-  }, [router, pathname, searchParams]);
+  }, []);
 
-  const refetchInlineActivity = useCallback(async () => {
-    const res = await fetch(
-      `/api/bookings/${bookingId}/activity?page=1&pageSize=5`
-    ).catch(() => null);
-    if (!res || !res.ok) return;
-    const data = (await res.json().catch(() => null)) as
-      | { entries: ActivityEntry[]; total: number }
-      | null;
-    if (!data) return;
-    setActivity(data.entries ?? []);
-    setActivityTotal(data.total ?? 0);
+  // History API: the host (BookingUrlModals) unmounts on the param change, so
+  // this runs only once the exit animation is done (or immediately on 404).
+  // Guarded: the user may already have opened another booking meanwhile.
+  const stripUrl = useCallback(() => {
+    const cur = new URLSearchParams(window.location.search);
+    if (cur.get("detail") !== bookingId && cur.get("edit") !== bookingId) return;
+    setUrlParams((p) => {
+      if (p.get("detail") === bookingId) p.delete("detail");
+      if (p.get("edit") === bookingId) p.delete("edit");
+    });
   }, [bookingId]);
+
+  /**
+   * After a successful PATCH: write the response into the shared booking cache
+   * (the edit wizard reads the same key) and broadcast so every dependent
+   * query / server page refreshes. The refetch it triggers also refreshes the
+   * inline activity list (see the activity sync above).
+   */
+  function afterSave(updated: BookingDoc, client: BookingDoc["client"]) {
+    queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
+      ...updated,
+      client,
+      activity: old?.activity,
+    }));
+    invalidateFor({
+      type: "booking.updated",
+      bookingId,
+      clientId: updated.clientId ?? null,
+      inquiryId: updated.createdFromInquiryId ?? null,
+    });
+  }
 
   async function handleViewClient() {
     if (!booking?.client) return;
@@ -443,65 +444,78 @@ export function BookingDetailModal({
     setViewClientOpen(true);
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.resolve()
-      .then(() => {
-        if (cancelled) return;
-        setLoading(true);
-        setSaveError(null);
-        setPending({});
-        return Promise.all([
-          fetch(`/api/bookings/${bookingId}`).then((r) => (r.ok ? r.json() : null)),
-          fetch(`/api/bookings/${bookingId}/activity?page=1&pageSize=5`).then(
-            (r) => (r.ok ? r.json() : { entries: [], total: 0 })
-          ),
-        ]);
-      })
-      .then(async (results) => {
-        if (!results || cancelled) return;
-        const [b, a] = results;
-        setBooking(normalizeBookingDoc(b));
-        const entries: ActivityEntry[] = a?.entries ?? [];
-        setActivity(entries);
-        setActivityTotal(a?.total ?? 0);
-        setLoading(false);
+  // ONE request: booking + first activity page + actor names. Local editable
+  // state is seeded ONCE per booking id from the first successful result; a
+  // background refetch (invalidations happen after saves) must never overwrite
+  // in-progress edits, so only the activity list follows later refetches.
+  const bookingQuery = useBookingQuery<BookingDoc>(bookingId);
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  const [syncedActivity, setSyncedActivity] = useState<BookingActivityBlock | null>(null);
+  const queryData = bookingQuery.data;
+  // Cached-but-stale data is not seeded until the mount refetch settles, so the
+  // modal never opens on a stale snapshot it would then never refresh.
+  if (queryData && seededFor !== bookingId && !bookingQuery.isFetching) {
+    setSeededFor(bookingId);
+    setSaveError(null);
+    setPending({});
+    setBooking(normalizeBookingDoc(queryData));
+    if (queryData.activity) {
+      setSyncedActivity(queryData.activity);
+      setActivity(queryData.activity.entries ?? []);
+      setActivityTotal(queryData.activity.total ?? 0);
+      setActorNames(queryData.activity.actorNames ?? {});
+    }
+  } else if (seededFor === bookingId && queryData?.activity && queryData.activity !== syncedActivity) {
+    setSyncedActivity(queryData.activity);
+    setActivity(queryData.activity.entries ?? []);
+    setActivityTotal(queryData.activity.total ?? 0);
+    setActorNames(queryData.activity.actorNames ?? {});
+  }
+  const loading = seededFor !== bookingId && (bookingQuery.isPending || bookingQuery.isFetching);
+  const notFound = bookingQuery.error instanceof BookingNotFoundError;
+  const loadFailed = bookingQuery.isError && !notFound && seededFor !== bookingId;
 
-        // Resolve actor display names for the initial page of activity entries.
-        const ids = [...new Set(
-          entries
-            .map((e) => e.actorUserId)
-            .filter((id): id is string => !!id)
-        )];
-        if (ids.length > 0) {
-          const params = new URLSearchParams();
-          ids.forEach((id) => params.append("ids", id));
-          const res = await fetch(`/api/users/names?${params.toString()}`);
-          if (!cancelled && res.ok) {
-            const names: Record<string, string> = await res.json();
-            setActorNames(names);
-          }
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setLoading(false);
+  /**
+   * 409 stale: the server booking replaces our baseline + the shared cache, the
+   * optimistic change is dropped (caller reverts activity), no retry.
+   */
+  function handleStale(err: StaleBookingError) {
+    const server = err.booking as (BookingDoc & { activity?: BookingActivityBlock }) | null;
+    if (server) {
+      setBooking(normalizeBookingDoc(server));
+      queryClient.setQueryData(bookingKey, (old: { activity?: BookingActivityBlock } | undefined) => ({
+        ...server,
+        activity: old?.activity,
+      }));
+      invalidateFor({
+        type: "booking.updated",
+        bookingId,
+        clientId: server.clientId ?? null,
+        inquiryId: server.createdFromInquiryId ?? null,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId]);
+    } else {
+      void bookingQuery.refetch();
+    }
+    setSaveError(t("staleConflict"));
+    toast.error(t("staleConflict"));
+  }
+
+  // Booking gone (deleted / other workspace): close and strip ?detail.
+  useEffect(() => {
+    if (!notFound) return;
+    const id = setTimeout(() => {
+      close();
+      stripUrl();
+    }, 0);
+    return () => clearTimeout(id);
+  }, [notFound, close, stripUrl]);
 
   // Normalize conflicting URL params on mount.
   useEffect(() => {
     const detailId = searchParams.get("detail");
     const editId = searchParams.get("edit");
     if (detailId && editId && detailId !== editId) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("detail");
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`);
-      });
+      setUrlParams((p) => p.delete("detail"), "replace");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -549,57 +563,44 @@ export function BookingDetailModal({
     });
   }, [booking, pendingSessionEdits, draftSessions, editingDraftDates]);
 
-  useEffect(() => {
-    if (!booking) return;
-
-    const uniqueDates = [...new Set(allVisibleSessionDates.filter(Boolean))];
-    if (uniqueDates.length === 0) return;
-
-    // Only fetch dates that are not already cached — treat shiftsByDateRef as
-    // the cache. Cached entries are never evicted (harmless small footprint).
-    const datesToFetch = uniqueDates.filter((d) => !shiftsByDateRef.current.has(d));
-    if (datesToFetch.length === 0) return;
-
-    const myId = ++reqIdRef.current;
-    let cancelled = false;
-
-    // Mark only the new in-flight dates as loading.
-    setLoadingDates(new Set(datesToFetch));
-
-    Promise.all(
-      datesToFetch.map((date) =>
-        fetch(
-          `/api/bookings/shifts-on-date?${new URLSearchParams({ date, excludeId: bookingId }).toString()}`
-        )
-          .then((r) => (r.ok ? r.json() : { shifts: [] }))
-          .then((data: { shifts: ShiftHit[] }) => [date, data.shifts ?? []] as const)
-          .catch(() => [date, [] as ShiftHit[]] as const)
-      )
-    ).then((entries) => {
-      if (cancelled || myId !== reqIdRef.current) return;
-      setLoadingDates(new Set());
-      // Merge new results into the existing cache rather than overwriting.
-      setShiftsByDate((prev) => {
-        const next = new Map(prev);
-        for (const [date, shifts] of entries) {
-          next.set(date, shifts);
-        }
-        // Keep the ref in sync with the new map.
-        shiftsByDateRef.current = next;
-        return next;
+  // ONE batched request for every visible date (was one request per date).
+  // Keyed by the sorted unique dates + excluded booking; the previous result
+  // stays visible while the next set loads so cards don't flash.
+  const conflictDates = useMemo(
+    () => [...new Set(allVisibleSessionDates.filter(Boolean))].sort(),
+    [allVisibleSessionDates]
+  );
+  // Conflicts are per team: a pending team edit wins over the saved team;
+  // "none" scopes to teamless bookings.
+  const effectiveTeamId =
+    ("teamId" in pending ? (pending.teamId as string | null) : booking?.teamId) || "none";
+  const shiftsQuery = useQuery({
+    queryKey: [...queryKeys(workspaceIdForQueries).shifts(conflictDates), bookingId, effectiveTeamId],
+    queryFn: async (): Promise<{ byDate: Record<string, ShiftHit[]> }> => {
+      const qs = new URLSearchParams({
+        dates: conflictDates.join(","),
+        excludeId: bookingId,
+        teamId: effectiveTeamId,
       });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // allVisibleSessionDates is a new array reference each render but its contents
-    // are what matter — JSON.stringify gives a stable dependency.
-    // shiftsByDate intentionally omitted: including it would cause a re-run on
-    // every cache write, defeating the purpose. The filter inside the effect
-    // reads the current snapshot via the functional setState pattern (merge).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(allVisibleSessionDates), bookingId]);
+      const res = await fetch(`/api/bookings/shifts-on-date?${qs.toString()}`);
+      if (!res.ok) throw new Error("shifts_load_failed");
+      return res.json();
+    },
+    enabled: !!booking && conflictDates.length > 0,
+    placeholderData: keepPreviousData,
+  });
+  const shiftsByDate = useMemo(
+    () => new Map<string, ShiftHit[]>(Object.entries(shiftsQuery.data?.byDate ?? {})),
+    [shiftsQuery.data]
+  );
+  /** Dates still awaiting their first result — drives the inline "checking" state. */
+  const loadingDates = useMemo(
+    () =>
+      shiftsQuery.isFetching
+        ? new Set(conflictDates.filter((d) => !shiftsByDate.has(d)))
+        : new Set<string>(),
+    [shiftsQuery.isFetching, conflictDates, shiftsByDate]
+  );
 
   // Whether any session has an unresolved conflict — gates the global Save button.
   // We only count conflicts for dates that are "committed" (pending or saved),
@@ -726,11 +727,57 @@ export function BookingDetailModal({
     []
   );
 
+  /** Editors holding an unconfirmed (dirty) change; drives the footer warning. */
+  const [dirtyEditorKeys, setDirtyEditorKeys] = useState<Set<string>>(new Set());
+  const onDirtyChange = useCallback((editKey: string, dirty: boolean) => {
+    setDirtyEditorKeys((prev) => {
+      if (dirty === prev.has(editKey)) return prev;
+      const next = new Set(prev);
+      if (dirty) next.add(editKey);
+      else next.delete(editKey);
+      return next;
+    });
+  }, []);
+
   // Total undrafted work: open existing-session editors + unlocked draft editors
   // + open EditableField editors.
   const undraftedCount = openSessionEditorCount + unconfirmedDraftCount + openFieldCount;
   const hasUndrafted = undraftedCount > 0;
   const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
+
+  /** Editors that live in child-local state (header title, payment row, client
+   *  reassign) — not counted in `undraftedCount`, but they block a re-seed. */
+  const [openLocalEditors, setOpenLocalEditors] = useState<Set<string>>(new Set());
+  const onLocalEditingChange = useCallback((key: string, isEditing: boolean) => {
+    setOpenLocalEditors((prev) => {
+      if (isEditing === prev.has(key)) return prev;
+      const next = new Set(prev);
+      if (isEditing) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
+
+  // A teammate's newer version arrived. Clean modal -> adopt it (so the next
+  // save never sends arrays built from an old copy). Mid-edit -> keep the
+  // user's work, show a notice; the 409 `stale` guard still protects the write.
+  const hasLocalEdits =
+    hasPending ||
+    hasUndrafted ||
+    saving ||
+    sessionActionBusyIdx !== null ||
+    openLocalEditors.size > 0 ||
+    pendingSessionEditDialog !== null ||
+    reassignedClient !== null;
+  const remoteIsNewer =
+    seededFor === bookingId &&
+    !!booking &&
+    !!queryData &&
+    isNewerUpdatedAt(queryData.updatedAt, booking.updatedAt);
+  if (remoteIsNewer && !hasLocalEdits && queryData) {
+    setBooking(normalizeBookingDoc(queryData));
+  }
+  const showStaleNotice = remoteIsNewer && hasLocalEdits;
 
   function commitField(key: EditableKey, value: string | number | null) {
     setPending((prev) => {
@@ -941,11 +988,12 @@ export function BookingDetailModal({
           ...draftPayments.map((d) => ({ price: d.price as number, status: d.status, title: d.title, method: d.method })),
         ];
       }
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(errMsg(data.error, data.params));
@@ -961,6 +1009,7 @@ export function BookingDetailModal({
             : null)
         : previous.client;
       setBooking(normalizeBookingDoc({ ...updated, client: clientAfterSave }));
+      afterSave(updated, clientAfterSave);
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
@@ -969,9 +1018,14 @@ export function BookingDetailModal({
       setRemovedPaymentIndexes(new Set());
       setReassignedClient(null);
       toast.success(t("savedToast"));
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
     } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        discardAll();
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -1018,21 +1072,27 @@ export function BookingDetailModal({
     });
 
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sessions: newSessions }),
+        body: JSON.stringify({ sessions: newSessions, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(errMsg(data.error, data.params));
       }
       const updated: BookingDoc = await res.json();
       setBooking(normalizeBookingDoc(updated));
+      afterSave(updated, previous.client);
       toast.success(t("savedToast"));
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
     } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -1303,20 +1363,26 @@ export function BookingDetailModal({
       status: { before: previous.status, after: newStatus },
     });
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, expectedUpdatedAt: previous.updatedAt }),
       });
+      await throwIfStale(res);
       if (!res.ok) throw new Error("Action failed");
       const updated: BookingDoc = await res.json();
       setBooking(normalizeBookingDoc(updated));
+      afterSave(updated, previous.client);
       toast.success(
         newStatus === "cancelled" ? t("cancelledToast") : t("restoredToast")
       );
-      startTransition(() => router.refresh());
-      await refetchInlineActivity();
-    } catch {
+    } catch (err) {
+      if (err instanceof StaleBookingError) {
+        setActivity(previousActivity);
+        setActivityTotal(previousTotal);
+        handleStale(err);
+        return;
+      }
       setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
@@ -1352,7 +1418,13 @@ export function BookingDetailModal({
   }, [pendingSessionEditDialog]);
 
   return (
-    <Dialog open={open} onOpenChange={attemptClose}>
+    <Dialog
+      open={open}
+      onOpenChange={attemptClose}
+      onOpenChangeComplete={(isOpen) => {
+        if (!isOpen) stripUrl();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex min-h-[60vh] max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
@@ -1369,20 +1441,44 @@ export function BookingDetailModal({
           readOnly={readOnly}
           onCommit={commitField}
           onDiscard={discardField}
-          onEditAll={() => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete("detail");
-            params.set("edit", bookingId);
-            startTransition(() => {
-              router.push(`${pathname}?${params.toString()}`);
-            });
-          }}
+          onLocalEditingChange={onLocalEditingChange}
+          onEditAll={() =>
+            setUrlParams((p) => {
+              p.delete("detail");
+              p.set("edit", bookingId);
+            })
+          }
           onClose={() => attemptClose(false)}
         />
+
+        {showStaleNotice ? (
+          <p
+            role="status"
+            className="border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground"
+          >
+            {t("staleNotice")}
+          </p>
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <ModalSkeleton />
+          ) : loadFailed ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground"
+            >
+              <p>{t("loadFailed")}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void bookingQuery.refetch()}
+                disabled={bookingQuery.isFetching}
+              >
+                {t("retry")}
+              </Button>
+            </div>
           ) : !booking ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               {t("notFound")}
@@ -1466,6 +1562,8 @@ export function BookingDetailModal({
               onDraftDateChange={handleDraftDateChange}
               registerFieldHandle={registerFieldHandle}
               onFieldEditingChange={onFieldEditingChange}
+              onDirtyChange={onDirtyChange}
+              onLocalEditingChange={onLocalEditingChange}
             />
           )}
         </div>
@@ -1480,6 +1578,7 @@ export function BookingDetailModal({
             pendingCount={pendingCount}
             saving={saving}
             saveError={saveError}
+            unconfirmedCount={dirtyEditorKeys.size}
             saveBlocked={hasAnyConflict || hasInvalidDraftPayment}
             sessionActionBusy={sessionActionBusyIdx !== null}
             businessComplete={businessComplete}
@@ -1640,6 +1739,7 @@ function DialogHeaderBar({
   onDiscard,
   onEditAll,
   onClose,
+  onLocalEditingChange,
 }: {
   booking: BookingDoc | null;
   pending: PendingChanges;
@@ -1654,6 +1754,7 @@ function DialogHeaderBar({
   onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
   onClose: () => void;
+  onLocalEditingChange: (key: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
@@ -1662,6 +1763,10 @@ function DialogHeaderBar({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    onLocalEditingChange("title", editingTitle);
+    return () => onLocalEditingChange("title", false);
+  }, [editingTitle, onLocalEditingChange]);
   let outstanding = 0;
   let currency = "PHP";
   if (booking) {
@@ -1919,6 +2024,8 @@ function BookingTabs({
   onToggleRemovePayment,
   registerFieldHandle,
   onFieldEditingChange,
+  onDirtyChange,
+  onLocalEditingChange,
 }: {
   booking: BookingDoc;
   bookingId: string;
@@ -1975,6 +2082,8 @@ function BookingTabs({
   onToggleRemovePayment: (idx: number) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
   onFieldEditingChange: (editKey: string, editing: boolean) => void;
+  onDirtyChange: (editKey: string, dirty: boolean) => void;
+  onLocalEditingChange: (key: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tPayments = useTranslations("app.bookings.payments");
@@ -2001,6 +2110,11 @@ function BookingTabs({
   const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
   const [editPaymentTitle, setEditPaymentTitle] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState<"cash" | "card" | "remit">("cash");
+  const paymentEditorOpen = editingPaymentIndex !== null;
+  useEffect(() => {
+    onLocalEditingChange("payment", paymentEditorOpen);
+    return () => onLocalEditingChange("payment", false);
+  }, [paymentEditorOpen, onLocalEditingChange]);
   const effectivePaymentBalance = Math.max(
     0,
     remainingBalance(
@@ -2048,6 +2162,10 @@ function BookingTabs({
     : upcomingSessions;
 
   const [reassignOpen, setReassignOpen] = useState(false);
+  useEffect(() => {
+    onLocalEditingChange("reassign", reassignOpen);
+    return () => onLocalEditingChange("reassign", false);
+  }, [reassignOpen, onLocalEditingChange]);
 
   // H2: The contact block shows the staged reassigned client when a clientId
   // change is pending, otherwise falls back to booking.client.
@@ -2236,6 +2354,7 @@ function BookingTabs({
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
           {showTeamField ? (
             <EditableField
@@ -2251,6 +2370,7 @@ function BookingTabs({
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
             />
           ) : null}
         </div>
@@ -2328,6 +2448,7 @@ function BookingTabs({
               editKey="amount.total"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
             />
             {booking.amount.fxRate &&
             booking.amount.fxRate > 0 &&
@@ -2365,6 +2486,7 @@ function BookingTabs({
             editKey="amount.deposit"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
           <EditableField
             label={tFields("currency")}
@@ -2378,6 +2500,7 @@ function BookingTabs({
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
           />
         </div>
 
@@ -2541,7 +2664,7 @@ function BookingTabs({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
+                    aria-label={tFields("editField", { label: tPayments("label", { n: idx + 1 }) })}
                     onClick={() => {
                       setEditPaymentPrice(effectivePrice);
                       setEditPaymentStatus(effectiveStatus);
@@ -2786,6 +2909,7 @@ function BookingTabs({
                 onDraftDateChange={(date) =>
                   onDraftDateChange(String(resolvedIdx), date)
                 }
+                onDirtyChange={(dirty) => onDirtyChange(`session:${resolvedIdx}`, dirty)}
               />
             );
           })}
@@ -2846,6 +2970,7 @@ function BookingTabs({
                 onDraftDateChange={(date) =>
                   onDraftDateChange(`draft:${draftIdx}`, date)
                 }
+                onDirtyChange={(dirty) => onDirtyChange(`draft:${draft.draftId}`, dirty)}
               />
             );
           })}
@@ -2884,6 +3009,7 @@ function BookingTabs({
           editKey="notes"
           registerHandle={registerFieldHandle}
           onEditingChange={onFieldEditingChange}
+            onDirtyChange={onDirtyChange}
         />
 
         <SectionHeader label={tSections("history")} />
@@ -2928,7 +3054,7 @@ function SessionConflictAlert({
         aria-live="polite"
       >
         <Loader2Icon className="size-3.5 animate-spin" />
-        <span>Checking for conflicts…</span>
+        <span>{tFields("checkingConflicts")}</span>
       </div>
     );
   }
@@ -2941,7 +3067,10 @@ function SessionConflictAlert({
       })
     : date;
   return (
-    <div className="mt-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
+    <div
+      role="alert"
+      className="mt-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs"
+    >
       <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="font-semibold text-destructive">
@@ -2971,6 +3100,18 @@ function SessionConflictAlert({
  * `pendingSessionEdits` via `onCommit`. The parent renders the "Unsaved" pill
  * and a ✗ to drop the pending edit without saving.
  */
+/** Reports a dirty flag to the modal; clears it on unmount. */
+function useReportDirty(dirty: boolean, onDirtyChange?: (dirty: boolean) => void) {
+  const cbRef = useRef(onDirtyChange);
+  useEffect(() => {
+    cbRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    cbRef.current?.(dirty);
+  }, [dirty]);
+  useEffect(() => () => cbRef.current?.(false), []);
+}
+
 function SessionCard({
   session,
   sessionIndex,
@@ -2991,6 +3132,7 @@ function SessionCard({
   onRemove,
   onDiscardEdit,
   onDraftDateChange,
+  onDirtyChange,
 }: {
   session: SessionDoc;
   sessionIndex: number;
@@ -3013,6 +3155,7 @@ function SessionCard({
   onRemove: () => void;
   onDiscardEdit: () => void;
   onDraftDateChange: (date: string | null) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
@@ -3116,6 +3259,7 @@ function SessionCard({
     !!draftEndTime &&
     draftEndTime > draftStartTime;
   const canCommit = isDirty && isSessionValid;
+  useReportDirty(editing && isDirty, onDirtyChange);
 
   // While editing, show the in-flight draft date for conflict lookup; otherwise
   // use the display date (which already incorporates a pending edit if any).
@@ -3162,8 +3306,13 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={commit}
-                  aria-label="Confirm"
+                  aria-label={tFields("confirmEdit")}
                   disabled={disabled || !canCommit || isCheckingConflicts}
+                  className={
+                    canCommit && !disabled && !isCheckingConflicts
+                      ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+                      : undefined
+                  }
                 >
                   {isCheckingConflicts ? (
                     <Loader2Icon className="size-3 animate-spin" />
@@ -3176,7 +3325,7 @@ function SessionCard({
                   size="icon-sm"
                   variant="ghost"
                   onClick={cancelEdit}
-                  aria-label="Cancel"
+                  aria-label={tFields("cancelEdit")}
                 >
                   <XIcon className="size-4" />
                 </Button>
@@ -3189,7 +3338,7 @@ function SessionCard({
                   variant="ghost"
                   onClick={startEdit}
                   disabled={disabled}
-                  aria-label={`Edit ${label}`}
+                  aria-label={tFields("editField", { label })}
                 >
                   <PencilIcon className="size-4" />
                 </Button>
@@ -3200,7 +3349,7 @@ function SessionCard({
                     variant="ghost"
                     onClick={onDiscardEdit}
                     disabled={disabled}
-                    aria-label="Discard edit"
+                    aria-label={tFields("discardEdit")}
                     className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
                   >
                     <XIcon className="size-4" />
@@ -3316,7 +3465,11 @@ function SessionCard({
                 type="time"
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftStartTime}
-                onChange={(e) => setDraftStartTime(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDraftStartTime(val);
+                  setDraftEndTime((end) => syncEndTime(val, end));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3332,6 +3485,7 @@ function SessionCard({
                 lang={TIME_INPUT_LANG[timeMode]}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
+                onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commit();
                   if (e.key === "Escape") cancelEdit();
@@ -3415,7 +3569,7 @@ function LockedDraftCard({
               variant="ghost"
               onClick={onEdit}
               disabled={disabled}
-              aria-label={`Edit ${label}`}
+              aria-label={tFields("editField", { label })}
             >
               <PencilIcon className="size-4" />
             </Button>
@@ -3490,6 +3644,7 @@ function DraftSessionCard({
   onUpdate,
   onLock,
   onDraftDateChange,
+  onDirtyChange,
 }: {
   draft: DraftSession;
   draftIndex: number;
@@ -3503,6 +3658,7 @@ function DraftSessionCard({
   onUpdate: (startAt: string, endAt: string) => void;
   onLock: () => void;
   onDraftDateChange: (date: string | null) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const timeMode = useTimeFormat();
@@ -3543,6 +3699,12 @@ function DraftSessionCard({
     !!draftStartTime &&
     !!draftEndTime &&
     draftEndTime > draftStartTime;
+  useReportDirty(
+    draftStartDate !== isoDate(draft.startAt) ||
+      draftStartTime !== hhmm(draft.startAt) ||
+      draftEndTime !== hhmm(draft.endAt),
+    onDirtyChange
+  );
 
   function commit() {
     const newStartAt = combineDatetime(draftStartDate, draftStartTime);
@@ -3590,8 +3752,13 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={commit}
-              aria-label="Confirm draft session"
+              aria-label={tFields("confirmDraftSession")}
               disabled={disabled || !isDraftValid || isCheckingConflicts}
+              className={
+                isDraftValid && !disabled && !isCheckingConflicts
+                  ? "bg-[var(--success-bg)] text-[var(--success-text)] ring-1 ring-[var(--success-border)] hover:bg-[var(--success-bg)]/80 hover:text-[var(--success-text)]"
+                  : undefined
+              }
             >
               {isCheckingConflicts ? (
                 <Loader2Icon className="size-3 animate-spin" />
@@ -3604,7 +3771,7 @@ function DraftSessionCard({
               size="icon-sm"
               variant="ghost"
               onClick={onDiscard}
-              aria-label="Remove draft session"
+              aria-label={tFields("removeDraftSession")}
               className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
             >
               <XIcon className="size-4" />
@@ -3653,7 +3820,9 @@ function DraftSessionCard({
               lang={TIME_INPUT_LANG[timeMode]}
               value={draftStartTime}
               onChange={(e) => {
-                setDraftStartTime(e.target.value);
+                const val = e.target.value;
+                setDraftStartTime(val);
+                setDraftEndTime((end) => syncEndTime(val, end));
                 setError(null);
               }}
               onKeyDown={(e) => {
@@ -3675,6 +3844,7 @@ function DraftSessionCard({
                 setDraftEndTime(e.target.value);
                 setError(null);
               }}
+              onBlur={() => setDraftEndTime((end) => syncEndTime(draftStartTime, end))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
                 if (e.key === "Escape") onDiscard();
@@ -3854,6 +4024,7 @@ function DialogFooterBar({
   pendingCount,
   saving,
   saveError,
+  unconfirmedCount,
   saveBlocked,
   sessionActionBusy,
   businessComplete,
@@ -3870,6 +4041,7 @@ function DialogFooterBar({
   pendingCount: number;
   saving: boolean;
   saveError: string | null;
+  unconfirmedCount: number;
   saveBlocked: boolean;
   sessionActionBusy: boolean;
   businessComplete: boolean;
@@ -3882,7 +4054,7 @@ function DialogFooterBar({
   const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
   const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
+  const downloadUrl = `/api/bookings/${encodeURIComponent(bookingId)}/${completed ? "receipt" : "invoice"}`;
   const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
 
   function openDownload() {
@@ -3903,6 +4075,16 @@ function DialogFooterBar({
 
   return (
     <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
+      {unconfirmedCount > 0 ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-1.5 text-xs text-[var(--warning-text)]"
+        >
+          <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span>{t("unconfirmedEdits", { count: unconfirmedCount })}</span>
+        </p>
+      ) : null}
       {saveError ? (
         <p className="text-xs text-destructive">{saveError}</p>
       ) : null}
@@ -4013,10 +4195,18 @@ function DialogFooterBar({
 
 function ModalSkeleton() {
   return (
-    <div className="flex flex-col gap-3 py-2">
+    <div className="flex flex-col gap-3 py-2" aria-busy="true">
+      {/* tab list */}
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+      </div>
       <Skeleton className="h-4 w-2/3" />
       <Skeleton className="h-4 w-1/2" />
       <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-16 w-full" />
     </div>
   );
 }

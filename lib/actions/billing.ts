@@ -18,17 +18,22 @@ export async function getSubscriptionManageUrlAction(): Promise<
   // round trips on every call for as long as beta-only mode is on.
   if (!isPaidBillingAvailable()) return { error: "billing_unavailable" };
 
-  const ctx = await ownerContext();
-  if ("error" in ctx) return ctx;
+  try {
+    const ctx = await ownerContext();
+    if ("error" in ctx) return ctx;
 
-  const subscriptionId = ctx.workspace.lsSubscriptionId;
-  if (!subscriptionId) return { error: "no_subscription" };
+    const subscriptionId = ctx.workspace.lsSubscriptionId;
+    if (!subscriptionId) return { error: "no_subscription" };
 
-  const { data, error } = await getLemonSqueezySubscription(subscriptionId);
-  const url = data?.data.attributes.urls?.customer_portal_update_subscription;
-  if (error || !url) return { error: "subscription_manage_unavailable" };
+    const { data, error } = await getLemonSqueezySubscription(subscriptionId);
+    const url = data?.data.attributes.urls?.customer_portal_update_subscription;
+    if (error || !url) return { error: "subscription_manage_unavailable" };
 
-  return { ok: true, url };
+    return { ok: true, url };
+  } catch (err) {
+    console.error("[billing-action] getSubscriptionManageUrlAction failed", err);
+    return { error: "unexpected_error" };
+  }
 }
 
 // Called only from the hosted-checkout return page. It permits a currently
@@ -38,10 +43,15 @@ export async function getSubscriptionManageUrlAction(): Promise<
 export async function verifyCheckoutReturnAction(): Promise<{ ok: boolean }> {
   if (!isPaidBillingAvailable()) return { ok: false };
 
-  const ctx = await ownerContext({ allowDuringOnboarding: true, allowWhenGated: true });
-  if ("error" in ctx) return { ok: false };
+  try {
+    const ctx = await ownerContext({ allowDuringOnboarding: true, allowWhenGated: true });
+    if ("error" in ctx) return { ok: false };
 
-  await reconcileLemonSqueezySubscription(ctx.workspaceId);
-  const workspace = await Workspace.findById(ctx.workspaceId).lean();
-  return { ok: !!workspace && isEntitled(workspace) };
+    await reconcileLemonSqueezySubscription(ctx.workspaceId);
+    const workspace = await Workspace.findById(ctx.workspaceId).lean();
+    return { ok: !!workspace && isEntitled(workspace) };
+  } catch (err) {
+    console.error("[billing-action] verifyCheckoutReturnAction failed", err);
+    return { ok: false };
+  }
 }

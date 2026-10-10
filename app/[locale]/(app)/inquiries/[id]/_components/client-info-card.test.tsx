@@ -11,6 +11,9 @@ vi.mock("@/app/[locale]/(app)/inquiries/_actions", () => ({
   resolveInquiryClientAction: (...a: unknown[]) => resolveInquiryClientAction(...a),
 }));
 
+const invalidateSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -47,6 +50,14 @@ describe("ClientInfoCard — duplicate-client indicator", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /resolve client/i }));
     expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
+  it("uses seeded matches from the detail read without fetching on mount", async () => {
+    const seeded = [{ _id: "c1", name: "Maria Santos", email: null, phone: null, notes: null, tags: [], source: "manual" as const, bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }];
+    renderWithProviders(<ClientInfoCard {...baseProps} initialMatches={seeded} />);
+
+    expect(await screen.findByRole("button", { name: /resolve client/i })).toBeTruthy();
+    expect(findInquiryClientMatchesAction).not.toHaveBeenCalled();
   });
 
   it("stays hidden when the inquiry has no competing client", async () => {
@@ -89,5 +100,44 @@ describe("ClientInfoCard", () => {
 
     await waitFor(() => expect(updateInquiryPhoneAction).toHaveBeenCalledOnce());
     expect(onInquiryChanged).toHaveBeenCalledWith("inq-1", { phone: "+63999999999" });
+    // Server emits bookingId: null for a phone edit and revalidated this route already.
+    expect(invalidateSpy).toHaveBeenLastCalledWith(
+      { type: "inquiry.updated", inquiryId: "inq-1", bookingId: null },
+      { refresh: false }
+    );
+  });
+
+  it("announces inquiry.updated and client.updated after resolving a duplicate", async () => {
+    findInquiryClientMatchesAction.mockResolvedValue({
+      ok: true,
+      matches: [{ _id: "c1", name: "Maria Santos", email: "maria@example.com", phone: "+63912345678", notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }],
+    });
+    renderWithProviders(<ClientInfoCard {...baseProps} bookingId="bk-1" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /resolve client/i }));
+    fireEvent.click(screen.getByRole("radio", { name: "Maria Santos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Link client" }));
+
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ type: "client.updated", clientId: "c1" }));
+    // resolveInquiryClientAction does not revalidate, so these keep the default refresh.
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq-1", bookingId: "bk-1" });
+    expect(invalidateSpy).toHaveBeenCalledWith({ type: "booking.updated", bookingId: "bk-1", clientId: "c1", inquiryId: "inq-1" });
+  });
+
+  it("announces client.created (not client.updated) when the resolution created a new client", async () => {
+    findInquiryClientMatchesAction.mockResolvedValue({
+      ok: true,
+      matches: [{ _id: "c1", name: "Maria Santos", email: "maria@example.com", phone: "+63912345678", notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }],
+    });
+    resolveInquiryClientAction.mockResolvedValue({ ok: true, clientId: "c-new" });
+    renderWithProviders(<ClientInfoCard {...baseProps} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /resolve client/i }));
+    const radios = screen.getAllByRole("radio");
+    fireEvent.click(radios[radios.length - 1]);
+    fireEvent.click(screen.getByRole("button", { name: /save client|link client/i }));
+
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ type: "client.created", clientId: "c-new" }));
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ type: "client.updated", clientId: "c-new" });
   });
 });

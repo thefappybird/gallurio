@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import arMessages from "@/messages/ar.json";
+import { arMessages } from "@/test-utils/messages";
 import { ActivityFeed } from "./activity-feed";
 import type { SerializedActivity } from "../_data/dashboard-metrics";
 

@@ -250,7 +250,7 @@ import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
 import { englishPuckT } from "@/lib/page-builder/editorConfig";
 import { openPresetPreview, __resetPresetPreview } from "@/lib/page-builder/presetPreviewStore";
 import { enMessages } from "@/test-utils/render";
-import arMessages from "@/messages/ar.json";
+import { arMessages } from "@/test-utils/messages";
 
 /** Reads the onboarding logo's asset id off a persisted buffer's home-zone
  *  Navigation block's slot Image (the block is always seeded first). */
