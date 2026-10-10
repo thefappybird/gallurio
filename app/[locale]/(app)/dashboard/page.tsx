@@ -3,7 +3,8 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import type { BookingDoc } from "@/lib/db/models";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
@@ -53,7 +54,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("dashboard") };
 }
 
@@ -66,7 +67,7 @@ export default async function DashboardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.dashboard");
+  const t = await getAppTranslations("app.dashboard");
 
   const [{ role, userId, workspace }, authUser] = await Promise.all([
     requireOrg(),
@@ -157,7 +158,7 @@ async function BookingsTab({
   wid: import("mongoose").Types.ObjectId;
   workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
   locale: string;
-  t: Awaited<ReturnType<typeof getTranslations>>;
+  t: Awaited<ReturnType<typeof getAppTranslations>>;
   role: "owner" | "staff";
   userId: string;
   range: DateRange;

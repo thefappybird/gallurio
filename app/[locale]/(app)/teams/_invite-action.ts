@@ -16,6 +16,7 @@ import { User } from "@/lib/db/models/User";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { sendNotification } from "@/lib/notifications/send";
@@ -72,7 +73,7 @@ export async function inviteMemberAction(
 
   const teamObjectIds = teamIds.map(toObjectId);
   if (teamObjectIds.some((id) => id === null)) {
-    return { error: "Invalid team id" };
+    return { error: "INVALID_TEAM_ID" };
   }
 
   const validIds = teamObjectIds.filter(
@@ -224,6 +225,7 @@ export async function inviteMemberAction(
     acceptUrl,
     locale: inviteLocale,
     brand: workspaceBrand,
+    vocabularyPreset: resolveVocabularyPreset(ctx.workspace),
   });
 
   if (!emailResult.ok) {
@@ -297,7 +299,7 @@ export async function revokeInviteAction(
   const { invitationId } = parsed.data;
 
   const invObjId = toObjectId(invitationId);
-  if (!invObjId) return { error: "Invalid invitation id" };
+  if (!invObjId) return { error: "INVALID_INVITATION_ID" };
 
   const invitation = await Invitation.findOne({
     _id: invObjId,

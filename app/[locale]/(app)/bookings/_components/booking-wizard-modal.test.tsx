@@ -10,7 +10,7 @@ import type { ReactElement, ReactNode } from "react";
 import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { differenceInCalendarDays, addDays, format } from "date-fns";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { BookingWizardModal } from "./booking-wizard-modal";
 
 // Every wizard now reads react-query (clients picker, shifts, edit load).

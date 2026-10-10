@@ -3,7 +3,8 @@ import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
 import type { BookingDoc } from "@/lib/db/models";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -49,7 +50,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("bookings") };
 }
 
@@ -132,8 +133,8 @@ async function BookingsContent({
   limit: number;
   fit: number | undefined;
 }) {
-  const t = await getTranslations("app.bookings");
-  const tCal = await getTranslations("app.calendar");
+  const t = await getAppTranslations("app.bookings");
+  const tCal = await getAppTranslations("app.calendar");
 
   const { workspace, role, userId } = await requireOrg();
   await connectDB();

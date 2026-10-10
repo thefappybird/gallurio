@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { calendarWindow } from "@/lib/bookings/calendar-window";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import type { CalendarEvent } from "./booking-calendar";

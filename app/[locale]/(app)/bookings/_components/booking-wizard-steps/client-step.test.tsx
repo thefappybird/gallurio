@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { bookingClientSchema } from "@/lib/validators/booking";
 import { ClientStep, type ClientHit } from "./client-step";
 import type { WizardValues } from "./types";

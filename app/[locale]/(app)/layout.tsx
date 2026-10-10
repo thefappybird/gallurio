@@ -1,6 +1,8 @@
 import { NextIntlClientProvider } from "next-intl";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
+import { getAppMessages } from "@/lib/vocabulary/appTranslations";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { cookies } from "next/headers";
@@ -48,6 +50,8 @@ export default async function AppLayout({
     createdAt: new Date(n.createdAt as unknown as Date).toISOString(),
   }));
 
+  const appMessages = await getAppMessages(resolveVocabularyPreset(workspace));
+
   const sidebarState = cookieStore.get("sidebar_state");
   const defaultOpen = sidebarState ? sidebarState.value === "true" : true;
   const showBetaEndingBanner =
@@ -55,10 +59,9 @@ export default async function AppLayout({
     shouldShowBetaEndingWarning(betaProgram?.scheduledEndAt, betaProgram?.closedAt);
 
   return (
-    // Bare provider (no `messages`) — inherits the full request-locale
-    // catalog, restoring today's behaviour now that the root layout's
-    // provider is scoped down. See lib/i18n/clientMessages.ts.
-    <NextIntlClientProvider>
+    // Full request-locale catalog with the workspace's vocabulary preset
+    // applied (restores the pre-scoping behaviour; see lib/i18n/clientMessages.ts).
+    <NextIntlClientProvider messages={appMessages}>
       <TimeFormatProvider initialValue={timeFormat}>
         <SidebarProvider defaultOpen={defaultOpen}>
           <AppQueryProvider key={workspaceId} workspaceId={workspaceId}>

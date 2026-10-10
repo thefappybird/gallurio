@@ -10,6 +10,7 @@ import {
 } from "@/lib/validators/inquiry";
 import { FALLBACK_TZ, localDayStart } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
+import { resolveVocabularyPreset } from "@/lib/vocabulary/resolve";
 import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendNotification } from "@/lib/notifications/send";
@@ -61,6 +62,8 @@ export async function submitInquiry(
       currency: 1,
       timezone: 1,
       country: 1,
+      vocabularyPreset: 1,
+      businessType: 1,
       plan: 1,
       everSubscribed: 1,
       lsSubscriptionId: 1,
@@ -250,6 +253,7 @@ export async function submitInquiry(
         description,
         sessions: payload.sessions,
         isRecipientGated: isWorkspaceGated(workspace),
+        vocabularyPreset: resolveVocabularyPreset(workspace),
       });
     } catch (err) {
       console.error("[inquiry] notification failed (non-fatal):", err);

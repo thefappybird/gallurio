@@ -1,4 +1,5 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import { notFound } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
@@ -23,7 +24,7 @@ export default async function InquiryDetailPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.inquiries.detail");
+  const t = await getAppTranslations("app.inquiries.detail");
 
   const { workspace, role, userId } = await requireOrg();
 

@@ -3,6 +3,8 @@ import { sendEmail } from "../send";
 import { renderBrandedEmail, renderBilingualEmail, bilingualSubject } from "../layout";
 import { gallurioBrand, type Brand } from "../brand";
 import { EMAIL_COPY, emailLocale } from "../messages";
+import { emailVocabulary } from "../vocabulary";
+import type { VocabularyPresetId } from "@/lib/vocabulary/presets";
 
 export type BookingCancelledClientParams = {
   brand: Brand;
@@ -21,6 +23,8 @@ export type BookingCancelledOwnerParams = {
   clientName: string;
   eventTitle: string;
   bookingId: string;
+  /** Workspace vocabulary preset (resolveVocabularyPreset). Defaults to "standard". */
+  vocabularyPreset?: VocabularyPresetId;
 };
 
 function bookingDetailUrl(bookingId: string): string | null {
@@ -99,23 +103,24 @@ export async function sendBookingCancelledOwner(
   params: BookingCancelledOwnerParams
 ): Promise<void> {
   try {
+    const { t, g } = emailVocabulary(params.vocabularyPreset, "en");
     const link = bookingDetailUrl(params.bookingId);
 
-    const subject = `Booking cancelled: ${params.clientName} — ${params.eventTitle}`;
+    const subject = t(`%Booking% cancelled: ${g(params.clientName)} — ${g(params.eventTitle)}`);
 
     const { html, text, attachments } = renderBrandedEmail({
       brand: gallurioBrand(),
       locale: "en",
-      preheader: `${params.clientName}'s booking has been cancelled.`,
-      title: `Booking cancelled`,
+      preheader: t(`${g(params.clientName)}'s %booking% has been cancelled.`),
+      title: t("%Booking% cancelled"),
       subtitle: params.clientName,
       blocks: [
-        { type: "p", text: `The booking for ${params.clientName} (${params.eventTitle}) has been cancelled.` },
+        { type: "p", text: t(`The %booking% for ${g(params.clientName)} (${g(params.eventTitle)}) has been cancelled.`) },
         ...(link
           ? []
-          : [{ type: "p" as const, text: "Open your booking dashboard to view the details." }]),
+          : [{ type: "p" as const, text: t("Open your %booking% dashboard to view the details.") }]),
       ],
-      ...(link ? { cta: { label: "View booking", url: link } } : {}),
+      ...(link ? { cta: { label: t("View %booking%"), url: link } } : {}),
     });
 
     await sendEmail({

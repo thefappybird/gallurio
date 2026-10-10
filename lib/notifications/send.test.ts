@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Types } from 'mongoose'
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from '@/test-utils/mongo'
+import { Workspace } from '@/lib/db/models/Workspace'
 
 vi.mock('@/lib/db/mongoose', () => ({ connectDB: async () => undefined }))
 
@@ -44,6 +46,29 @@ import * as ioModule from '@/lib/sockets/io'
 import type { SendNotificationOptions } from './types'
 
 const WS_ID = String(new Types.ObjectId())
+const OTHER_WS_ID = String(new Types.ObjectId())
+
+async function seedWorkspace(id: string, extra: Record<string, unknown> = {}) {
+  return Workspace.create({
+    _id: new Types.ObjectId(id),
+    slug: `ws-${id.slice(-8)}`,
+    name: `Workspace ${id.slice(-4)}`,
+    ownerUserId: `owner-${id}`,
+    businessType: 'other',
+    country: 'PH',
+    currency: 'PHP',
+    timezone: 'Asia/Manila',
+    ...extra,
+  })
+}
+
+beforeAll(async () => {
+  await startInMemoryMongo()
+})
+
+afterAll(async () => {
+  await stopInMemoryMongo()
+})
 const ENTITY_ID = String(new Types.ObjectId())
 
 function makeOpts(overrides: Partial<SendNotificationOptions> = {}): SendNotificationOptions {
@@ -62,7 +87,9 @@ function makeOpts(overrides: Partial<SendNotificationOptions> = {}): SendNotific
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await clearCollections()
+  await seedWorkspace(WS_ID)
   vi.clearAllMocks()
   ;(Notification.insertMany as ReturnType<typeof vi.fn>).mockImplementation(
     async (docs: unknown[]) => {
@@ -307,6 +334,54 @@ describe('sendNotification', () => {
 
       const emitArgs = mockEmit.mock.calls[0] as [string, { params?: typeof vars }]
       expect(emitArgs[1].params).toEqual(vars)
+    })
+  })
+
+  describe('vocabulary preset', () => {
+    it('applies the workspace vocabularyPreset to the content builder', async () => {
+      await Workspace.updateOne({ _id: WS_ID }, { $set: { vocabularyPreset: 'venue' } })
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('venue')
+    })
+
+    it("never applies another workspace's preset (tenant isolation)", async () => {
+      await seedWorkspace(OTHER_WS_ID, { vocabularyPreset: 'venue' })
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
+    })
+
+    it('falls back to standard for a non-vocabulary business type', async () => {
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
+    })
+
+    it('still persists the notification with the standard preset when the workspace lookup throws', async () => {
+      vi.spyOn(Workspace, 'findById').mockReturnValue({
+        select: () => ({ lean: () => Promise.reject(new Error('db down')) }),
+      } as never)
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+      expect(buildNotificationContent.mock.calls[0][5]).toBe('standard')
+      expect(Notification.insertMany).toHaveBeenCalledOnce()
     })
   })
 

@@ -11,6 +11,7 @@ Read `CLAUDE.md` and `AGENTS.md` first. This page routes durable project documen
 | Core CRM domain | `docs/modules/core-domain.md` |
 | Hosting, scheduled jobs, and endpoint hardening | `docs/modules/hosting-ops.md` |
 | Locales, RTL, and app design | `docs/modules/i18n-design.md` |
+| Workspace vocabulary presets (entity word renaming) | `docs/vocabulary/vocabulary-presets.md` |
 | Portfolio and Cloudflare Images | `docs/modules/portfolio-and-media.md` |
 | Currency conversion and restatement | `docs/pricing/currency-conversion.md` |
 

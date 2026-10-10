@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { AppQueryProvider } from "@/components/app/app-query-provider";
 import { BookingDetailModal } from "./booking-detail-modal";
 import { BookingWizardModal } from "./booking-wizard-modal";

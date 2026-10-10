@@ -4,6 +4,9 @@ import { render, screen } from "@testing-library/react";
 vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn(async () => (key: string) => `common:${key}`),
 }));
+vi.mock("@/lib/vocabulary/appTranslations", async () => ({
+  getAppTranslations: (await import("next-intl/server")).getTranslations,
+}));
 
 import NotificationsLoading from "./loading";
 

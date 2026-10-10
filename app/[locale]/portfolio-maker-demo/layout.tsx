@@ -1,12 +1,15 @@
 import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import { applyVocabulary } from "@/lib/vocabulary/apply";
 
-// Bare provider (no `messages`) — inherits the full request-locale catalog,
-// restoring today's behaviour now that the root layout's provider is scoped
-// down. See lib/i18n/clientMessages.ts.
-export default function PortfolioMakerDemoLayout({
+// Full request-locale catalog (see lib/i18n/clientMessages.ts) with the
+// standard vocabulary preset applied so `app.*` %tokens% never leak.
+export default async function PortfolioMakerDemoLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <NextIntlClientProvider>{children}</NextIntlClientProvider>;
+  const locale = await getLocale();
+  const messages = applyVocabulary((await getMessages()) as Record<string, unknown>, locale, "standard");
+  return <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>;
 }

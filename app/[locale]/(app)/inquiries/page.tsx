@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -46,7 +47,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.inquiries");
+  const t = await getAppTranslations("app.inquiries");
   return { title: t("title") };
 }
 
@@ -150,7 +151,7 @@ async function InquiriesContent({
   limit: number;
   fit: number | undefined;
 }) {
-  const t = await getTranslations("app.inquiries");
+  const t = await getAppTranslations("app.inquiries");
 
   const { workspace, role, userId } = await requireOrg();
 

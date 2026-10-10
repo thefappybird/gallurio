@@ -1,4 +1,5 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
@@ -22,7 +23,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.pageBuilder");
+  const t = await getAppTranslations("app.pageBuilder");
   return { title: t("title") };
 }
 
@@ -45,7 +46,7 @@ export default async function PageBuilderEntry({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.pageBuilder");
+  const t = await getAppTranslations("app.pageBuilder");
 
   const { workspace, role } = await requireOrg();
 

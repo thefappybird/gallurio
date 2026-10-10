@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { pickMessages, MARKETING_CLIENT_MESSAGE_KEYS } from "@/lib/i18n/clientMessages";
 
 const captured: { messages?: unknown } = {};

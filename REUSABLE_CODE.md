@@ -69,6 +69,7 @@ Composed, app-specific shared components.
 | `components/app/theme-provider.tsx` | `ThemeProvider` | next-themes provider wrapper | class attribute, system default |
 | `components/app/theme-toggle.tsx` | `ThemeToggle` | Theme switcher dropdown | hydration-safe |
 | `components/app/ambient-background.tsx` | `AmbientBackground` | Full-bleed, theme-aware, slowly-drifting SVG background (swaps light/dark SVG via `dark:` classes); fills its nearest `relative` ancestor | none — position/size via a `relative overflow-hidden` wrapper |
+| `app/[locale]/(marketing)/_components/marketing-reveal.tsx` | `MarketingReveal` | Marketing home scroll-reveal: sets `html[data-mk-motion]` (never under reduced motion) and adds `.in` to `[data-r]` elements on viewport entry; hidden "before" states + variants (`rise/soft/card/lines/wipe-*/checks/steps/stamp/words`, `--i` stagger) live in globals.css `MARKETING MOTION`. Distinct from portfolio `MotionObserver` (`data-anim`/`pf-in-view`) | none |
 | `components/app/locale-switcher.tsx` | `LocaleSwitcher` | Locale switcher dropdown (sidebar footer); reuses catalog native names, swaps locale via next-intl navigation keeping the path | none |
 | `components/app/table-skeleton.tsx` | `TableSkeleton` | Table loading skeleton with realistic column widths; renders exactly `rows` rows (the server-resolved page size, so no viewport measuring; responsive card fallback below `lg`) | `columns`, `rows?` (SSR fallback: 8), `cardRows?`, `rowHeight?` (px, default 41), `cardFields?` (default 4), `className?`; per-table presets in `lib/tables/skeleton-metrics.ts` (`BOOKINGS_SKELETON` = rowHeight 49 / cardFields 4, `INQUIRIES_SKELETON` = 56 / 3; browser-measured, re-measure if row markup changes) |
 | `components/app/calendar-skeleton.tsx` | `CalendarSkeleton` | Loading placeholder for the bookings/inquiries calendar: toolbar row + 6x7 month grid at the calendar's real measured height (`useViewportRemainingHeight`), so swapping in the real calendar never shifts layout. Used as the `loading` of `BookingCalendarLazy`. | none |
@@ -181,6 +182,7 @@ Composed, app-specific shared components.
 | `lib/auth/session.ts` | `getAuthUser` | **Single** authoritative identity reader (wraps `withAuth`) — never call `withAuth` elsewhere |
 | `lib/auth/activeWorkspace.ts` | `getActiveWorkspaceId`, `setActiveWorkspace`, `clearActiveWorkspace` | Resolve/set/clear active-workspace cookie (re-validated vs DB) |
 | `lib/auth/requireOrg.ts` | `requireOrg`, `requireRole` | Page-level context guard (redirects); role hard-gate. `requireOrg(opts)` wraps a React-`cache()`d argument-free `resolveOrgContext()` (one session/DB resolution per request); gates/redirects apply per call |
+| `lib/auth/requireOrg.ts` | `peekOrgContext()` | Non-redirecting read of the same per-request cached org context; returns `null` when signed out / no workspace. For read-only helpers (e.g. vocabulary resolution) that must not gate or redirect. |
 | `lib/auth/ownerContext.ts` | `ownerContext` | Server-action context guard (returns `{error}`) |
 | `lib/auth/assertCanAddTeam.ts` | `assertCanAddTeam`, `createTeamWithCapEnforcement` | Team-cap preflight + atomic create |
 | `lib/auth/assertCanAddTeamMember.ts` | `assertCanAddTeamMember`, `releaseTeamSeat` | Atomic seat reserve / rollback |
@@ -223,6 +225,14 @@ Composed, app-specific shared components.
 | `lib/email/booking/bookingCancelled.ts` | `sendBookingCancelledClient(params)`, `sendBookingCancelledOwner(params)`, `BookingCancelledClientParams`, `BookingCancelledOwnerParams` | Branded booking-cancelled emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/inquiryDecline.ts` | `sendInquiryDeclineClient(params)`, `InquiryDeclineClientParams` | Branded inquiry-decline email to the client when an inquiry is declined. |
 | `lib/email/lifecycle.ts` | `sendLifecycleEmail(stage, to, country)`, `LifecycleEmailStage` | Platform-branded lapse-lifecycle email (`preExpiry`/`expired`/`remind1`/`remind2`), locale via `emailLocale(country)`, CTA always to absolute `/subscribe`. Sent by `lib/db/jobs/billing-lifecycle-sweep.ts`. |
+
+### `lib/vocabulary/` (workspace vocabulary presets; spec: `docs/vocabulary/vocabulary-presets.md`)
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/vocabulary/resolve.ts` | `resolveVocabularyPreset(workspace)`, `isVocabularyPresetId` | Single resolver for a workspace's preset: explicit `vocabularyPreset`, else `businessType` if it is a preset id, else `"standard"`. Use at every server call site that renders tenant-facing copy (actions, routes, notifications, emails). |
+| `lib/vocabulary/appTranslations.ts` | `getAppTranslations(namespace?)`, `getAppMessages(...)` | Drop-in for `getTranslations` / message loading that applies the active workspace's vocabulary so `%token%` placeholders never leak. Use instead of raw `getTranslations("app.*")` in server components. |
+| `lib/email/vocabulary.ts` | `emailVocabulary(preset, locale)` | Vocabulary tokens for transactional email copy (`EMAIL_COPY`) so emails match the workspace's terminology. |
+| `app/[locale]/(marketing)/_components/vocabulary-showcase.tsx` | `VocabularyShowcase` | Marketing-home auto-cycling preset demo (reads only the `marketing.vocabulary` message namespace). |
 
 ### `lib/notifications/`
 | Import | Export | Purpose |

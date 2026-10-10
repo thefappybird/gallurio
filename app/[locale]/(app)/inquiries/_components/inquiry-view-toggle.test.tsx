@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import filMessages from "@/messages/fil.json";
+import { filMessages } from "@/test-utils/messages";
 import { InquiryViewToggle } from "./inquiry-view-toggle";
 
 vi.mock("next/navigation", () => ({

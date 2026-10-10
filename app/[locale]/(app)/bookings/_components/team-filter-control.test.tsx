@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import filMessages from "@/messages/fil.json";
+import { filMessages } from "@/test-utils/messages";
 import { TeamFilterControl } from "./team-filter-control";
 import type { BookingTeamOption } from "../_data/team-options";
 
