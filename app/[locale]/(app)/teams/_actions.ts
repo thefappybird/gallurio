@@ -13,6 +13,7 @@ import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { User } from "@/lib/db/models/User";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { sendNotification } from "@/lib/notifications/send";
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import {
   createTeamSchema,
   renameTeamSchema,
@@ -77,6 +78,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
       ctx.workspace.plan,
     );
 
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
     revalidatePath("/[locale]/teams", "page");
     return {
       ok: true,
@@ -105,7 +107,7 @@ export async function renameTeamAction(input: RenameTeamInput): Promise<ActionRe
 
   const { teamId, name } = parsed.data;
   const objectId = parseObjectId(teamId);
-  if (!objectId) return { error: "Invalid team id" };
+  if (!objectId) return { error: "INVALID_TEAM_ID" };
 
   try {
     const team = await Team.findOneAndUpdate(
@@ -113,12 +115,13 @@ export async function renameTeamAction(input: RenameTeamInput): Promise<ActionRe
       { $set: { name } },
       { new: true }
     );
-    if (!team) return { error: "Team not found" };
+    if (!team) return { error: "TEAM_NOT_FOUND" };
   } catch (err) {
     if (isDuplicateKeyError(err)) return { error: "DUPLICATE_NAME" };
     throw err;
   }
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(objectId) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -132,15 +135,16 @@ export async function setTeamColorAction(input: SetTeamColorInput): Promise<Acti
 
   const { teamId, color } = parsed.data;
   const objectId = parseObjectId(teamId);
-  if (!objectId) return { error: "Invalid team id" };
+  if (!objectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOneAndUpdate(
     { _id: objectId, workspaceId: ctx.workspace._id },
     { $set: { color } },
     { new: true }
   );
-  if (!team) return { error: "Team not found" };
+  if (!team) return { error: "TEAM_NOT_FOUND" };
 
+  emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
@@ -158,10 +162,10 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
 
   const { teamId } = parsed.data;
   const objectId = parseObjectId(teamId);
-  if (!objectId) return { error: "Invalid team id" };
+  if (!objectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne({ _id: objectId, workspaceId: ctx.workspace._id });
-  if (!team) return { error: "Team not found" };
+  if (!team) return { error: "TEAM_NOT_FOUND" };
   // The Main/default team is the assignment fallback and can never be retired.
   if (team.isDefault) return { error: "CANNOT_DEACTIVATE_DEFAULT" };
 
@@ -173,6 +177,7 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
       { _id: objectId, workspaceId: ctx.workspace._id },
       { $set: { isActive: false, deactivatedAt: new Date() } },
     );
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
 
     const memberships = await TeamMembership.find(
       { teamId: team._id, workspaceId: ctx.workspace._id },
@@ -221,10 +226,10 @@ export async function reactivateTeamAction(input: ReactivateTeamInput): Promise<
 
   const { teamId } = parsed.data;
   const objectId = parseObjectId(teamId);
-  if (!objectId) return { error: "Invalid team id" };
+  if (!objectId) return { error: "INVALID_TEAM_ID" };
 
   const team = await Team.findOne({ _id: objectId, workspaceId: ctx.workspace._id });
-  if (!team) return { error: "Team not found" };
+  if (!team) return { error: "TEAM_NOT_FOUND" };
 
   // Idempotent: already-active is a no-op success — and crucially must NOT be
   // blocked by the cap check below (it isn't adding to the active count).
@@ -240,6 +245,7 @@ export async function reactivateTeamAction(input: ReactivateTeamInput): Promise<
       { _id: objectId, workspaceId: ctx.workspace._id },
       { $set: { isActive: true, deactivatedAt: null } },
     );
+    emitDataChanged(ctx.workspaceId, { type: "team.updated", teamId: String(team._id) });
   }
 
   revalidatePath("/[locale]/teams", "page");

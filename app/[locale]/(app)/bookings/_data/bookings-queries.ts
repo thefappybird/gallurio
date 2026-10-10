@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { Booking, ActivityLog, type BookingDoc, type ActivityLogDoc } from "@/lib/db/models";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import type { SortDir } from "@/lib/tables/sort";
 
 /** Returns YYYY-MM-DD for `d` as seen in `timeZone`. */
 function isoDateInTz(d: Date, timeZone: string): string {
@@ -41,11 +42,18 @@ export type BookingListFilters = {
   // so pagination counts reflect the filtered set. Callers pass the workspace tz.
   includePast?: boolean;
   workspaceTimezone?: string;
+  // Overlap window (calendar views): firstSessionStart < end AND
+  // lastSessionEnd >= start. Merged with from/to and includePast — never
+  // replaces them. Backed by { workspaceId, lastSessionEnd, firstSessionStart }.
+  range?: { start: Date; end: Date };
 };
 
 export type BookingListPagination = {
   page?: number;
   limit?: number;
+  // Table sort (see lib/tables/sort.ts). Absent keeps firstSessionStart asc,
+  // which calendar/export callers rely on.
+  sort?: { field: string; dir: SortDir; text?: boolean };
 };
 
 export type BookingListResult = {
@@ -105,7 +113,23 @@ export async function listBookings(
     query.lastSessionEnd = { $gte: todayStart };
   }
 
-  const baseQuery = Booking.find(query).sort({ firstSessionStart: 1 });
+  if (filters.range) {
+    const first = (query.firstSessionStart ?? {}) as Record<string, Date>;
+    query.firstSessionStart = { ...first, $lt: filters.range.end };
+    const last = (query.lastSessionEnd ?? {}) as Record<string, Date>;
+    const floor = last.$gte && last.$gte > filters.range.start ? last.$gte : filters.range.start;
+    query.lastSessionEnd = { ...last, $gte: floor };
+  }
+
+  const sort = pagination?.sort;
+  let baseQuery = Booking.find(query);
+  if (sort) {
+    const d = sort.dir === "asc" ? 1 : -1;
+    baseQuery = baseQuery.sort({ [sort.field]: d, _id: d });
+    if (sort.text) baseQuery = baseQuery.collation({ locale: "en", strength: 2 });
+  } else {
+    baseQuery = baseQuery.sort({ firstSessionStart: 1 });
+  }
 
   if (pagination) {
     const { page = 1, limit = 10 } = pagination;
@@ -120,22 +144,6 @@ export async function listBookings(
   // No pagination: return all matching docs (used by calendar view and tests).
   const rows = await baseQuery.lean();
   return { rows, total: rows.length };
-}
-
-export async function getBookingById(
-  workspaceId: WorkspaceId,
-  id: string | Types.ObjectId,
-  // When provided (non-owner callers), the booking's teamId must be in this set
-  // or the lookup returns null — a member cannot fetch another team's booking by
-  // id. `undefined` (owner) applies no team restriction.
-  allowedTeamIds?: readonly string[]
-): Promise<BookingDoc | null> {
-  const query: Record<string, unknown> = { _id: id, workspaceId };
-  if (allowedTeamIds !== undefined) {
-    query.teamId = { $in: toTeamObjectIds(allowedTeamIds) };
-  }
-  query.status = { $ne: "draft" };
-  return Booking.findOne(query).lean();
 }
 
 export async function getBookingActivity(

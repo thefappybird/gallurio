@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: liveRefresh }),
 }));
 
-// useLiveRefresh (wired into InquiriesPageClient) needs a socket in the tree.
+// NotificationProvider (wrapped around the page below) opens a socket.
 vi.mock("socket.io-client", () => ({
   io: () => ({ on: vi.fn(), disconnect: vi.fn() }),
 }));
@@ -34,9 +34,15 @@ vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
 // Expose the rendered rows so tests can inspect optimistic patches.
 let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: ({ rows, onOpenInquiry }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void }) => {
+  InquiryTable: ({ rows, onOpenInquiry, onSortChange }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void; onSortChange?: (next: { key: string; dir: "asc" | "desc" } | null) => void }) => {
     lastRenderedRows = rows;
-    return <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />;
+    return (
+      <>
+        <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />
+        <button type="button" data-testid="sort-client" onClick={() => onSortChange?.({ key: "client", dir: "asc" })} />
+        <button type="button" data-testid="sort-reset" onClick={() => onSortChange?.(null)} />
+      </>
+    );
   },
 }));
 
@@ -55,8 +61,9 @@ vi.mock("./inquiries-calendar-manager", () => ({
 
 // Capture modal props so tests can call onClose / onInquiryChanged / onConverted directly
 const capturedProps: Record<string, unknown> = {};
-vi.mock("./inquiry-detail-modal", () => ({
-  InquiryDetailModal: (props: {
+vi.mock("./inquiry-detail-dynamic", () => ({
+  preloadInquiryDetailModal: vi.fn(),
+  InquiryDetailModalLazy: (props: {
     onClose: () => void;
     onConverted?: () => void;
     onInquiryChanged?: (id: string, patch: object) => void;
@@ -84,11 +91,13 @@ const row: InquiryRow = {
   eventType: "wedding",
   submittedAt: "2026-01-01T00:00:00.000Z",
   source: null,
+  bookedAt: null,
 };
 
 const detail: InquiryDetailModalData = {
   inquiryId: "inq-1",
   locale: "en",
+  workspaceTz: "Asia/Manila",
   name: "Alice",
   email: "alice@example.com",
   phone: null,
@@ -111,6 +120,10 @@ const baseProps = {
   total: 1,
   page: 1,
   limit: 20,
+  pageSizeOptions: [20, 30, 50],
+  sortKey: "submitted",
+  sortDir: "desc" as const,
+  sortExplicit: true,
   locale: "en",
   status: "all",
   counts: { all: 1, inquiry: 1, booked: 0, archived: 0 },
@@ -123,7 +136,7 @@ const baseProps = {
 
 function renderInquiriesPage(props: React.ComponentProps<typeof InquiriesPageClient>) {
   return renderWithProviders(
-    <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+    <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
       <InquiriesPageClient {...props} />
     </NotificationProvider>,
   );
@@ -135,6 +148,7 @@ beforeEach(() => {
   refresh.mockReset();
   replace.mockReset();
   push.mockReset();
+  getInquiryDetailAction.mockReset();
   getInquiryDetailAction.mockResolvedValue({ ok: true, detail });
   liveRefresh.mockReset();
   replace.mockImplementation((href: string) => {
@@ -156,13 +170,26 @@ describe("InquiriesPageClient", () => {
     expect(window.location.search).toContain("inquiryId=inq-1");
   });
 
+  it("serves a reopened inquiry from the query cache (one action call for two opens)", async () => {
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+
+    fireEvent.click(screen.getByTestId("inquiry-table"));
+    await screen.findByTestId("inquiry-detail-modal");
+    act(() => (capturedProps.onClose as () => void)());
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("inquiry-table"));
+    await screen.findByTestId("inquiry-detail-modal");
+    expect(getInquiryDetailAction).toHaveBeenCalledTimes(1);
+  });
+
   it("opens server-supplied inquiry detail without relying on a second URL sync", () => {
     window.history.replaceState(null, "", "/en/inquiries?status=all");
     const view = renderInquiriesPage({ ...baseProps, initialDetail: null });
     expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
 
     view.rerender(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <InquiriesPageClient {...baseProps} />
       </NotificationProvider>
     );
@@ -207,7 +234,7 @@ describe("InquiriesPageClient", () => {
     expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
 
     view.rerender(
-      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
         <InquiriesPageClient {...baseProps} initialDetail={nextDetail} />
       </NotificationProvider>
     );
@@ -228,6 +255,24 @@ describe("InquiriesPageClient", () => {
 
     const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
     expect(patchedRow?.eventDate).toBe("2099-12-31T00:00:00.000Z");
+  });
+
+  it("a caught-up patch never resurrects when a teammate later changes the same field", () => {
+    const wrap = (r: InquiryRow) => (
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0} workspaceId="ws-test">
+        <InquiriesPageClient {...baseProps} rows={[r]} />
+      </NotificationProvider>
+    );
+    const view = renderInquiriesPage(baseProps);
+    act(() => {
+      (capturedProps.onInquiryChanged as (id: string, patch: object) => void)("inq-1", { status: "archived" });
+    });
+    expect(lastRenderedRows[0].status).toBe("archived");
+
+    view.rerender(wrap({ ...row, status: "archived" })); // server caught up
+    view.rerender(wrap({ ...row, status: "inquiry" })); // teammate reverts it
+
+    expect(lastRenderedRows[0].status).toBe("inquiry");
   });
 
   it("onConverted closes the modal, strips inquiryId param, and marks row booked optimistically", () => {
@@ -253,5 +298,26 @@ describe("InquiriesPageClient", () => {
     // Row shows booked optimistically
     const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
     expect(patchedRow?.status).toBe("booked");
+  });
+
+  it("pushes sort, dir and page=1 when the table reports a sort change", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-client"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1&sort=client&dir=asc");
+  });
+
+  it("removes sort and dir and resets page when the table reports a sort reset", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=4&sort=client&dir=desc");
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+    fireEvent.click(screen.getByTestId("sort-reset"));
+    expect(push).toHaveBeenCalledWith("/en/inquiries?status=booked&page=1");
+  });
+
+  it("pins the current limit in the URL when paging", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=booked&page=1");
+    renderInquiriesPage({ ...baseProps, initialDetail: null, total: 60 });
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(push.mock.calls.at(-1)?.[0]).toMatch(/limit=20/);
   });
 });

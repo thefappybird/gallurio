@@ -2,6 +2,8 @@
 import { sendEmail, type SendEmailResult } from "./send";
 import { renderBrandedEmail } from "./layout";
 import { gallurioBrand } from "./brand";
+import { emailVocabulary } from "./vocabulary";
+import type { VocabularyPresetId } from "@/lib/vocabulary/presets";
 
 type InquiryLocation = {
   label?: string | null;
@@ -26,6 +28,8 @@ export type InquiryNotificationData = {
   description: string;
   sessions: Array<{ startDate: string; startTime: string; endTime: string }>;
   isRecipientGated: boolean;
+  /** Workspace vocabulary preset (resolveVocabularyPreset). Defaults to "standard". */
+  vocabularyPreset?: VocabularyPresetId;
 };
 
 function redirectUrl(inquiryId: string): string | null {
@@ -47,18 +51,19 @@ function formatLocation(location: InquiryLocation): string {
 export async function sendInquiryNotification(
   data: InquiryNotificationData
 ): Promise<SendEmailResult> {
+  const { t, g } = emailVocabulary(data.vocabularyPreset, "en");
   const link = redirectUrl(data.inquiryId);
   const phone = data.clientPhone || "—";
   const location = formatLocation(data.location);
   const sessionsText = formatSessions(data.sessions);
 
-  const subject = `New inquiry from ${data.clientName} - ${data.workspaceName}`;
+  const subject = t(`New %inquiry% from ${g(data.clientName)} - ${g(data.workspaceName)}`);
 
   const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale: "en",
-    preheader: `${data.clientName} submitted a booking inquiry on ${data.workspaceName}.`,
-    title: `New inquiry from ${data.clientName}`,
+    preheader: t(`${g(data.clientName)} submitted a booking %inquiry% on ${g(data.workspaceName)}.`),
+    title: t(`New %inquiry% from ${g(data.clientName)}`),
     subtitle: data.workspaceName,
     blocks: [
       {
@@ -78,10 +83,10 @@ export async function sendInquiryNotification(
       { type: "heading", text: "Message" },
       { type: "p", text: data.description },
       ...(data.isRecipientGated
-        ? [{ type: "p" as const, text: "Subscribe to Gallurio Pro to view the inquiry." }]
+        ? [{ type: "p" as const, text: t("Subscribe to Gallurio Pro to view the %inquiry%.") }]
         : link
           ? []
-          : [{ type: "p" as const, text: "Open your lead inbox to review this inquiry." }]),
+          : [{ type: "p" as const, text: t("Open your lead inbox to review this %inquiry%.") }]),
     ],
     ...(link
       ? { cta: { label: data.isRecipientGated ? "Subscribe and View" : "Review & approve", url: link } }

@@ -1,7 +1,8 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
-import { CreateDialog, EditDialog } from "./team-dialogs";
+import { CreateDialog, EditDialog, DeactivateDialog, mapActionError } from "./team-dialogs";
+import { deactivateTeamAction } from "../_actions";
 import type { TeamRow } from "../_types";
 
 vi.mock("../_actions", () => ({
@@ -11,6 +12,9 @@ vi.mock("../_actions", () => ({
   deactivateTeamAction: vi.fn(),
   reactivateTeamAction: vi.fn(),
 }));
+
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
 
 describe("CreateDialog", () => {
   it("marks the name input invalid with a describedby-linked alert when submitted blank", () => {
@@ -110,5 +114,30 @@ describe("EditDialog", () => {
     const message = document.getElementById(describedBy!);
     expect(message).toHaveAttribute("role", "alert");
     expect(message).toHaveTextContent("Team name is required.");
+  });
+});
+
+describe("DeactivateDialog mutation invalidation", () => {
+  it("invalidates team.updated with the team id on success only", async () => {
+    invalidateFor.mockClear();
+    vi.mocked(deactivateTeamAction).mockResolvedValueOnce({ error: "boom" } as never);
+    const props = { team: TEAM, open: true, onOpenChange: vi.fn(), onDeactivated: vi.fn(), onFailed: vi.fn(), onDone: vi.fn() };
+    renderWithProviders(<DeactivateDialog {...props} />);
+    const confirm = screen.getAllByRole("button").find((b) => /deactivate/i.test(b.textContent ?? "") && b.className.includes("destructive"))!;
+    fireEvent.click(confirm);
+    await waitFor(() => expect(props.onFailed).toHaveBeenCalled());
+    expect(invalidateFor).not.toHaveBeenCalled();
+    vi.mocked(deactivateTeamAction).mockResolvedValueOnce({} as never);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: "team-1" }, { refresh: false }));
+  });
+});
+
+describe("mapActionError", () => {
+  it("maps invalid and missing team codes to the not-found copy, never raw server text", () => {
+    const t = ((key: string) => key) as unknown as Parameters<typeof mapActionError>[1];
+    expect(mapActionError("INVALID_TEAM_ID", t)).toBe("errors.teamNotFound");
+    expect(mapActionError("TEAM_NOT_FOUND", t)).toBe("errors.teamNotFound");
+    expect(mapActionError("Invalid team id", t)).toBe("errors.generic");
   });
 });

@@ -15,13 +15,13 @@ export type BookingEventInput = {
   teamId?: { toString(): string } | null;
   status: string;
   sessions: { startAt: Date; endAt: Date }[];
+  /** Booking.updatedAt — lets drag send `expectedUpdatedAt` for optimistic concurrency. */
+  updatedAt?: Date | string | null;
 };
 
 type BuildOptions = {
   /** Midnight of "today" in UTC — used by candle-split to mark past days. */
   today: Date;
-  /** Maps client._id.toString() → email (nullable). */
-  emailByClientId: Map<string, string | null>;
   /** Workspace IANA timezone — used to split sessions on the correct wall-clock
    *  day boundary and to format each candle's displayed time label correctly. */
   tz: string;
@@ -41,11 +41,12 @@ export function buildBookingCalendarEvents(
   bookings: BookingEventInput[],
   opts: BuildOptions
 ): CalendarEvent[] {
-  const { today, emailByClientId, tz } = opts;
+  const { today, tz } = opts;
 
   return bookings.flatMap((b) => {
     const bookingId = b._id.toString();
     const sessions = b.sessions as { startAt: Date; endAt: Date }[];
+    const updatedAtIso = b.updatedAt ? new Date(b.updatedAt).toISOString() : undefined;
 
     return sessions.flatMap((session, sessionIdx) => {
       const sessionStart = new Date(session.startAt);
@@ -66,9 +67,6 @@ export function buildBookingCalendarEvents(
         end: candle.end,
         status: b.status as BookingStatus,
         clientName: b.clientName,
-        clientEmail: b.clientId
-          ? (emailByClientId.get(b.clientId.toString()) ?? null)
-          : null,
         rangeStart: result.rangeStart,
         rangeEnd: result.rangeEnd,
         sessionIndex: sessionIdx,
@@ -77,6 +75,7 @@ export function buildBookingCalendarEvents(
         sessionDayCount: result.totalShiftDays,
         sessionPastDayCount: result.pastShiftDays,
         workspaceTz: tz,
+        updatedAt: updatedAtIso,
       }));
     });
   });

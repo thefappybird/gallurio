@@ -1,10 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { queryKeys } from "@/lib/query/keys";
+import type { ShiftHit } from "@/app/[locale]/(app)/bookings/_components/booking-wizard-steps/types";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
-import { useRouter, Link } from "@/lib/i18n/navigation";
+import { Link } from "@/lib/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +38,7 @@ import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
 import { useActionError } from "@/lib/i18n/actionError";
+import { syncEndTime } from "@/lib/utils/time-format";
 
 type Props = {
   inquiryId: string;
@@ -40,6 +46,8 @@ type Props = {
   isConverted: boolean;
   bookingMissing: boolean;
   bookingId: string | null;
+  /** The inquiry's client, when known; only used to match the server's socket echo. */
+  clientId?: string | null;
   currency: string;
   initialTotal: number;
   initialDeposit: number;
@@ -63,6 +71,7 @@ export function BookingDraftCard({
   isConverted,
   bookingMissing,
   bookingId,
+  clientId = null,
   currency,
   initialTotal,
   initialDeposit,
@@ -82,7 +91,8 @@ export function BookingDraftCard({
   const ts = useTranslations("app.inquiries.detail.sessionsEditor");
   const ter = useTranslations("app.inquiries.detail.eventRequest");
   const tTeam = useTranslations("app.bookings.teamPicker");
-  const router = useRouter();
+  const ws = useAppWorkspaceId();
+  const invalidateFor = useInvalidateFor();
   const timeMode = useTimeFormat();
   const errMsg = useActionError();
 
@@ -113,18 +123,67 @@ export function BookingDraftCard({
     notes.trim() !== snapshot.notes.trim() ||
     (teamId ?? null) !== (snapshot.teamId ?? null);
 
+  // Re-sync from the server copy whenever it changes (render-phase compare against
+  // the last-synced props). Per field: untouched fields adopt the new value, edited
+  // fields keep the user's edit. The snapshot always follows the server so Save and
+  // Approve send only what the user changed against it.
+  const serverKey = JSON.stringify([initialTotal, initialDeposit, initialNotes, initialTeamId ?? null]);
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  const [changedUnder, setChangedUnder] = useState(false);
+  if (serverKey !== syncedKey) {
+    setSyncedKey(serverKey);
+    const next = {
+      total: String(initialTotal),
+      deposit: String(initialDeposit),
+      notes: initialNotes,
+      teamId: initialTeamId ?? null,
+    };
+    const serverMoved =
+      Number(next.total) !== Number(snapshot.total) ||
+      Number(next.deposit) !== Number(snapshot.deposit) ||
+      next.notes.trim() !== snapshot.notes.trim() ||
+      next.teamId !== (snapshot.teamId ?? null);
+    if (Number(total) === Number(snapshot.total)) setTotal(next.total);
+    if (Number(deposit) === Number(snapshot.deposit)) setDeposit(next.deposit);
+    if (notes.trim() === snapshot.notes.trim()) setNotes(next.notes);
+    if ((teamId ?? null) === (snapshot.teamId ?? null)) setTeamId(next.teamId);
+    setSnapshot(next);
+    if (serverMoved && isDirty) setChangedUnder(true);
+  }
+
   // Sessions editor state
   const [editingSessions, setEditingSessions] = useState(false);
   const [draftSessions, setDraftSessions] = useState<InquirySessionView[]>(sessions);
-  const [sessionConflicts, setSessionConflicts] = useState<boolean[]>([]);
-  const [checkingSessionConflicts, setCheckingSessionConflicts] = useState(false);
   const [sessionsSaving, setSessionsSaving] = useState(false);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
-  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
-  const sessionConflictReqIdRef = useRef(0);
 
-  function currentEdits() {
-    return { total: Number(total) || 0, deposit: Number(deposit) || 0, notes, teamId };
+  // Same re-sync for sessions: never write back a stale array from a teammate-changed inquiry.
+  const sessionsKey = JSON.stringify(sessions);
+  const [syncedSessionsKey, setSyncedSessionsKey] = useState(sessionsKey);
+  if (sessionsKey !== syncedSessionsKey) {
+    setSyncedSessionsKey(sessionsKey);
+    if (!editingSessions) setDraftSessions(sessions);
+    else if (JSON.stringify(draftSessions) !== sessionsKey) setChangedUnder(true);
+  }
+
+  // Only fields the user changed vs the last-synced server values, so a stale
+  // untouched field can never overwrite a teammate's newer value.
+  // Mirrors the server's emitInquiryWrite key sets so the socket echo is suppressed.
+  // The caller's action already revalidated this route, so no extra router.refresh().
+  function announceWrite() {
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId }, { refresh: false });
+    if (bookingId) {
+      invalidateFor({ type: "booking.updated", bookingId, clientId, inquiryId }, { refresh: false });
+    }
+  }
+
+  function changedEdits() {
+    const edits: { total?: number; deposit?: number; notes?: string; teamId?: string | null } = {};
+    if (Number(total) !== Number(snapshot.total)) edits.total = Number(total) || 0;
+    if (Number(deposit) !== Number(snapshot.deposit)) edits.deposit = Number(deposit) || 0;
+    if (notes.trim() !== snapshot.notes.trim()) edits.notes = notes;
+    if ((teamId ?? null) !== (snapshot.teamId ?? null)) edits.teamId = teamId;
+    return edits;
   }
 
   function fmtSessionDate(date: string): string {
@@ -134,33 +193,50 @@ export function BookingDraftCard({
       : d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
   }
 
-  async function checkSessionConflicts(next: InquirySessionView[]) {
-    const myId = ++sessionConflictReqIdRef.current;
-    setCheckingSessionConflicts(true);
-    const checks = next.map(async (s) => {
-      try {
-        const url = `/api/bookings/shifts-on-date?date=${s.startDate}${bookingId ? `&excludeId=${bookingId}` : ""}`;
-        const resp = await fetch(url);
-        if (!resp.ok) return false;
-        const { shifts } = await resp.json();
-        const aStart = toMinutes(s.startTime);
-        const aEnd = toMinutes(s.endTime);
-        if (aStart === null || aEnd === null) return false;
-        return overlappingShifts(shifts, aStart, aEnd).length > 0;
-      } catch { return false; }
-    });
-    const results = await Promise.all(checks);
-    // A newer check superseded this one — discard the stale result.
-    if (myId !== sessionConflictReqIdRef.current) return;
-    setSessionConflicts(results);
-    setCheckingSessionConflicts(false);
+  function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
+    setDraftSessions((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const next = { ...s, [field]: value };
+        // End never sits at/before start; start is never auto-adjusted.
+        if (field === "startTime") next.endTime = syncEndTime(next.startTime, next.endTime);
+        return next;
+      })
+    );
   }
 
-  async function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
-    const next = draftSessions.map((s, i) => i === idx ? { ...s, [field]: value } : s);
-    setDraftSessions(next);
-    await checkSessionConflicts(next);
+  function handleEndTimeBlur(idx: number) {
+    setDraftSessions((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, endTime: syncEndTime(s.startTime, s.endTime) } : s))
+    );
   }
+
+  // ONE batched request for every distinct session date. A changed date set is
+  // a new query key, so a superseded response can never overwrite a newer one.
+  const sortedDates = useMemo(
+    () => [...new Set(draftSessions.map((s) => s.startDate).filter(Boolean))].sort().slice(0, 31),
+    [draftSessions]
+  );
+  const shiftsQuery = useQuery({
+    queryKey: [...queryKeys(ws).shifts(sortedDates), bookingId],
+    queryFn: async (): Promise<Record<string, ShiftHit[]>> => {
+      const resp = await fetch(
+        `/api/bookings/shifts-on-date?dates=${sortedDates.join(",")}${bookingId ? `&excludeId=${encodeURIComponent(bookingId)}` : ""}`
+      );
+      if (!resp.ok) throw new Error(`shifts_load_failed_${resp.status}`);
+      return (await resp.json()).byDate;
+    },
+    enabled: editingSessions && sortedDates.length > 0,
+    retry: false,
+  });
+  const checkingSessionConflicts = editingSessions && shiftsQuery.isFetching;
+  // A failed check reads as "no conflict", as before; the server re-validates on save.
+  const sessionConflicts = draftSessions.map((s) => {
+    const aStart = toMinutes(s.startTime);
+    const aEnd = toMinutes(s.endTime);
+    if (!editingSessions || aStart === null || aEnd === null) return false;
+    return overlappingShifts(shiftsQuery.data?.[s.startDate] ?? [], aStart, aEnd).length > 0;
+  });
 
   const hasSessionConflict = sessionConflicts.some(Boolean);
   const hasInvalidSession = draftSessions.some(
@@ -181,6 +257,8 @@ export function BookingDraftCard({
           ? new Date(draftSessions[0].startDate).toISOString()
           : null,
       });
+      // editInquirySessionsAction revalidates the inquiry routes.
+      announceWrite();
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -189,7 +267,6 @@ export function BookingDraftCard({
 
   function handleDiscardSessions() {
     setDraftSessions(sessions);
-    setSessionConflicts([]);
     setSessionsError(null);
     setEditingSessions(false);
   }
@@ -197,14 +274,25 @@ export function BookingDraftCard({
   async function handleSave() {
     setSaving(true);
     try {
-      const edits = currentEdits();
+      const edits = changedEdits();
       const res = await saveDraftBookingFieldsAction(inquiryId, edits);
-      if ("error" in res) { toast.error(t("saveError")); return; }
+      if ("error" in res) {
+        if (res.error === "not_draft") {
+          toast.error(t("notDraft"));
+          // Nothing was written: refresh to the server's (approved) state.
+          invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
+        } else {
+          toast.error(t("saveError"));
+        }
+        return;
+      }
       toast.success(t("savedToast"));
       // Reset snapshot so Save button disables until next edit.
       setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
       // Propagate optimistic patch to the table row.
-      onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
+      onInquiryChanged?.(inquiryId, { total: Number(total) || 0, deposit: Number(deposit) || 0, notes });
+      // saveDraftBookingFieldsAction revalidates the inquiry routes.
+      announceWrite();
     } finally {
       setSaving(false);
     }
@@ -213,10 +301,13 @@ export function BookingDraftCard({
   async function handleApprove() {
     setApproving(true);
     try {
-      const res = await approveInquiryBookingAction(inquiryId, currentEdits());
+      const res = await approveInquiryBookingAction(inquiryId, changedEdits());
       if ("error" in res) {
         if (res.error === "needs_client_resolution") {
           onClientResolutionRequired?.();
+        } else if (res.error === "not_draft") {
+          toast.error(t("notDraft"));
+          invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
         } else {
           toast.error(res.error === "owner_only" ? t("ownerOnly") : t("approveError"));
         }
@@ -225,7 +316,19 @@ export function BookingDraftCard({
       setApproved(true);
       onConverted?.();
       toast.success(ta("approvedToast"));
-      if (!onConverted) router.refresh(); // standalone page only
+      // Also drops the cached inquiry detail so reopening shows the booked state.
+      const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
+      // approveInquiryBookingAction revalidates /inquiries, /bookings and /dashboard.
+      invalidateFor(
+        { type: "inquiry.updated", inquiryId, bookingId: convertedBookingId ?? null },
+        { refresh: false }
+      );
+      if (convertedBookingId) {
+        invalidateFor(
+          { type: "booking.updated", bookingId: convertedBookingId, clientId, inquiryId },
+          { refresh: false }
+        );
+      }
     } catch {
       toast.error(t("approveError"));
     } finally {
@@ -267,6 +370,12 @@ export function BookingDraftCard({
       <CardHeader><CardTitle className="text-base">{t("title")}</CardTitle></CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{t("description")}</p>
+
+        {changedUnder && (isDirty || editingSessions) ? (
+          <p role="status" className="border border-border bg-muted px-3 py-2 text-sm">
+            {t("changedUnderneath")}
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
@@ -397,6 +506,7 @@ export function BookingDraftCard({
                           type="time"
                           value={s.endTime}
                           onChange={(e) => handleSessionChange(i, "endTime", e.target.value)}
+                          onBlur={() => handleEndTimeBlur(i)}
                           className="border border-border bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
                       </div>

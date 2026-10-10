@@ -2,15 +2,24 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client } from "@/lib/db/models";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { BookingDoc } from "@/lib/db/models";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { cookies } from "next/headers";
+import { Suspense } from "react";
+import { BOOKINGS_CALENDAR_FALLBACK, CalendarSkeleton } from "@/components/app/calendar-skeleton";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import { BOOKINGS_SKELETON } from "@/lib/tables/skeleton-metrics";
+import { BookingsHeaderSkeleton } from "./_components/bookings-page-skeleton";
+import { listBookings } from "./_data/bookings-queries";
+import { loadBookingsCalendarEvents, parseCalendarDate } from "./_data/calendar-events";
 import { bookingRowAmount } from "./_data/booking-rows";
-import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
+import { getWorkspaceRateMap, NO_CONVERSION } from "@/lib/pricing/workspaceRates";
 import { parseBookingsToggleFilters } from "./_data/booking-filters";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { calendarWindow } from "@/lib/bookings/calendar-window";
 import { type BookingsView } from "./_components/view-toggle";
 import { BookingsPendingShell } from "./_components/bookings-pending-shell";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
@@ -19,23 +28,20 @@ import {
   type BookingRow,
 } from "./_components/bookings-table";
 import { BookingsPageClient } from "./_components/bookings-page-client";
-import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
-import { BookingDetailModal } from "./_components/booking-detail-modal";
-import { BookingWizardModal } from "./_components/booking-wizard-modal";
+import {
+  TABLE_FIT_COOKIE,
+  parseFitCookie,
+  resolveLimit,
+  resolvePageSize,
+} from "@/lib/tables/page-fit";
+import { parseSort } from "@/lib/tables/sort";
+import { BookingUrlModals } from "./_components/booking-url-modals";
 import type { CalendarEvent } from "./_components/booking-calendar";
-import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
-
-type ClientHit = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-};
 
 export async function generateMetadata({
   params,
@@ -44,7 +50,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("bookings") };
 }
 
@@ -64,7 +70,12 @@ type SearchParams = {
   edit?: string;
   page?: string;
   limit?: string;
+  sort?: string;
+  dir?: string;
 };
+
+// BookingsTable columns: title, client, date, booked, status, total, actions = 7
+const BOOKINGS_TABLE_COLUMNS = 7;
 
 export default async function BookingsPage({
   params,
@@ -75,8 +86,55 @@ export default async function BookingsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.bookings");
-  const tCal = await getTranslations("app.calendar");
+  const sp = await searchParams;
+  const view = (await resolveStoredCollectionView(
+    sp.view,
+    BOOKINGS_VIEW_COOKIE_NAME
+  )) as BookingsView;
+
+  // Resolved before the Suspense boundary so the fallback skeleton renders the
+  // exact row count the table will (no layout shift on stream-in).
+  const fit = parseFitCookie((await cookies()).get(TABLE_FIT_COOKIE.bookings)?.value);
+  const limit = resolveLimit(sp.limit, fit);
+
+  // Everything data-dependent streams behind a per-view boundary: switching
+  // table <-> calendar shows the matching skeleton immediately.
+  return (
+    <Suspense
+      key={view}
+      fallback={
+        <div className="flex min-w-0 flex-col gap-4" aria-busy="true">
+          <BookingsHeaderSkeleton />
+          {/* Reserves MobileSortControl's slot so the list doesn't jump on stream-in. */}
+          {view !== "calendar" && <div className="h-11 lg:hidden" aria-hidden="true" />}
+          {view === "calendar" ? (
+            <CalendarSkeleton fallbackClassName={BOOKINGS_CALENDAR_FALLBACK} />
+          ) : (
+            <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={limit} cardRows={4} {...BOOKINGS_SKELETON} />
+          )}
+        </div>
+      }
+    >
+      <BookingsContent locale={locale} sp={sp} view={view} limit={limit} fit={fit} />
+    </Suspense>
+  );
+}
+
+async function BookingsContent({
+  locale,
+  sp,
+  view,
+  limit,
+  fit,
+}: {
+  locale: string;
+  sp: SearchParams;
+  view: BookingsView;
+  limit: number;
+  fit: number | undefined;
+}) {
+  const t = await getAppTranslations("app.bookings");
+  const tCal = await getAppTranslations("app.calendar");
 
   const { workspace, role, userId } = await requireOrg();
   await connectDB();
@@ -85,12 +143,6 @@ export default async function BookingsPage({
   // bookings owned by teams they belong to. An empty membership list yields an
   // empty `teamIds` array → the query matches nothing (fail-closed).
   const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
-
-  const sp = await searchParams;
-  const view = (await resolveStoredCollectionView(
-    sp.view,
-    BOOKINGS_VIEW_COOKIE_NAME
-  )) as BookingsView;
 
   // Phase 5 — team scoping. Owners see every team; non-owners see only their own
   // (both include deactivated teams, shown as view-only choices).
@@ -136,8 +188,9 @@ export default async function BookingsPage({
   // Parse pagination params (table view only).
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const tablePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
-  const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+  const tableLimit = limit;
+  const pageSizeOptions = resolvePageSize(fit).options;
+  const sort = parseSort("bookings", sp);
 
   // Cancelled + past filters are opt-OUT (absent -> ON); see parseBookingsToggleFilters.
   const toggleFlags = parseBookingsToggleFilters(sp);
@@ -164,23 +217,27 @@ export default async function BookingsPage({
     selectedTeamIds.length > 0,
   );
 
-  // These two reads are independent — run them together to save a round-trip.
-  //  - Calendar view: fetch all bookings (no pagination) for event splitting.
+  // These reads are independent — run them together to save a round-trip.
+  //  - Calendar view: candles for the month window only (one windowed query).
   //    Table view: fetch only one page of bookings.
-  //  - All clients for the workspace power the booking wizard's client picker.
-  //    Limit 1000 covers all realistic workspace sizes and avoids per-keystroke
-  //    API calls in the modal.
-  const [{ rows: bookings, total: bookingsTotal }, allClients] = await Promise.all([
-    listBookings(
-      workspace._id,
-      filters,
-      view === "table" ? { page: tablePage, limit: tableLimit } : undefined
-    ),
-    Client.find({ workspaceId: workspace._id })
-      .select({ _id: 1, name: 1, email: 1, phone: 1 })
-      .sort({ name: 1 })
-      .limit(1000)
-      .lean(),
+  const defaultDate = parseCalendarDate(sp.date, filters.workspaceTimezone);
+  const eventsWindow = calendarWindow(defaultDate, filters.workspaceTimezone);
+  const [{ rows: bookings, total: bookingsTotal }, events] = await Promise.all([
+    view === "calendar"
+      ? Promise.resolve({ rows: [] as BookingDoc[], total: 0 })
+      : listBookings(workspace._id, filters, {
+          page: tablePage,
+          limit: tableLimit,
+          sort: { field: sort.field, dir: sort.dir, text: sort.text },
+        }),
+    view === "calendar"
+      ? loadBookingsCalendarEvents({
+          workspaceId: workspace._id,
+          tz: filters.workspaceTimezone,
+          date: defaultDate,
+          filters,
+        })
+      : Promise.resolve([] as CalendarEvent[]),
   ]);
 
   // If the requested table page lies past the end of a non-empty result set
@@ -202,38 +259,12 @@ export default async function BookingsPage({
     }
   }
 
-  const initialClients: ClientHit[] = allClients.map((c) => ({
-    id: c._id.toString(),
-    name: c.name,
-    email: c.email ?? null,
-    phone: c.phone ?? null,
-  }));
-
-  // Build a lookup map for email by client id — used for calendar event enrichment.
-  const emailByClientId = new Map(
-    allClients.map((c) => [c._id.toString(), c.email ?? null])
-  );
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Each session of each booking generates per-day candles. A candle covers
-  // one calendar day within the session's date range, running at the session's
-  // shift-start → shift-end time. Candle id encodes booking + session index +
-  // date so each candle is unique and stable.
-  // Only the calendar view consumes candle events; skip the split work in table
-  // view (where `bookings` is a single page that would be discarded anyway).
-  const events: CalendarEvent[] =
-    view !== "calendar"
-      ? []
-      : buildBookingCalendarEvents(bookings, {
-          today,
-          emailByClientId,
-          tz: filters.workspaceTimezone,
-        });
-
   // List rows always read in the workspace currency — see bookingRowAmount.
-  const fx = await getWorkspaceRateMap(workspace._id, workspace.currency);
+  // Only table rows use the rate map; skip the lookup in calendar view.
+  const fx =
+    view === "calendar"
+      ? NO_CONVERSION
+      : await getWorkspaceRateMap(workspace._id, workspace.currency);
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
@@ -251,12 +282,11 @@ export default async function BookingsPage({
         endAt: new Date(s.endAt).toISOString(),
       })),
       lastSessionEnd,
+      bookedAt: b.bookedAt ? new Date(b.bookedAt).toISOString() : null,
       status: b.status as BookingStatus,
       ...bookingRowAmount(b.amount, fx.rates, fx.target),
     };
   });
-
-  const defaultDate = sp.date ? new Date(sp.date) : new Date();
 
   // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
   // `invoiceTheme` existed have no key at all (not the schema default) — fall
@@ -279,27 +309,6 @@ export default async function BookingsPage({
     workspace.contact?.address?.trim() && workspace.contact?.email?.trim()
   );
 
-  // Defensive: if ?detail= is present but the booking doesn't exist (or is
-  // not owned by this workspace), strip the param and redirect — prevents the
-  // URL from staying broken after a delete, hard-reload, or bad link.
-  if (sp.detail) {
-    let detailExists = false;
-    try {
-      const found = await getBookingById(workspace._id, sp.detail, allowedTeamIds);
-      detailExists = found !== null;
-    } catch {
-      // Invalid ObjectId format — treat as not found.
-      detailExists = false;
-    }
-    if (!detailExists) {
-      const cleanParams = new URLSearchParams(
-        Object.entries(sp).filter(([k]) => k !== "detail") as [string, string][]
-      );
-      const qs = cleanParams.toString();
-      redirect(qs ? `/${locale}/bookings?${qs}` : `/${locale}/bookings`);
-    }
-  }
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <BookingsPendingShell
@@ -314,7 +323,6 @@ export default async function BookingsPage({
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-              clients={initialClients}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}
               teams={teamOptions}
@@ -330,7 +338,6 @@ export default async function BookingsPage({
             <CalendarBookingManager
               events={events}
               defaultDate={defaultDate}
-              initialClients={initialClients}
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
@@ -344,6 +351,7 @@ export default async function BookingsPage({
               invoiceThemeBusiness={invoiceThemeBusiness}
               colorMode={colorMode}
               teamColorMap={teamColorMap}
+              window={{ start: eventsWindow.start.toISOString(), end: eventsWindow.end.toISOString() }}
               messages={{
                 today: tCal("today"),
                 previous: tCal("previous"),
@@ -366,37 +374,30 @@ export default async function BookingsPage({
               total={bookingsTotal}
               page={tablePage}
               limit={tableLimit}
+              pageSizeOptions={pageSizeOptions}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              sortExplicit={sort.explicit}
               locale={locale}
               empty={hasFilters ? t("table.empty") : t("table.listEmpty")}
+              emptyHint={hasFilters ? undefined : t("table.listEmptyHint")}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
             />
           )}
         </>
       </BookingsPendingShell>
 
-      {sp.detail ? (
-        <BookingDetailModal
-          bookingId={sp.detail}
-          locale={locale}
-          teams={teamOptions}
-          writableTeams={writableTeams}
-          businessComplete={businessComplete}
-          workspaceId={workspace._id.toString()}
-        />
-      ) : null}
-
-      {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
-      {view !== "calendar" && sp.edit ? (
-        <BookingWizardModal
-          mode="edit"
-          bookingId={sp.edit}
-          defaultCurrency={workspace.currency as SupportedCurrency}
-          locale={locale}
-          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-          clients={initialClients}
-          teams={writableTeams}
-        />
-      ) : null}
+      {/* ?detail / ?edit modals mount client-side: no RSC round-trip to open/close. */}
+      <BookingUrlModals
+        locale={locale}
+        teams={teamOptions}
+        writableTeams={writableTeams}
+        businessComplete={businessComplete}
+        workspaceId={workspace._id.toString()}
+        view={view}
+        defaultCurrency={workspace.currency as SupportedCurrency}
+        workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+      />
     </div>
   );
 }

@@ -8,6 +8,9 @@ vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
+
 vi.mock("../_member-action", () => ({
   removeMemberFromTeamAction: vi.fn(),
   removeMemberFromWorkspaceAction: vi.fn(),
@@ -175,6 +178,7 @@ describe("ViewMembersSidebar", () => {
     await waitFor(() =>
       expect(revokeInviteAction).toHaveBeenCalledWith({ invitationId: "invite_1" }),
     );
+    await waitFor(() => expect(invalidateFor).toHaveBeenCalledWith({ type: "team.updated", teamId: null }, { refresh: false }));
   });
 
   it("paginates each mode locally and clears filters when switching modes", () => {

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/app/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField, useFieldError } from "@/components/ui/form-field";
@@ -39,6 +40,10 @@ type Props = {
   readOnlyClientName?: string;
   /** Pre-fetched client list for synchronous filtering (no network on keystroke). */
   clients?: ClientHit[];
+  /** Lazy list state: skeleton while the first load is in flight, Retry on failure. */
+  clientsLoading?: boolean;
+  clientsError?: boolean;
+  onRetryClients?: () => void;
   /** True only after the user has tried to advance from this step. */
   showExistingError?: boolean;
   /** New-client schema issue with no dedicated field slot (e.g. source/tags/
@@ -52,6 +57,9 @@ export function ClientStep({
   readOnly,
   readOnlyClientName,
   clients = [],
+  clientsLoading = false,
+  clientsError = false,
+  onRetryClients,
   showExistingError = false,
   newClientFormError,
 }: Props) {
@@ -79,6 +87,9 @@ export function ClientStep({
           onChange={field.onChange}
           errors={errors}
           clients={clients}
+          clientsLoading={clientsLoading}
+          clientsError={clientsError}
+          onRetryClients={onRetryClients}
           showExistingError={showExistingError}
           newClientFormError={newClientFormError}
         />
@@ -92,6 +103,9 @@ function ClientPicker({
   onChange,
   errors,
   clients,
+  clientsLoading,
+  clientsError,
+  onRetryClients,
   showExistingError,
   newClientFormError,
 }: {
@@ -99,6 +113,9 @@ function ClientPicker({
   onChange: (next: WizardValues["client"]) => void;
   errors: FieldErrors<WizardValues>;
   clients: ClientHit[];
+  clientsLoading: boolean;
+  clientsError: boolean;
+  onRetryClients?: () => void;
   showExistingError: boolean;
   newClientFormError?: string;
 }) {
@@ -185,7 +202,23 @@ function ClientPicker({
 
       {!isNew ? (
         <div className="flex flex-col gap-2">
-          {clients.length === 0 ? (
+          {clientsLoading ? (
+            <div className="flex flex-col gap-2" role="status" aria-busy="true" aria-label={t("loadingClients")}>
+              <Skeleton className="h-9 w-full" />
+              <div className="flex flex-col gap-px border border-border">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </div>
+          ) : clientsError && clients.length === 0 ? (
+            <div role="alert" className="flex flex-col items-center gap-3 border border-border p-8 text-center">
+              <p className="text-sm text-destructive">{t("loadError")}</p>
+              <Button type="button" variant="outline" size="sm" onClick={onRetryClients}>
+                {t("retry")}
+              </Button>
+            </div>
+          ) : clients.length === 0 ? (
             <EmptyState
               icon={UsersIcon}
               title={tClients("listEmpty")}

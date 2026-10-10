@@ -49,7 +49,28 @@ export function NotificationsListPage({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [markAllPending, setMarkAllPending] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { liveArrivalTick } = useNotifications();
+  const { liveArrivalTick, notifications: live = [] } = useNotifications();
+
+  // Re-sync when the server list changes (router.refresh / revalidation).
+  const serverKey = initialItems.map((n) => `${n._id}:${n.read ? 1 : 0}`).join(",");
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  if (serverKey !== syncedKey) {
+    setSyncedKey(serverKey);
+    setItems(initialItems);
+    setNextCursor(initialNextCursor);
+  }
+
+  // Live arrivals from the NotificationProvider: prepend what this list has not seen.
+  // Only inside the loaded window, so older rows of an unloaded page never jump in.
+  const known = new Set(items.map((n) => n._id));
+  const windowStart = nextCursor && items.length > 0 ? items[items.length - 1].createdAt : null;
+  const fresh = live.filter(
+    (n) => !n.silent && !known.has(n._id) && (windowStart === null || n.createdAt >= windowStart),
+  );
+  if (fresh.length > 0) setItems((prev) => [...fresh, ...prev]);
+  // Reads done from the popover / another tab arrive through the provider.
+  const liveRead = new Set(live.filter((n) => n.read).map((n) => n._id));
+  const shownItems = items.map((n) => (!n.read && liveRead.has(n._id) ? { ...n, read: true } : n));
   const { showToast: showArrivalToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
 
   function handleMarkRead(item: SerializedNotification) {
@@ -86,12 +107,15 @@ export function NotificationsListPage({
         setLoadError(result.error);
         return;
       }
-      setItems((prev) => [...prev, ...result.items]);
+      setItems((prev) => {
+        const seen = new Set(prev.map((n) => n._id));
+        return [...prev, ...result.items.filter((n) => !seen.has(n._id))];
+      });
       setNextCursor(result.nextCursor);
     });
   }
 
-  const hasUnread = items.some((n) => !n.read);
+  const hasUnread = shownItems.some((n) => !n.read);
 
   return (
     <div className="flex flex-col gap-0">
@@ -116,11 +140,11 @@ export function NotificationsListPage({
         )}
       </div>
 
-      {items.length === 0 ? (
+      {shownItems.length === 0 ? (
         <EmptyState icon={Bell} title={messages.empty} className="border-0 p-16" />
       ) : (
         <ul className="divide-y">
-          {items.map((item) => {
+          {shownItems.map((item) => {
             const hasParams = !!item.params && Object.keys(item.params).length > 0;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const displayTitle = hasParams ? (tt as any)(`${item.type}.title`, item.params) as string : item.title;
@@ -163,7 +187,7 @@ export function NotificationsListPage({
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                       {formatRelativeTime(item.createdAt, locale)}
                     </span>
                     {!item.read && (
@@ -182,9 +206,14 @@ export function NotificationsListPage({
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-start gap-3 px-4 py-3">
               <Skeleton className="mt-0.5 size-8 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-3.5 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-full max-w-sm" />
+                <Skeleton className="h-3 w-2/3 max-w-[10rem]" />
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <Skeleton className="h-3 w-10" />
+                <Skeleton className="size-2" />
               </div>
             </div>
           ))}

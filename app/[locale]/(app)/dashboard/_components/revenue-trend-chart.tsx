@@ -18,7 +18,7 @@ export function RevenueTrendChart({ data, currency, locale, title }: Props) {
   return (
     <Card className="h-full rounded-[var(--radius)] px-4">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h2" className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="revenueTrend" />
       </CardHeader>
       <CardContent className="min-h-48 flex-1 p-0 pl-1">

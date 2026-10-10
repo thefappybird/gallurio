@@ -159,6 +159,31 @@
       "intro": "Gusto mo bang malaman kung paano ihahambing ang Gallurio sa ginagamit mo ngayon?",
       "linkLabel": "Tingnan ang mga paghahambing"
     },
+    "vocabulary": {
+      "title": "Ang venue ay may mga event. Ang caterer ay may mga order. Parehong naiintindihan ng Gallurio.",
+      "body": "Piliin ang uri ng negosyo mo at mapapalitan ang buong workspace ng angkop na mga salita: ang menu, mga pamagat ng pahina, mga button, mga abiso, at mga email ng team. Iisang tool lang ito, at hindi nagbabago ang data at mga link mo.",
+      "chipsLabel": "Uri ng negosyo",
+      "pause": "I-pause ang tour",
+      "play": "I-play ang tour",
+      "footnote": "Puwede mo itong palitan anumang oras sa Settings.",
+      "previewLabel": "Preview ng Gallurio workspace gamit ang mga salitang ito: {words}",
+      "universalNote": "Hindi nagbabago ang Dashboard, Portfolio, Notifications, at Settings",
+      "dashboard": "Dashboard",
+      "portfolio": "Portfolio",
+      "booked": "Naka-book",
+      "newItem": "Bagong {item}",
+      "searchItems": "Maghanap ng {items}",
+      "presets": {
+        "standard": "Standard",
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Mga artist"
+      }
+    },
     "pricingTeaser": {
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
@@ -746,7 +771,7 @@
       "greeting": "Maligayang pagbabalik, {name}",
       "tabs": {
         "aria": "Magpalit ng dashboard",
-        "bookings": "Mga booking",
+        "bookings": "%Bookings%",
         "portfolio": "Portfolio"
       },
       "dateFilter": {
@@ -772,28 +797,28 @@
       },
       "kpi": {
         "revenueThisMonth": "Nakolektang kita",
-        "activeBookings": "Nakaiskedyul na booking",
-        "newInquiries": "Mga bagong inquiry",
+        "activeBookings": "Nakaiskedyul na %booking%",
+        "newInquiries": "Mga bagong %inquiry%",
         "outstandingBalance": "Natitirang balanse"
       },
       "sections": {
         "todaysEvents": "Mga event ngayon",
         "upcomingWeek": "Paparating ngayong linggo",
-        "recentInquiries": "Mga kamakailang inquiry",
+        "recentInquiries": "Mga kamakailang %inquiry%",
         "activity": "Kamakailang aktibidad",
         "revenueTrend": "Kita",
-        "calendar": "Booking calendar",
+        "calendar": "%Booking% calendar",
         "eventTypes": "Breakdown ng uri ng event",
-        "topClients": "Mga nangungunang kliyente ayon sa gastos",
-        "teamPerformance": "Performance ng team",
-        "bookingsPerTeam": "Mga booking kada team",
+        "topClients": "Mga nangungunang %client% ayon sa gastos",
+        "teamPerformance": "Performance ng %team%",
+        "bookingsPerTeam": "%Bookings% kada %team%",
         "operations": "Mga operasyon"
       },
       "quickAdd": {
         "title": "Mabilis na dagdag",
-        "booking": "Bagong booking",
-        "client": "Bagong kliyente",
-        "inquiry": "Tingnan ang mga inquiry"
+        "booking": "Bagong %booking%",
+        "client": "Bagong %client%",
+        "inquiry": "Tingnan ang %inquiries%"
       },
       "empty": "Wala pa rito.",
       "filteredEmpty": "Walang data na tumutugma sa napiling saklaw ng petsa.",
@@ -802,14 +827,14 @@
         "analyticsSoon": "Malapit nang dumating ang portfolio analytics.",
         "totalViews": "Kabuuang views",
         "uniqueVisitors": "Natatanging bisita",
-        "inquiries": "Mga inquiry",
+        "inquiries": "%Inquiries%",
         "conversionRate": "Conversion rate",
         "viewsOverTime": "Views at bisita",
         "views": "Views",
         "visitors": "Bisita",
         "topSources": "Nangungunang pinagmulan",
         "perPage": "Ayon sa page",
-        "siteInquiries": "Mga inquiry mula sa site",
+        "siteInquiries": "%Inquiries% mula sa site",
         "publishStatus": "Status ng publish",
         "published": "Nai-publish",
         "notPublished": "Hindi pa nai-publish",
@@ -818,34 +843,34 @@
         "openEditor": "Buksan ang editor",
         "noTraffic": "Wala pang bisita sa panahong ito.",
         "directSource": "Diretso",
-        "inquiryInsights": "Mga insight sa inquiry",
-        "inquiryToBooking": "Inquiry → booking",
-        "bookedFromInquiries": "Na-book mula sa inquiry",
-        "newClientsFromForm": "Bagong kliyente mula sa form",
+        "inquiryInsights": "Mga insight sa %inquiry%",
+        "inquiryToBooking": "%Inquiry% → %booking%",
+        "bookedFromInquiries": "Na-book mula sa %inquiry%",
+        "newClientsFromForm": "Bagong %client% mula sa form",
         "visitorDays": "Bisita-araw",
         "submissionRate": "Rate ng pagsusumite",
         "bookedLeads": "Na-book na lead",
-        "visitorsInquiriesTitle": "Mga bisita at inquiry sa paglipas ng panahon",
+        "visitorsInquiriesTitle": "Mga bisita at %inquiry% sa paglipas ng panahon",
         "funnel": {
           "title": "Funnel ng conversion",
           "visitorDays": "Bisita-araw",
           "contactOpened": "Binuksan ang contact",
-          "inquirySubmitted": "Naisumite ang inquiry",
+          "inquirySubmitted": "Naisumite ang %inquiry%",
           "ofVisitors": "ng mga bisita",
           "ofOpened": "ng binuksan",
           "ofTotal": "ng kabuuan",
           "collectingData": "Nangongolekta ng datos"
         },
         "pipeline": {
-          "title": "Pipeline ng inquiry",
+          "title": "Pipeline ng %inquiry%",
           "new": "Bago",
           "booked": "Na-book",
           "archived": "Naka-archive",
-          "total": "Kabuuang inquiry"
+          "total": "Kabuuang %inquiry%"
         },
         "demand": {
           "title": "Profile ng demand",
-          "eventTypeMix": "Uri ng event (ayon sa inquiry)",
+          "eventTypeMix": "Uri ng event (ayon sa %inquiry%)",
           "requestedMonth": "Hiniling na buwan ng event",
           "medianLeadTime": "Median na lead time",
           "days": "araw",
@@ -853,48 +878,54 @@
         }
       },
       "team": {
-        "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"
+        "bookingsCount": "{count, plural, one {# %booking%} other {# na %booking%}}"
       },
       "showMore": "Magpakita pa",
       "showLess": "Bawasan",
       "hints": {
-        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each %inquiry%'s current status.",
         "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
-        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
-        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
-        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
-        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
-        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
-        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
-        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "valueCollection": "Confirmed %booking% value and payments collected for the selected %booking% cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed %bookings% has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed %booking% value by event type over time for the selected %booking% cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and %inquiry% submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted %inquiries%.",
+        "portfolioPipeline": "%Inquiries% created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from %inquiry% to event date.",
         "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "Mga kabuuan para sa buwang ito. Inihahambing ng mga arrow sa nakaraang buwan.",
-        "calendar": "Mga booking kada araw. Mag-filter ayon sa team; i-tap ang isang araw para buksan ang kalendaryo doon.",
-        "eventTypes": "Bahagi ng mga booking ayon sa uri ng event.",
-        "teamPerformance": "Kung paano gumaganap ang bawat team ayon sa kita at dami ng booking.",
-        "bookingsPerTeam": "Bilang ng mga booking na hinawakan ng bawat team.",
+        "calendar": "%Bookings% kada araw. Mag-filter ayon sa %team%; i-tap ang isang araw para buksan ang kalendaryo doon.",
+        "eventTypes": "Bahagi ng %bookings% ayon sa uri ng event.",
+        "teamPerformance": "Kung paano gumaganap ang bawat %team% ayon sa kita at dami ng %booking%.",
+        "bookingsPerTeam": "Bilang ng %bookings% na hinawakan ng bawat %team%.",
         "revenueTrend": "Kita mula sa bayad sa napiling panahon.",
-        "inquiryInsights": "Conversion mula sa mga bisita at inquiry, kasama ang mga bagong kliyente mula sa iyong contact form.",
-        "topClients": "Mga kliyente ayon sa kabuuang nagastos.",
-        "todaysEvents": "Mga booking na nagsisimula ngayon.",
-        "upcomingWeek": "Mga kumpirmadong booking sa susunod na 7 araw.",
-        "recentInquiries": "Ang iyong pinakabagong mga inquiry.",
+        "inquiryInsights": "Conversion mula sa mga bisita at %inquiry%, kasama ang mga bagong %client% mula sa iyong contact form.",
+        "topClients": "%Clients% ayon sa kabuuang nagastos.",
+        "todaysEvents": "%Bookings% na nagsisimula ngayon.",
+        "upcomingWeek": "Mga kumpirmadong %booking% sa susunod na 7 araw.",
+        "recentInquiries": "Ang iyong pinakabagong %inquiries%.",
         "activity": "Mga kamakailang pagbabago sa iyong workspace.",
-        "quickAdd": "Gumawa ng booking, kliyente, o inquiry."
+        "quickAdd": "Gumawa ng %booking%, %client%, o %inquiry%."
       },
       "totalLabel": "Kabuuan",
       "miniCalendar": {
         "today": "Ngayon",
-        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}"
+        "monthTotal": "{count, plural, one {# %booking% ngayong buwan} other {# na %booking% ngayong buwan}}",
+        "prevMonth": "Nakaraang buwan",
+        "nextMonth": "Susunod na buwan",
+        "jumpToToday": "Pumunta sa kasalukuyang buwan",
+        "dayBookingCount": "{count, plural, one {# %booking%} other {# na %booking%}}",
+        "loadError": "Hindi ma-load ang buwang ito.",
+        "retry": "Subukan muli"
       },
       "calendarTeam": {
-        "label": "I-filter ayon sa team",
-        "all": "Lahat ng team"
+        "label": "I-filter ayon sa %team%",
+        "all": "Lahat ng %team%"
       },
       "activityEntity": {
-        "booking": "booking",
-        "client": "kliyente",
-        "inquiry": "katanungan",
+        "booking": "%booking%",
+        "client": "%client%",
+        "inquiry": "%inquiry%",
         "gallery": "gallery",
         "transaction": "transaksiyon",
         "workspace": "workspace"
@@ -904,7 +935,7 @@
         "updated": "na-update",
         "deleted": "tinanggal",
         "status_changed": "binago ang status",
-        "client_changed": "binago ang kliyente",
+        "client_changed": "binago ang %client%",
         "payment_added": "nagdagdag ng bayad",
         "payment_updated": "na-update ang bayad"
       },
@@ -927,7 +958,7 @@
           "title": "Saklaw ng koleksyon",
           "asOf": "sa",
           "confirmedValue": "Nakumpirmang halaga",
-          "confirmedHint": "Kabuuang halaga ng mga nakumpirmang booking",
+          "confirmedHint": "Kabuuang halaga ng mga nakumpirmang %booking%",
           "paid": "Bayad (nakolekta)",
           "paidHint": "Mga natanggap na bayad hanggang ngayon",
           "remaining": "Natitirang balanse",
@@ -940,7 +971,7 @@
           "next": "Susunod na mga petsa sa heatmap",
           "title": "Heatmap ng na-book na oras",
           "bookedHours": "Na-book na oras",
-          "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
+          "bookingsCount": "{count, plural, one {# %booking%} other {# na %booking%}}",
           "skipPrevious": "Bumalik ng 5 pahina",
           "skipNext": "Sumulong ng 5 pahina",
           "weekdays": [
@@ -985,27 +1016,28 @@
       "go": "Go"
     },
     "bookings": {
-      "title": "Mga Booking",
-      "titleForTeam": "Mga Booking ng {team}",
+      "title": "%Bookings%",
+      "titleForTeam": "%Bookings% ng {team}",
       "view": {
         "table": "Talahanayan",
         "card": "Card Mode",
-        "calendar": "Kalendaryo"
+        "calendar": "Kalendaryo",
+        "inquiriesToggle": "Toggle ng view ng %inquiries%"
       },
       "toolbar": {
-        "search": "Maghanap ng booking",
+        "search": "Maghanap ng %booking%",
         "statusAll": "Lahat ng status",
         "showCancelled": "Ipakita ang mga nakansela",
         "showPast": "Ipakita ang nakaraan",
         "import": "Mag-import",
         "export": "I-export",
-        "add": "Bagong booking",
+        "add": "Bagong %booking%",
         "invoiceTheme": "Tema ng invoice at resibo"
       },
       "exportDialog": {
-        "title": "I-export ang mga booking",
-        "teamLabel": "Team",
-        "allTeams": "Lahat ng team",
+        "title": "I-export ang %bookings%",
+        "teamLabel": "%Team%",
+        "allTeams": "Lahat ng %team%",
         "rangeLabel": "Saklaw ng panahon",
         "allTime": "Lahat ng panahon",
         "dateRange": "Saklaw ng petsa",
@@ -1014,20 +1046,26 @@
         "formatLabel": "Format",
         "csv": "CSV",
         "xlsx": "Excel",
+        "preparing": "Inihahanda...",
+        "error": "Hindi natuloy ang export. Suriin ang iyong pinili at subukan muli.",
         "listFiltersApply": "Nalalapat din sa export na ito ang status at paghahanap na filter ng listahan.",
         "download": "I-download",
         "cancel": "Kanselahin"
       },
       "teamPicker": {
-        "allTeams": "Lahat ng koponan",
-        "allMyTeams": "Lahat ng aking koponan",
-        "label": "I-filter ayon sa koponan",
+        "allTeams": "Lahat ng %team%",
+        "allMyTeams": "Lahat ng aking %team%",
+        "label": "I-filter ayon sa %team%",
         "inactive": "Hindi aktibo",
-        "teams": "Mga Team",
-        "countLabel": "{count, plural, other {# koponan}}"
+        "legend": "Legend",
+        "booked": "Naka-book",
+        "conflicted": "May Salungatan",
+        "countLabel": "{count, plural, other {# %team%}}",
+        "previousPage": "Nakaraang pahina",
+        "nextPage": "Susunod na pahina"
       },
       "import": {
-        "title": "Mag-import ng mga booking",
+        "title": "Mag-import ng %bookings%",
         "dropzone": "Mag-drop ng CSV o XLSX file dito, o mag-click para pumili",
         "dropzoneActive": "I-drop para mag-upload",
         "templateCsv": "I-download ang CSV template",
@@ -1035,18 +1073,19 @@
         "preview": "{total} row(s) natagpuan",
         "validCount": "{count} valid",
         "invalidCount": "{count} may mga error",
-        "importButton": "I-import ang {count} booking(s)",
+        "importButton": "I-import ang {count} %booking%(s)",
         "importing": "Nag-iimport…",
         "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
-        "success": "Matagumpay na na-import ang {bookings} booking at {shifts} shift.",
-        "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
+        "success": "Matagumpay na na-import ang {bookings} %booking% at {shifts} shift.",
+        "partialSuccess": "Na-import ang {count} %booking%(s). Hindi na-import ang {failed} row(s).",
         "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
         "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
-        "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong booking.",
+        "previewMore": "{count} pang row ang hindi ipinapakita",
+        "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong %booking%.",
         "columns": {
           "row": "#",
           "title": "Pamagat",
-          "client": "Kliyente",
+          "client": "%Client%",
           "start": "Simula",
           "error": "Error"
         },
@@ -1057,7 +1096,8 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
-          "untitled": "Walang pamagat na booking",
+        "showAll": "Ipakita lahat ({count})",
+          "untitled": "Walang pamagat na %booking%",
           "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
           "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
           "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file."
@@ -1066,12 +1106,12 @@
           "required": "kailangan",
           "optional": "opsyonal",
           "failedWithDetails": "Nabigo ang import — tingnan ang mga detalye",
-          "teamLabel": "Italaga sa team",
-          "teamDefault": "Pangunahing team (default)",
+          "teamLabel": "Italaga sa %team%",
+          "teamDefault": "Pangunahing %team% (default)",
           "duplicateTitle": "Na-import na?",
-          "duplicateBody": "{count, plural, other {May # booking dito na tugma sa mayroon ka na. I-import pa rin?}}",
-          "duplicateOnTeam": "Nasa team na {team}",
-          "duplicateNoTeam": "Hindi alam ang team",
+          "duplicateBody": "{count, plural, other {May # %booking% dito na tugma sa mayroon ka na. I-import pa rin?}}",
+          "duplicateOnTeam": "Nasa %team% na {team}",
+          "duplicateNoTeam": "Hindi alam ang %team%",
           "duplicateContinue": "I-import pa rin",
           "failedRetry": "Nabigo ang import. Subukan muli.",
           "close": "Isara",
@@ -1079,10 +1119,10 @@
           "viewErrors": "Tingnan ang {n} error(s)",
           "spec": {
             "clientName": {
-              "note": "Buong pangalan ng kliyente"
+              "note": "Buong pangalan ng %client%"
             },
             "clientEmail": {
-              "note": "Ginagamit para ma-deduplicate ang mga umiiral na kliyente"
+              "note": "Ginagamit para ma-deduplicate ang mga umiiral na %client%"
             },
             "startAt": {
               "note": "ISO 8601 — hal. 2026-06-15T09:00"
@@ -1091,7 +1131,7 @@
               "note": "Default sa startAt kung wala"
             },
             "title": {
-              "note": "Pamagat ng booking"
+              "note": "Pamagat ng %booking%"
             },
             "eventType": {
               "note": "kasal, corporate, portrait, atb."
@@ -1100,7 +1140,7 @@
               "note": "booked, completed, cancelled"
             },
             "amountTotal": {
-              "note": "Kabuuang halaga ng booking"
+              "note": "Kabuuang halaga ng %booking%"
             },
             "amountDeposit": {
               "note": "Halaga ng deposito"
@@ -1115,7 +1155,7 @@
               "note": "Mga panloob na tala"
             },
             "booking_id": {
-              "note": "Mula sa export. Panatilihin ito para i-update ang booking sa halip na gumawa ng kopya"
+              "note": "Mula sa export. Panatilihin ito para i-update ang %booking% sa halip na gumawa ng kopya"
             },
             "session_index": {
               "note": "Nag-aayos ng mga sesyon kapag may parehong booking_id ang mga row"
@@ -1124,7 +1164,7 @@
               "note": "Mula sa export. Tinutugma bago ang clientEmail"
             },
             "clientPhone": {
-              "note": "Sine-save sa bagong kliyente; pinupunan ang blangko, hindi pinapalitan"
+              "note": "Sine-save sa bagong %client%; pinupunan ang blangko, hindi pinapalitan"
             },
             "locationLat": {
               "note": "Latitude sa mapa, hal. 14.5995"
@@ -1150,7 +1190,7 @@
           "columnsFound": "{count, plural, one {# column} other {# column}}",
           "rowsFound": "{count, plural, one {# row} other {# row}}",
           "sectionRequired": "Kailangan",
-          "sectionCommon": "Detalye ng booking",
+          "sectionCommon": "Detalye ng %booking%",
           "sectionAdvanced": "Advanced at pambalik na mga column",
           "advancedHint": "Kailangan lang kapag muling ini-import ang file na na-export ninyo mula sa Gallurio.",
           "selectColumn": "Pumili ng column mula sa inyong file",
@@ -1158,7 +1198,7 @@
           "useFixedValue": "Gumamit ng nakatakdang halaga",
           "fixedValueLabel": "Halaga para sa bawat row",
           "inferFromDate": "Hulaan mula sa petsa",
-          "inferHint": "Ang mga nakaraang booking na bayad na ay magiging tapos; ang iba ay mananatiling naka-book.",
+          "inferHint": "Ang mga nakaraang %booking% na bayad na ay magiging tapos; ang iba ay mananatiling naka-book.",
           "alreadyUsed": "{column} (nagamit na)",
           "sample": "Unang row: {value}",
           "sampleEmpty": "Walang laman ang unang row",
@@ -1197,24 +1237,25 @@
           "continue": "Magpatuloy",
           "reviewMapping": "Awtomatikong naitugma ang mga column",
           "reviewMappingAction": "Suriin",
-          "committing": "Ini-import ang inyong mga booking",
-          "refreshing": "Nire-refresh ang inyong mga booking"
+          "committing": "Ini-import ang inyong %bookings%"
         }
       },
       "export": {
-        "tooltip": "I-download ang mga booking bilang CSV",
-        "empty": "Walang booking para i-export"
+        "tooltip": "I-download ang %bookings% bilang CSV",
+        "empty": "Walang %booking% para i-export"
       },
       "table": {
-        "empty": "Walang booking na tumutugma sa iyong mga filter.",
-        "listEmpty": "Wala pang booking.",
+        "empty": "Walang %booking% na tumutugma sa iyong mga filter.",
+        "listEmpty": "Wala pang %booking%.",
+        "listEmptyHint": "Dito lalabas ang %bookings% na gagawin mo o tatanggapin mula sa %inquiries%.",
         "past": "Lipas na",
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",
-        "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang booking} other {# nakatagong nakaraang booking}}",
+        "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang %booking%} other {# nakatagong nakaraang %booking%}}",
         "col": {
-          "title": "Booking",
-          "client": "Kliyente",
+          "booked": "Na-book noong",
+          "title": "%Booking%",
+          "client": "%Client%",
           "date": "Petsa",
           "status": "Status",
           "total": "Kabuuan",
@@ -1223,7 +1264,7 @@
         }
       },
       "row": {
-        "openMenu": "Buksan ang mga aksyon sa booking",
+        "openMenu": "Buksan ang mga aksyon sa %booking%",
         "view": "Tingnan",
         "edit": "I-edit"
       },
@@ -1277,7 +1318,7 @@
         "hidePast": "Itago ang lipas na sesyon",
         "pastSessionsHidden": "{count, plural, one {# nakatagong lipas na sesyon — i-toggle para makita} other {# nakatagong lipas na sesyon — i-toggle para makita}}",
         "tabs": {
-          "client": "Kliyente",
+          "client": "%Client%",
           "event": "Event",
           "pricing": "Presyo",
           "eventPricing": "Event",
@@ -1294,7 +1335,7 @@
         "fields": {
           "title": "Pamagat",
           "titleRequired": "Hindi maaaring walang pamagat.",
-          "clientName": "Pangalan ng kliyente",
+          "clientName": "Pangalan ng %client%",
           "status": "Status",
           "eventType": "Uri ng event",
           "date": "Petsa",
@@ -1315,17 +1356,25 @@
           "endBeforeStart": "Hindi maaaring mas maaga ang katapusan kaysa sa simula.",
           "conflictsLabel": "Mga shift na nasa {date} na:",
           "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito.",
+          "confirmEdit": "Kumpirmahin",
+          "editField": "I-edit ang {label}",
+          "checkingConflicts": "Sinusuri ang mga conflict…",
+          "cancelEdit": "Kanselahin",
+          "discardEdit": "Itapon ang pagbabago",
+          "unsavedChange": "Hindi pa nai-save na pagbabago",
+          "confirmDraftSession": "Kumpirmahin ang draft na sesyon",
+          "removeDraftSession": "Alisin ang draft na sesyon",
           "email": "Email",
           "phone": "Telepono",
-          "openClient": "Buksan ang kliyente",
-          "viewClient": "Tingnan ang kliyente",
-          "changeClient": "Palitan ang kliyente",
+          "openClient": "Buksan ang %client%",
+          "viewClient": "Tingnan ang %client%",
+          "changeClient": "Palitan ang %client%",
           "changeClientCancel": "Panatilihin ang kasalukuyan",
-          "changeClientSearch": "Maghanap ng mga kliyente…",
+          "changeClientSearch": "Maghanap ng %clients%…",
           "noEmail": "Walang email",
           "noPhone": "Walang telepono",
-          "noClientResults": "Walang nahanap na kliyente",
-          "changeClientMultiSession": "Hindi available ang paglipat ng kliyente para sa multi-session na booking",
+          "noClientResults": "Walang nahanap na %client%",
+          "changeClientMultiSession": "Hindi available ang paglipat ng %client% para sa multi-session na %booking%",
           "searchFailed": "Nabigo ang paghahanap. Subukan muli.",
           "editTitle": "I-edit ang pamagat",
           "confirmTitle": "Kumpirmahin",
@@ -1336,22 +1385,24 @@
           "callClient": "Tumawag"
         },
         "cancelConfirm": {
-          "title": "Kanselahin ang booking na ito?",
-          "body": "Mamarkahan namin ang \"{title}\" bilang nakansela. Hindi mabubura ang booking — maaari mo itong i-restore mula sa parehong window kung bumalik ang iyong kliyente. Mananatiling buo ang kasaysayan ng audit.",
-          "keep": "Panatilihin ang booking",
-          "confirm": "Oo, kanselahin ang booking"
+          "title": "Kanselahin ang %booking% na ito?",
+          "body": "Mamarkahan namin ang \"{title}\" bilang nakansela. Hindi mabubura ang %booking% — maaari mo itong i-restore mula sa parehong window kung bumalik ang iyong %client%. Mananatiling buo ang kasaysayan ng audit.",
+          "keep": "Panatilihin ang %booking%",
+          "confirm": "Oo, kanselahin ang %booking%"
         },
         "history": {
-          "title": "Kasaysayan ng booking",
+          "title": "Kasaysayan ng %booking%",
           "totalCount": "{count} entry",
           "pageOf": "Pahina {page} ng {total}",
+          "loadError": "Hindi ma-load ang kasaysayan.",
+          "retry": "Subukan muli",
           "previous": "Nakaraang pahina",
           "next": "Susunod na pahina",
           "actions": {
             "created": "Nilikha",
             "updated": "Na-update",
             "status_changed": "Nabago ang status",
-            "client_changed": "Nabago ang kliyente",
+            "client_changed": "Nabago ang %client%",
             "deleted": "Natanggal",
             "payment_added": "Nagdagdag ng bayad",
             "payment_updated": "Na-update ang bayad"
@@ -1360,8 +1411,8 @@
           "yesterday": "Kahapon",
           "timelineLabel": "Timeline ng aktibidad"
         },
-        "cancel": "Kanselahin ang booking",
-        "restore": "I-restore ang booking",
+        "cancel": "Kanselahin ang %booking%",
+        "restore": "I-restore ang %booking%",
         "invoice": "I-download ang invoice",
         "receipt": "I-download ang resibo",
         "discardChanges": "Itapon ang mga pagbabago",
@@ -1372,11 +1423,15 @@
         "discardDescription": "{count, plural, one {# hindi pa nai-save na pagbabago ang mawawala.} other {# hindi pa nai-save na mga pagbabago ang mawawala.}}",
         "discardConfirm": "Itapon at isara",
         "keepEditing": "Ipagpatuloy ang pag-edit",
-        "savedToast": "Na-update ang booking.",
-        "cancelledToast": "Nakansela ang booking.",
-        "restoredToast": "Na-restore ang booking.",
+        "savedToast": "Na-update ang %booking%.",
+        "cancelledToast": "Nakansela ang %booking%.",
+        "restoredToast": "Na-restore ang %booking%.",
         "actionFailed": "May naganap na mali. Subukan muli.",
-        "notFound": "Hindi natagpuan ang booking.",
+        "notFound": "Hindi natagpuan ang %booking%.",
+        "loadFailed": "Hindi ma-load ang %booking% na ito.",
+        "staleConflict": "Binago ng iba ang %booking% na ito. Hindi na-save ang iyong pagbabago — suriin ang pinakabagong bersyon at subukan muli.",
+        "staleNotice": "Na-update ng iba — ang hindi pa nase-save mong pagbabago ay batay sa mas lumang bersyon.",
+        "retry": "Subukan muli",
         "editAll": "I-edit lahat",
         "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
         "unconfirmedDrafts": {
@@ -1387,6 +1442,7 @@
           "cancel": "Bumalik",
           "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
         },
+        "unconfirmedEdits": "{count, plural, one {# pagbabago ay hindi pa kumpirmado} other {# pagbabago ay hindi pa kumpirmado}} — pindutin ang ✓ para itago o ✕ para itapon.",
         "incompleteBusiness": {
           "title": "Hindi kumpleto ang impormasyon ng negosyo",
           "bodyInvoice": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa invoice mo.",
@@ -1408,11 +1464,11 @@
         "pastDateWarning": "Inilipat sa nakaraang petsa",
         "pastSplitWarning": "Ang mga nakaraang araw ay napanatili — ang mga susunod na araw lamang ang na-update",
         "thisDayOnlyOnPast": "Hindi maaaring i-edit ang nakaraang araw",
-        "updating": "Ina-update ang booking…",
-        "updated": "Na-update ang booking",
-        "updateError": "Hindi na-update ang booking",
+        "updating": "Ina-update ang %booking%…",
+        "updated": "Na-update ang %booking%",
+        "updateError": "Hindi na-update ang %booking%",
         "conflictCheckFailed": "Hindi ma-verify ang mga salungatan — pakisubukan muli",
-        "overnightNotAllowed": "Hindi puwedeng tumawid ng hatinggabi ang booking. Gamitin ang repeating sessions para sa maraming araw.",
+        "overnightNotAllowed": "Hindi puwedeng tumawid ng hatinggabi ang %booking%. Gamitin ang repeating sessions para sa maraming araw.",
         "conflictBlockSubmit": "Ayusin muna ang mga conflict ng session bago mag-save.",
         "conflictBlockDnd": "May conflict sa {title} — hindi puwedeng ilipat dito.",
         "conflictBlockDndMany": "May conflict sa {title} at {more} pa — hindi puwedeng ilipat dito.",
@@ -1423,13 +1479,13 @@
         "togglePast": "Nakaraan",
         "dropConflict": {
           "title": "Salungatan sa iskedyul noong {date}",
-          "description": "Ang paglipat ng booking na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
+          "description": "Ang paglipat ng %booking% na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
           "cancel": "Kanselahin",
           "moveAnyway": "Ialpat pa rin"
         },
         "pastDateConfirm": {
           "title": "Lipat sa nakaraang petsa?",
-          "description": "Inililipat mo ang booking na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
+          "description": "Inililipat mo ang %booking% na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
           "confirm": "Lipat sa nakaraan",
           "cancel": "Kanselahin"
         },
@@ -1437,8 +1493,10 @@
         "hidePast": "Itago ang nakaraan",
         "filterByStatus": "I-filter ayon sa status",
         "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin",
-        "teamsLegend": "Mga Koponan",
-        "inactiveTeam": "Hindi aktibong koponan"
+        "teamsLegend": "%Teams%",
+        "inactiveTeam": "Hindi aktibong %team%",
+        "conflict": "May salungatan",
+        "emptyPeriod": "Walang %booking% sa panahong ito"
       },
       "sessions": {
         "label": "Sesyon {n}",
@@ -1469,41 +1527,43 @@
         "frozenRate": "≈ {price} · rate na {rate} · {date}",
         "frozenRateTrailing": "{date} · rate na {rate} · ≈ {price}",
         "approx": "≈ {price}",
-        "empty": "Wala pang naka-iskedyul na bayad para sa booking na ito",
+        "empty": "Wala pang naka-iskedyul na bayad para sa %booking% na ito",
         "exceedsBalance": "Lumalampas sa natitirang balanse",
         "titleRequired": "Kailangan ang pamagat.",
         "priceRequired": "Dapat mas mataas sa 0 ang halaga."
       },
       "wizard": {
-        "createTitle": "Bagong booking",
-        "editTitle": "I-edit ang booking",
+        "createTitle": "Bagong %booking%",
+        "editTitle": "I-edit ang %booking%",
         "editTitleNamed": "I-edit ang {title}",
-        "loading": "Nilo-load ang booking…",
+        "loading": "Nilo-load ang %booking%…",
         "previous": "Nakaraan",
         "next": "Susunod",
         "cancel": "Kanselahin",
-        "create": "Gumawa ng booking",
+        "create": "Gumawa ng %booking%",
         "creating": "Gumagawa…",
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
-        "createdToast": "Nagawa ang booking.",
-        "savedToast": "Na-update ang booking.",
+        "createdToast": "Nagawa ang %booking%.",
+        "savedToast": "Na-update ang %booking%.",
         "depositExceedsTotal": "Hindi maaaring mas malaki ang deposito kaysa sa kabuuan.",
         "unsavedConfirm": "Mawawala ang iyong progreso kung lalabas ka ngayon. Sigurado ka ba?",
+        "hasErrors": "May mga error sa validation",
+        "viewBooking": "Tingnan ang %booking%",
         "unsaved": {
           "title": "Itapon ang iyong mga pagbabago?",
-          "body": "Mawawala ang lahat ng iyong nai-enter sa booking na ito kung aalis ka ngayon. Hindi pa nai-save ang iyong mga pagbabago.",
+          "body": "Mawawala ang lahat ng iyong nai-enter sa %booking% na ito kung aalis ka ngayon. Hindi pa nai-save ang iyong mga pagbabago.",
           "keep": "Ipagpatuloy ang pag-edit",
           "discard": "Itapon at isara"
         },
         "conflictConfirm": {
           "title": "Natuklasan ang mga salungatan sa iskedyul",
-          "description": "Ang isa o maraming sesyon ay may overlap sa mga umiiral na booking. Maaari mong i-submit kahit paano o bumalik upang ayusin ang mga petsa.",
+          "description": "Ang isa o maraming sesyon ay may overlap sa mga umiiral na %booking%. Maaari mong i-submit kahit paano o bumalik upang ayusin ang mga petsa.",
           "confirm": "I-submit pa rin",
           "cancel": "Bumalik"
         },
         "steps": {
-          "client": "Kliyente",
+          "client": "%Client%",
           "event": "Event",
           "pricing": "Presyo",
           "eventPricing": "Event",
@@ -1512,24 +1572,27 @@
           "review": "Suriin"
         },
         "client": {
-          "tabExisting": "Kasalukuyang kliyente",
+          "tabExisting": "Kasalukuyang %client%",
           "tabNew": "Gumawa ng bago",
           "searchPlaceholder": "Maghanap ayon sa pangalan o email",
-          "noResults": "Walang kliyenteng tumutugma. Subukan ang ibang paghahanap.",
-          "selectRequired": "Pumili ng kliyente para magpatuloy.",
+          "noResults": "Walang %client% na tumutugma. Subukan ang ibang paghahanap.",
+          "selectRequired": "Pumili ng %client% para magpatuloy.",
+          "loadingClients": "Nilo-load ang %clients%",
+          "loadError": "Hindi ma-load ang %clients%.",
+          "retry": "Subukan muli",
           "name": "Pangalan",
           "namePlaceholder": "hal. Emma Carter",
           "email": "Email",
           "emailPlaceholder": "emma@example.com",
           "phone": "Telepono",
           "phonePlaceholder": "+63 917 555 0142",
-          "readOnlyLabel": "Kliyente",
-          "readOnlyHint": "Ang pag-aassign ulit ng booking sa ibang kliyente ay hindi pa sinusuportahan sa view na ito.",
-          "multiSessionReadOnly": "Ang kliyente ay naka-lock sa mga multi-session na booking."
+          "readOnlyLabel": "%Client%",
+          "readOnlyHint": "Ang pag-aassign ulit ng %booking% sa ibang %client% ay hindi pa sinusuportahan sa view na ito.",
+          "multiSessionReadOnly": "Ang %client% ay naka-lock sa mga multi-session na %booking%."
         },
         "event": {
           "title": "Pamagat",
-          "titleRequired": "Bigyan ng pamagat ang booking na ito.",
+          "titleRequired": "Bigyan ng pamagat ang %booking% na ito.",
           "titlePlaceholder": "hal. Carter Wedding — Pier 27",
           "eventType": "Uri ng event",
           "startAt": "Petsa ng simula ng shift",
@@ -1538,7 +1601,7 @@
           "endAt": "Petsa ng katapusan ng shift",
           "endTime": "Oras ng katapusan ng shift",
           "conflictsLabel": "Mga shift na nasa {date} na:",
-          "allowPastDate": "Nagdadagdag ng lumang booking? Payagan ang mga nakaraang petsa",
+          "allowPastDate": "Nagdadagdag ng lumang %booking%? Payagan ang mga nakaraang petsa",
           "location": "Lokasyon",
           "checkingConflicts": "Sinisiyasat ang mga salungatan…",
           "repeatingSessions": "Mga paulit-ulit na sesyon",
@@ -1560,24 +1623,24 @@
           "total": "Kabuuan",
           "deposit": "Deposito",
           "currency": "Currency",
-          "hint": "Presyo sa default na currency ng workspace. Maaari mong baguhin ang currency bawat booking.",
+          "hint": "Presyo sa default na currency ng workspace. Maaari mong baguhin ang currency bawat %booking%.",
           "depositRequiresTotal": "Hindi ka maaaring maglagay ng deposito nang hindi muna nagtatakda ng presyo."
         },
         "review": {
           "intro": "Mabilis na pagsusuri — kumpirmahin na tama ang lahat bago ka mag-save."
         },
-        "teamLabel": "Koponan",
-        "teamPlaceholder": "Pumili ng koponan"
+        "teamLabel": "%Team%",
+        "teamPlaceholder": "Pumili ng %team%"
       }
     },
     "sidebar": {
       "dashboard": "Dashboard",
-      "bookings": "Mga booking",
-      "clients": "Mga kliyente",
+      "bookings": "%Bookings%",
+      "clients": "%Clients%",
       "calendar": "Kalendaryo",
-      "inquiries": "Mga inquiry",
+      "inquiries": "%Inquiries%",
       "gallery": "Gallery",
-      "teams": "Mga Koponan",
+      "teams": "%Teams%",
       "settings": "Mga setting",
       "account": "Account",
       "logOut": "Mag-log out",
@@ -1585,7 +1648,8 @@
       "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
       "logOutConfirmCancel": "Kanselahin",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account"
+      "accountMenu": "Menu ng account",
+      "navigationLabel": "Pangunahing nabigasyon"
     },
     "theme": {
       "label": "Tema",
@@ -1671,7 +1735,7 @@
         "account": "Account",
         "customize": "I-customize",
         "workspace": "Detalye ng Negosyo",
-        "teams": "Mga Koponan",
+        "teams": "%Teams%",
         "publicPage": "Pampublikong pahina",
         "billing": "Bayad",
         "devPlan": "Dev · plan",
@@ -1708,12 +1772,17 @@
           "savePill": "Makatipid ng 2 buwan"
         }
       },
+      "errorBoundary": {
+        "title": "May naganap na error",
+        "retry": "Subukan ulit",
+        "reload": "I-reload ang page"
+      },
       "devPlan": {
         "title": "Dev plan switcher",
         "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
-        "teamsSuffix": "teams",
-        "perTeamSuffix": "members/team",
+        "teamsSuffix": "%team%",
+        "perTeamSuffix": "members/%team%",
         "active": "Active",
         "switch": "Switch",
         "toasts": {
@@ -1728,7 +1797,7 @@
         "savedToast": "Na-update ang workspace.",
         "currencyWarning": "Ang pagpapalit ng iyong currency ay muling kakalkulahin ang lahat ng umiiral nang bayad na halaga sa bagong currency, at ilo-lock ang field na ito sa loob ng 90 araw pagkatapos.",
         "currencyConfirmTitle": "Palitan ang currency ng workspace?",
-        "currencyConfirmBody": "{count, plural, =0 {Walang umiiral na kabuuang babaguhin. Maaari mong palitan ang currency anumang oras.} one {# booking ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.} other {# na booking ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.}}",
+        "currencyConfirmBody": "{count, plural, =0 {Walang umiiral na kabuuang babaguhin. Maaari mong palitan ang currency anumang oras.} one {# %booking% ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.} other {# na %booking% ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.}}",
         "currencyConfirmConfirm": "Kumpirmahin ang pagbabago",
         "currencyConfirmCancel": "Kanselahin",
         "currencyLockedUntil": "Naka-lock ang currency hanggang {date}.",
@@ -1767,7 +1836,29 @@
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
         "time24h": "24h",
-        "time12h": "12h"
+        "time12h": "12h",
+        "vocabulary": {
+          "section": "Bokabularyo",
+          "scope": "Buong workspace",
+          "hint": "Piliin ang mga salitang ginagamit ng workspace mo. Susunod ang menu, mga pamagat ng pahina, mga button, mga notification, at mga email ng team. Walang magbabago sa iyong data, mga link, at kung paano gumagana ang lahat.",
+          "memberTitle": "Itinakda ng may-ari ng workspace.",
+          "memberBody": "Pareho ang nakikitang mga salita ng lahat sa workspace na ito. Magtanong sa may-ari kung gusto mo itong baguhin.",
+          "matchTitle": "Sundin ang uri ng negosyo",
+          "matchHint": "Sinusunod ang uri ng negosyo ng workspace mo, ngayon ay {preset}. Kapag nagbago ang uri ng negosyo, susunod ang mga salita.",
+          "previewTitle": "Preview ng menu",
+          "previewing": "Pino-preview: {preset}",
+          "error": "Hindi ma-update ang bokabularyo. Ibinalik ang dating mga salita. Subukan ulit.",
+          "presets": {
+            "standard": "Standard",
+            "photographer": "Photographer",
+            "venue": "Venue",
+            "planner": "Planner",
+            "stylist": "Stylist",
+            "catering": "Catering",
+            "entertainer": "Entertainer",
+            "artists": "Artists"
+          }
+        }
       },
       "publicPage": {
         "visibilitySection": "Visibility",
@@ -1785,7 +1876,7 @@
         "seoTitlePlaceholder": "Sarah Bell Photography — Kasal at Portrait",
         "seoDescription": "Paglalarawan ng SEO",
         "seoDescriptionPlaceholder": "Wedding at portrait photography sa buong Metro Manila…",
-        "inquirySection": "Inquiry routing",
+        "inquirySection": "%Inquiry% routing",
         "inquirySectionHint": "Kung saan ipinapadala ang mga submission mula sa iyong inquiry form.",
         "inquiryRecipientEmail": "Email ng tatanggap",
         "inquiryRecipientEmailPlaceholder": "ikaw@halimbawa.com",
@@ -1844,20 +1935,20 @@
       }
     },
     "teams": {
-      "title": "Mga Koponan",
-      "description": "I-grupo ang mga katrabaho sa mga koponan. Ang bawat koponan ay may sariling kalendaryo. Ang mga miyembro ay makakakita lamang ng mga booking mula sa mga koponan na kanilang kinabibilangan.",
-      "listEmpty": "Wala ka pang anumang koponan.",
-      "createButton": "Lumikha ng koponan",
+      "title": "%Teams%",
+      "description": "I-grupo ang mga katrabaho sa %teams%. Ang bawat %team% ay may sariling kalendaryo. Ang mga miyembro ay makakakita lamang ng %bookings% mula sa %teams% na kanilang kinabibilangan.",
+      "listEmpty": "Wala ka pang anumang %team%.",
+      "createButton": "Lumikha ng %team%",
       "toolbar": {
-        "search": "Maghanap ng koponan",
-        "searchLabel": "Maghanap ng koponan ayon sa pangalan",
+        "search": "Maghanap ng %team%",
+        "searchLabel": "Maghanap ng %team% ayon sa pangalan",
         "showDeactivated": "Ipakita ang mga na-deactivate"
       },
       "table": {
-        "empty": "Walang koponang tumutugma sa iyong paghahanap.",
+        "empty": "Walang %team% na tumutugma sa iyong paghahanap.",
         "col": {
           "color": "Kulay",
-          "name": "Koponan",
+          "name": "%Team%",
           "members": "Mga Miyembro",
           "monthlyAverage": "Buwanang Average",
           "actions": "Mga Aksyon"
@@ -1871,38 +1962,38 @@
         "hexLabel": "Hex"
       },
       "createDialog": {
-        "title": "Lumikha ng koponan",
-        "description": "Bigyan ang koponan ng pangalan at pumili ng kulay para sa mga chip ng kalendaryo nito.",
-        "nameLabel": "Pangalan ng koponan",
+        "title": "Lumikha ng %team%",
+        "description": "Bigyan ang %team% ng pangalan at pumili ng kulay para sa mga chip ng kalendaryo nito.",
+        "nameLabel": "Pangalan ng %team%",
         "namePlaceholder": "hal. Wedding crew",
         "colorLabel": "Kulay",
-        "submit": "Lumikha ng koponan",
+        "submit": "Lumikha ng %team%",
         "cancel": "Kanselahin",
         "creating": "Nililikha…"
       },
       "renameDialog": {
-        "title": "Palitan ang pangalan ng koponan",
+        "title": "Palitan ang pangalan ng %team%",
         "submit": "I-save",
         "saving": "Nini-save…",
         "cancel": "Kanselahin"
       },
       "deactivateDialog": {
-        "title": "I-deactivate ang koponan?",
-        "description": "Ang “{name}” ay itatago mula sa iyong mga aktibong koponan at hindi na maaaring tumanggap ng mga bagong booking. Ang mga miyembro, booking, at kasaysayan nito ay nananatili, at maaari mo itong i-reactivate anumang oras.",
-        "confirm": "I-deactivate ang koponan",
+        "title": "I-deactivate ang %team%?",
+        "description": "Ang “{name}” ay itatago mula sa iyong mga aktibong %team% at hindi na maaaring tumanggap ng mga bagong %booking%. Ang mga miyembro, %booking%, at kasaysayan nito ay nananatili, at maaari mo itong i-reactivate anumang oras.",
+        "confirm": "I-deactivate ang %team%",
         "deactivating": "Dina-deactivate…",
         "cancel": "Kanselahin"
       },
       "reactivateDialog": {
-        "title": "I-reactivate ang koponan?",
-        "description": "Ang “{name}” ay magiging aktibo muli at maaaring tumanggap ng mga bagong booking. Ito ay mabibilang sa limitasyon ng aktibong koponan ng iyong plano.",
-        "confirm": "I-reactivate ang koponan",
+        "title": "I-reactivate ang %team%?",
+        "description": "Ang “{name}” ay magiging aktibo muli at maaaring tumanggap ng mga bagong %booking%. Ito ay mabibilang sa limitasyon ng aktibong %team% ng iyong plano.",
+        "confirm": "I-reactivate ang %team%",
         "reactivating": "Rina-reactivate…",
         "cancel": "Kanselahin"
       },
       "team": {
         "memberCount": "{count, plural, =0 {Walang miyembro pa} =1 {1 miyembro} other {# mga miyembro}}",
-        "monthlyBookings": "{count, plural, one {# booking/buwan} other {# booking/buwan}}",
+        "monthlyBookings": "{count, plural, one {# %booking%/buwan} other {# %booking%/buwan}}",
         "defaultBadge": "Default",
         "rename": "Palitan ang pangalan",
         "changeColor": "Baguhin ang kulay",
@@ -1916,64 +2007,64 @@
       "drawer": {
         "membersHeading": "Mga Miyembro",
         "memberCount": "{count}/{max} miyembro",
-        "noMembers": "Wala pang miyembro sa koponang ito.",
+        "noMembers": "Wala pang miyembro sa %team% na ito.",
         "addMemberLabel": "Magdagdag ng kasalukuyang miyembro",
         "addMemberPlaceholder": "Pumili ng miyembro…",
-        "noAssignableMembers": "Lahat ng nasa workspace na ito ay nasa koponang ito na.",
+        "noAssignableMembers": "Lahat ng nasa workspace na ito ay nasa %team% na ito na.",
         "pendingHeading": "Mga nakabinbing imbitasyon",
-        "noPending": "Walang nakabinbing imbitasyon para sa koponang ito.",
-        "inviteToTeam": "Mag-imbita sa koponang ito",
+        "noPending": "Walang nakabinbing imbitasyon para sa %team% na ito.",
+        "inviteToTeam": "Mag-imbita sa %team% na ito",
         "leadToggleLabel": "Lead",
-        "leadOnlyOnePerTeam": "Isang lead lang ang maaari sa bawat koponan.",
+        "leadOnlyOnePerTeam": "Isang lead lang ang maaari sa bawat %team%.",
         "removeFromTeam": "Alisin",
-        "teamFull": "Puno na ang koponang ito.",
+        "teamFull": "Puno na ang %team% na ito.",
         "close": "Isara",
         "removeMemberFlow": {
           "confirmTitle": "Alisin si {name} mula sa {team}?",
-          "confirmDescription": "Mawawalan sila ng access sa kalendaryo at mga booking ng koponang ito.",
-          "confirmButton": "Alisin sa koponan",
-          "removeFromTeamAndWorkspace": "Alisin sa koponan + workspace",
-          "otherTeamsBlocked": "Kasapi pa ang miyembrong ito sa ibang mga koponan. Alisin muna sila roon.",
+          "confirmDescription": "Mawawalan sila ng access sa kalendaryo at %bookings% ng %team% na ito.",
+          "confirmButton": "Alisin sa %team%",
+          "removeFromTeamAndWorkspace": "Alisin sa %team% + workspace",
+          "otherTeamsBlocked": "Kasapi pa ang miyembrong ito sa ibang %teams%. Alisin muna sila roon.",
           "removing": "Inaalis…",
           "workspacePromptTitle": "Alisin din si {name} sa workspace?",
-          "workspacePromptDescription": "Mawawalan sila ng access sa lahat ng koponan at sa buong workspace. Hindi ito maaaring ibalik.",
+          "workspacePromptDescription": "Mawawalan sila ng access sa lahat ng %team% at sa buong workspace. Hindi ito maaaring ibalik.",
           "dontAskAgain": "Huwag nang itanong ulit",
           "removeFromWorkspaceButton": "Alisin sa workspace",
           "keepInWorkspaceButton": "Panatilihin sa workspace"
         }
       },
       "upsell": {
-        "atCapTitle": "Naabot mo na ang iyong limitasyon sa koponan",
-        "atCapBody": "Ang iyong plano sa {plan} ay nagpapahintulot ng {max} {max, plural, =1 {koponan} other {mga koponan}}. Mag-upgrade para magdagdag ng higit pa.",
+        "atCapTitle": "Naabot mo na ang iyong limitasyon sa %team%",
+        "atCapBody": "Ang iyong plano sa {plan} ay nagpapahintulot ng {max} {max, plural, =1 {%team%} other {%teams%}}. Mag-upgrade para magdagdag ng higit pa.",
         "cta": "Tingnan ang mga plano",
-        "proAtCapBody": "Ang Pro ay limitado sa {max} na koponan. Makipag-ugnayan sa suporta kung kailangan mo ng higit pa."
+        "proAtCapBody": "Ang Pro ay limitado sa {max} na %team%. Makipag-ugnayan sa suporta kung kailangan mo ng higit pa."
       },
       "errors": {
-        "nameRequired": "Kinakailangan ang pangalan ng koponan.",
-        "nameTooLong": "Ang pangalan ng koponan ay dapat na 40 character o mas kaunti.",
-        "duplicateName": "May koponan na na may ganitong pangalan sa workspace na ito.",
-        "teamNotFound": "Hindi nahanap ang koponan.",
+        "nameRequired": "Kinakailangan ang pangalan ng %team%.",
+        "nameTooLong": "Ang pangalan ng %team% ay dapat na 40 character o mas kaunti.",
+        "duplicateName": "May %team% na na may ganitong pangalan sa workspace na ito.",
+        "teamNotFound": "Hindi nahanap ang %team%.",
         "generic": "May nangyaring mali. Pakisubukan muli.",
-        "cannotDeactivateDefault": "Hindi maaaring i-deactivate ang default na koponan.",
-        "reactivateCapExceeded": "Ang pag-reactivate ay lalampas sa limitasyon ng aktibong koponan ng iyong plano. I-deactivate muna ang ibang koponan o i-upgrade ang iyong plano."
+        "cannotDeactivateDefault": "Hindi maaaring i-deactivate ang default na %team%.",
+        "reactivateCapExceeded": "Ang pag-reactivate ay lalampas sa limitasyon ng aktibong %team% ng iyong plano. I-deactivate muna ang ibang %team% o i-upgrade ang iyong plano."
       },
       "toasts": {
-        "created": "Nalikha ang koponan.",
-        "renamed": "Napalitan ang pangalan ng koponan.",
+        "created": "Nalikha ang %team%.",
+        "renamed": "Napalitan ang pangalan ng %team%.",
         "colorChanged": "Na-update ang kulay.",
-        "saved": "Na-update ang koponan.",
-        "deactivated": "Na-deactivate ang koponan.",
-        "reactivated": "Na-reactivate ang koponan."
+        "saved": "Na-update ang %team%.",
+        "deactivated": "Na-deactivate ang %team%.",
+        "reactivated": "Na-reactivate ang %team%."
       },
-      "teamsHeading": "Mga Koponan",
+      "teamsHeading": "%Teams%",
       "invite": {
         "button": "Mag-imbita ng miyembro",
         "dialog": {
           "title": "Mag-imbita ng katrabaho",
-          "description": "Makakatanggap sila ng email na imbitasyon. Kapag tinanggap na, lalabas sila sa iyong listahan ng miyembro na naitalaga sa mga koponang pipiliin mo.",
+          "description": "Makakatanggap sila ng email na imbitasyon. Kapag tinanggap na, lalabas sila sa iyong listahan ng miyembro na naitalaga sa %teams% na pipiliin mo.",
           "emailLabel": "Email address",
           "emailPlaceholder": "katrabaho@halimbawa.com",
-          "teamsLabel": "Idagdag sa mga koponang ito",
+          "teamsLabel": "Idagdag sa %teams% na ito",
           "leadLabel": "Lead",
           "teamFull": "Puno na",
           "submit": "Magpadala ng imbitasyon",
@@ -1982,12 +2073,12 @@
         },
         "errors": {
           "emailRequired": "Maglagay ng wastong email address.",
-          "pickAtLeastOneTeam": "Pumili ng kahit isang koponan para idagdag sila.",
-          "teamFull": "Puno na ang mga koponang ito at hindi makakatanggap ng bagong miyembro: {teams}.",
-          "teamAlreadyHasLead": "May naka-assign nang lead sa mga koponang ito: {teams}.",
-          "teamNotFound": "Hindi nahanap ang isa sa mga napiling koponan.",
+          "pickAtLeastOneTeam": "Pumili ng kahit isang %team% para idagdag sila.",
+          "teamFull": "Puno na ang %teams% na ito at hindi makakatanggap ng bagong miyembro: {teams}.",
+          "teamAlreadyHasLead": "May naka-assign nang lead sa %teams% na ito: {teams}.",
+          "teamNotFound": "Hindi nahanap ang isa sa mga napiling %team%.",
           "alreadyInvitedOrMember": "Mayroon na itong imbitasyon ang email na iyon o miyembro na ng workspace.",
-          "noTeamsExist": "Gumawa muna ng koponan bago mag-imbita ng mga miyembro."
+          "noTeamsExist": "Gumawa muna ng %team% bago mag-imbita ng mga miyembro."
         },
         "toasts": {
           "sent": "Naipadala ang imbitasyon.",
@@ -1995,7 +2086,7 @@
         },
         "revokeDialog": {
           "title": "Bawiin ang imbitasyon?",
-          "description": "Makakansela ang imbitasyon para sa {email} at palalabasin ang mga reserbadong puwesto sa koponan.",
+          "description": "Makakansela ang imbitasyon para sa {email} at palalabasin ang mga reserbadong puwesto sa %team%.",
           "confirm": "Bawiin ang imbitasyon"
         }
       },
@@ -2006,7 +2097,7 @@
         "leadBadge": "Lead",
         "memberBadge": "Miyembro",
         "pendingBadge": "Nakabinbin",
-        "manageTeams": "Pamahalaan ang mga koponan",
+        "manageTeams": "Pamahalaan ang %teams%",
         "removeFromWorkspace": "Alisin sa workspace",
         "revokeInvite": "Bawiin ang imbitasyon",
         "rowActionsLabel": "Mga aksyon para kay {name}",
@@ -2014,7 +2105,7 @@
         "inviteCountsLabel": "Bilang ng mga imbitasyon",
         "newlyAcceptedCount": "Bago {count}",
         "pendingCount": "Nakabinbin {count}",
-        "description": "Lahat ng may access sa workspace na ito, sa lahat ng koponan.",
+        "description": "Lahat ng may access sa workspace na ito, sa lahat ng %team%.",
         "modeLabel": "Listahan ng miyembro",
         "active": "Aktibo",
         "pending": "Nakabinbin",
@@ -2022,13 +2113,13 @@
         "noActiveMatches": "Walang miyembrong tumutugma sa iyong paghahanap.",
         "noPendingMatches": "Walang nakabinbing imbitasyong tumutugma sa iyong paghahanap.",
         "noPending": "Walang nakabinbing imbitasyon.",
-        "moreTeams": "+{count} pang koponan",
-        "ownerAllTeams": "Maaaring mangasiwa sa lahat ng koponan",
-        "noTeams": "Wala sa anumang koponan",
+        "moreTeams": "+{count} pang %team%",
+        "ownerAllTeams": "Maaaring mangasiwa sa lahat ng %team%",
+        "noTeams": "Wala sa anumang %team%",
         "removeFromWorkspaceLabel": "Alisin sa workspace si {name}",
         "removeDialog": {
           "title": "Alisin ang miyembro?",
-          "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang mga booking; palalabasin ang mga puwesto sa koponan. Hindi ito maaaring ibalik.",
+          "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang %bookings%; palalabasin ang mga puwesto sa %team%. Hindi ito maaaring ibalik.",
           "confirm": "Alisin ang miyembro"
         },
         "details": {
@@ -2037,8 +2128,8 @@
             "details": "Mga detalye",
             "history": "Kasaysayan"
           },
-          "teams": "Mga koponan",
-          "noTeams": "Walang koponan",
+          "teams": "%Teams%",
+          "noTeams": "Walang %team%",
           "completed": "Natapos",
           "workingNow": "Kasalukuyang ginagawa",
           "future": "Hinaharap",
@@ -2056,11 +2147,13 @@
           "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad",
           "loading": "Naglo-load…",
           "loadMore": "Mag-load pa",
-          "noActivity": "Walang nakitang aktibidad."
+          "noActivity": "Walang nakitang aktibidad.",
+          "loadError": "Hindi ma-load ang aktibidad.",
+          "retry": "Subukan muli"
         },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
-          "isTeamLead": "Si {name} ay lead ng hindi bababa sa isang koponan. Alisin muna ang status nila bilang lead ng koponan bago sila tanggalin."
+          "isTeamLead": "Si {name} ay lead ng hindi bababa sa isang %team%. Alisin muna ang status nila bilang lead ng %team% bago sila tanggalin."
         },
         "toasts": {
           "removed": "Naalis ang miyembro."
@@ -2068,18 +2161,18 @@
       },
       "assignment": {
         "dialog": {
-          "title": "Pamahalaan ang mga takdang koponan",
-          "description": "Idagdag o alisin si {name} sa mga koponan. I-toggle ang lead flag para bigyan sila ng karapatang mag-edit sa loob ng koponan.",
+          "title": "Pamahalaan ang mga takdang %team%",
+          "description": "Idagdag o alisin si {name} sa %teams%. I-toggle ang lead flag para bigyan sila ng karapatang mag-edit sa loob ng %team%.",
           "add": "Idagdag",
           "remove": "Alisin",
           "done": "Tapos na"
         },
         "errors": {
-          "alreadyOnTeam": "Miyembro na ng koponang iyon ang taong iyon."
+          "alreadyOnTeam": "Miyembro na ng %team% na iyon ang taong iyon."
         },
         "toasts": {
-          "added": "Naidagdag sa koponan.",
-          "removed": "Naalis sa koponan.",
+          "added": "Naidagdag sa %team%.",
+          "removed": "Naalis sa %team%.",
           "promoted": "Na-promote bilang lead.",
           "demoted": "Nababa sa miyembro.",
           "promoting": "Inililipat ang lead…",
@@ -2088,29 +2181,29 @@
       },
       "downgradeBlock": {
         "title": "Naharang ang downgrade",
-        "description": "Nasa {currentPlan} ka na plano na may mas maraming koponan kaysa sa pinahihintulutan ng {targetPlan} na plano ({maxTeams} ang maximum). Burahin ang {excess} na koponan bago magpalit ng plano.",
-        "teamsHeading": "Mga kasalukuyang koponan",
+        "description": "Nasa {currentPlan} ka na plano na may mas maraming %team% kaysa sa pinahihintulutan ng {targetPlan} na plano ({maxTeams} ang maximum). Burahin ang {excess} na %team% bago magpalit ng plano.",
+        "teamsHeading": "Mga kasalukuyang %team%",
         "dismiss": "Naiintindihan ko",
-        "manageTeams": "Pamahalaan ang mga koponan"
+        "manageTeams": "Pamahalaan ang %teams%"
       },
       "editDialog": {
-        "title": "I-edit ang koponan",
+        "title": "I-edit ang %team%",
         "submit": "I-save ang mga pagbabago",
         "saving": "Sina-save…"
       }
     },
     "clients": {
-      "title": "Mga Kliyente",
-      "listEmpty": "Wala ka pang mga kliyente.",
-      "listEmptyHint": "Magdagdag ng iyong unang kliyente para masubaybayan ang mga booking at kasaysayan.",
+      "title": "%Clients%",
+      "listEmpty": "Wala ka pang %clients%.",
+      "listEmptyHint": "Magdagdag ng iyong unang %client% para masubaybayan ang %bookings% at kasaysayan.",
       "toolbar": {
         "search": "Hanapin sa pangalan o email",
-        "searchLabel": "Maghanap ng kliyente",
+        "searchLabel": "Maghanap ng %client%",
         "sourceAll": "Lahat ng pinagmulan",
         "tagsAll": "Lahat ng tatak",
         "tagsSelected": "{count} {count, plural, one {tatak} other {tatak}}",
         "showInactive": "Ipakita ang hindi aktibo",
-        "add": "Magdagdag ng Kliyente"
+        "add": "Magdagdag ng %Client%"
       },
       "sourceValues": {
         "form": "Form",
@@ -2119,7 +2212,7 @@
         "import": "Pag-import"
       },
       "table": {
-        "empty": "Walang kliyenteng tumutugma sa iyong filter.",
+        "empty": "Walang %client% na tumutugma sa iyong filter.",
         "col": {
           "name": "Pangalan",
           "contact": "Pakikipag-ugnayan",
@@ -2127,10 +2220,10 @@
           "totalSpent": "Kabuuang Ginastos",
           "actions": "Mga Aksyon"
         },
-        "bookings": "{count} na booking",
+        "bookings": "{count} na %booking%",
         "lastBooking": "Huli: {date}",
-        "noBookings": "Wala pang booking",
-        "openMenu": "Buksan ang mga aksyon ng kliyente",
+        "noBookings": "Wala pang %booking%",
+        "openMenu": "Buksan ang mga aksyon ng %client%",
         "openClient": "Buksan ang {name}",
         "view": "Tingnan",
         "edit": "I-edit",
@@ -2138,8 +2231,8 @@
         "reactivate": "Buhayin muli"
       },
       "form": {
-        "addTitle": "Magdagdag ng Kliyente",
-        "editTitle": "I-edit ang Kliyente",
+        "addTitle": "Magdagdag ng %Client%",
+        "editTitle": "I-edit ang %Client%",
         "name": "Pangalan",
         "namePlaceholder": "hal. Maria Santos",
         "email": "Email",
@@ -2151,27 +2244,28 @@
         "tagsPlaceholder": "Magdagdag ng tatak",
         "removeTag": "Tanggalin ang tatak {tag}",
         "notes": "Mga Tala",
-        "notesPlaceholder": "Anumang tala tungkol sa kliyenteng ito…",
+        "notesPlaceholder": "Anumang tala tungkol sa %client% na ito…",
         "save": "I-save",
         "view": "Tingnan",
         "saving": "Sine-save…",
         "cancel": "Kanselahin",
-        "createSuccess": "Nailikha ang kliyente.",
-        "linkSuccess": "Na-link sa umiiral na kliyente.",
-        "updateSuccess": "Na-update ang kliyente.",
+        "createSuccess": "Nailikha ang %client%.",
+        "linkSuccess": "Na-link sa umiiral na %client%.",
+        "updateSuccess": "Na-update ang %client%.",
         "error": "May nangyaring mali. Subukan muli."
       },
       "detail": {
         "inactive": "Hindi aktibo",
+        "retry": "Subukan muli",
         "tabs": {
           "overview": "Pangkalahatan",
-          "bookings": "Mga Booking",
+          "bookings": "%Bookings%",
           "payments": "Mga Bayad"
         },
         "overview": {
           "totalSpent": "Kabuuang Ginastos",
-          "bookingsCount": "Mga Booking",
-          "lastBooking": "Huling Booking",
+          "bookingsCount": "%Bookings%",
+          "lastBooking": "Huling %Booking%",
           "never": "Wala",
           "contact": "Pakikipag-ugnayan",
           "noEmail": "—",
@@ -2183,9 +2277,9 @@
           "noNotes": "Walang tala"
         },
         "bookings": {
-          "loading": "Niloload ang mga booking…",
-          "empty": "Wala pang booking.",
-          "error": "Nabigong i-load ang mga booking."
+          "loading": "Niloload ang %bookings%…",
+          "empty": "Wala pang %booking%.",
+          "error": "Nabigong i-load ang %bookings%."
         },
         "payments": {
           "empty": "Wala pang rekord ng bayad."
@@ -2196,38 +2290,38 @@
         "close": "Isara"
       },
       "deactivate": {
-        "title": "I-deaktibo ang kliyenteng ito?",
-        "body": "Itatago ang kliyenteng ito mula sa aktibong listahan. Maaari mo siyang buhayin muli anumang oras sa pamamagitan ng pagpapagana ng 'Ipakita ang hindi aktibo' sa listahan ng kliyente.",
+        "title": "I-deaktibo ang %client% na ito?",
+        "body": "Itatago ang %client% na ito mula sa aktibong listahan. Maaari mo siyang buhayin muli anumang oras sa pamamagitan ng pagpapagana ng 'Ipakita ang hindi aktibo' sa listahan ng %client%.",
         "cancel": "Kanselahin",
         "confirm": "I-deaktibo"
       },
       "unsaved": {
         "title": "Itapon ang iyong mga pagbabago?",
-        "body": "May mga hindi pa nai-save na pagbabago ka sa kliyenteng ito. Mawawala ang mga ito kung magsasara ka ngayon.",
+        "body": "May mga hindi pa nai-save na pagbabago ka sa %client% na ito. Mawawala ang mga ito kung magsasara ka ngayon.",
         "keep": "Magpatuloy sa pag-edit",
         "discard": "Itapon at isara"
       },
       "matchDialog": {
-        "title": "Isa ba ang kliyente sa mga ito?",
-        "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
-        "escapeCreate": "Hindi, bagong kliyente ito",
-        "escapeLink": "I-link sa bagong kliyente",
+        "title": "Isa ba ang %client% sa mga ito?",
+        "bookingsCount": "{count, plural, one {# %booking%} other {# na %booking%}}",
+        "escapeCreate": "Hindi, bagong %client% ito",
+        "escapeLink": "I-link sa bagong %client%",
         "cancel": "Kanselahin",
-        "submitCreate": "I-save ang kliyente",
-        "submitLink": "I-link ang kliyente",
+        "submitCreate": "I-save ang %client%",
+        "submitLink": "I-link ang %client%",
         "reconcileTitle": "{count} field ang naiiba - piliin kung alin ang gagamitin",
         "current": "Kasalukuyan",
         "typed": "Iyong inilagay",
         "additiveTitle": "Idaragdag (walang tunggalian)"
       },
       "toasts": {
-        "reactivating": "Binubuhay muli ang kliyente…",
-        "deactivating": "Dini-deaktibo ang kliyente…"
+        "reactivating": "Binubuhay muli ang %client%…",
+        "deactivating": "Dini-deaktibo ang %client%…"
       }
     },
     "inquiries": {
-      "title": "Mga Katanungan",
-      "subtitle": "Mga kahilingang booking mula sa iyong pampublikong portfolio.",
+      "title": "%Inquiries%",
+      "subtitle": "Mga kahilingang %booking% mula sa iyong pampublikong portfolio.",
       "toolbar": {
         "from": "Mula",
         "to": "Hanggang",
@@ -2237,15 +2331,15 @@
       },
       "tabs": {
         "all": "Lahat",
-        "inquiry": "Inquiry",
+        "inquiry": "%Inquiry%",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
+        "inquiry": "%Inquiry%",
         "archived": "Naka-archive",
         "booked": "Na-book",
-        "converted": "Na-convert sa Booking"
+        "converted": "Na-convert sa %Booking%"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -2261,16 +2355,17 @@
         "either": "Alinman"
       },
       "table": {
-        "empty": "Wala pang mga katanungan.",
-        "filteredEmpty": "Walang katanungang tumutugma sa iyong mga filter.",
+        "empty": "Wala pang %inquiries%.",
+        "filteredEmpty": "Walang %inquiry% na tumutugma sa iyong mga filter.",
         "emptyHint": "Kapag may nag-submit ng iyong portfolio contact form, lalabas dito ang kanilang kahilingan.",
         "viewPublicPage": "Tingnan ang iyong pampublikong pahina",
-        "open": "Buksan ang katanungan mula kay {name}",
+        "open": "Buksan ang %inquiry% mula kay {name}",
         "noDate": "Walang petsa",
         "directSource": "Direkta",
         "col": {
+          "booked": "Na-book noong",
           "status": "Katayuan",
-          "client": "Kliyente",
+          "client": "%Client%",
           "eventDate": "Petsa ng kaganapan",
           "eventType": "Uri",
           "submitted": "Isinumite",
@@ -2282,16 +2377,20 @@
         "conflict": "Konflikt",
         "actions": {
           "view": "Tingnan",
-          "menuLabel": "Buksan ang mga aksyon ng katanungan"
+          "menuLabel": "Buksan ang mga aksyon ng %inquiry%"
         }
       },
       "detail": {
-        "back": "Bumalik sa mga katanungan",
-        "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
+        "back": "Bumalik sa %inquiries%",
+        "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na %booking%.",
+        "loadingTitle": "%Inquiry%",
+        "loading": "Nilo-load ang %inquiry%...",
+        "loadError": "Hindi ma-load ang %inquiry% na ito.",
+        "retry": "Subukan muli",
         "submittedOn": "Isinumite noong {date}",
-        "notFound": "Hindi natagpuan ang katanungan.",
+        "notFound": "Hindi natagpuan ang %inquiry%.",
         "clientInfo": {
-          "title": "Impormasyon ng kliyente",
+          "title": "Impormasyon ng %client%",
           "name": "Pangalan",
           "email": "Email",
           "phone": "Telepono",
@@ -2303,9 +2402,9 @@
           "savedToast": "Na-update ang telepono."
         },
         "clientMatch": {
-          "warning": "Maaaring kabilang ang inquiry na ito sa isang umiiral nang kliyente",
-          "resolveButton": "Ayusin ang kliyente",
-          "resolvedToast": "Na-update ang kliyente."
+          "warning": "Maaaring kabilang ang %inquiry% na ito sa isang umiiral nang %client%",
+          "resolveButton": "Ayusin ang %client%",
+          "resolvedToast": "Na-update ang %client%."
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",
@@ -2317,47 +2416,49 @@
           "none": "—"
         },
         "bookingDraft": {
-          "title": "Draft na booking",
-          "description": "Kapag na-convert ito, malilikha ang isang booking sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
+          "title": "Draft na %booking%",
+          "description": "Kapag na-convert ito, malilikha ang isang %booking% sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
           "total": "Kabuuan",
           "deposit": "Deposito",
           "notes": "Mga panloob na tala",
           "notesPlaceholder": "Mga tala na ikaw lang ang makakakita…",
           "save": "I-save ang mga pagbabago",
           "saving": "Sino-save…",
-          "approve": "I-convert sa booking",
+          "approve": "I-convert sa %booking%",
           "approving": "Kino-convert…",
           "approved": "Na-convert na",
-          "missing": "Walang naka-link na draft na booking para sa katanungang ito.",
-          "alreadyConverted": "Ang katanungang ito ay naaprubahan na.",
-          "viewBooking": "Tingnan ang booking",
+          "missing": "Walang naka-link na draft na %booking% para sa %inquiry% na ito.",
+          "alreadyConverted": "Ang %inquiry% na ito ay naaprubahan na.",
+          "viewBooking": "Tingnan ang %booking%",
           "approveError": "Hindi ma-convert. Pakisubukang muli.",
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
-          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
+          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng %bookings%.",
           "conflictBlocks": "Ayusin ang salungatan sa iskedyul sa itaas bago mag-convert.",
-          "team": "Koponan"
+          "team": "%Team%",
+          "changedUnderneath": "Binago ng iba ang draft na ito. Nanatili ang iyong mga pagbabago; suriin ang ibang field bago mag-save.",
+          "notDraft": "Naaprubahan na ang %booking% na ito. I-reload para makita ang pinakabago."
         },
         "actions": {
           "decline": "Tanggihan at abisuhan",
-          "declinedToast": "Tinanggihan ang katanungan — naabisuhan na ang kliyente.",
+          "declinedToast": "Tinanggihan ang %inquiry% — naabisuhan na ang %client%.",
           "archive": "I-archive",
           "working": "Sino-save…",
-          "archivedToast": "Naka-archive na ang katanungan.",
-          "approvedToast": "Na-convert sa booking.",
+          "archivedToast": "Naka-archive na ang %inquiry%.",
+          "approvedToast": "Na-convert sa %booking%.",
           "errorToast": "May nangyaring mali. Pakisubukang muli."
         },
         "history": {
           "title": "Kasaysayan",
-          "submitted": "Isinumite ang katanungan",
-          "booked": "Naaprubahan bilang booking"
+          "submitted": "Isinumite ang %inquiry%",
+          "booked": "Naaprubahan bilang %booking%"
         },
         "sessionsEditor": {
           "edit": "I-edit ang mga sesyon",
           "save": "I-save ang mga pagbabago",
           "saving": "Sino-save…",
           "discard": "Ibalik",
-          "conflictBlocks": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
+          "conflictBlocks": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na %booking%.",
           "pastDate": "Ang mga sesyon ay dapat sa hinaharap.",
           "lockedConverted": "Naka-lock ang mga sesyon pagkatapos ng conversion.",
           "lockedArchived": "Naka-lock ang mga sesyon (naka-archive).",
@@ -2380,16 +2481,17 @@
         "calendar": "Kalendaryo"
       },
       "calendar": {
-        "empty": "Walang mga katanungan o booking na ipapakita.",
+        "empty": "Walang %inquiries% o %booking% na ipapakita.",
         "filters": {
-          "inquiry": "Inquiry",
+          "inquiry": "%Inquiry%",
           "booked": "Naka-book",
           "conflicted": "May Salungatan"
         },
-        "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
+        "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na %booking% — kinansela ang paglipat",
         "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli",
         "updating": "Nire-reschedule…",
-        "updated": "Na-reschedule ang session"
+        "updated": "Na-reschedule ang session",
+        "emptyPeriod": "Walang %inquiry% sa panahong ito"
       }
     },
     "pageBuilder": {
@@ -2604,7 +2706,7 @@
           "altHint": "Ginagamit sa bawat lugar kung saan lumalabas ang larawang ito.",
           "dateLabel": "Petsa",
           "locationLabel": "Lokasyon",
-          "clientLabel": "Kliyente",
+          "clientLabel": "%Client%",
           "tagsLabel": "Mga tag",
           "tagsHint": "Paghiwalayin ang mga tag gamit ang kuwit, space, o Enter.",
           "tagsPlaceholder": "hal. outdoor, sunset, first dance",
@@ -2634,21 +2736,21 @@
           "fieldDate": "Petsa",
           "fieldLocation": "Lokasyon",
           "fieldLocationPlaceholder": "hal. Tagaytay, Pilipinas",
-          "fieldClient": "Kliyente",
+          "fieldClient": "%Client%",
           "fieldClientPlaceholder": "hal. Sarah at Miguel",
-          "hideClient": "Itago ang pangalan ng kliyente",
-          "hideClientHelp": "Panatilihing pribado ang impormasyon ng kliyente saanman lumitaw ang larawang ito.",
-          "linkBooking": "I-link ang booking",
-          "linkClient": "I-link ang kliyente",
-          "noBooking": "Walang naka-link na booking",
-          "noClient": "Walang naka-link na kliyente",
+          "hideClient": "Itago ang pangalan ng %client%",
+          "hideClientHelp": "Panatilihing pribado ang impormasyon ng %client% saanman lumitaw ang larawang ito.",
+          "linkBooking": "I-link ang %booking%",
+          "linkClient": "I-link ang %client%",
+          "noBooking": "Walang naka-link na %booking%",
+          "noClient": "Walang naka-link na %client%",
           "searchLinks": "Maghanap ng record",
           "noLinkMatches": "Walang tumugmang record",
           "linksLoading": "Naglo-load ng mga record...",
-          "linksLoadError": "Hindi ma-load ang mga booking at kliyente.",
+          "linksLoadError": "Hindi ma-load ang %bookings% at %client%.",
           "retryLinks": "Subukan muli",
           "manualDetails": "Hindi nakarehistro sa Gallurio? Ilagay o i-edit nang manu-mano ang mga detalye sa ibaba.",
-          "linkedRecord": "Naka-link na booking",
+          "linkedRecord": "Naka-link na %booking%",
           "fieldTags": "Mga tag",
           "fieldTagsPlaceholder": "Magdagdag ng tag at pindutin ang Enter",
           "fieldTagsHint": "Hanggang 20 tag.",
@@ -3262,9 +3364,9 @@
               "dimensions": "Dapat hindi bababa sa 1200 × 630 px ang larawan sa pagbabahagi.",
               "upload": "Nabigo ang pag-upload ng larawan sa pagbabahagi. Pakisubukan muli."
             },
-            "inquiryRecipientLabel": "Email ng tatanggap ng inquiry",
+            "inquiryRecipientLabel": "Email ng tatanggap ng %inquiry%",
             "inquiryRecipientPlaceholder": "ikaw@halimbawa.com",
-            "inquiryRecipientHint": "Dito ipapadala ang mga bagong notification ng inquiry."
+            "inquiryRecipientHint": "Dito ipapadala ang mga bagong notification ng %inquiry%."
           },
           "done": {
             "title": "Handa nang magningning ang iyong pahina",
@@ -3441,23 +3543,23 @@
       "types": {
         "inquiry": {
           "created": {
-            "title": "Bagong katanungan natanggap",
-            "body": "Mayroon kang bagong katanungan mula kay {clientName}."
+            "title": "Bagong %inquiry% natanggap",
+            "body": "Mayroon kang bagong %inquiry% mula kay {clientName}."
           }
         },
         "booking": {
           "team_assigned": {
-            "title": "Bagong booking itinalaga sa iyong koponan",
-            "body": "Itinalaga ni {assignerName} ang isang booking sa iyong koponan."
+            "title": "Bagong %booking% itinalaga sa iyong %team%",
+            "body": "Itinalaga ni {assignerName} ang isang %booking% sa iyong %team%."
           },
           "status_changed": {
-            "title": "{newStatus, select, cancelled {Booking na-cancel} completed {Booking nakumpleto} booked {Booking nakumpirma} other {Na-update ang status ng booking}}",
-            "body": "{newStatus, select, cancelled {Kinansela ni {actorName} ang isang booking.} completed {Minarkahan ni {actorName} na kumpleto ang booking.} booked {Kinumpirma ni {actorName} ang isang booking.} other {Binago ni {actorName} ang status ng booking sa {newStatus}.}}"
+            "title": "{newStatus, select, cancelled {%Booking% na-cancel} completed {%Booking% nakumpleto} booked {%Booking% nakumpirma} other {Na-update ang status ng %booking%}}",
+            "body": "{newStatus, select, cancelled {Kinansela ni {actorName} ang isang %booking%.} completed {Minarkahan ni {actorName} na kumpleto ang %booking%.} booked {Kinumpirma ni {actorName} ang isang %booking%.} other {Binago ni {actorName} ang status ng %booking% sa {newStatus}.}}"
           }
         },
         "team": {
           "invitation": {
-            "title": "Inimbitahan ka sa isang koponan",
+            "title": "Inimbitahan ka sa isang %team%",
             "body": "Inimbitahan ka ni {inviterName} na sumali sa {teamName}."
           },
           "invite_accepted": {
@@ -3465,11 +3567,11 @@
             "body": "Sumali na sila sa {teamName}."
           },
           "removed": {
-            "title": "Tinanggal sa koponan",
+            "title": "Tinanggal sa %team%",
             "body": "Natanggal ka sa {teamName}."
           },
           "deleted": {
-            "title": "Koponan naisara",
+            "title": "%Team% naisara",
             "body": "Tinanggal ang {teamName}."
           }
         }
@@ -3484,11 +3586,11 @@
       "no_active_workspace": "Walang aktibong workspace. Pumili ng workspace at subukan muli.",
       "workspace_not_found": "Hindi natagpuan ang workspace.",
       "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
-      "resolve_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
-      "client_match_lookup_failed": "Hindi matingnan ang mga umiiral na kliyente. Pakisubukan muli.",
-      "needs_client_resolution": "Maaaring kabilang ang pagtatanong na ito sa isang umiiral na kliyente. Buksan ito at ayusin ang kliyente bago mag-convert.",
+      "resolve_failed": "Hindi na-update ang %client%. Pakisubukan muli.",
+      "client_match_lookup_failed": "Hindi matingnan ang mga umiiral na %client%. Pakisubukan muli.",
+      "needs_client_resolution": "Maaaring kabilang ang %inquiry% na ito sa isang umiiral na %client%. Buksan ito at ayusin ang %client% bago mag-convert.",
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
-      "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
+      "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang %booking% na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
       "onboarding_plan_locked": "Aktibo na ang iyong plano. Tapusin ang onboarding upang pamahalaan ito sa mga billing setting.",
       "subscription_required": "Natapos na ang iyong Pro access. Mag-subscribe para magpatuloy.",
@@ -3521,25 +3623,25 @@
       "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
       "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",
       "already_member_elsewhere": "Miyembro na ang email na ito sa ibang workspace. Gumamit ng ibang email upang lumikha ng bago.",
-      "client_create_failed": "Hindi nagawa ang kliyente. Pakisubukan muli.",
-      "client_not_found": "Hindi natagpuan ang kliyente.",
-      "client_update_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
-      "client_deactivate_failed": "Hindi na-deactivate ang kliyente. Pakisubukan muli.",
-      "client_has_active_bookings": "May aktibong mga booking ang kliyenteng ito at hindi maaaring i-deactivate.",
-      "client_reactivate_failed": "Hindi na-reactivate ang kliyente. Pakisubukan muli.",
-      "bookings_load_failed": "Hindi ma-load ang mga booking. Pakisubukan muli.",
-      "client_load_failed": "Hindi ma-load ang kliyente. Pakisubukan muli.",
+      "client_create_failed": "Hindi nagawa ang %client%. Pakisubukan muli.",
+      "client_not_found": "Hindi natagpuan ang %client%.",
+      "client_update_failed": "Hindi na-update ang %client%. Pakisubukan muli.",
+      "client_deactivate_failed": "Hindi na-deactivate ang %client%. Pakisubukan muli.",
+      "client_has_active_bookings": "May aktibong %bookings% ang %client% na ito at hindi maaaring i-deactivate.",
+      "client_reactivate_failed": "Hindi na-reactivate ang %client%. Pakisubukan muli.",
+      "bookings_load_failed": "Hindi ma-load ang %bookings%. Pakisubukan muli.",
+      "client_load_failed": "Hindi ma-load ang %client%. Pakisubukan muli.",
       "invalid_id": "Hindi wastong kahilingan.",
       "not_found": "Hindi natagpuan.",
       "forbidden": "Wala kang access na gawin iyon.",
-      "team_not_found": "Hindi natagpuan ang koponan.",
-      "team_deactivated": "Hindi maaaring mag-assign ng booking sa isang na-deactivate na koponan.",
+      "team_not_found": "Hindi natagpuan ang %team%.",
+      "team_deactivated": "Hindi maaaring mag-assign ng %booking% sa isang na-deactivate na %team%.",
       "session_crosses_midnight": "Ang sesyon {index} ay tumatawid ng hatinggabi sa time zone ng workspace.",
-      "client_change_multi_session": "Hindi maaaring palitan ang kliyente sa isang multi-session na booking.",
-      "invalid_client_id": "Hindi wastong kliyente.",
-      "client_not_found_workspace": "Hindi natagpuan ang kliyente sa workspace na ito.",
+      "client_change_multi_session": "Hindi maaaring palitan ang %client% sa isang multi-session na %booking%.",
+      "invalid_client_id": "Hindi wastong %client%.",
+      "client_not_found_workspace": "Hindi natagpuan ang %client% sa workspace na ito.",
       "invalid_request": "Hindi wastong kahilingan.",
-      "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
+      "export_too_large": "Masyadong maraming %booking% para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
@@ -3547,7 +3649,7 @@
       "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
       "subscription_manage_unavailable": "Hindi mabuksan ang pamamahala ng subscription. Pakisubukan muli.",
       "locked": "Naka-lock ang item na ito at hindi maaaring i-edit ngayon.",
-      "conflict": "May salungatan ang oras na iyon sa ibang booking.",
+      "conflict": "May salungatan ang oras na iyon sa ibang %booking%.",
       "edit_sessions_failed": "Hindi na-update ang mga sesyon. Pakisubukan muli.",
       "session_index_out_of_range": "Hindi na umiiral ang sesyong iyon.",
       "invalid": "Pakitingnan ang iyong input at subukan muli.",
@@ -3578,6 +3680,12 @@
     }
   },
   "common": {
+    "tableSort": {
+      "sortBy": "Ayusin ayon sa",
+      "ascending": "Pataas",
+      "descending": "Pababa",
+      "direction": "Direksyon ng pag-aayos: {dir}"
+    },
     "pagination": {
       "showing": "Ipinapakita ang {from}–{to} ng {total}",
       "rowsPerPage": "Bawat pahina",
@@ -3586,6 +3694,7 @@
     },
     "clearFilters": "Tanggalin ang filter",
     "loading": "Naglo-load…",
+    "close": "Isara",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "close": "Isara ang promo code",

@@ -125,6 +125,19 @@ describe("getSubscriptionManageUrlAction", () => {
       url: "https://gallurio.lemonsqueezy.com/billing/portal/sub_1",
     });
   });
+
+  it("returns unexpected_error when Lemon Squeezy throws", async () => {
+    mockOwnerContext.mockResolvedValue({
+      userId: "u1",
+      workspaceId: "ws1",
+      workspace: { lsSubscriptionId: "sub_1" } as never,
+    });
+    mockGetSubscription.mockRejectedValue(new Error("network"));
+
+    const result = await getSubscriptionManageUrlAction();
+
+    expect(result).toEqual({ error: "unexpected_error" });
+  });
 });
 
 describe("verifyCheckoutReturnAction", () => {
@@ -152,6 +165,21 @@ describe("verifyCheckoutReturnAction", () => {
     mockWorkspaceFindById.mockReturnValue({
       lean: vi.fn().mockResolvedValue({ plan: "free", everSubscribed: true, lsSubscriptionId: null }),
     } as never);
+
+    await expect(verifyCheckoutReturnAction()).resolves.toEqual({ ok: false });
+  });
+
+  it("returns ok: false when reconciliation throws", async () => {
+    process.env.PAID_BILLING_ENABLED = "true";
+    mockOwnerContext.mockResolvedValue({ userId: "u1", workspaceId: "ws1", workspace: {} } as never);
+    mockReconcile.mockRejectedValue(new Error("reconcile failed"));
+
+    await expect(verifyCheckoutReturnAction()).resolves.toEqual({ ok: false });
+  });
+
+  it("returns ok: false when ownerContext itself throws (transient DB blip)", async () => {
+    process.env.PAID_BILLING_ENABLED = "true";
+    mockOwnerContext.mockRejectedValue(new Error("db blip"));
 
     await expect(verifyCheckoutReturnAction()).resolves.toEqual({ ok: false });
   });

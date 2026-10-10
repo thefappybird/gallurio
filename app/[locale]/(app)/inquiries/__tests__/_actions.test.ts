@@ -27,6 +27,11 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   }),
 }));
 
+const emitMock = vi.fn();
+vi.mock("@/lib/sockets/emitDataChanged", () => ({
+  emitDataChanged: (...args: unknown[]) => emitMock(...args),
+}));
+
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Inquiry, Booking, Client } from "@/lib/db/models";
 import {
@@ -45,6 +50,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  emitMock.mockReset();
   mockCtx = { userId: "user_owner", role: "owner", workspaceId };
 });
 
@@ -127,6 +133,16 @@ describe("updateInquiryPhoneAction phone validation", () => {
     expect(res).toEqual({ ok: true });
     const fresh = await Inquiry.findById(inquiry._id).lean();
     expect(fresh?.phone).toBe("+63 912 345 6789");
+  });
+
+  it("emits inquiry.updated after a phone update and nothing when validation fails", async () => {
+    const inquiry = await seedPhoneInquiry();
+    await updateInquiryPhoneAction(String(inquiry._id), "123");
+    expect(emitMock).not.toHaveBeenCalled();
+    await updateInquiryPhoneAction(String(inquiry._id), "+63 912 345 6789");
+    expect(emitMock).toHaveBeenCalledWith(String(workspaceId), {
+      type: "inquiry.updated", inquiryId: String(inquiry._id), bookingId: null,
+    });
   });
 
   it("accepts an empty string and clears the phone", async () => {

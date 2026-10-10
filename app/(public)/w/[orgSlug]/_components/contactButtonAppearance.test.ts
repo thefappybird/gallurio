@@ -55,3 +55,12 @@ describe("buildButtonVisualStyle", () => {
     expect(visual.fontSize).toBeUndefined();
   });
 });
+
+describe("module boundary", () => {
+  // Server preview page calls resolveSubmitAppearance; a "use client" directive breaks it (500).
+  it("is not a client module", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("app/(public)/w/[orgSlug]/_components/contactButtonAppearance.ts", "utf8");
+    expect(src.trimStart()).not.toMatch(/^["']use client["']/);
+  });
+});

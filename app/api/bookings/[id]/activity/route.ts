@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog } from "@/lib/db/models";
+import { Booking } from "@/lib/db/models";
+import { loadBookingActivityPage } from "@/lib/bookings/activity-page";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 
 export const runtime = "nodejs";
@@ -43,20 +44,7 @@ export async function GET(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const filter = {
-    workspaceId: ctx.workspace._id,
-    entity: "booking" as const,
-    entityId: id,
-  };
-
-  const [entries, total] = await Promise.all([
-    ActivityLog.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .lean(),
-    ActivityLog.countDocuments(filter),
-  ]);
-
-  return NextResponse.json({ entries, total, page, pageSize });
+  return NextResponse.json(
+    await loadBookingActivityPage(ctx.workspace._id, id, page, pageSize)
+  );
 }

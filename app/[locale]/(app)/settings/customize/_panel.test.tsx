@@ -42,7 +42,10 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undef
 
 vi.mock("@/app/[locale]/(app)/settings/_actions", () => ({
   updateTimeFormatAction: vi.fn(),
+  updateVocabularyPresetAction: vi.fn(),
 }));
+
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
@@ -140,5 +143,63 @@ describe("CustomizePanel", () => {
 
     resolveAction({ ok: true });
     await waitFor(() => expect(button12h).not.toBeDisabled());
+  });
+
+  describe("vocabulary section", () => {
+    async function mocks() {
+      const actions = await import("@/app/[locale]/(app)/settings/_actions");
+      const { toast } = await import("sonner");
+      const action = actions.updateVocabularyPresetAction as ReturnType<typeof vi.fn>;
+      action.mockReset();
+      (toast.error as ReturnType<typeof vi.fn>).mockClear();
+      return { action, toast };
+    }
+
+    it("owner: selecting a preset checks it optimistically and calls the action", async () => {
+      const { action } = await mocks();
+      let resolveAction!: (v: { ok: true }) => void;
+      action.mockReturnValue(new Promise((r) => (resolveAction = r)));
+      renderWithProviders(
+        <Wrapper>
+          <CustomizePanel role="owner" vocabularyPreset={null} businessPreset="venue" />
+        </Wrapper>
+      );
+      expect(screen.getByRole("radio", { name: /Match business type/ })).toBeChecked();
+      const photographer = screen.getByRole("radio", { name: /Photographer/ });
+      fireEvent.click(photographer);
+      expect(photographer).toBeChecked();
+      expect(action).toHaveBeenCalledWith("photographer");
+      resolveAction({ ok: true });
+      await waitFor(() => expect(photographer).not.toBeDisabled());
+    });
+
+    it("owner: failed save rolls back selection and shows an error toast", async () => {
+      const { action, toast } = await mocks();
+      action.mockResolvedValue({ error: "nope" });
+      renderWithProviders(
+        <Wrapper>
+          <CustomizePanel role="owner" vocabularyPreset="venue" businessPreset="standard" />
+        </Wrapper>
+      );
+      fireEvent.click(screen.getByRole("radio", { name: /Planner/ }));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+      expect(screen.getByRole("radio", { name: /Venue/ })).toBeChecked();
+      expect(screen.getByRole("radio", { name: /Planner/ })).not.toBeChecked();
+    });
+
+    it("staff: read-only, radios disabled, note shown, no action call", async () => {
+      const { action } = await mocks();
+      renderWithProviders(
+        <Wrapper>
+          <CustomizePanel role="staff" vocabularyPreset="venue" businessPreset="standard" />
+        </Wrapper>
+      );
+      expect(screen.getByText("Set by your workspace owner.")).toBeInTheDocument();
+      const radios = screen.getAllByRole("radio");
+      expect(radios).toHaveLength(9);
+      radios.forEach((r) => expect(r).toBeDisabled());
+      fireEvent.click(screen.getByRole("radio", { name: /Planner/ }));
+      expect(action).not.toHaveBeenCalled();
+    });
   });
 });

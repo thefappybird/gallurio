@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { BetaEndingBanner } from "./beta-ending-banner";
 
 const END_DATE = "2026-08-01T00:00:00.000Z";

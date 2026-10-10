@@ -1,4 +1,7 @@
-import { getTranslations } from 'next-intl/server'
+import { createTranslator } from 'next-intl'
+import { getMessages } from 'next-intl/server'
+import { applyVocabulary } from '@/lib/vocabulary/apply'
+import type { VocabularyPresetId } from '@/lib/vocabulary/presets'
 import type { NotificationType, NotificationEntityType, NotificationVars } from './types'
 
 function buildHref(
@@ -31,8 +34,14 @@ export async function buildNotificationContent(
   entityId: string,
   _entityType: NotificationEntityType,
   vars: NotificationVars,
+  preset?: VocabularyPresetId,
 ): Promise<{ title: string; body: string; href: string }> {
-  const t = await getTranslations({ locale, namespace: 'app.notifications' })
+  // Catalog strings carry %tokens%; always resolve them (standard when no preset).
+  const t = createTranslator({
+    locale,
+    messages: applyVocabulary(await getMessages({ locale }), locale, preset ?? "standard"),
+    namespace: "app.notifications" as never,
+  });
   const title = t(`types.${type}.title`, vars as Record<string, string>)
   const body = t(`types.${type}.body`, vars as Record<string, string>)
   const href = buildHref(locale, type, entityId, vars)

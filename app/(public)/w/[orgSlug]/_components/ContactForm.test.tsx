@@ -179,7 +179,36 @@ describe("ContactForm", () => {
     expect(sessionCard?.className).not.toContain("text-card-foreground");
   });
 
-  it("adds and removes session rows", () => {
+  it("moves end to start + 1h when start is changed past end", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("End time"), { target: { value: "11:00" } });
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "14:00" } });
+
+  expect(screen.getByLabelText("End time")).toHaveValue("15:00");
+});
+
+it("snaps end to start + 1h on blur when end is at or before start", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "10:00" } });
+  const end = screen.getByLabelText("End time");
+  fireEvent.change(end, { target: { value: "09:00" } });
+  fireEvent.blur(end);
+
+  expect(end).toHaveValue("11:00");
+});
+
+it("leaves end alone when start moves but end is still later", () => {
+  render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+  goToEventDetails();
+  fireEvent.change(screen.getByLabelText("End time"), { target: { value: "17:00" } });
+  fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "12:00" } });
+
+  expect(screen.getByLabelText("End time")).toHaveValue("17:00");
+});
+
+it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     goToEventDetails();
     expect(screen.getAllByLabelText("Date")).toHaveLength(1);
@@ -423,6 +452,13 @@ describe("ContactForm", () => {
     );
     const clientTab = screen.getByRole("tab", { name: "Your details" });
     expect(clientTab.getAttribute("style")).toContain("font-size: 0.8125rem");
+  });
+  it("tabs share the row equally and wrap instead of overflowing", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const cls = screen.getByRole("tab", { name: "Event details" }).className;
+    expect(cls).toMatch(/(^|\s)flex-1(\s|$)/);
+    expect(cls).toContain("min-w-0");
+    expect(cls).toContain("whitespace-normal");
   });
   it("blocks submit when no committed location and shows required message", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);

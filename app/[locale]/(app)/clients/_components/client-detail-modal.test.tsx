@@ -3,6 +3,7 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ClientDetailModal } from "./client-detail-modal";
 import type { ClientRow } from "./clients-table";
+import { getClientBookingsAction } from "@/lib/actions/clients";
 
 vi.mock("@/lib/actions/clients", () => ({
   getClientBookingsAction: vi.fn().mockResolvedValue([
@@ -81,6 +82,29 @@ describe("ClientDetailModal", () => {
     renderWithProviders(<ClientDetailModal {...defaultProps} />);
     fireEvent.click(screen.getByRole("tab", { name: /bookings/i }));
     await waitFor(() => expect(screen.getByText("Carter Wedding")).toBeInTheDocument());
+  });
+
+  it("Bookings tab shows an error with Retry that refetches", async () => {
+    const original = vi.mocked(getClientBookingsAction).getMockImplementation()!;
+    vi.mocked(getClientBookingsAction).mockResolvedValue({ error: "boom" });
+    renderWithProviders(<ClientDetailModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("tab", { name: /bookings/i }));
+    const retry = await screen.findByRole("button", { name: "Retry" }, { timeout: 4000 });
+    vi.mocked(getClientBookingsAction).mockImplementation(original);
+    fireEvent.click(retry);
+    await waitFor(() => expect(screen.getByText("Carter Wedding")).toBeInTheDocument());
+  });
+
+  it("serves bookings from cache when the modal is reopened (fetched once)", async () => {
+    vi.mocked(getClientBookingsAction).mockClear();
+    const view = renderWithProviders(<ClientDetailModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("tab", { name: /bookings/i }));
+    await screen.findByText("Carter Wedding");
+    view.rerender(<ClientDetailModal {...defaultProps} open={false} />);
+    view.rerender(<ClientDetailModal {...defaultProps} open />);
+    fireEvent.click(screen.getByRole("tab", { name: /bookings/i }));
+    expect(await screen.findByText("Carter Wedding")).toBeInTheDocument();
+    expect(getClientBookingsAction).toHaveBeenCalledTimes(1);
   });
 
   it("Payments tab shows empty state", async () => {

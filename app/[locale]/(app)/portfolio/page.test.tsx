@@ -13,6 +13,9 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async () => (key: string) => key),
 }));
+vi.mock("@/lib/vocabulary/appTranslations", async () => ({
+  getAppTranslations: (await import("next-intl/server")).getTranslations,
+}));
 
 const requireOrgMock = vi.fn();
 vi.mock("@/lib/auth/requireOrg", () => ({

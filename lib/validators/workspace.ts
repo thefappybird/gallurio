@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VOCABULARY_PRESET_IDS } from "@/lib/vocabulary/presets";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 
 // Single source of truth for the workspace-slug grammar. Reused by proxy.ts to
@@ -145,6 +146,9 @@ export type WorkspaceSetupInput = z.infer<typeof workspaceSetupSchema>;
 export const currencySchema = z.enum(SUPPORTED_CURRENCIES, {
   errorMap: () => ({ message: "Pick a supported currency" }),
 });
+
+// null clears the override (vocabulary falls back to businessType).
+export const vocabularyPresetSchema = z.enum(VOCABULARY_PRESET_IDS).nullable();
 
 // Shared coercion helper for a possibly-null/invalid stored country value.
 export function coerceBillingCountry(

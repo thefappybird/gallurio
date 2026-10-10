@@ -1,3 +1,4 @@
+import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -381,6 +382,8 @@ export async function POST(req: Request) {
       existingBooking = await Booking.findOne({
         _id: group.bookingId,
         workspaceId: ctx.workspace._id,
+        // Drafts are promoted only by the approve flow, never by import.
+        status: { $ne: "draft" },
       })
         // amount comes along so an edit to it can be refused rather than
         // silently dropped by the $set below.
@@ -503,6 +506,12 @@ export async function POST(req: Request) {
                 notes: row.notes ?? "",
               },
             },
+            { session: updateSession }
+          );
+          // Stamp bookedAt once if still unset.
+          await Booking.updateOne(
+            { _id: existingBooking._id, workspaceId: ctx.workspace._id, bookedAt: null },
+            { $set: { bookedAt: new Date() } },
             { session: updateSession }
           );
           await ActivityLog.create(
@@ -646,6 +655,7 @@ export async function POST(req: Request) {
               title: row.title,
               eventType: row.eventType ?? "other",
               status: row.status ?? "booked",
+              bookedAt: now,
               sessions,
               firstSessionStart,
               lastSessionEnd,
@@ -739,6 +749,10 @@ export async function POST(req: Request) {
     } finally {
       await session.endSession();
     }
+  }
+
+  if (created.length + updated.length > 0) {
+    emitDataChanged(ctx.workspace._id.toString(), { type: "bookings.imported" });
   }
 
   const skipped = skippedRows;

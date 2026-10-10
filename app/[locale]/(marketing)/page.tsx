@@ -9,7 +9,10 @@ import { Link } from "@/lib/i18n/navigation";
 import { staticFallback } from "@/lib/lemonsqueezy/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
+import type { CSSProperties } from "react";
 import { PricingTeaser } from "./_components/pricing-teaser";
+import { MarketingReveal } from "./_components/marketing-reveal";
+import { VocabularyShowcase } from "./_components/vocabulary-showcase";
 import { ThemedShot } from "./_components/themed-shot";
 
 // Static page: no session/DB/headers reads, so Next can serve it from cache.
@@ -21,6 +24,9 @@ import { ThemedShot } from "./_components/themed-shot";
 export const revalidate = 60;
 
 type Props = { params: Promise<{ locale: string }> };
+
+// Stagger index consumed by the `--i` delays in globals.css (MARKETING MOTION).
+const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -136,7 +142,8 @@ export default async function Home({ params }: Props) {
           headline+trust area so it doesn't compete with the split imagery
           or marquee below. Follows the visitor's site theme, no forced
           override. */}
-      <section className="relative bg-background pb-16 text-center text-foreground">
+      <MarketingReveal />
+      <section data-r="lines" className="relative bg-background pb-16 text-center text-foreground">
         <div className="relative">
           <div
             className="absolute inset-0"
@@ -161,15 +168,31 @@ export default async function Home({ params }: Props) {
             </div>
           </div>
           <div className="relative mx-auto max-w-2xl px-4 pt-14 pb-6 sm:px-6 sm:pt-20">
-            <span className="mb-6 inline-flex items-center rounded-[var(--radius-sm)] bg-brand px-3.5 py-1.5 text-xs font-bold tracking-wider text-brand-foreground uppercase">
+            <span
+              style={{ "--d": "0ms" } as CSSProperties}
+              className="mk-hero-in mk-hero-eyebrow mb-6 inline-flex items-center rounded-[var(--radius-sm)] bg-brand px-3.5 py-1.5 text-xs font-bold tracking-wider text-brand-foreground uppercase"
+            >
               {t("hero.eyebrow")}
             </span>
             <h1 className="text-balance font-heading text-4xl leading-[0.98] font-extrabold tracking-tighter sm:text-6xl">
-              <span className="block">{t("hero.headlineShow")}</span>
-              <span className="block text-brand">{t("hero.headlineRun")}</span>
+              <span className="block overflow-hidden pb-[0.08em]">
+                <span className="mk-ln block" style={stagger(0)}>
+                  {t("hero.headlineShow")}
+                </span>
+              </span>
+              <span className="block overflow-hidden pb-[0.08em] text-brand">
+                <span className="mk-ln block" style={stagger(1)}>
+                  {t("hero.headlineRun")}
+                </span>
+              </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground">{t("whatIs.body")}</p>
-            <div className="mt-9 flex flex-col items-center gap-3">
+            <p
+              style={{ "--d": "380ms" } as CSSProperties}
+              className="mk-hero-in mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground"
+            >
+              {t("whatIs.body")}
+            </p>
+            <div style={{ "--d": "480ms" } as CSSProperties} className="mk-hero-in mt-9 flex flex-col items-center gap-3">
               <div className="flex flex-col items-center gap-3 sm:flex-row">
                 <Link
                   href="/sign-up"
@@ -185,8 +208,12 @@ export default async function Home({ params }: Props) {
                 </Link>
               </div>
               <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:px-6">
-                {trustItems.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-2 text-start sm:whitespace-nowrap">
+                {trustItems.map((item, i) => (
+                  <span
+                    key={item}
+                    style={stagger(i)}
+                    className="mk-trust inline-flex items-center gap-2 text-start sm:whitespace-nowrap"
+                  >
                     <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
                     {item}
                   </span>
@@ -205,7 +232,7 @@ export default async function Home({ params }: Props) {
 
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">
-          <div className="group relative md:pe-8">
+          <div data-r="card" style={stagger(0)} className="group relative md:pe-8">
             <div className="mb-4 flex items-center justify-between transition-transform duration-300 group-hover:-translate-y-1">
               <span className="font-heading text-lg font-bold">{t("split.showVerb")}</span>
               <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
@@ -224,7 +251,7 @@ export default async function Home({ params }: Props) {
               />
             </div>
           </div>
-          <div className="group relative md:border-s md:border-border md:ps-8">
+          <div data-r="card" style={stagger(1)} className="group relative md:border-s md:border-border md:ps-8">
             <div className="mb-4 flex items-center justify-between transition-transform duration-300 group-hover:-translate-y-1">
               <span className="font-heading text-lg font-bold text-brand">{t("split.manageVerb")}</span>
               <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
@@ -243,7 +270,7 @@ export default async function Home({ params }: Props) {
             </div>
           </div>
         </div>
-        <p className="relative z-10 mx-auto mt-7 max-w-md px-4 text-center text-sm font-semibold text-muted-foreground sm:px-6">
+        <p data-r="soft" className="relative z-10 mx-auto mt-7 max-w-md px-4 text-center text-sm font-semibold text-muted-foreground sm:px-6">
           {t("split.bridgeLead")} <strong className="font-extrabold text-foreground">{t("split.bridgeEmphasis")}</strong>
         </p>
 
@@ -274,18 +301,25 @@ export default async function Home({ params }: Props) {
         </div>
       ))}
 
+      {/* Vocabulary presets — the workspace renames itself to the visitor's trade. */}
+      <VocabularyShowcase />
+
       {/* Transparency — trust/compliance points surfaced as their own block
           (not buried in the footer), directly ahead of pricing. */}
       <section className="border-t border-border bg-foreground px-4 py-16 text-background sm:px-6 sm:py-24">
         <div className="mx-auto max-w-5xl">
           <div className="max-w-lg text-start">
-            <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{t("transparency.title")}</h2>
-            <p className="mt-3 text-base leading-7 text-background/70">{t("transparency.subtitle")}</p>
+            <h2 data-r="rise" className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+              {t("transparency.title")}
+            </h2>
+            <p data-r="rise" style={stagger(1)} className="mt-3 text-base leading-7 text-background/70">
+              {t("transparency.subtitle")}
+            </p>
           </div>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-8">
-            {transparencyItems.map((item) => (
-              <div key={item.title} className="flex items-start gap-3.5 text-start">
-                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-brand text-brand-foreground">
+          <div data-r="stamp" className="mt-10 grid gap-6 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-8">
+            {transparencyItems.map((item, i) => (
+              <div key={item.title} style={stagger(i)} className="mk-item flex items-start gap-3.5 text-start">
+                <span className="mk-badge mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-brand text-brand-foreground">
                   <CheckIcon className="size-4" aria-hidden />
                 </span>
                 <p className="text-sm leading-6 text-background/80">
@@ -295,7 +329,7 @@ export default async function Home({ params }: Props) {
               </div>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-background/15 pt-8 text-sm font-semibold">
+          <div data-r="soft" className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-background/15 pt-8 text-sm font-semibold">
             <Link href="/terms" className="hover:text-brand">
               {tTerms("title")}
             </Link>
@@ -314,17 +348,30 @@ export default async function Home({ params }: Props) {
 
       {/* Manifesto — the mid-page brand-teal moment. */}
       <section className="border-t border-border bg-brand px-4 py-20 text-center text-brand-foreground sm:px-6 sm:py-28">
-        <blockquote className="mx-auto max-w-2xl text-balance font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-          &ldquo;{t("manifesto.quote")}&rdquo;
+        <blockquote
+          data-r="words"
+          className="mx-auto max-w-2xl text-balance font-heading text-3xl font-bold tracking-tight sm:text-4xl"
+        >
+          {`“${t("manifesto.quote")}”`.split(/(\s+)/).map((w, i) =>
+            /\s/.test(w) ? (
+              w
+            ) : (
+              <span key={i} style={stagger(i / 2)} className="mk-w inline-block max-w-full break-words">
+                {w}
+              </span>
+            ),
+          )}
         </blockquote>
-        <cite className="mt-6 block text-sm font-semibold not-italic opacity-85">
+        <cite data-r="soft" style={stagger(6)} className="mt-6 block text-sm font-semibold not-italic opacity-85">
           {t("manifesto.attribution")}
         </cite>
       </section>
 
-      <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
+      <div data-r="rise">
+        <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
+      </div>
 
-      <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+      <p data-r="soft" className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
         {t("compareTeaser.intro")}{" "}
         <NextLink href="/compare" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
           {t("compareTeaser.linkLabel")}
@@ -332,7 +379,10 @@ export default async function Home({ params }: Props) {
       </p>
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
-      <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
+      <section
+        data-r="lines"
+        className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28"
+      >
         {/* Same 180deg flip as the hero's art layer, for the same reason:
             keeps the denser cluster off in the corners instead of behind
             the heading/CTA. This section has no trust-strip to separate
@@ -356,10 +406,14 @@ export default async function Home({ params }: Props) {
         </div>
         <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
           <h2 className="text-balance font-heading text-3xl font-extrabold tracking-tight sm:text-5xl">
-            {t("finalCta.title")}
+            <span className="block overflow-hidden pb-[0.08em]">
+              <span className="mk-ln block">{t("finalCta.title")}</span>
+            </span>
           </h2>
-          <p className="max-w-xl text-base leading-7 text-muted-foreground">{t("finalCta.body")}</p>
-          <div className="flex flex-col items-center gap-3">
+          <p data-r="rise" style={stagger(3)} className="max-w-xl text-base leading-7 text-muted-foreground">
+            {t("finalCta.body")}
+          </p>
+          <div data-r="rise" style={stagger(4)} className="flex flex-col items-center gap-3">
             <div className="flex flex-col items-center gap-3 sm:flex-row">
               <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "lg", className: "h-12 px-8 text-base" })}>
                 {t("finalCta.button")}
@@ -410,11 +464,11 @@ function PanelSection({
         {index % 2 === 0 ? (
           <>
             <TextBlock panel={panel} />
-            <ImageBlock panel={panel} />
+            <ImageBlock panel={panel} side="wipe-end" />
           </>
         ) : (
           <>
-            <ImageBlock panel={panel} />
+            <ImageBlock panel={panel} side="wipe-start" />
             <TextBlock panel={panel} />
           </>
         )}
@@ -447,20 +501,29 @@ function BookingMigrationSection({
     <section className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-2xl text-start">
-          <h2 className="text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2
+            data-r="rise"
+            className="text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl"
+          >
             {t("features.bookingMigration.headline")}
           </h2>
-          <p className="mt-3.5 max-w-xl text-base leading-7 text-muted-foreground">
+          <p data-r="rise" style={stagger(1)} className="mt-3.5 max-w-xl text-base leading-7 text-muted-foreground">
             {t("features.bookingMigration.description")}
           </p>
         </div>
 
-        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-5">
+        <div data-r="steps" className="relative mt-10">
+          <span
+            aria-hidden
+            className="mk-connector absolute inset-x-0 -top-3.5 hidden h-0.5 bg-foreground md:block"
+          />
+        <ol className="grid gap-8 md:grid-cols-3 md:gap-5">
           {steps.map((step, index) => (
             <li
               key={step.key}
+              style={stagger(index)}
               data-testid={`booking-migration-${step.key}-card`}
-              className="group min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:hover:scale-[1.015] motion-reduce:transition-none motion-reduce:hover:scale-100"
+              className="mk-step group min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:hover:scale-[1.015] motion-reduce:transition-none motion-reduce:hover:scale-100"
             >
               <div className="overflow-hidden rounded-[var(--radius-surface)] bg-card ring-1 ring-foreground/10">
                 <div
@@ -493,6 +556,7 @@ function BookingMigrationSection({
             </li>
           ))}
         </ol>
+        </div>
       </div>
     </section>
   );
@@ -511,34 +575,44 @@ function TextBlock({
 }) {
   return (
     <div className="flex-1 text-start">
-      <p className="text-sm font-bold tracking-tight text-brand">{panel.kicker}</p>
-      <h3 className="mt-2 text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+      <p data-r="soft" className="text-sm font-bold tracking-tight text-brand">
+        {panel.kicker}
+      </p>
+      <h3
+        data-r="rise"
+        style={stagger(1)}
+        className="mt-2 text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl"
+      >
         {panel.headline}
       </h3>
-      <p className="mt-3.5 max-w-md text-base leading-7 text-muted-foreground">{panel.description}</p>
-      <ul className="mt-5 flex flex-col gap-2.5">
-        {panel.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5 text-sm font-medium">
+      <p data-r="rise" style={stagger(2)} className="mt-3.5 max-w-md text-base leading-7 text-muted-foreground">
+        {panel.description}
+      </p>
+      <ul data-r="checks" className="mt-5 flex flex-col gap-2.5">
+        {panel.features.map((feature, i) => (
+          <li key={feature} style={stagger(i)} className="flex items-start gap-2.5 text-sm font-medium">
             <CheckIcon className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
             {feature}
           </li>
         ))}
       </ul>
       {panel.cta ? (
-        <Link href={panel.cta.href} className={buttonVariants({ variant: "brand", className: "mt-6" })}>
-          {panel.cta.label}
-        </Link>
+        <div data-r="soft" className="mt-6">
+          <Link href={panel.cta.href} className={buttonVariants({ variant: "brand" })}>
+            {panel.cta.label}
+          </Link>
+        </div>
       ) : null}
     </div>
   );
 }
 
-function ImageBlock({ panel }: { panel: { kicker: string; image: string } }) {
+function ImageBlock({ panel, side }: { panel: { kicker: string; image: string }; side: "wipe-start" | "wipe-end" }) {
   return (
-    <div className="group w-full flex-1">
+    <div data-r={side} className="group w-full flex-1">
       <div
         data-testid="marketing-feature-image-frame"
-        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+        className="mk-frame relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       >
         <ThemedShot
           base={panel.image}

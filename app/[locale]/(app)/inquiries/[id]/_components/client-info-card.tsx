@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppWorkspaceId } from "@/components/app/app-query-provider";
+import { useInvalidateFor } from "@/hooks/use-data-events";
+import { EDITABLE_QUERY_OPTIONS, queryKeys } from "@/lib/query/keys";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -26,11 +30,15 @@ type Props = {
   preferredContact: string;
   status: string;
   readOnly?: boolean;
+  /** The inquiry's draft booking, when known; only used to match the server's socket echo. */
+  bookingId?: string | null;
   /** The inquiry's message, reconciled against the target client's notes. */
   message?: string;
   /** Increments when a conversion attempt detects a duplicate. */
   clientResolutionRequest?: number;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
+  /** Matches folded into the detail read; undefined = fetch on mount. */
+  initialMatches?: InquiryClientMatch[];
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -42,10 +50,12 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, bookingId = null, message = "", clientResolutionRequest = 0, onInquiryChanged, initialMatches }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
-  const [matches, setMatches] = useState<InquiryClientMatch[]>([]);
+  const ws = useAppWorkspaceId();
+  const queryClient = useQueryClient();
+  const invalidateFor = useInvalidateFor();
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [handledClientResolutionRequest, setHandledClientResolutionRequest] = useState(0);
   const tp = useTranslations("app.inquiries.preferred");
@@ -56,21 +66,25 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
 
   const locked = readOnly || status === "booked" || status === "converted" || status === "archived";
 
-  // Computed live when this card mounts — i.e. when the inquiry is opened.
-  // Nothing is stored, so there is nothing to invalidate. Deliberately absent
-  // from the inquiries table: that would need a per-row lookup across the list.
-  useEffect(() => {
-    if (locked) return;
-    let cancelled = false;
-    void findInquiryClientMatchesAction(inquiryId).then((res) => {
-      // Guard against a resolve landing after the modal closed. A non-owner
-      // gets an error here, which leaves the indicator hidden — as intended.
-      if (!cancelled && "ok" in res) setMatches(res.matches);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [inquiryId, locked]);
+  // Computed live on the server, cached under the inquiry's key so
+  // inquiry.updated refreshes it. Deliberately absent from the inquiries table:
+  // that would need a per-row lookup across the list.
+  // Captured once so seeded data counts as fresh (provider staleTime) on mount.
+  const [seededAt] = useState(() => Date.now());
+  const matchesKey = [...queryKeys(ws).inquiry(inquiryId), "clientMatches"];
+  const matchesQuery = useQuery({
+    queryKey: matchesKey,
+    queryFn: async (): Promise<InquiryClientMatch[]> => {
+      const res = await findInquiryClientMatchesAction(inquiryId);
+      // A non-owner gets an error here, which leaves the indicator hidden — as intended.
+      return "ok" in res ? res.matches : [];
+    },
+    enabled: !locked,
+    initialData: initialMatches,
+    initialDataUpdatedAt: seededAt,
+    ...EDITABLE_QUERY_OPTIONS,
+  });
+  const matches = matchesQuery.data ?? [];
 
   if (clientResolutionRequest > handledClientResolutionRequest && matches.length > 0) {
     setHandledClientResolutionRequest(clientResolutionRequest);
@@ -85,7 +99,19 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       return;
     }
     toast.success(tMatch("resolvedToast"));
-    setMatches([]);
+    queryClient.setQueryData(matchesKey, []);
+    // Mirror the server's emissions exactly (inquiry write + draft booking + client).
+    // This action does not revalidate, so the default refresh stays on.
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId });
+    if (bookingId && res.clientId) {
+      invalidateFor({ type: "booking.updated", bookingId, clientId: res.clientId, inquiryId });
+    }
+    if (res.clientId) {
+      invalidateFor({
+        type: "createNew" in resolution ? "client.created" : "client.updated",
+        clientId: res.clientId,
+      });
+    }
   }
 
   const [editingPhone, setEditingPhone] = useState(false);
@@ -103,6 +129,8 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     toast.success(t("savedToast"));
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
+    // updateInquiryPhoneAction revalidates the inquiry routes and emits bookingId: null.
+    invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: null }, { refresh: false });
   }
 
   function handleCancelPhone() {

@@ -884,6 +884,8 @@ async function createBookingsAndTransactions(
         title: spec.title,
         eventType: spec.eventType,
         status: spec.status,
+        // Spread booked dates (non-monotonic vs. index) so the Booked sort is visibly meaningful.
+        bookedAt: dayOffset(-3 - ((index * 7) % 60)),
         sessions: spec.sessions,
         firstSessionStart,
         lastSessionEnd,
@@ -1083,6 +1085,7 @@ async function createInquiries(
       title: `${spec.client.name} - ${spec.eventTitle}`,
       eventType: spec.eventType,
       status: draftStatus,
+      bookedAt: draftStatus === "draft" ? null : new Date(spec.createdAt.getTime() + 86_400_000),
       sessions,
       firstSessionStart,
       lastSessionEnd,
@@ -1129,6 +1132,10 @@ async function createInquiries(
         draftBookingId: spec.status === "inquiry" ? bookingId : null,
         convertedClientId: spec.status === "booked" || spec.status === "converted" ? spec.client._id : null,
         convertedBookingId: spec.status === "booked" || spec.status === "converted" ? bookingId : null,
+        bookedAt:
+          spec.status === "booked" || spec.status === "converted"
+            ? new Date(spec.createdAt.getTime() + 86_400_000)
+            : null,
         createdAt: spec.createdAt,
         updatedAt: spec.status === "inquiry" ? spec.createdAt : new Date(spec.createdAt.getTime() + 86_400_000),
       };

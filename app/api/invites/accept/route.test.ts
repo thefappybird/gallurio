@@ -60,6 +60,9 @@ vi.mock("@/lib/db/models/teamMembership", () => ({
   TeamMembership: { create: vi.fn(async () => undefined) },
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 vi.mock("@/lib/auth/activeWorkspace", () => ({
   setActiveWorkspace: vi.fn(async () => undefined),
 }));
@@ -354,6 +357,38 @@ describe("GET /api/invites/accept — one workspace per email", () => {
     const location = res.headers.get("location") ?? "";
     expect(location).not.toContain("error=already_member");
     expect(location).toContain("/bookings");
+  });
+});
+
+describe("GET /api/invites/accept — data:changed", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("emits team.updated for the invited workspace after a successful accept", async () => {
+    const { GET } = await loadRoute();
+    wireValidInvitation("emit@example.com");
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "wos_emit",
+      email: "emit@example.com",
+      name: "Emit User",
+      avatarUrl: null,
+    });
+    await GET(makeReq("http://localhost/api/invites/accept?token=tok_emit"));
+    expect(emit).toHaveBeenCalledWith("ws_1", { type: "team.updated", teamId: null });
+  });
+
+  it("does not emit when the signed-in email does not match the invite", async () => {
+    const { GET } = await loadRoute();
+    wireValidInvitation("right@example.com");
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "wos_wrong",
+      email: "wrong@example.com",
+      name: "Wrong",
+      avatarUrl: null,
+    });
+    await GET(makeReq("http://localhost/api/invites/accept?token=tok_wrong"));
+    expect(emit).not.toHaveBeenCalled();
   });
 });
 

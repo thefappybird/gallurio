@@ -442,6 +442,13 @@ describe("AppSidebar bell arrival popup placement (A21)", () => {
   });
 });
 
+describe("AppSidebar nav landmark", () => {
+  it("exposes the sidebar as a labeled navigation landmark", () => {
+    renderSidebar("owner");
+    expect(screen.getByRole("navigation", { name: /main navigation/i })).toBeInTheDocument();
+  });
+});
+
 describe("AppSidebar mobile close on nav", () => {
   const setOpenMobileSpy = vi.fn();
 

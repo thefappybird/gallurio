@@ -5,7 +5,11 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Booking } from "@/lib/db/models";
-import { computeInquiryConflicts, type InquiryConflictInput } from "./inquiry-conflicts";
+import {
+  computeInquiryConflicts,
+  computeInquiryConflictsFromBookings,
+  type InquiryConflictInput,
+} from "./inquiry-conflicts";
 
 // Asia/Manila = UTC+8. A booking 01:00–09:00 UTC is 09:00–17:00 Manila.
 const TZ = "Asia/Manila";
@@ -129,5 +133,34 @@ describe("computeInquiryConflicts", () => {
     const result = await computeInquiryConflicts(workspaceId, inquiries, TZ);
     expect(result.has("inq1")).toBe(true);
     expect(result.has("inq2")).toBe(false);
+  });
+});
+
+describe("computeInquiryConflictsFromBookings (pure core)", () => {
+  it("gives the same conflict set as the DB wrapper on a mixed fixture", async () => {
+    await seedBooking([
+      { startAt: new Date("2030-08-15T01:00:00Z"), endAt: new Date("2030-08-15T09:00:00Z") },
+    ]);
+    // Overnight 22:00 Aug 16 -> 02:00 Aug 17 Manila.
+    await seedBooking([
+      { startAt: new Date("2030-08-16T14:00:00Z"), endAt: new Date("2030-08-16T18:00:00Z") },
+    ]);
+    await seedBooking(
+      [{ startAt: new Date("2030-08-20T01:00:00Z"), endAt: new Date("2030-08-20T09:00:00Z") }],
+      { status: "cancelled" }
+    );
+    const inquiries = [
+      makeInquiry("hit-same-day", [{ startDate: "2030-08-15", startTime: "10:00", endTime: "12:00" }]),
+      makeInquiry("hit-overnight-tail", [{ startDate: "2030-08-17", startTime: "00:30", endTime: "01:30" }]),
+      makeInquiry("adjacent", [{ startDate: "2030-08-15", startTime: "17:00", endTime: "18:00" }]),
+      makeInquiry("cancelled-only", [{ startDate: "2030-08-20", startTime: "10:00", endTime: "12:00" }]),
+    ];
+    const viaDb = await computeInquiryConflicts(workspaceId, inquiries, TZ);
+    const docs = await Booking.find({ workspaceId, status: { $nin: ["cancelled", "draft"] } })
+      .select("sessions")
+      .lean();
+    const viaCore = computeInquiryConflictsFromBookings(inquiries, docs, TZ);
+    expect([...viaCore].sort()).toEqual([...viaDb].sort());
+    expect([...viaCore].sort()).toEqual(["hit-overnight-tail", "hit-same-day"]);
   });
 });

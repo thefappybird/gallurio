@@ -20,7 +20,7 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h3" className="text-sm font-medium">{title}</CardTitle>
         <InfoHint label={t("hints.activity")} />
       </CardHeader>
       <CardContent>
@@ -37,7 +37,7 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
                   {safeT(t, `activityEntity.${a.entity}`, humanizeActivityToken(a.entity))}{" "}
                   {safeT(t, `activityAction.${a.action}`, humanizeActivityToken(a.action))}
                 </span>
-                <span className="shrink-0 text-muted-foreground">
+                <span className="shrink-0 text-muted-foreground" suppressHydrationWarning>
                   {formatRelativeTime(a.createdAt, locale)}
                 </span>
               </li>

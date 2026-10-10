@@ -178,3 +178,8 @@ The Featured Work collection popup and every standalone image modal (photo grids
 - Mobile gallery CLS went 0 → 0.016 after the `next/image` tile sizing. It is still well under the 0.1 threshold, but worth tightening.
 - `listDraftsAction` returns `[]` on failure because its result type has no error channel.
 - The React Profiler count of commits per unedited block was never captured; it needs DevTools.
+- Puck 0.23 follow-ups (package is `@puckeditor/core` 0.23; data, blocks, custom fields and overrides needed no migration):
+  - `ContainerAnchor` stays: with anchors off, 0.23's insertion-line drops still land wrong (manual check, `shouldKeepAnchor` in `lib/page-builder/containerAnchorPredicate.ts`). Re-check on a later Puck release before deleting it.
+  - The Playwright drag recipe in `portfolio-testing` is not re-validated against `@dnd-kit` 0.4 (synthetic canvas drags no-op). About 10 portfolio e2e specs remain undiagnosed or stale; inactive plugin panels stay mounted at `display: none`, so assert visibility, never presence. Specs waiting on `[class*="_ComponentList_"]` are dead because our `drawer` override drops `children`.
+  - Our sidebar plugin must be named exactly `legacy-side-bar` (Puck's rail hard-codes it). `editorThemeBridge.test.ts` guards that every palette-backed `--puck-*` alias is re-declared in `editor.css`.
+  - Deliberately not adopted: Puck AI (paid Puck Cloud) and the TipTap `richtext` field (product change, not an upgrade need). `happy-dom` is a hard Puck dependency but never loads at runtime (no richtext fields); install weight only.

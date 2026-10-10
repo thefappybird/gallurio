@@ -90,7 +90,7 @@ export function TeamPerformanceCards({
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
       <Card className="rounded-[var(--radius)] lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle as="h2" className="text-sm font-medium">
             {t("sections.teamPerformance")}
           </CardTitle>
           <InfoHint label={t("hints.teamPerformance")} />
@@ -138,7 +138,7 @@ export function TeamPerformanceCards({
 
       <Card className="rounded-[var(--radius)] lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle as="h2" className="text-sm font-medium">
             {t("sections.bookingsPerTeam")}
           </CardTitle>
           <InfoHint label={t("hints.bookingsPerTeam")} />

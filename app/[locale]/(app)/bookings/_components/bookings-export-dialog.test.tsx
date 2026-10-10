@@ -87,6 +87,18 @@ describe("BookingsExportDialog", () => {
     expect(button).toBeDisabled();
   });
 
+  it("shows an alert and stays open when the download request fails", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 413 });
+    vi.stubGlobal("fetch", fetchMock);
+    const onClose = vi.fn();
+    renderDialog({ onClose });
+    fireEvent.click(screen.getByRole("button", { name: /download/i }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/bookings/export");
+    expect(onClose).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
   it("says so when the list's own filters will narrow the export too", () => {
     // A download that quietly differs from the choices above is worse than
     // one extra line of copy.

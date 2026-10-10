@@ -3,6 +3,56 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.6.0] - 2026-10-10
+
+Release PRs #113 (perf/a11y/CLS wave), #114 (calendars, round-trips, query cache), #115 (calendar/table layout, booked date, server sort), and #116 (vocabulary presets, animated marketing home).
+
+### Added
+- **Vocabulary presets.** Workspace owners pick a preset (Standard, photographer, venue, planner, stylist, catering, entertainer, or artists) in Settings → Customize. It renames inquiry, booking, client, and team across the app, member emails, and notifications. Routes, data, and logic are unchanged. Members see the choice read-only. Available in all five languages.
+- The marketing home page has playful scroll-reveal motion (reduced-motion safe) and a "Speaks your trade" showcase section.
+- **Booked date.** Bookings and inquiries record when they were booked, shown as a "Booked on" column on both tables. New bookings sort first by default.
+- **Server-side sorting** on every bookings and inquiries column. A header click cycles ascending, descending, then back to the default order. Phones get a "Sort by" control.
+- The bookings and inquiries tables, and the clients table, size their page to fit the screen and remember it per table.
+- Unconfirmed inline edits in the booking modal show a footer note, and the confirm button turns green.
+- End times follow start times (start + 1 h, capped at 23:59) in the booking wizard, booking modal, inquiry draft card, and public contact form.
+- The calendar's "Teams" button is now a "Legend" with a "Conflicted" key. Workspaces without teams get a Booked/Conflicted legend.
+- The inquiry source shows as a pill under the type instead of its own column.
+- The app sidebar is a labelled navigation landmark on every signed-in page.
+
+### Changed
+- **Booking conflicts are per team.** Two bookings conflict only when the same team is double-booked. Different teams at the same time are fine, and bookings with no team count as one shared team. This applies to calendar colouring, the drag-and-drop gate, the booking wizard, and the booking detail modal. Inquiries keep the old rule.
+- The bookings and inquiries calendars load only the visible month plus about five weeks either side, load their calendar library on demand, and have their own skeletons. "Today" follows the workspace timezone.
+- Opening a booking is one request, dragging one is one request with no page refresh, and opening an inquiry is one server action. Conflict previews are batched, and `/api/users/names` is removed.
+- Every client-side read on the app's data screens is cached by one workspace-scoped query cache, and every mutation invalidates the related screens through a single map.
+- Dashboard charts are code-split, heavy modals load on demand, and settings, teams, and clients load their data in parallel.
+- Tables fit 1280 px with the sidebar open. Column widths stay fixed while sorting or paging, and status pills share one width.
+
+### Fixed
+- **Layout shift (CLS).** The calendar no longer grows about a second after first paint, the settings and notifications skeletons match the real layout, and table skeletons render exactly the page-size rows.
+- **Stale data.**
+  - A save can no longer overwrite a teammate's change: a booking save takes `expectedUpdatedAt` and returns `409 stale` with the current booking on a mismatch. The modal, wizard, and calendar drag all handle it.
+  - Open booking modals and inquiry cards pick up newer copies, and keep unsaved edits with a notice. Inquiry Save and Approve send only changed fields, so Approve cannot promote a draft at an outdated price.
+  - Teammates' changes reach other tabs live. The socket reconnects indefinitely and refetches after any gap, and back/forward no longer restores a pre-change page.
+  - Staff only refresh for bookings in their own teams.
+  - Renaming a client updates the client name stored on its bookings.
+  - Inquiry `eventDate` is the earliest session's start in the workspace timezone, and inquiry dates display in that timezone.
+  - A drafts save that writes nothing returns `not_draft` instead of success.
+- `/portfolio-preview?zone=contact` no longer returns 500.
+- The public contact form's three tabs share the row and wrap at 375 px.
+- A CSV import can no longer turn an inquiry's draft booking into a booked one without approval.
+- Billing actions report failures instead of throwing, and the post-checkout return page can no longer hang on a transient database error.
+- The teams table has the same keyboard and screen-reader support as the clients table. Relative-time text no longer throws a hydration error, and the dialog Close label is localized.
+- Settings no longer has a dead reload button or a duplicate main landmark on error.
+
+### Performance
+- **Calendar round-trips:** the bookings calendar renders from 1 team read plus 1 windowed booking query. The inquiries calendar needs 2 queries instead of 5. Month navigation within the loaded range fetches nothing.
+- **Booking detail:** 1 GET with activity and actor names, plus 1 batched conflict lookup, with no server re-render. "Edit all" reuses the cached booking.
+- Request-level memoization resolves the signed-in user and workspace once per request instead of twice.
+
+### Known gaps
+- Vocabulary: the fil, id, and ar preset terms and grammar need native-speaker review. Some English-only hint strings are not yet tokenized in id, ar, and th, and "Invalid team id" server errors are not yet catalog keys.
+- Teams still loads the full team list instead of paginating on the server, because the invite picker and cap checks need it anyway.
+
 ## [1.5.0] - 2026-09-28
 
 Release PRs #105 (audit catalog), #106 (Puck 0.23 upgrade), #108 (Puck follow-ups: foundation wave), #109 (Puck follow-ups: perf wave), and #110 (public surfaces: search indexing and first-load performance).

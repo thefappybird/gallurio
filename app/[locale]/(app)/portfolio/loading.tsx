@@ -1,10 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Full-bleed shell placeholder matching EditorShell's toolbar + rail + canvas
 // layout (see page.tsx's `-m-6 h-svh` wrapper).
 export default async function PortfolioLoading() {
-  const t = await getTranslations("common");
+  const t = await getAppTranslations("common");
   return (
     <div className="-m-6 flex h-svh flex-col" aria-busy="true" role="status">
       <span className="sr-only">{t("loading")}</span>

@@ -42,7 +42,6 @@ export function buildInquiryCalendarEvents(
         end,
         status: "booked",
         clientName: inq.clientName ?? "",
-        clientEmail: null,
         rangeStart,
         rangeEnd: rangeStart,
         sessionIndex: idx,

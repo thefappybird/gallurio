@@ -15,6 +15,11 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn(async () => (key: string) => key),
 }));
 
+vi.mock("@/lib/vocabulary/appTranslations", () => ({
+  getAppTranslations: vi.fn(async () => (key: string) => key),
+  getAppMessages: vi.fn(async () => ({})),
+}));
+
 const requireOrgMock = vi.fn();
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: () => requireOrgMock(),

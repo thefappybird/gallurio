@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { Button } from "@/components/ui/button";
 import { archiveInquiryAction, declineInquiryAction } from "../../_actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
@@ -11,13 +11,16 @@ import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 type Props = {
   inquiryId: string;
   status: string;
+  /** The inquiry's draft booking / client, when known; only used to match the server's socket echo. */
+  bookingId?: string | null;
+  clientId?: string | null;
 };
 
 type WorkingAction = "decline" | "archive" | null;
 
-export function InquiryActions({ inquiryId, status }: Props) {
+export function InquiryActions({ inquiryId, status, bookingId = null, clientId = null }: Props) {
   const t = useTranslations("app.inquiries.detail.actions");
-  const router = useRouter();
+  const invalidateFor = useInvalidateFor();
   const [workingAction, setWorkingAction] = useState<WorkingAction>(null);
 
   const canArchive = !isBookedInquiryStatus(status) && status !== "archived";
@@ -37,7 +40,12 @@ export function InquiryActions({ inquiryId, status }: Props) {
         return;
       }
       toast.success(successMsg);
-      router.refresh();
+      // decline/archive actions revalidate the inquiry routes.
+      // Same key sets the server emits, so the socket echo is suppressed.
+      invalidateFor({ type: "inquiry.updated", inquiryId, bookingId }, { refresh: false });
+      if (bookingId) {
+        invalidateFor({ type: "booking.updated", bookingId, clientId, inquiryId }, { refresh: false });
+      }
     } catch {
       toast.error(t("errorToast"));
     } finally {

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { NextIntlClientProvider } from "next-intl";
-import enMessages from "@/messages/en.json";
+import { enMessages } from "@/test-utils/messages";
 import { PaymentsStep } from "./payments-step";
 import type { WizardValues } from "./types";
 

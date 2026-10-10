@@ -21,6 +21,11 @@ vi.mock("@/lib/notifications/send", () => ({
   sendNotification: (...args: unknown[]) => sendNotification(...args),
 }));
 
+const emit = vi.fn();
+vi.mock("@/lib/sockets/emitDataChanged", () => ({
+  emitDataChanged: (...args: unknown[]) => emit(...args),
+}));
+
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
 import { localDayStart } from "@/lib/utils/timezone";
@@ -78,6 +83,7 @@ beforeEach(async () => {
   sendInquiryNotification.mockClear();
   sendInquiryClientConfirmation.mockClear();
   sendNotification.mockClear();
+  emit.mockClear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -193,6 +199,40 @@ describe("submitInquiry", () => {
     expect(clientsA).toHaveLength(1);
     expect(clientsB).toHaveLength(1);
     expect(String(clientsA[0]._id)).not.toBe(String(clientsB[0]._id));
+  });
+
+  it("emits inquiry.created, booking.created and client.created after commit", async () => {
+    const ws = await Workspace.create(makeWorkspace());
+    const res = await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    if (!res.ok) throw new Error("expected ok");
+    const wsId = String(ws._id);
+    expect(emit).toHaveBeenCalledWith(wsId, { type: "inquiry.created", inquiryId: res.inquiryId });
+    expect(emit).toHaveBeenCalledWith(
+      wsId,
+      { type: "booking.created", bookingId: res.draftBookingId, clientId: res.clientId },
+      { teamIds: [null] }
+    );
+    expect(emit).toHaveBeenCalledWith(wsId, { type: "client.created", clientId: res.clientId });
+  });
+
+  it("emits only after the analytics counter bump, and still emits when the bump fails", async () => {
+    await Workspace.create(makeWorkspace());
+    const bump = vi.spyOn(PageviewRollup, "updateOne");
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    expect(bump).toHaveBeenCalled();
+    expect(emit.mock.invocationCallOrder[0]).toBeGreaterThan(bump.mock.invocationCallOrder[0]);
+
+    emit.mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    bump.mockRejectedValueOnce(new Error("rollup down"));
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload({ email: "second@example.com" }) });
+    expect(emit).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ type: "inquiry.created" }));
+  });
+
+  it("does not emit when the submission is rejected", async () => {
+    await Workspace.create(makeWorkspace({ publicPage: { publishedAt: null } }));
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    expect(emit).not.toHaveBeenCalled();
   });
 
   it("rejects an unpublished workspace before any write", async () => {

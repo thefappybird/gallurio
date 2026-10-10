@@ -15,7 +15,10 @@ import { toast } from "sonner";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
+import { Pagination } from "@/components/app/pagination";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { useTableFitCookie } from "@/hooks/use-table-fit-cookie";
+import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useActionError } from "@/lib/i18n/actionError";
 
@@ -27,6 +30,7 @@ type Props = {
   total: number;
   page: number;
   limit: number;
+  pageSizeOptions: number[];
   locale: string;
   availableTags: string[];
   empty: string;
@@ -42,6 +46,7 @@ export function ClientsPageClient({
   total,
   page,
   limit,
+  pageSizeOptions,
   locale,
   availableTags,
   empty,
@@ -50,12 +55,14 @@ export function ClientsPageClient({
   initialDetailClient = null,
 }: Props) {
   const t = useTranslations("app.clients");
-  const tc = useTranslations("common.pagination");
   const errMsg = useActionError();
+  const invalidateFor = useInvalidateFor();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  // Clients rows use TableSkeleton's default 41px row height.
+  const fitRef = useTableFitCookie<HTMLDivElement>("clients", 41);
 
   // Modal state. ?add=1 (e.g. dashboard quick-add) opens the add form on arrival.
   const [formOpen, setFormOpen] = useState(searchParams.get("add") === "1");
@@ -95,12 +102,6 @@ export function ClientsPageClient({
     // Run once on mount for the incoming deep-link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function refreshPage() {
-    startTransition(() => {
-      router.refresh();
-    });
-  }
 
   // Remove the ?client= param so closing the modal (or transitioning to
   // edit/deactivate) doesn't reopen it on a hard refresh or back-navigation.
@@ -188,7 +189,8 @@ export function ClientsPageClient({
         toast.success(t("form.updateSuccess"), { id: toastId });
         setDetailOpen(false);
         stripClientParam();
-        refreshPage();
+        // reactivateClientAction revalidates /clients.
+        invalidateFor({ type: "client.updated", clientId: client.id }, { refresh: false });
       } finally {
         setReactivatingId(null);
       }
@@ -215,6 +217,7 @@ export function ClientsPageClient({
   function goToPage(p: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(p));
+    params.set("limit", String(limit));
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
     });
@@ -224,63 +227,49 @@ export function ClientsPageClient({
     <>
       <ClientsToolbar availableTags={availableTags} onAddClient={openAdd} />
 
-      {isPending ? (
-        <TableSkeleton
-          columns={CLIENTS_TABLE_COLUMNS}
-          rows={limit}
-          cardRows={Math.min(limit, 4)}
-        />
-      ) : (
-        <ClientsTable
-          rows={rows}
-          locale={locale}
-          empty={hasFilters ? empty : listEmpty}
-          emptyHint={hasFilters ? undefined : listEmptyHint}
-          emptyAction={
-            hasFilters ? undefined : (
-              <Button size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90" onClick={openAdd}>
-                <PlusIcon className="size-4" />
-                {t("toolbar.add")}
-              </Button>
-            )
-          }
-          onClickClient={openDetail}
-          onView={openDetail}
-          onEdit={openEdit}
-          onDeactivate={openDeactivate}
-          onReactivate={handleReactivate}
-          reactivatingId={reactivatingId}
-        />
-      )}
+      <div ref={fitRef} className="min-w-0">
+        {isPending ? (
+          <TableSkeleton
+            columns={CLIENTS_TABLE_COLUMNS}
+            rows={limit}
+            cardRows={Math.min(limit, 4)}
+          />
+        ) : (
+          <ClientsTable
+            rows={rows}
+            locale={locale}
+            empty={hasFilters ? empty : listEmpty}
+            emptyHint={hasFilters ? undefined : listEmptyHint}
+            emptyAction={
+              hasFilters ? undefined : (
+                <Button size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90" onClick={openAdd}>
+                  <PlusIcon className="size-4" />
+                  {t("toolbar.add")}
+                </Button>
+              )
+            }
+            onClickClient={openDetail}
+            onView={openDetail}
+            onEdit={openEdit}
+            onDeactivate={openDeactivate}
+            onReactivate={handleReactivate}
+            reactivatingId={reactivatingId}
+          />
+        )}
+      </div>
 
       {/* Pagination */}
       {total > 0 && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-muted-foreground">
-            {tc("showing", { from, to, total })}
-          </span>
-          <div className="flex items-center gap-2 flex-wrap">
-            <PageSizeSelect value={limit} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => goToPage(page - 1)}
-              disabled={page <= 1}
-              className="min-h-11 sm:min-h-0"
-            >
-              {tc("previous")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => goToPage(page + 1)}
-              disabled={page >= totalPages}
-              className="min-h-11 sm:min-h-0"
-            >
-              {tc("next")}
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          from={from}
+          to={to}
+          total={total}
+          onPageChange={goToPage}
+        >
+          <PageSizeSelect value={limit} options={pageSizeOptions} />
+        </Pagination>
       )}
 
       {/* Modals */}
@@ -288,7 +277,6 @@ export function ClientsPageClient({
         open={formOpen}
         onOpenChange={setFormOpen}
         initialData={editTarget ?? undefined}
-        onSuccess={refreshPage}
         onDirtyChange={setFormDirty}
         onView={editTarget ? returnToDetailFromEdit : undefined}
       />
@@ -308,7 +296,7 @@ export function ClientsPageClient({
       />
 
       <ClientDetailModal
-        client={detailClient}
+        client={detailClient ? (rows.find((r) => r.id === detailClient.id) ?? detailClient) : null}
         open={detailOpen}
         onClose={() => {
           setDetailOpen(false);
@@ -327,7 +315,6 @@ export function ClientsPageClient({
           clientName={deactivateTarget.name}
           open={deactivateOpen}
           onOpenChange={setDeactivateOpen}
-          onSuccess={refreshPage}
         />
       )}
     </>

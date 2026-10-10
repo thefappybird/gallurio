@@ -1,5 +1,7 @@
 import { connectDB } from '@/lib/db/mongoose'
 import { Notification } from '@/lib/db/models/Notification'
+import { Workspace } from '@/lib/db/models/Workspace'
+import { resolveVocabularyPreset } from '@/lib/vocabulary/resolve'
 import { getIO } from '@/lib/sockets/io'
 import { buildNotificationContent } from './messages'
 import { sendNotificationEmail } from '@/lib/email/notifications'
@@ -10,6 +12,14 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
 
   await connectDB()
 
+  // Server-resolved, workspace-scoped; never from client input.
+  // Vocabulary is cosmetic: a failed lookup must not drop the notification.
+  const ws = await Workspace.findById(opts.workspaceId)
+    .select({ vocabularyPreset: 1, businessType: 1 })
+    .lean()
+    .catch(() => null)
+  const preset = resolveVocabularyPreset(ws ?? {})
+
   const payloads = await Promise.all(
     opts.recipients.map(async (r) => {
       const isActor = r.workosUserId === opts.triggeredByWorkosUserId
@@ -19,6 +29,7 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         opts.entityId,
         opts.entityType,
         opts.vars ?? {},
+        preset,
       )
       return {
         workspaceId: opts.workspaceId,

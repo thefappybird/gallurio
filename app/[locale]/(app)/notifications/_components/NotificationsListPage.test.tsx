@@ -18,8 +18,12 @@ vi.mock('@/app/[locale]/(app)/notifications/_load-more-action', () => ({
 }))
 
 const mockLiveArrivalTick = { value: 0 }
+const mockProvider = { notifications: [] as Array<Record<string, unknown>> }
 vi.mock('@/lib/hooks/useNotifications', () => ({
-  useNotifications: () => ({ liveArrivalTick: mockLiveArrivalTick.value }),
+  useNotifications: () => ({
+    liveArrivalTick: mockLiveArrivalTick.value,
+    notifications: mockProvider.notifications,
+  }),
 }))
 
 const MESSAGES = {
@@ -116,6 +120,59 @@ describe('NotificationsListPage', () => {
     // ar body template: "لديك استفسار جديد من {clientName}."
     expect(screen.getByText(/أحمد/)).toBeTruthy()
     expect(screen.queryByText('Stored body')).toBeNull()
+  })
+})
+
+describe('NotificationsListPage — live provider merge', () => {
+  beforeEach(() => {
+    mockProvider.notifications = []
+  })
+
+  it('prepends notifications that arrive through the provider', () => {
+    const props = { initialNextCursor: null, locale: 'en', messages: MESSAGES }
+    const { rerender } = renderWithProviders(
+      <NotificationsListPage {...props} initialItems={[makeItem()]} />,
+    )
+    mockProvider.notifications = [
+      makeItem({ _id: 'n2', title: 'Live title', createdAt: new Date().toISOString() }),
+      makeItem(),
+    ]
+    rerender(<NotificationsListPage {...props} initialItems={[makeItem()]} />)
+    const titles = screen.getAllByText(/title/i).map((n) => n.textContent)
+    expect(titles).toEqual(['Live title', 'Stored title'])
+  })
+})
+
+describe('NotificationsListPage — provider read state and server re-sync', () => {
+  const props = { initialNextCursor: null, locale: 'en', messages: MESSAGES }
+
+  beforeEach(() => {
+    mockProvider.notifications = []
+  })
+
+  it('clears the unread styling when the provider reports the item read', () => {
+    const { rerender } = renderWithProviders(
+      <NotificationsListPage {...props} initialItems={[makeItem()]} />,
+    )
+    expect(screen.getByText('Stored title').className).toContain('text-accent-foreground')
+    mockProvider.notifications = [makeItem({ read: true })]
+    rerender(<NotificationsListPage {...props} initialItems={[makeItem()]} />)
+    expect(screen.getByText('Stored title').className).not.toContain('text-accent-foreground')
+  })
+
+  it('re-syncs when the server list changes', () => {
+    const { rerender } = renderWithProviders(
+      <NotificationsListPage {...props} initialItems={[makeItem()]} />,
+    )
+    rerender(<NotificationsListPage {...props} initialItems={[makeItem({ _id: 'n9', title: 'Fresh from server' })]} />)
+    expect(screen.getByText('Fresh from server')).toBeTruthy()
+    expect(screen.queryByText('Stored title')).toBeNull()
+  })
+
+  it('does not duplicate a loaded page row that the provider also holds', () => {
+    mockProvider.notifications = [makeItem()]
+    renderWithProviders(<NotificationsListPage {...props} initialItems={[makeItem()]} />)
+    expect(screen.getAllByText('Stored title')).toHaveLength(1)
   })
 })
 

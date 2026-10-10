@@ -100,6 +100,9 @@ const bookingSchema = new Schema(
       ref: "Inquiry",
       default: null,
     },
+    // Moment the booking first became non-draft. Set explicitly at write sites
+    // (findOneAndUpdate bypasses save hooks). Null while draft / legacy rows.
+    bookedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -107,6 +110,8 @@ const bookingSchema = new Schema(
 bookingSchema.index({ workspaceId: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, status: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, clientId: 1 });
+// Backs the default bookings-table sort (booked date desc).
+bookingSchema.index({ workspaceId: 1, bookedAt: -1, _id: -1 });
 // Backs the lead-inbox lookup of a draft booking from its inquiry.
 bookingSchema.index({ workspaceId: 1, createdFromInquiryId: 1 });
 // Team-scoped calendar/list reads: members see only their teams' bookings, and

@@ -15,6 +15,8 @@ import {
 } from "./clients";
 
 vi.mock("@/lib/auth/requireOrg", () => ({ requireOrg: vi.fn(), requireRole: vi.fn() }));
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undefined) }));
@@ -61,15 +63,27 @@ afterEach(async () => {
 // ─── createClientAction ───────────────────────────────────────────────────────
 
 describe("createClientAction", () => {
-  it("valid input creates client and returns { ok: true }", async () => {
+  it("valid input creates client and returns { ok: true, clientId }", async () => {
     mockOrg();
 
     const result = await createClientAction(validInput);
 
-    expect(result).toEqual({ ok: true });
     const saved = await Client.findOne({ workspaceId, name: "Alice Wonderland" }).lean();
+    expect(result).toEqual({ ok: true, clientId: String(saved?._id) });
     expect(saved).not.toBeNull();
     expect(saved?.email).toBe("alice@example.com");
+  });
+
+  it("emits client.created with the session workspace after create, none on invalid input", async () => {
+    mockOrg();
+    await createClientAction({ ...validInput, name: "" });
+    expect(emit).not.toHaveBeenCalled();
+    await createClientAction(validInput);
+    const saved = await Client.findOne({ workspaceId, name: "Alice Wonderland" }).lean();
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), {
+      type: "client.created",
+      clientId: String(saved?._id),
+    });
   });
 
   it("missing name returns validation error", async () => {
@@ -112,6 +126,16 @@ describe("updateClientAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await Client.findById(client._id).lean();
     expect(updated?.name).toBe("Updated Name");
+  });
+
+  it("emits client.updated after update, none for a foreign client", async () => {
+    mockOrg();
+    const foreign = await Client.create({ workspaceId: otherWorkspaceId, name: "F", source: "manual", tags: [], notes: "" });
+    await updateClientAction(foreign._id.toString(), validInput);
+    expect(emit).not.toHaveBeenCalled();
+    const own = await Client.create({ workspaceId, name: "O", source: "manual", tags: [], notes: "" });
+    await updateClientAction(own._id.toString(), validInput);
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), { type: "client.updated", clientId: String(own._id) });
   });
 
   it("wrong workspaceId (cross-workspace) returns { error: 'client_not_found' }", async () => {
@@ -168,6 +192,19 @@ describe("deactivateClientAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await Client.findById(client._id).lean();
     expect(updated?.isActive).toBe(false);
+  });
+
+  it("emits client.updated after (de/re)activation, none for a foreign client", async () => {
+    mockOrg();
+    const foreign = await Client.create({ workspaceId: otherWorkspaceId, name: "F", source: "manual", tags: [], notes: "" });
+    await deactivateClientAction(foreign._id.toString());
+    await reactivateClientAction(foreign._id.toString());
+    expect(emit).not.toHaveBeenCalled();
+    const own = await Client.create({ workspaceId, name: "O", source: "manual", tags: [], notes: "" });
+    await deactivateClientAction(own._id.toString());
+    await reactivateClientAction(own._id.toString());
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenLastCalledWith(String(workspaceId), { type: "client.updated", clientId: String(own._id) });
   });
 
   it("wrong workspaceId returns { error: 'client_not_found' }", async () => {
@@ -300,5 +337,40 @@ describe("findClientMatchesAction", () => {
 
     if (!("matches" in result)) throw new Error("expected matches");
     expect(result.matches[0].source).toBe("referral");
+  });
+});
+
+describe("updateClientAction name propagation", () => {
+  async function seedBookingFor(wid: Types.ObjectId, clientId: Types.ObjectId, clientName: string) {
+    const at = new Date("2026-08-15T10:00:00Z");
+    return Booking.create({
+      workspaceId: wid,
+      teamId: new Types.ObjectId(),
+      clientId,
+      clientName,
+      title: "Shoot",
+      status: "booked",
+      sessions: [{ startAt: at, endAt: at }],
+      firstSessionStart: at,
+      lastSessionEnd: at,
+      amount: { total: 100, deposit: 0, currency: "PHP" },
+    });
+  }
+
+  it("renames denormalized Booking.clientName for that client only, within the workspace", async () => {
+    mockOrg();
+    const client = await Client.create({ workspaceId, name: "Old Name", source: "manual" });
+    const sameIdOtherWs = await seedBookingFor(otherWorkspaceId, client._id, "Old Name");
+    const mine = await seedBookingFor(workspaceId, client._id, "Old Name");
+    const otherClient = await Client.create({ workspaceId, name: "Bob", source: "manual" });
+    const bobs = await seedBookingFor(workspaceId, otherClient._id, "Bob");
+
+    const result = await updateClientAction(String(client._id), { ...validInput, name: "New Name" });
+
+    expect(result).toEqual({ ok: true });
+    expect((await Booking.findById(mine._id).lean())?.clientName).toBe("New Name");
+    expect((await Booking.findById(bobs._id).lean())?.clientName).toBe("Bob");
+    expect((await Booking.findById(sameIdOtherWs._id).lean())?.clientName).toBe("Old Name");
+    expect(emit).toHaveBeenCalledWith(String(workspaceId), { type: "client.updated", clientId: String(client._id) });
   });
 });

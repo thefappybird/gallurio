@@ -29,8 +29,12 @@ describe("app/[locale] route branches pick a client message catalog", () => {
       expect(match, `${branch}/layout.tsx has no <NextIntlClientProvider>`).not.toBeNull();
 
       const hasMessagesProp = /messages=/.test(match?.[1] ?? "");
-      if (branch === "(marketing)") {
-        expect(hasMessagesProp, `${branch}/layout.tsx must pass messages= to scope its catalog`).toBe(true);
+      // (app) passes the vocabulary-applied full catalog; (marketing) scopes down.
+      // Bare-provider branches that mount app.* components also pass the
+      // standard-vocabulary-applied catalog so %tokens% never leak.
+      const passesMessages = ["(marketing)", "(app)", "(onboarding)", "subscribe", "portfolio-maker-demo"];
+      if (passesMessages.includes(branch)) {
+        expect(hasMessagesProp, `${branch}/layout.tsx must pass messages= (scoped or vocabulary-applied catalog)`).toBe(true);
       } else {
         expect(hasMessagesProp, `${branch}/layout.tsx must use the bare provider (no messages=)`).toBe(false);
       }

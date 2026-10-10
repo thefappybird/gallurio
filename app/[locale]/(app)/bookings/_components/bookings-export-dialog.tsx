@@ -32,6 +32,8 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [format, setFormat] = useState<"csv" | "xlsx">("csv");
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const teamLabel =
     teamIds.length === 0
@@ -59,6 +61,36 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
   }
   const qs = p.toString();
   const href = `/api/bookings/export${qs ? `?${qs}` : ""}`;
+
+  // Fetch rather than navigate to the link: the route answers 400/413/429 with
+  // JSON, which a bare download link would save as a broken file or lose.
+  async function handleDownload(e: React.MouseEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setFailed(false);
+    try {
+      const res = await fetch(href);
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const name =
+        /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ??
+        `bookings.${format}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      onClose();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
@@ -183,6 +215,11 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
         </div>
 
         <SheetFooter className="border-t border-border bg-muted/30">
+          {failed ? (
+            <p role="alert" className="text-sm text-destructive">
+              {t("error")}
+            </p>
+          ) : null}
           {rangeInvalid ? (
             <Button type="button" size="sm" disabled className="min-h-11 w-full sm:min-h-0">
               <DownloadIcon className="size-4" />
@@ -194,10 +231,11 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
               size="sm"
               nativeButton={false}
               className="min-h-11 w-full sm:min-h-0"
-              render={<a href={href} download onClick={onClose} />}
+              disabled={busy}
+              render={<a href={href} download onClick={handleDownload} />}
             >
               <DownloadIcon className="size-4" />
-              {t("download")}
+              {busy ? t("preparing") : t("download")}
             </Button>
           )}
         </SheetFooter>

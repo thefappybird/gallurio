@@ -21,6 +21,9 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
 
+const emit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -135,6 +138,51 @@ describe("inviteMemberAction — basic success path", () => {
     expect(invite?.tokenHash).toBe(sha256Hex(decodeURIComponent(rawToken)));
     // The raw token itself is not stored anywhere.
     expect(invite?.tokenHash).not.toBe(rawToken);
+  });
+});
+
+describe("inviteMemberAction — data:changed", () => {
+  it("emits team.updated after a successful invite, none when email fails", async () => {
+    const team = await makeTeam();
+    const { inviteMemberAction } = await import("./_invite-action");
+    mockSendEmail.mockResolvedValue({ ok: false, error: "resend_503" });
+    await inviteMemberAction({ email: "x@example.com", teamIds: [String(team._id)], leadOnTeamIds: [] });
+    expect(emit).not.toHaveBeenCalled();
+    mockSendEmail.mockResolvedValue({ ok: true, id: "e" });
+    await inviteMemberAction({ email: "y@example.com", teamIds: [String(team._id)], leadOnTeamIds: [] });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: null });
+  });
+
+  it("emits team.updated after revoke, none for a foreign invite", async () => {
+    const team = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID });
+    const foreign = await Invitation.create({
+      workspaceId: OTHER_WORKSPACE_ID,
+      email: "spy2@example.com",
+      role: "staff",
+      teamIds: [team._id],
+      leadOnTeamIds: [],
+      tokenHash: sha256Hex("t2"),
+      invitedByWorkosUserId: "user_other_owner",
+      status: "pending",
+      expiresAt: new Date(Date.now() + 1e9),
+    });
+    const { revokeInviteAction } = await import("./_invite-action");
+    await revokeInviteAction({ invitationId: String(foreign._id) });
+    expect(emit).not.toHaveBeenCalled();
+    const own = await makeTeam();
+    const mine = await Invitation.create({
+      workspaceId: WORKSPACE_ID,
+      email: "mine@example.com",
+      role: "staff",
+      teamIds: [own._id],
+      leadOnTeamIds: [],
+      tokenHash: sha256Hex("t3"),
+      invitedByWorkosUserId: OWNER_USER_ID,
+      status: "pending",
+      expiresAt: new Date(Date.now() + 1e9),
+    });
+    await revokeInviteAction({ invitationId: String(mine._id) });
+    expect(emit).toHaveBeenCalledWith(String(WORKSPACE_ID), { type: "team.updated", teamId: null });
   });
 });
 

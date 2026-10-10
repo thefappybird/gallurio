@@ -4,6 +4,7 @@ import {
   DEFAULT_TIME_INPUT_LANG,
   formatTime,
   formatTimeRange,
+  syncEndTime,
   TIME_INPUT_LANG,
 } from "./time-format";
 
@@ -107,5 +108,29 @@ describe("TIME_INPUT_LANG", () => {
 
   it("maps 12h to en-US", () => {
     expect(TIME_INPUT_LANG["12h"]).toBe("en-US");
+  });
+});
+
+describe("syncEndTime", () => {
+  it("moves end to start + 1h when end is before start", () => {
+    expect(syncEndTime("10:00", "09:00")).toBe("11:00");
+  });
+
+  it("moves end to start + 1h when times are equal", () => {
+    expect(syncEndTime("10:00", "10:00")).toBe("11:00");
+  });
+
+  it("leaves a later end alone", () => {
+    expect(syncEndTime("10:00", "10:30")).toBe("10:30");
+  });
+
+  it("clamps to 23:59 instead of wrapping", () => {
+    expect(syncEndTime("23:30", "08:00")).toBe("23:59");
+    expect(syncEndTime("23:59", "23:59")).toBe("23:59");
+  });
+
+  it("returns end unchanged when either value is empty", () => {
+    expect(syncEndTime("", "09:00")).toBe("09:00");
+    expect(syncEndTime("10:00", "")).toBe("");
   });
 });

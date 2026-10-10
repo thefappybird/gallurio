@@ -84,7 +84,7 @@ export function EventTypeDonut({ data, title, empty }: Props) {
   return (
     <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle as="h2" className="text-sm font-medium">{title}</CardTitle>
         <InfoHint label={t("hints.eventTypes")} />
       </CardHeader>
       <CardContent className="p-4 pt-0">

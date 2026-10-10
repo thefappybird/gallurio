@@ -47,6 +47,9 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+const invalidateForMock = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateForMock }));
+
 // Stub server actions — only reactivate is invoked by these smoke tests.
 const reactivateMock = vi.fn();
 vi.mock("@/lib/actions/clients", () => ({
@@ -120,6 +123,7 @@ function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>
     total: 2,
     page: 1,
     limit: 25,
+    pageSizeOptions: [10, 20, 30, 50],
     locale: "en",
     availableTags: ["vip", "wedding"],
     empty: "No clients",
@@ -138,6 +142,7 @@ describe("ClientsPageClient", () => {
     routerRefresh.mockClear();
     routerReplace.mockClear();
     reactivateMock.mockReset();
+    invalidateForMock.mockClear();
     vi.mocked(toast.error).mockClear();
   });
 
@@ -169,6 +174,14 @@ describe("ClientsPageClient", () => {
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
     expect(routerPush).toHaveBeenCalledTimes(1);
     expect(String(routerPush.mock.calls[0][0])).toMatch(/page=2/);
+  });
+
+  it("pagination pins the current limit in the URL", () => {
+    renderWithProviders(
+      <ClientsPageClient {...build({ total: 60, page: 1, limit: 25 })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(String(routerPush.mock.calls[0][0])).toMatch(/limit=25/);
   });
 
   it("Previous button is disabled on page 1", () => {
@@ -228,7 +241,7 @@ describe("ClientsPageClient", () => {
     expect(routerPush).not.toHaveBeenCalled();
   });
 
-  it("reactivation calls server action and refreshes the list on success", async () => {
+  it("reactivation calls server action and invalidates client.updated (no direct router.refresh) on success", async () => {
     reactivateMock.mockResolvedValue({ ok: true });
     renderWithProviders(<ClientsPageClient {...build()} />);
 
@@ -240,7 +253,10 @@ describe("ClientsPageClient", () => {
     fireEvent.click(reactivateButtons[0]);
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalledWith("c-inactive"));
-    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(invalidateForMock).toHaveBeenCalledWith({ type: "client.updated", clientId: "c-inactive" }, { refresh: false })
+    );
+    expect(routerRefresh).not.toHaveBeenCalled();
   });
 
   it("reactivation surfaces an error toast and does not refresh on server error", async () => {
@@ -263,6 +279,7 @@ describe("ClientsPageClient", () => {
       )
     );
     expect(routerRefresh).not.toHaveBeenCalled();
+    expect(invalidateForMock).not.toHaveBeenCalled();
   });
 
   it("opens the detail modal on mount when initialDetailClient is provided", () => {
@@ -276,6 +293,19 @@ describe("ClientsPageClient", () => {
     // Scope to the modal — "Maria Santos" also appears in the table row, so a
     // bare getByText would match multiple elements.
     expect(within(modal).getByText("Maria Santos")).toBeInTheDocument();
+  });
+
+  it("shows the refreshed row in the open detail modal instead of the opened snapshot", () => {
+    const deepLinked = sampleRows[0];
+    const view = renderWithProviders(
+      <ClientsPageClient {...build({ initialDetailClient: deepLinked })} />,
+    );
+    expect(within(screen.getByTestId("client-detail-modal")).getByText("Maria Santos")).toBeInTheDocument();
+
+    const renamed = [{ ...sampleRows[0], name: "Maria Reyes" }, sampleRows[1]];
+    view.rerender(<ClientsPageClient {...build({ rows: renamed, initialDetailClient: deepLinked })} />);
+
+    expect(within(screen.getByTestId("client-detail-modal")).getByText("Maria Reyes")).toBeInTheDocument();
   });
 
   it("does not open the detail modal when initialDetailClient is null", () => {

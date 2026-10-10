@@ -10,6 +10,9 @@ vi.mock("@/lib/actions/clients", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { loading: vi.fn(() => "toast-id"), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() } }));
 
+const invalidateFor = vi.fn();
+vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateFor }));
+
 describe("DeactivateClientDialog", () => {
   const defaultProps = {
     clientId: "c1",
@@ -69,6 +72,24 @@ describe("DeactivateClientDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
     await waitFor(() => expect(deactivateClientAction).toHaveBeenCalledWith("c1"));
     expect(onSuccess).toHaveBeenCalledOnce();
+  });
+
+  it("invalidates client.updated on success only", async () => {
+    invalidateFor.mockClear();
+    renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
+    await waitFor(() =>
+      expect(invalidateFor).toHaveBeenCalledWith({ type: "client.updated", clientId: "c1" }, { refresh: false })
+    );
+  });
+
+  it("does not invalidate when deactivation fails", async () => {
+    invalidateFor.mockClear();
+    vi.mocked(deactivateClientAction).mockResolvedValue({ error: "client_has_active_bookings" });
+    renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
+    await waitFor(() => expect(vi.mocked(toast.error)).toHaveBeenCalled());
+    expect(invalidateFor).not.toHaveBeenCalled();
   });
 
   it("on server error surfaces a toast, keeps the dialog open, and does not call onSuccess", async () => {

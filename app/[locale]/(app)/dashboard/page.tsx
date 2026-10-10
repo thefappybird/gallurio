@@ -3,7 +3,8 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import type { BookingDoc } from "@/lib/db/models";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getAppTranslations } from "@/lib/vocabulary/appTranslations";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
@@ -34,16 +35,16 @@ import { TodaysEventsList } from "./_components/todays-events-list";
 import { UpcomingWeekList } from "./_components/upcoming-week-list";
 import { ActivityFeed } from "./_components/activity-feed";
 import { QuickAdd } from "./_components/quick-add";
-import { RevenueTrendChart } from "./_components/revenue-trend-chart";
 import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
 import { TopClientsBar } from "./_components/top-clients-bar";
-import { TeamPerformanceCards } from "./_components/team-performance-cards";
-import { BookingValueCollectionChart } from "./_components/booking-value-collection-chart";
 import { CollectionCoverageCard } from "./_components/collection-coverage-card";
 import { BookedHoursHeatmapClient } from "./_components/booked-hours-heatmap-client";
-import { BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart";
 import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
+import { RevenueTrendChartClient as RevenueTrendChart } from "./_components/revenue-trend-chart-client";
+import { BookingValueCollectionChartClient as BookingValueCollectionChart } from "./_components/booking-value-collection-chart-client";
+import { BookingEventTypeTrendChartClient as BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart-client";
+import { TeamPerformanceCardsClient as TeamPerformanceCards } from "./_components/team-performance-cards-client";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
 
 export async function generateMetadata({
@@ -53,7 +54,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.sidebar");
+  const t = await getAppTranslations("app.sidebar");
   return { title: t("dashboard") };
 }
 
@@ -66,7 +67,7 @@ export default async function DashboardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("app.dashboard");
+  const t = await getAppTranslations("app.dashboard");
 
   const [{ role, userId, workspace }, authUser] = await Promise.all([
     requireOrg(),
@@ -157,7 +158,7 @@ async function BookingsTab({
   wid: import("mongoose").Types.ObjectId;
   workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
   locale: string;
-  t: Awaited<ReturnType<typeof getTranslations>>;
+  t: Awaited<ReturnType<typeof getAppTranslations>>;
   role: "owner" | "staff";
   userId: string;
   range: DateRange;
