@@ -54,10 +54,10 @@ export function DocumentPreviewDialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         {/* Theme-independent scrim, same literal-black treatment as the portfolio Lightbox. */}
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-[60] bg-black/90 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[70] bg-black/90 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
         {/* Popup spans the viewport but ignores pointer events so a click beside the
             document reaches the backdrop and dismisses. */}
-        <DialogPrimitive.Popup className="pointer-events-none fixed inset-0 z-[60] grid place-items-center outline-none">
+        <DialogPrimitive.Popup className="pointer-events-none fixed inset-0 z-[70] grid place-items-center outline-none">
           <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
           <DialogPrimitive.Close
             aria-label={closeLabel}
