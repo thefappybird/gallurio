@@ -30,7 +30,8 @@ import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
 import { parseBookingsToggleFilters } from "../_data/booking-filters";
-import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoicePortfolioBrandKit, InvoiceSavedTheme, InvoiceThemeValue } from "./invoice-theme-dialog";
 
 const ALL = "__all__";
 
@@ -44,6 +45,8 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  invoicePortfolioBrandKit = null,
+  invoiceSavedThemes = [],
   invoiceThemeBusiness,
   onPendingChange,
 }: {
@@ -73,7 +76,9 @@ export function BookingsToolbar({
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
-  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  initialInvoiceTheme?: InvoiceThemeValue;
+  invoicePortfolioBrandKit?: InvoicePortfolioBrandKit | null;
+  invoiceSavedThemes?: InvoiceSavedTheme[];
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 }) {
   const router = useRouter();
@@ -315,6 +320,8 @@ export function BookingsToolbar({
             open
             onClose={() => setInvoiceThemeOpen(false)}
             initialTheme={initialInvoiceTheme}
+            portfolioBrandKit={invoicePortfolioBrandKit}
+            savedThemes={invoiceSavedThemes}
             business={invoiceThemeBusiness}
           />
         ) : null}

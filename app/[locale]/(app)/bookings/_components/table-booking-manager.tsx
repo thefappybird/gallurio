@@ -8,7 +8,8 @@ import { BookingWizardLazy } from "./booking-wizard-dynamic";
 import { useBookingsToolbarPending } from "./bookings-pending-shell";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
-import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoicePortfolioBrandKit, InvoiceSavedTheme, InvoiceThemeValue } from "./invoice-theme-dialog";
 
 type Props = {
   defaultCurrency: SupportedCurrency;
@@ -27,7 +28,9 @@ type Props = {
   /** Teams the current user may assign to new bookings (writable teams). */
   writableTeams: BookingTeamOption[];
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
-  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  initialInvoiceTheme?: InvoiceThemeValue;
+  invoicePortfolioBrandKit?: InvoicePortfolioBrandKit | null;
+  invoiceSavedThemes?: InvoiceSavedTheme[];
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 };
 
@@ -50,6 +53,8 @@ export function TableBookingManager({
   isOwner,
   writableTeams,
   initialInvoiceTheme,
+  invoicePortfolioBrandKit,
+  invoiceSavedThemes,
   invoiceThemeBusiness,
 }: Props) {
   const router = useRouter();
@@ -121,6 +126,8 @@ export function TableBookingManager({
         selectedTeams={selectedTeams}
         isOwner={isOwner}
         initialInvoiceTheme={initialInvoiceTheme}
+        invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+        invoiceSavedThemes={invoiceSavedThemes}
         invoiceThemeBusiness={invoiceThemeBusiness}
         onPendingChange={onPendingChange}
       />

@@ -81,7 +81,7 @@ describe("BookingsToolbar sheet code split", () => {
   });
 });
 
-const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+const DEFAULT_INVOICE_THEME = { preset: "minimal" as const, main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" };
 
 describe("BookingsToolbar wizard warm-up", () => {
   it("preloads the wizard chunk on pointer-enter and focus of New booking", () => {
