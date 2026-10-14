@@ -1153,8 +1153,8 @@
           "status_inferred": "{field}: walang katugma ang \"{value}\", kaya hinulaan mula sa petsa.",
           "truncated": "{field}: masyadong mahaba kaya pinaikli.",
           "title_generated": "{field}: walang laman, kaya gumawa kami ng isa.",
-          "phone_dropped": "Masyadong mahaba ang telepono '{value}'; na-import nang wala ito.",
-          "deposit_dropped": "Tinanggal ang deposito '{value}' — kailangan nito ng wastong kabuuan na sasaklaw dito."
+          "phone_dropped": "{field}: \"{value}\" ay masyadong mahaba para sa numero ng telepono, kaya iniwang blangko.",
+          "deposit_dropped": "{field}: \"{value}\" ay nangangailangan ng kabuuang sasaklaw dito, kaya iniwang blangko."
         },
         "steps": {
           "upload": "Mag-upload",

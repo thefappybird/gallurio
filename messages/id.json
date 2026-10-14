@@ -1153,8 +1153,8 @@
           "status_inferred": "{field}: \"{value}\" tidak cocok, jadi disimpulkan dari tanggal.",
           "truncated": "{field}: terlalu panjang sehingga dipersingkat.",
           "title_generated": "{field}: kosong, jadi kami buatkan.",
-          "phone_dropped": "Telepon '{value}' terlalu panjang; diimpor tanpa nomor itu.",
-          "deposit_dropped": "Deposit '{value}' dihapus — perlu total valid yang mencakupnya."
+          "phone_dropped": "{field}: \"{value}\" terlalu panjang untuk nomor telepon, jadi dikosongkan.",
+          "deposit_dropped": "{field}: \"{value}\" butuh total yang mencakupnya, jadi dikosongkan."
         },
         "steps": {
           "upload": "Unggah",

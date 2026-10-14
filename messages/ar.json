@@ -1153,8 +1153,8 @@
           "status_inferred": "{field}: القيمة \"{value}\" لم تطابق، لذا استُنتجت من التاريخ.",
           "truncated": "{field}: كان طويلًا جدًا فاختُصر.",
           "title_generated": "{field}: كان فارغًا، لذا كتبنا واحدًا.",
-          "phone_dropped": "الهاتف '{value}' طويل جدًا؛ تم الاستيراد بدونه.",
-          "deposit_dropped": "تم حذف العربون '{value}' — يحتاج إلى إجمالي صالح يغطيه."
+          "phone_dropped": "{field}: \"{value}\" أطول من أن يكون رقم هاتف، لذا تُرك فارغًا.",
+          "deposit_dropped": "{field}: \"{value}\" يحتاج إلى إجمالي يغطيه، لذا تُرك فارغًا."
         },
         "steps": {
           "upload": "الرفع",

@@ -255,7 +255,7 @@ export function InvoiceThemeDialog({
   const [customAccent, setCustomAccent] = useState(initialTheme.accent);
   // Seeded from the stored text so a Custom/stale-fallback preview matches the
   // PDF; only recomputed when the user actually picks a new main color.
-  const [customText, setCustomText] = useState(initialTheme.text);
+  const [customText, setCustomText] = useState(initialTheme.text ?? readableTextOn(initialTheme.main));
   const changeCustomMain = (hex: string) => {
     setCustomMain(hex);
     setCustomText(readableTextOn(hex));
