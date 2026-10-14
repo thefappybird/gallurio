@@ -14,6 +14,7 @@ Read `CLAUDE.md` and `AGENTS.md` first. This page routes durable project documen
 | Workspace vocabulary presets (entity word renaming) | `docs/vocabulary/vocabulary-presets.md` |
 | Portfolio and Cloudflare Images | `docs/modules/portfolio-and-media.md` |
 | Currency conversion and restatement | `docs/pricing/currency-conversion.md` |
+| Bookings import and invoice/receipt themes | `docs/bookings/import-and-document-themes.md` |
 
 ## Other durable references
 
