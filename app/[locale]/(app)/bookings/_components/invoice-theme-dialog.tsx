@@ -298,7 +298,7 @@ export function InvoiceThemeDialog({
         side="right"
         showCloseButton={false}
         {...resize.sheetProps}
-        className="h-full w-full gap-0 overflow-hidden p-0 data-resizing:transition-none sm:w-(--sheet-w) sm:max-w-none"
+        className="h-full w-full! gap-0 overflow-hidden p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
       >
         <SheetResizeHandle resize={resize} />
         <SheetHeader className="relative border-b border-border pe-12">

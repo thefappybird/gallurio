@@ -99,7 +99,7 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
       <SheetContent
         side="right"
         {...resize.sheetProps}
-        className="w-full gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w) sm:max-w-none"
+        className="w-full! gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
       >
         <SheetResizeHandle resize={resize} />
         <SheetHeader className="border-b border-border pe-12">

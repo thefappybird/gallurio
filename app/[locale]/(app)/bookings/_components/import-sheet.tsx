@@ -584,8 +584,10 @@ export function ImportSheet({
           // The default right-side sheet is w-3/4 capped at sm, which leaves
           // the mapping grid a single cramped column. Full width on a phone,
           // wide enough for two columns from sm up.
+          // `!` required: SheetContent base has data-[side=right]:w-3/4 and
+          // sm:max-w-sm; attribute selectors out-specify plain utilities.
           {...resize.sheetProps}
-          className="flex w-full! flex-col gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none"
+          className="flex w-full! flex-col gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
         >
           <SheetResizeHandle resize={resize} />
           <div className="border-b border-border px-4 py-3">
