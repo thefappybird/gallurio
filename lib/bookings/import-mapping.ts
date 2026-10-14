@@ -78,6 +78,9 @@ const CONSTANT_FORBIDDEN = new Set([
   "locationLng",
 ]);
 
+/** Schema-required fields the importer fills itself when left unmapped. */
+const AUTO_FILLED = new Set(["title"]);
+
 /**
  * One entry per importable column. `IMPORT_COLUMNS` stays the source of truth
  * for which columns exist; this adds only the metadata the mapping UI needs.
@@ -85,15 +88,19 @@ const CONSTANT_FORBIDDEN = new Set([
 export const MAPPABLE_FIELDS: readonly MappableField[] = IMPORT_COLUMNS.map((col) => {
   const key = normalizeCsvHeader(col.name);
   const kind = KIND[key] ?? "text";
+  // The schema requires a title, but applyMapping's titleFallback generates one
+  // when it is unmapped, so for mapping purposes it is optional.
+  const required = col.required && !AUTO_FILLED.has(key);
   return {
     key,
     label: col.name,
-    required: col.required,
+    required,
     kind,
-    group: col.required ? "required" : (GROUP[key] ?? "common"),
+    group: required ? "required" : (GROUP[key] ?? "common"),
     constantAllowed: !CONSTANT_FORBIDDEN.has(key),
-    // Joining only makes sense for prose; an email or an id is one value.
-    combinable: kind === "text" && !CONSTANT_FORBIDDEN.has(key) && key !== "clientEmail",
+    // Joining only makes sense for prose; an email, phone or id is one value.
+    combinable:
+      kind === "text" && !CONSTANT_FORBIDDEN.has(key) && key !== "clientEmail" && key !== "clientPhone",
   };
 });
 
@@ -210,12 +217,28 @@ export function autoMapColumns(rawHeaders: readonly string[]): ColumnMapping {
       loose(header) === loose(field.key) || loose(header) === loose(field.label)
   );
   // 2b. A first-name + last-name pair is one clientName, joined at import time.
-  if (!mapping.clientName) {
-    const pick = (words: string[]) =>
-      available.find((h) => !taken.has(h) && tokens(h).some((t) => words.includes(t)));
-    const first = pick(FIRST_WORDS);
+  //     Only a real "<first|given> name" / "<last|surname|family> name" header (or
+  //     fname/lname) counts — "First Contact" is not half a name — and a plain
+  //     name column ("Customer") makes the pair unnecessary.
+  const hasNameColumn = () => {
+    const rule = SYNONYMS.clientName;
+    return available.some(
+      (h) =>
+        !taken.has(h) &&
+        !tokens(h).some((w) => rule.avoid?.includes(w)) &&
+        tokens(h).some((w) => rule.match.includes(w))
+    );
+  };
+  if (!mapping.clientName && !hasNameColumn()) {
+    const isHalf = (h: string, words: string[], exact: string[]) => {
+      const t = tokens(h);
+      return exact.includes(loose(h)) || (t.includes("name") && t.some((w) => words.includes(w)));
+    };
+    const pick = (words: string[], exact: string[]) =>
+      available.find((h) => !taken.has(h) && isHalf(h, words, exact));
+    const first = pick(["first", "given"], ["fname", "firstname", "givenname"]);
     if (first) taken.add(first);
-    const last = pick(LAST_WORDS);
+    const last = pick(["last", "surname", "family"], ["lname", "lastname", "surname", "familyname"]);
     if (first && last) {
       mapping.clientName = { sources: [first, last] };
       taken.add(last);
@@ -287,7 +310,7 @@ export type MappedRowIssue = {
 };
 
 /** Why a cell was dropped, blanked or adjusted without failing its row. */
-export type NoteReason = "amount_dropped" | "currency_dropped" | "end_date_dropped" | "email_dropped" | "event_type_blank" | "status_inferred" | "truncated" | "title_generated";
+export type NoteReason = "amount_dropped" | "currency_dropped" | "end_date_dropped" | "email_dropped" | "event_type_blank" | "status_inferred" | "truncated" | "title_generated" | "phone_dropped" | "deposit_dropped";
 
 /** A non-blocking adjustment the preview can surface next to the row. */
 export type MappedRowNote = { field: string; value: string; reason: NoteReason };
@@ -312,6 +335,9 @@ export type ApplyMappingOptions = {
 };
 
 const emailSchema = z.string().email();
+
+/** `bookingImportRowSchema` caps clientPhone at 30 characters. */
+const PHONE_MAX = 30;
 
 /** The caps `bookingImportRowSchema` enforces on free text. */
 const TEXT_MAX: Record<string, number> = {
@@ -357,6 +383,7 @@ export function applyMapping(
     const notes: MappedRowNote[] = [];
     // A status cell nobody mapped; settled after the loop, once dates are known.
     let unknownStatus = "";
+    let depositCell = "";
 
     for (const field of MAPPABLE_FIELDS) {
       const assignment = mapping[field.key];
@@ -370,6 +397,7 @@ export function applyMapping(
             ? assignment.sources.map((s) => read(source[s])).filter(Boolean).join(" ")
             : read(source[assignment.source]);
       if (!cell) continue;
+      if (field.key === "amountDeposit") depositCell = cell;
 
       if (field.kind === "enum") {
         const resolved = resolveEnum(field.key, cell, opts.valueMap);
@@ -408,12 +436,26 @@ export function applyMapping(
       } else if (field.key === "clientEmail" && !emailSchema.safeParse(coerced.value).success) {
         // The route's schema rejects a malformed email; the booking matters more.
         notes.push({ field: field.key, value: cell, reason: "email_dropped" });
+      } else if (field.key === "clientPhone" && coerced.value.length > PHONE_MAX) {
+        // A truncated number is a wrong number; drop it and keep the booking.
+        notes.push({ field: field.key, value: cell, reason: "phone_dropped" });
       } else if (coerced.value) {
         const max = TEXT_MAX[field.key];
         if (max && coerced.value.length > max) {
           notes.push({ field: field.key, value: cell, reason: "truncated" });
           values[field.key] = coerced.value.slice(0, max);
         } else values[field.key] = coerced.value;
+      }
+    }
+
+    // Mirrors bookingImportRowSchema: a non-zero deposit needs a total, and may not
+    // exceed it. Total can be dropped above, so this runs after the loop.
+    const deposit = Number(values.amountDeposit);
+    if (values.amountDeposit && deposit > 0) {
+      const total = Number(values.amountTotal ?? 0);
+      if (total <= 0 || deposit > total) {
+        notes.push({ field: "amountDeposit", value: depositCell, reason: "deposit_dropped" });
+        delete values.amountDeposit;
       }
     }
 

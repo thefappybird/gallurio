@@ -25,6 +25,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
       logoUrl: "",
       contact: { email: "owner@studio.test", address: "123 Main St" },
       publicPage: {
+        publishedAt: new Date("2026-01-01T00:00:00Z"),
         brandKit: { primaryColor: "#0F1B33", accentColor: "#C9A24B", foregroundColor: "#f4f4f4", backgroundColor: "#101010" },
       },
       invoiceTheme: { preset: "portfolio", main: "#000000", accent: "#000000" },

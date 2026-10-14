@@ -4,7 +4,10 @@ import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/them
 import {
   INVOICE_THEME_PRESETS,
   contrastRatio,
+  INVOICE_THEME_DEFAULT_PRESET,
   invoiceColorsFromBrandKit,
+  normalizeInvoicePreset,
+  publishedBrandKit,
   resolveInvoiceTheme,
 } from "./theme";
 
@@ -37,8 +40,9 @@ describe("resolveInvoiceTheme", () => {
     expect(b.main).toBe("#102030");
   });
 
-  it("portfolio without a brand kit falls back to minimal", () => {
-    expect(resolveInvoiceTheme({ preset: "portfolio", main: "#000000", accent: "#000000" }, null)).toEqual(MINIMAL);
+  it("portfolio without a brand kit falls back to the stored snapshot", () => {
+    const t = { preset: "portfolio", main: "#123456", accent: "#abcdef", text: "#ffffff" } as const;
+    expect(resolveInvoiceTheme(t, null)).toEqual({ main: "#123456", accent: "#abcdef", text: "#ffffff" });
   });
 
   it("saved uses the stored snapshot and ignores the live kit", () => {
@@ -53,6 +57,28 @@ describe("resolveInvoiceTheme", () => {
       text: "#FFFFFF",
     });
     expect(resolveInvoiceTheme({ preset: "custom", main: "#f0f0f0", accent: "#222222" }).text).toBe("#111111");
+  });
+});
+
+describe("publishedBrandKit", () => {
+  it("returns the kit only once the portfolio has been published", () => {
+    expect(publishedBrandKit({ brandKit: kit, publishedAt: null })).toBeNull();
+    expect(publishedBrandKit({ brandKit: kit })).toBeNull();
+    expect(publishedBrandKit(undefined)).toBeNull();
+    expect(publishedBrandKit({ brandKit: kit, publishedAt: new Date() })).toBe(kit);
+    expect(publishedBrandKit({ brandKit: undefined, publishedAt: new Date() })).toBeNull();
+  });
+});
+
+describe("normalizeInvoicePreset", () => {
+  it("maps legacy and unknown ids to the default, keeps valid ones", () => {
+    for (const legacy of ["classic", "slate", "navyGold", "forest", "nope"]) {
+      expect(normalizeInvoicePreset(legacy)).toBe(INVOICE_THEME_DEFAULT_PRESET);
+    }
+    expect(normalizeInvoicePreset("bold")).toBe("bold");
+    expect(normalizeInvoicePreset("portfolio")).toBe("portfolio");
+    expect(normalizeInvoicePreset("saved")).toBe("saved");
+    expect(normalizeInvoicePreset("custom")).toBe("custom");
   });
 });
 

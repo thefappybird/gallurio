@@ -72,9 +72,19 @@ export function coerceMoney(raw: string): CoerceResult {
 /** Which of the two leading numbers a slash/dash date puts first. */
 export type DateOrder = "MDY" | "DMY";
 
-/** Month-first where the workspace's own clock says so (PH, Americas), else day-first. */
+/** Zones whose locale writes month-first: PH and the US/Canada. Latin America is day-first. */
+const MDY_ZONES = new Set([
+  "Asia/Manila", "Pacific/Honolulu",
+  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Phoenix", "America/Anchorage", "America/Detroit", "America/Boise",
+  "America/Juneau", "America/Adak", "America/Toronto", "America/Vancouver",
+  "America/Edmonton", "America/Winnipeg", "America/Halifax",
+]);
+const MDY_PREFIXES = ["America/Indiana/", "America/Kentucky/", "America/North_Dakota/"];
+
+/** Month-first where the workspace's own clock says so, else day-first. */
 export function defaultDateOrder(timeZone: string): DateOrder {
-  return timeZone === "Asia/Manila" || timeZone.startsWith("America/") ? "MDY" : "DMY";
+  return MDY_ZONES.has(timeZone) || MDY_PREFIXES.some((p) => timeZone.startsWith(p)) ? "MDY" : "DMY";
 }
 
 const MONTH_NAMES = [
@@ -98,21 +108,40 @@ function isRealDate(y: number, m: number, d: number): boolean {
 
 /** "9:00 AM", "14:30", "9pm", "noon" — one alternative per branch. */
 const TIME_RE =
-  /(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?|\b(\d{1,2})\s*([ap]\.?m\.?)(?![a-z])|\b(noon|midnight)\b/i;
+  /(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?|\b(\d{1,2})\.(\d{2})\s*([ap]\.?m\.?)(?![a-z])|\b(\d{1,2})\s*([ap]\.?m\.?)(?![a-z])|\b(noon|midnight)\b/i;
 
-/** Pulls the time out of a cell as 24-hour "HH:MM", and returns the text without it. */
-function extractTime(raw: string): { time: string; rest: string } {
+/**
+ * Pulls the time out of a cell as 24-hour "HH:MM", and returns the text without it.
+ * `invalid` means a time-like token was present but unreadable ("25:00", "42pm");
+ * the caller must reject the cell rather than quietly fall back to midnight.
+ */
+function extractTime(raw: string): { time: string; rest: string; invalid: boolean } {
   const m = raw.match(TIME_RE);
-  if (!m) return { time: "", rest: raw };
+  if (!m) return { time: "", rest: raw, invalid: false };
   const rest = raw.replace(TIME_RE, " ").trim();
-  if (m[6]) return { time: m[6].toLowerCase() === "noon" ? "12:00" : "00:00", rest };
-  let hour = Number(m[1] ?? m[4]);
-  const minute = m[2] ?? "00";
-  const meridiem = (m[3] ?? m[5])?.toLowerCase().replace(/\./g, "");
+  if (m[9]) return { time: m[9].toLowerCase() === "noon" ? "12:00" : "00:00", rest, invalid: false };
+  let hour = Number(m[1] ?? m[4] ?? m[7]);
+  const minute = m[2] ?? m[5] ?? "00";
+  const meridiem = (m[3] ?? m[6] ?? m[8])?.toLowerCase().replace(/\./g, "");
+  if (meridiem && (hour < 1 || hour > 12)) return { time: "", rest, invalid: true };
   if (meridiem === "pm" && hour < 12) hour += 12;
   if (meridiem === "am" && hour === 12) hour = 0;
-  if (hour > 23 || Number(minute) > 59) return { time: "", rest };
-  return { time: `${pad(hour)}:${minute}`, rest };
+  if (hour > 23 || Number(minute) > 59) return { time: "", rest, invalid: true };
+  return { time: `${pad(hour)}:${minute}`, rest, invalid: false };
+}
+
+/**
+ * Strips weekday names, ordinal suffixes and "Jun." dots (they carry no date
+ * information and would be mistaken for the month word), then lifts the time out,
+ * leaving only the date part to interpret.
+ */
+function splitTime(trimmed: string): { time: string; rest: string; invalid: boolean } {
+  const cleaned = trimmed
+    .replace(/\b(mon|tues?|wed(nes)?|thu(rs?)?|fri|sat(ur)?|sun)(day)?\b\.?,?/gi, " ")
+    .replace(/(\d)(st|nd|rd|th)\b/gi, "$1")
+    .replace(/\b([a-z]{3,})\./gi, "$1")
+    .trim();
+  return extractTime(cleaned);
 }
 
 /**
@@ -147,16 +176,8 @@ export function coerceDate(raw: string, timeZone: string, order: DateOrder): Coe
     return { ok: true, value: wallTimeInTzToUtc(day, time, timeZone) };
   }
 
-  // Weekday names, ordinal suffixes and "Jun." dots carry no date information
-  // and would otherwise be mistaken for the month word.
-  const cleaned = trimmed
-    .replace(/\b(mon|tues?|wed(nes)?|thu(rs?)?|fri|sat(ur)?|sun)(day)?\b\.?,?/gi, " ")
-    .replace(/(\d)(st|nd|rd|th)\b/gi, "$1")
-    .replace(/\b([a-z]{3,})\./gi, "$1")
-    .trim();
-
-  // Stripping the time leaves only the date part to interpret.
-  const { time: parsedTime, rest: datePart } = extractTime(cleaned);
+  const { time: parsedTime, rest: datePart, invalid } = splitTime(trimmed);
+  if (invalid) return { ok: false, reason: "not_a_date" };
   const time = parsedTime || "00:00";
 
   let y: number | undefined;
@@ -247,7 +268,7 @@ export function isAmbiguousDateColumn(values: readonly string[]): boolean {
   for (const raw of values) {
     const trimmed = raw.trim();
     if (!trimmed) continue;
-    const parts = trimmed.split(/[/\-.]/);
+    const parts = splitTime(trimmed).rest.split(/[/\-.]/);
     if (parts.length !== 3 || parts[0].length === 4) continue;
     if (!parts.every((p) => /^\d+$/.test(p.trim()))) continue;
     const [a, b] = parts.map(Number);

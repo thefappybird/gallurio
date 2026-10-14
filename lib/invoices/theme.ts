@@ -64,6 +64,21 @@ export type InvoiceThemePreviewBusiness = {
   currency: string;
 };
 
+/** The portfolio's brand kit, but only once published; a draft-only kit must not leak into documents. */
+export function publishedBrandKit<K extends BrandKitColors>(
+  publicPage: { brandKit?: K | null; publishedAt?: Date | string | null } | null | undefined
+): K | null {
+  return publicPage?.publishedAt && publicPage.brandKit ? publicPage.brandKit : null;
+}
+
+/** Maps unknown or legacy preset ids (classic/slate/navyGold/forest) to the default preset. */
+export function normalizeInvoicePreset(preset: string): InvoiceTheme["preset"] {
+  if (preset === "portfolio" || preset === "saved" || preset === "custom") return preset;
+  return (BRAND_KIT_THEME_PRESETS as readonly string[]).includes(preset)
+    ? (preset as InvoiceThemePresetId)
+    : INVOICE_THEME_DEFAULT_PRESET;
+}
+
 /** Plain-white vs near-black text, whichever reads better on `main` (for stored colors lacking `text`). */
 export function readableTextOn(main: string): string {
   return betterText(main, ["#FFFFFF", "#111111"]);
@@ -74,7 +89,8 @@ export function resolveInvoiceTheme(
   brandKit?: BrandKitColors | null
 ): InvoiceColors {
   if (theme?.preset === "portfolio" && brandKit) return invoiceColorsFromBrandKit(brandKit);
-  if (theme && (theme.preset === "saved" || theme.preset === "custom")) {
+  // "portfolio" with no (published) kit degrades to its stored snapshot.
+  if (theme && (theme.preset === "saved" || theme.preset === "custom" || theme.preset === "portfolio")) {
     return { main: theme.main, accent: theme.accent, text: theme.text || readableTextOn(theme.main) };
   }
   if (theme && (BRAND_KIT_THEME_PRESETS as readonly string[]).includes(theme.preset)) {
