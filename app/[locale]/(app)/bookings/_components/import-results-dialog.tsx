@@ -20,6 +20,11 @@ type Props = {
    * where nothing has been written and a summary would be a lie.
    */
   summary?: { created: number; updated: number; skipped: number };
+  /**
+   * "note": rows that will import with a change (dropped cell etc.). Neutral
+   * styling, no kind label, notes keep their line breaks.
+   */
+  tone?: "error" | "note";
 };
 
 /** Error rows drawn before "Show all"; keeps a 500-error import from mounting 500 rows. */
@@ -31,7 +36,7 @@ function cell(row: Record<string, unknown>, key: string): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
+function ErrorRow({ entry, tone }: { entry: ImportErrorEntry; tone: "error" | "note" }) {
   const t = useTranslations("app.bookings.import.results");
   const tField = useTranslations("app.bookings.import.fields");
   const [expanded, setExpanded] = useState(false);
@@ -71,16 +76,25 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
               {tField.has(`${entry.field}.label`) ? tField(`${entry.field}.label`) : entry.field}
             </span>
           ) : null}
-          <span
-            className={cn(
-              "text-[10px] font-medium uppercase tracking-wide",
-              entry.kind === "server" ? "text-destructive" : "text-muted-foreground"
-            )}
-          >
-            {kindLabel[entry.kind]}
-          </span>
+          {tone === "error" ? (
+            <span
+              className={cn(
+                "text-[10px] font-medium uppercase tracking-wide",
+                entry.kind === "server" ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {kindLabel[entry.kind]}
+            </span>
+          ) : null}
         </div>
-        <p className="text-xs text-destructive">{entry.message}</p>
+        <p
+          className={cn(
+            "text-xs",
+            tone === "error" ? "text-destructive" : "whitespace-pre-line text-foreground"
+          )}
+        >
+          {entry.message}
+        </p>
 
         <button
           type="button"
@@ -108,7 +122,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
   );
 }
 
-export function ImportResultsDialog({ open, onClose, errors, summary }: Props) {
+export function ImportResultsDialog({ open, onClose, errors, summary, tone = "error" }: Props) {
   const t = useTranslations("app.bookings.import.results");
   const [showAll, setShowAll] = useState(false);
 
@@ -119,12 +133,12 @@ export function ImportResultsDialog({ open, onClose, errors, summary }: Props) {
         className="flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col gap-0 p-0 sm:max-w-lg"
       >
         <div className="border-b border-border px-4 py-3">
-          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogTitle>{tone === "note" ? t("notesTitle") : t("title")}</DialogTitle>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {(showAll ? errors : errors.slice(0, ERROR_ROW_CAP)).map((e) => (
-            <ErrorRow key={e.index} entry={e} />
+            <ErrorRow key={e.index} entry={e} tone={tone} />
           ))}
           {!showAll && errors.length > ERROR_ROW_CAP ? (
             <div className="px-3 py-2">
@@ -142,7 +156,7 @@ export function ImportResultsDialog({ open, onClose, errors, summary }: Props) {
         <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
           {summary ? <span>{t("summary", summary)}</span> : null}
           <span className={cn(!summary && "ms-auto")}>
-            {summary ? t("hint") : t("previewHint")}
+            {summary ? t("hint") : tone === "note" ? t("notesHint") : t("previewHint")}
           </span>
         </div>
       </DialogContent>

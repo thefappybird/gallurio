@@ -58,6 +58,20 @@ type Props = {
 
 const GROUP_ORDER: FieldGroup[] = ["required", "common", "advanced"];
 
+/** Source list -> the mapping shape: none, one `source`, or combined `sources`. */
+function assignmentFromSources(next: string[]): Assignment {
+  if (next.length === 0) return null;
+  if (next.length === 1) return { source: next[0] };
+  return { sources: next };
+}
+
+/** Column `value` picked in slot `index` of a field currently reading `sources`. */
+export function assignSlot(sources: string[], index: number, value: string): Assignment {
+  const next = [...sources];
+  next[index] = value;
+  return assignmentFromSources(next);
+}
+
 export function ImportColumnMapping({
   headers,
   sampleRow,
@@ -262,9 +276,7 @@ function FieldCard({
 
   const commit = (next: string[]) => {
     setPendingSlot(false);
-    if (next.length === 0) return onAssign(field.key, null);
-    if (next.length === 1) return onAssign(field.key, { source: next[0] });
-    onAssign(field.key, { sources: next });
+    onAssign(field.key, assignmentFromSources(next));
   };
 
   const onSelect = (value: string | null) => {
@@ -277,9 +289,8 @@ function FieldCard({
 
   const onSlotSelect = (index: number, value: string | null) => {
     if (value == null) return;
-    const next = [...sources];
-    next[index] = value;
-    commit(next);
+    setPendingSlot(false);
+    onAssign(field.key, assignSlot(sources, index, value));
   };
 
   const removeSlot = (index: number) => {

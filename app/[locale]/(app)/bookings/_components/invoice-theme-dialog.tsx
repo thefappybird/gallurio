@@ -253,6 +253,13 @@ export function InvoiceThemeDialog({
   );
   const [customMain, setCustomMain] = useState(initialTheme.main);
   const [customAccent, setCustomAccent] = useState(initialTheme.accent);
+  // Seeded from the stored text so a Custom/stale-fallback preview matches the
+  // PDF; only recomputed when the user actually picks a new main color.
+  const [customText, setCustomText] = useState(initialTheme.text);
+  const changeCustomMain = (hex: string) => {
+    setCustomMain(hex);
+    setCustomText(readableTextOn(hex));
+  };
   const [tab, setTab] = useState<"invoice" | "receipt">("invoice");
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -266,7 +273,7 @@ export function InvoiceThemeDialog({
         ? INVOICE_THEME_PRESETS[selection.id]
         : savedTheme
           ? { main: savedTheme.main, accent: savedTheme.accent, text: savedTheme.text }
-          : { main: customMain, accent: customAccent, text: readableTextOn(customMain) };
+          : { main: customMain, accent: customAccent, text: customText };
 
   async function handleSave() {
     setSaving(true);
@@ -353,7 +360,7 @@ export function InvoiceThemeDialog({
                   {t("mainColor")}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto" align="start">
-                  <ColorPicker value={customMain} onChange={setCustomMain} hexLabel={t("mainColor")} />
+                  <ColorPicker value={customMain} onChange={changeCustomMain} hexLabel={t("mainColor")} />
                 </PopoverContent>
               </Popover>
               <Popover>
@@ -375,18 +382,21 @@ export function InvoiceThemeDialog({
             </TabsList>
             {(["invoice", "receipt"] as const).map((kind) => (
               <TabsPanel key={kind} value={kind} className="items-center gap-0">
-                <div className="relative flex w-full justify-center">
-                  <DocumentPreview kind={kind} business={business} theme={colors} />
+                {/* Own row above the document: on the page it sat over the
+                    colored band and vanished on dark presets. */}
+                <div className="flex w-full justify-end pb-1">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute end-0 top-0"
                     onClick={() => setExpanded(true)}
                   >
                     <Maximize2Icon />
                     <span className="sr-only">{t("expandPreview")}</span>
                   </Button>
+                </div>
+                <div className="flex w-full justify-center">
+                  <DocumentPreview kind={kind} business={business} theme={colors} />
                 </div>
               </TabsPanel>
             ))}

@@ -3,7 +3,7 @@ import { fireEvent, screen } from "@testing-library/react";
 
 import { renderWithProviders } from "@/test-utils/render";
 import { autoMapColumns } from "@/lib/bookings/import-mapping";
-import { ImportColumnMapping } from "./import-column-mapping";
+import { ImportColumnMapping, assignSlot } from "./import-column-mapping";
 
 const HEADERS = ["Customer", "Event", "Date", "Package Price", "Deal Status"];
 const SAMPLE = {
@@ -30,6 +30,12 @@ function render(overrides: Partial<Parameters<typeof ImportColumnMapping>[0]> = 
   };
   return { ...renderWithProviders(<ImportColumnMapping {...props} />), props };
 }
+
+describe("assignSlot", () => {
+  it("turns a column picked in the second slot into a combined sources assignment", () => {
+    expect(assignSlot(["Customer"], 1, "Event")).toEqual({ sources: ["Customer", "Event"] });
+  });
+});
 
 describe("ImportColumnMapping", () => {
   it("shows what was found in the file", () => {

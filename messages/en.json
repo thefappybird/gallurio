@@ -1103,7 +1103,9 @@
           "untitled": "Untitled %booking%",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them.",
-          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
+          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again.",
+          "notesTitle": "Import notes",
+          "notesHint": "These rows will import, with the changes listed here."
         },
         "dialog": {
           "required": "required",
@@ -1126,7 +1128,7 @@
           "clientEmail": { "label": "%Client% email", "hint": "Used to match %clients% you already have." },
           "startAt": { "label": "Start date & time", "hint": "Any date format works — we'll convert it." },
           "endAt": { "label": "End date & time", "hint": "Leave it out and the start time is used." },
-          "title": { "label": "%Booking% title", "hint": "Blank titles are filled in from the %client% and event." },
+          "title": { "label": "%Booking% title", "hint": "Optional — we'll make one from the %client% and event type." },
           "eventType": { "label": "Event type", "hint": "Wedding, corporate, portrait and so on." },
           "status": { "label": "Status", "hint": "Booked, completed or cancelled." },
           "amountTotal": { "label": "Total price", "hint": "The full %booking% amount." },
@@ -1150,7 +1152,9 @@
           "event_type_blank": "{field}: \"{value}\" didn't match, so it was left blank.",
           "status_inferred": "{field}: \"{value}\" didn't match, so it was worked out from the date.",
           "truncated": "{field}: was too long and was shortened.",
-          "title_generated": "{field}: was empty, so we wrote one."
+          "title_generated": "{field}: was empty, so we wrote one.",
+          "phone_dropped": "Phone '{value}' was too long; imported without it.",
+          "deposit_dropped": "Deposit '{value}' dropped — it needs a valid total that covers it."
         },
         "steps": {
           "upload": "Upload",

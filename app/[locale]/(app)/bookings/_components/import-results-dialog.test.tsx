@@ -42,6 +42,23 @@ function renderDialog(
   );
 }
 
+describe("ImportResultsDialog note tone", () => {
+  it("titles the dialog as notes and drops the error kind label", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ImportResultsDialog
+          open
+          onClose={vi.fn()}
+          tone="note"
+          errors={[{ ...VALIDATION_ERROR, message: "first note\nsecond note" }]}
+        />
+      </NextIntlClientProvider>
+    );
+    expect(screen.getByText("Import notes")).toBeInTheDocument();
+    expect(screen.queryByText("Validation")).not.toBeInTheDocument();
+  });
+});
+
 describe("ImportResultsDialog", () => {
   it("renders both error rows when open", () => {
     renderDialog(true);

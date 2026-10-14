@@ -127,6 +127,7 @@ export function ImportSheet({
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showPreviewErrors, setShowPreviewErrors] = useState(false);
+  const [showPreviewNotes, setShowPreviewNotes] = useState(false);
 
   const writableTeams = useMemo(
     () => teams.filter((team) => team.isActive && team.isLead),
@@ -150,6 +151,7 @@ export function ImportSheet({
     setImportResult(null);
     setShowResultsDialog(false);
     setShowPreviewErrors(false);
+    setShowPreviewNotes(false);
     setTeamId("");
     setDuplicateWarning(null);
   }, [timeZone]);
@@ -352,6 +354,20 @@ export function ImportSheet({
         message: r.error ?? t("groupBlocked"),
       })),
     [invalidRows, t]
+  );
+
+  // Notes ride the same dialog (tone="note"): one entry per row, every note on it.
+  const previewNotes: ImportErrorEntry[] = useMemo(
+    () =>
+      validRows
+        .filter((r) => r.notes.length > 0)
+        .map((r) => ({
+          index: r.index,
+          row: r.raw,
+          kind: "validation" as const,
+          message: r.notes.join("\n"),
+        })),
+    [validRows]
   );
 
   // ── steps ──────────────────────────────────────────────────────────────────
@@ -649,6 +665,7 @@ export function ImportSheet({
                   autoMapped={autoMapped}
                   onReviewMapping={() => goTo("map", "back")}
                   onShowErrors={() => setShowPreviewErrors(true)}
+                  onShowNotes={() => setShowPreviewNotes(true)}
                   writableTeams={writableTeams}
                   teamId={teamId}
                   setTeamId={setTeamId}
@@ -815,6 +832,15 @@ export function ImportSheet({
           errors={previewErrors}
         />
       ) : null}
+
+      {previewNotes.length > 0 ? (
+        <ImportResultsDialog
+          open={showPreviewNotes}
+          onClose={() => setShowPreviewNotes(false)}
+          errors={previewNotes}
+          tone="note"
+        />
+      ) : null}
     </>
   );
 }
@@ -955,6 +981,7 @@ function PreviewStep({
   autoMapped,
   onReviewMapping,
   onShowErrors,
+  onShowNotes,
   writableTeams,
   teamId,
   setTeamId,
@@ -971,6 +998,7 @@ function PreviewStep({
   autoMapped: boolean;
   onReviewMapping: () => void;
   onShowErrors: () => void;
+  onShowNotes: () => void;
   writableTeams: BookingTeamOption[];
   teamId: string;
   setTeamId: (next: string) => void;
@@ -1038,7 +1066,13 @@ function PreviewStep({
         {notedCount > 0 ? (
           <span className="text-xs text-muted-foreground">
             <span aria-hidden="true">· </span>
-            {labels.notes}
+            <button
+              type="button"
+              onClick={onShowNotes}
+              className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {labels.notes}
+            </button>
           </span>
         ) : null}
         {invalidCount > 0 ? (
@@ -1114,7 +1148,16 @@ function PreviewStep({
                     )}
                     title={noted ? row.notes.join("\n") : undefined}
                   >
-                    {noted ? row.notes[0] : null}
+                    {noted ? (
+                      // Tap target for touch: the title attr alone is hover-only.
+                      <button
+                        type="button"
+                        onClick={onShowNotes}
+                        className="block max-w-full truncate text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        {row.notes[0]}
+                      </button>
+                    ) : null}
                     {bad ? (
                       // The cell truncates a long message; the dialog shows it
                       // whole alongside the raw row.

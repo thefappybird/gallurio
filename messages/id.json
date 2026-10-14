@@ -1103,7 +1103,9 @@
           "untitled": "%Booking% tanpa judul",
           "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
           "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",
-          "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya."
+          "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya.",
+          "notesTitle": "Catatan impor",
+          "notesHint": "Baris ini akan diimpor, dengan perubahan yang tercantum di sini."
         },
         "dialog": {
           "required": "wajib",
@@ -1126,7 +1128,7 @@
           "clientEmail": { "label": "Email %client%", "hint": "Dipakai untuk mencocokkan %clients% yang sudah Anda miliki." },
           "startAt": { "label": "Tanggal & jam mulai", "hint": "Format tanggal apa pun bisa — kami yang mengonversinya." },
           "endAt": { "label": "Tanggal & jam selesai", "hint": "Jika dikosongkan, jam mulai yang dipakai." },
-          "title": { "label": "Judul %booking%", "hint": "Judul kosong diisi dari %client% dan acaranya." },
+          "title": { "label": "Judul %booking%", "hint": "Opsional — kami buatkan dari %client% dan jenis acara." },
           "eventType": { "label": "Jenis acara", "hint": "Pernikahan, korporat, potret, dan seterusnya." },
           "status": { "label": "Status", "hint": "Dipesan, selesai, atau dibatalkan." },
           "amountTotal": { "label": "Harga total", "hint": "Jumlah penuh %booking%." },
@@ -1150,7 +1152,9 @@
           "event_type_blank": "{field}: \"{value}\" tidak cocok, jadi dibiarkan kosong.",
           "status_inferred": "{field}: \"{value}\" tidak cocok, jadi disimpulkan dari tanggal.",
           "truncated": "{field}: terlalu panjang sehingga dipersingkat.",
-          "title_generated": "{field}: kosong, jadi kami buatkan."
+          "title_generated": "{field}: kosong, jadi kami buatkan.",
+          "phone_dropped": "Telepon '{value}' terlalu panjang; diimpor tanpa nomor itu.",
+          "deposit_dropped": "Deposit '{value}' dihapus — perlu total valid yang mencakupnya."
         },
         "steps": {
           "upload": "Unggah",

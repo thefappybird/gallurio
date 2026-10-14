@@ -15,7 +15,20 @@ vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSp
 
 // Import-results dialog does not need real rendering in these tests
 vi.mock("./import-results-dialog", () => ({
-  ImportResultsDialog: () => null,
+  ImportResultsDialog: ({
+    open,
+    tone,
+    errors,
+  }: {
+    open: boolean;
+    tone?: string;
+    errors: { message: string }[];
+  }) =>
+    open ? (
+      <div data-testid="results" data-tone={tone ?? "error"}>
+        {errors.map((e) => e.message).join("|")}
+      </div>
+    ) : null,
 }));
 
 // Default: fetch never gets called in smoke/preview tests; mock it for import tests
@@ -369,6 +382,41 @@ describe("ImportSheet", () => {
     }
   });
 
+  it("opens every note for a row from a tappable notes cell, not only on hover", async () => {
+    const csv = [
+      "clientName,startAt,endAt,title,amountTotal",
+      "Jane Smith,2026-06-15T01:00:00.000Z,2026-06-15T10:00:00.000Z,Smith Wedding,TBD",
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await uploadCsv(csv);
+      expect(screen.queryByTestId("results")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /isn't an amount/ }));
+      const dialog = screen.getByTestId("results");
+      expect(dialog).toHaveAttribute("data-tone", "note");
+      expect(dialog).toHaveTextContent(/isn't an amount/);
+    } finally {
+      restore();
+    }
+  });
+
+  it("opens the same notes dialog from the 'with notes' count", async () => {
+    const csv = [
+      "clientName,startAt,endAt,title,amountTotal",
+      "Jane Smith,2026-06-15T01:00:00.000Z,2026-06-15T10:00:00.000Z,Smith Wedding,TBD",
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await uploadCsv(csv);
+      fireEvent.click(screen.getByRole("button", { name: /1 with notes/ }));
+      expect(screen.getByTestId("results")).toHaveAttribute("data-tone", "note");
+    } finally {
+      restore();
+    }
+  });
+
   it("fails a row that crosses midnight in the workspace timezone", async () => {
     // 09:00Z-17:00Z is one UTC day, which is all the Zod schema compares, but
     // 17:00-01:00 in Manila. The route rejects it at commit; previewing it as
@@ -598,7 +646,29 @@ describe("ImportSheet steps", () => {
       });
       await screen.findByText("Match your columns to ours");
       expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
-      expect(screen.getByText(/Match the 3 required fields to continue/)).toBeInTheDocument();
+      // Title is optional now: only client name and start remain.
+      expect(screen.getByText(/Match the 2 required fields to continue/)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("lets matching continue with no title column and marks title optional", async () => {
+    const csv = "Customer,Date\nJane Smith,06/15/2026";
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File([csv], "f.csv", { type: "text/csv" })] },
+        });
+      });
+      // Both required columns match on their own, so it lands on review.
+      fireEvent.click(await screen.findByRole("button", { name: "Review" }));
+      await screen.findByText("Match your columns to ours");
+      expect(screen.getByText(/Optional — we'll make one from the client and event type/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
     } finally {
       restore();
     }

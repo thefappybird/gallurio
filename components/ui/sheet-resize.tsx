@@ -80,6 +80,19 @@ export function SheetResizeHandle({ resize }: { resize: SheetResize }) {
   // state, or every pixel of travel would re-render the whole sheet.
   const drag = React.useRef<{ latest: number; raf: number } | null>(null)
 
+  // Unmount mid-drag (sheet closed, route change) would leave text selection
+  // disabled page-wide and a frame callback pointing at a gone sheet.
+  React.useEffect(
+    () => () => {
+      const d = drag.current
+      if (!d) return
+      if (d.raf) cancelAnimationFrame(d.raf)
+      drag.current = null
+      document.body.style.userSelect = ""
+    },
+    []
+  )
+
   const flush = () => {
     const d = drag.current
     if (!d) return
@@ -119,6 +132,7 @@ export function SheetResizeHandle({ resize }: { resize: SheetResize }) {
       }}
       onPointerUp={end}
       onPointerCancel={end}
+      onLostPointerCapture={end}
       aria-orientation="vertical"
       aria-label={t("resizePanel")}
       // Right sheets stay on the physical right even in RTL (ar), so their

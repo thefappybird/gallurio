@@ -1103,7 +1103,9 @@
           "untitled": "Walang pamagat na %booking%",
           "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
           "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
-          "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file."
+          "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file.",
+          "notesTitle": "Mga tala sa import",
+          "notesHint": "Ma-i-import ang mga row na ito, kasama ang mga pagbabagong nakalista rito."
         },
         "dialog": {
           "required": "kailangan",
@@ -1126,7 +1128,7 @@
           "clientEmail": { "label": "Email ng %client%", "hint": "Ginagamit para tugmaan ang mga %clients% na mayroon ka na." },
           "startAt": { "label": "Petsa at oras ng simula", "hint": "Gagana ang kahit anong format ng petsa — kami na ang magko-convert." },
           "endAt": { "label": "Petsa at oras ng katapusan", "hint": "Kung walang laman, gagamitin ang oras ng simula." },
-          "title": { "label": "Pamagat ng %booking%", "hint": "Ang blangkong pamagat ay bubuuin mula sa %client% at event." },
+          "title": { "label": "Pamagat ng %booking%", "hint": "Opsyonal — gagawa kami mula sa %client% at uri ng event." },
           "eventType": { "label": "Uri ng event", "hint": "Kasal, corporate, portrait at iba pa." },
           "status": { "label": "Status", "hint": "Naka-book, tapos na, o nakansela." },
           "amountTotal": { "label": "Kabuuang presyo", "hint": "Ang buong halaga ng %booking%." },
@@ -1150,7 +1152,9 @@
           "event_type_blank": "{field}: walang katugma ang \"{value}\", kaya iniwang blangko.",
           "status_inferred": "{field}: walang katugma ang \"{value}\", kaya hinulaan mula sa petsa.",
           "truncated": "{field}: masyadong mahaba kaya pinaikli.",
-          "title_generated": "{field}: walang laman, kaya gumawa kami ng isa."
+          "title_generated": "{field}: walang laman, kaya gumawa kami ng isa.",
+          "phone_dropped": "Masyadong mahaba ang telepono '{value}'; na-import nang wala ito.",
+          "deposit_dropped": "Tinanggal ang deposito '{value}' — kailangan nito ng wastong kabuuan na sasaklaw dito."
         },
         "steps": {
           "upload": "Mag-upload",
@@ -1183,7 +1187,7 @@
           "swapDayMonthHint": "Ang {example} ay mababasa na araw muna o buwan muna.",
           "combineColumns": "Pagsamahin sa isa pang column",
           "removeColumn": "Alisin ang column na ito",
-          "columnSlot": "{field}, column {n}",
+          "columnSlot": "{field}, hanay {n}",
           "continueBlocked": "Itugma ang {count, plural, one {# kailangang field} other {# kailangang field}} para makapagpatuloy.",
           "loading": "Binabasa ang inyong file"
         },

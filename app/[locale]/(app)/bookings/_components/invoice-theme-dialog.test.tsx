@@ -145,6 +145,12 @@ describe("InvoiceThemeDialog", () => {
     expect(header).toHaveStyle({ color: "#ffffff", backgroundColor: "#445544" });
   });
 
+  it("seeds Custom band text from the stored text instead of recomputing it", () => {
+    renderDialog({ initialTheme: { preset: "custom", main: "#445544", accent: "#aabbaa", text: "#ff00ff" } });
+    const header = screen.getByLabelText("Invoice preview").querySelector("header") as HTMLElement;
+    expect(header).toHaveStyle({ color: "#ff00ff", backgroundColor: "#445544" });
+  });
+
   it("expands the active document full-screen and returns focus to the button on Escape", async () => {
     renderDialog();
     fireEvent.click(screen.getByRole("tab", { name: "Receipt" }));

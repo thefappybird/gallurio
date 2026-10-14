@@ -91,6 +91,24 @@ describe("useSheetResize", () => {
     window.localStorage.clear();
   });
 
+  it("restores body user-select and cancels the pending frame when unmounted mid-drag", () => {
+    const cancel = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", () => 42);
+    vi.stubGlobal("cancelAnimationFrame", cancel);
+    const { unmount } = renderHarness();
+    const handle = screen.getByRole("separator");
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 576 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 500 });
+    expect(document.body.style.userSelect).toBe("none");
+
+    unmount();
+    expect(document.body.style.userSelect).toBe("");
+    expect(cancel).toHaveBeenCalledWith(42);
+
+    vi.unstubAllGlobals();
+  });
+
   it("survives localStorage throwing", () => {
     const get = vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
       throw new Error("blocked");
