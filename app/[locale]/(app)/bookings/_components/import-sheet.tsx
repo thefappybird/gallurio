@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { SheetResizeHandle, useSheetResize } from "@/components/ui/sheet-resize";
 import { Button } from "@/components/ui/button";
 import { parseCsv } from "@/lib/utils/csv-parse";
 import { EVENT_TYPES, bookingImportRowSchema } from "@/lib/validators/booking";
@@ -89,6 +90,7 @@ export function ImportSheet({
   workspaceTimezone,
   teams = [],
 }: Props) {
+  const resize = useSheetResize({ storageKey: "gw:sheet-w:import", defaultWidth: 672 });
   const t = useTranslations("app.bookings.import");
   const tDialog = useTranslations("app.bookings.import.dialog");
   const tSteps = useTranslations("app.bookings.import.steps");
@@ -566,8 +568,10 @@ export function ImportSheet({
           // The default right-side sheet is w-3/4 capped at sm, which leaves
           // the mapping grid a single cramped column. Full width on a phone,
           // wide enough for two columns from sm up.
-          className="flex w-full! flex-col gap-0 p-0 sm:max-w-2xl"
+          {...resize.sheetProps}
+          className="flex w-full! flex-col gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none"
         >
+          <SheetResizeHandle resize={resize} />
           <div className="border-b border-border px-4 py-3">
             <SheetTitle>{t("title")}</SheetTitle>
             <StepRail

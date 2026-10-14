@@ -1272,12 +1272,12 @@
         "invoice": "Invoice",
         "receipt": "Receipt",
         "presets": {
-          "classic": "Classic",
-          "slate": "Slate",
-          "navyGold": "Navy Gold",
-          "forest": "Forest",
           "custom": "Custom"
         },
+        "matchPortfolio": "Match my portfolio",
+        "publishFirst": "Publish your portfolio first",
+        "savedThemes": "Saved themes",
+        "expandPreview": "Expand preview",
         "mainColor": "Main color",
         "accentColor": "Accent color",
         "saveAndApply": "Save and apply",
@@ -3666,6 +3666,7 @@
     "clearFilters": "Clear filters",
     "loading": "Loading…",
     "close": "Close",
+    "resizePanel": "Resize panel",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "close": "Close promo code",

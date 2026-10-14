@@ -1272,12 +1272,12 @@
         "invoice": "Invoice",
         "receipt": "Resibo",
         "presets": {
-          "classic": "Klasiko",
-          "slate": "Slate",
-          "navyGold": "Navy Gold",
-          "forest": "Forest",
           "custom": "Custom"
         },
+        "matchPortfolio": "Itugma sa aking portfolio",
+        "publishFirst": "I-publish muna ang iyong portfolio",
+        "savedThemes": "Mga naka-save na tema",
+        "expandPreview": "Palakihin ang preview",
         "mainColor": "Pangunahing kulay",
         "accentColor": "Accent na kulay",
         "saveAndApply": "I-save at ilapat",
@@ -3666,6 +3666,7 @@
     "clearFilters": "Tanggalin ang filter",
     "loading": "Naglo-load…",
     "close": "Isara",
+    "resizePanel": "Baguhin ang laki ng panel",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "close": "Isara ang promo code",

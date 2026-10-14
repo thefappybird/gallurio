@@ -1272,12 +1272,12 @@
         "invoice": "ใบแจ้งหนี้",
         "receipt": "ใบเสร็จ",
         "presets": {
-          "classic": "คลาสสิก",
-          "slate": "สเลท",
-          "navyGold": "กรมท่าทอง",
-          "forest": "ป่าไม้",
           "custom": "กำหนดเอง"
         },
+        "matchPortfolio": "ให้ตรงกับพอร์ตโฟลิโอของฉัน",
+        "publishFirst": "เผยแพร่พอร์ตโฟลิโอของคุณก่อน",
+        "savedThemes": "ธีมที่บันทึกไว้",
+        "expandPreview": "ขยายตัวอย่าง",
         "mainColor": "สีหลัก",
         "accentColor": "สีเน้น",
         "saveAndApply": "บันทึกและนำไปใช้",
@@ -3666,6 +3666,7 @@
     "clearFilters": "ล้างตัวกรอง",
     "loading": "กำลังโหลด…",
     "close": "ปิด",
+    "resizePanel": "ปรับขนาดแผง",
     "promoCode": {
       "disclosureLabel": "มีโค้ดโปรโมชันหรือไม่?",
       "close": "ปิดโค้ดโปรโมชัน",

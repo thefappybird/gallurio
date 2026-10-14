@@ -1272,12 +1272,12 @@
         "invoice": "Faktur",
         "receipt": "Tanda terima",
         "presets": {
-          "classic": "Klasik",
-          "slate": "Slate",
-          "navyGold": "Navy Gold",
-          "forest": "Forest",
           "custom": "Kustom"
         },
+        "matchPortfolio": "Samakan dengan portofolio saya",
+        "publishFirst": "Publikasikan portofolio Anda terlebih dahulu",
+        "savedThemes": "Tema tersimpan",
+        "expandPreview": "Perbesar pratinjau",
         "mainColor": "Warna utama",
         "accentColor": "Warna aksen",
         "saveAndApply": "Simpan dan terapkan",
@@ -3666,6 +3666,7 @@
     "clearFilters": "Hapus filter",
     "loading": "Memuat…",
     "close": "Tutup",
+    "resizePanel": "Ubah ukuran panel",
     "promoCode": {
       "disclosureLabel": "Punya kode promo?",
       "close": "Tutup kode promo",

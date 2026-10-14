@@ -1272,12 +1272,12 @@
         "invoice": "فاتورة",
         "receipt": "إيصال",
         "presets": {
-          "classic": "كلاسيكي",
-          "slate": "أردوازي",
-          "navyGold": "أزرق داكن وذهبي",
-          "forest": "أخضر غابي",
           "custom": "مخصص"
         },
+        "matchPortfolio": "مطابقة معرض أعمالي",
+        "publishFirst": "انشر معرض أعمالك أولاً",
+        "savedThemes": "الأنماط المحفوظة",
+        "expandPreview": "تكبير المعاينة",
         "mainColor": "اللون الأساسي",
         "accentColor": "لون التمييز",
         "saveAndApply": "حفظ وتطبيق",
@@ -3666,6 +3666,7 @@
     "clearFilters": "مسح عوامل التصفية",
     "loading": "جارٍ التحميل…",
     "close": "إغلاق",
+    "resizePanel": "تغيير حجم اللوحة",
     "promoCode": {
       "disclosureLabel": "هل لديك رمز ترويجي؟",
       "close": "إغلاق الرمز الترويجي",
