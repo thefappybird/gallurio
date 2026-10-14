@@ -72,6 +72,11 @@ export function coerceMoney(raw: string): CoerceResult {
 /** Which of the two leading numbers a slash/dash date puts first. */
 export type DateOrder = "MDY" | "DMY";
 
+/** Month-first where the workspace's own clock says so (PH, Americas), else day-first. */
+export function defaultDateOrder(timeZone: string): DateOrder {
+  return timeZone === "Asia/Manila" || timeZone.startsWith("America/") ? "MDY" : "DMY";
+}
+
 const MONTH_NAMES = [
   "january", "february", "march", "april", "may", "june",
   "july", "august", "september", "october", "november", "december",
@@ -91,16 +96,23 @@ function isRealDate(y: number, m: number, d: number): boolean {
   return probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
 }
 
-/** Pulls "9:00 AM" / "14:30" out of a cell, as 24-hour "HH:MM". */
-function extractTime(raw: string): string {
-  const m = raw.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?/i);
-  if (!m) return "";
-  let hour = Number(m[1]);
-  const meridiem = m[3]?.toLowerCase().replace(/\./g, "");
+/** "9:00 AM", "14:30", "9pm", "noon" — one alternative per branch. */
+const TIME_RE =
+  /(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?|\b(\d{1,2})\s*([ap]\.?m\.?)(?![a-z])|\b(noon|midnight)\b/i;
+
+/** Pulls the time out of a cell as 24-hour "HH:MM", and returns the text without it. */
+function extractTime(raw: string): { time: string; rest: string } {
+  const m = raw.match(TIME_RE);
+  if (!m) return { time: "", rest: raw };
+  const rest = raw.replace(TIME_RE, " ").trim();
+  if (m[6]) return { time: m[6].toLowerCase() === "noon" ? "12:00" : "00:00", rest };
+  let hour = Number(m[1] ?? m[4]);
+  const minute = m[2] ?? "00";
+  const meridiem = (m[3] ?? m[5])?.toLowerCase().replace(/\./g, "");
   if (meridiem === "pm" && hour < 12) hour += 12;
   if (meridiem === "am" && hour === 12) hour = 0;
-  if (hour > 23 || Number(m[2]) > 59) return "";
-  return `${pad(hour)}:${m[2]}`;
+  if (hour > 23 || Number(minute) > 59) return { time: "", rest };
+  return { time: `${pad(hour)}:${minute}`, rest };
 }
 
 /**
@@ -135,9 +147,17 @@ export function coerceDate(raw: string, timeZone: string, order: DateOrder): Coe
     return { ok: true, value: wallTimeInTzToUtc(day, time, timeZone) };
   }
 
-  const time = extractTime(trimmed) || "00:00";
-  // Strip the time so only the date part is left to interpret.
-  const datePart = trimmed.replace(/\d{1,2}:\d{2}(?::\d{2})?\s*([ap]\.?m\.?)?/i, "").trim();
+  // Weekday names, ordinal suffixes and "Jun." dots carry no date information
+  // and would otherwise be mistaken for the month word.
+  const cleaned = trimmed
+    .replace(/\b(mon|tues?|wed(nes)?|thu(rs?)?|fri|sat(ur)?|sun)(day)?\b\.?,?/gi, " ")
+    .replace(/(\d)(st|nd|rd|th)\b/gi, "$1")
+    .replace(/\b([a-z]{3,})\./gi, "$1")
+    .trim();
+
+  // Stripping the time leaves only the date part to interpret.
+  const { time: parsedTime, rest: datePart } = extractTime(cleaned);
+  const time = parsedTime || "00:00";
 
   let y: number | undefined;
   let mo: number | undefined;

@@ -3,6 +3,7 @@ import {
   coerceCurrency,
   coerceDate,
   coerceMoney,
+  defaultDateOrder,
   inferStatus,
   isAmbiguousDateColumn,
 } from "./import-normalize";
@@ -188,5 +189,32 @@ describe("inferStatus", () => {
         payments: [{ price: 40000, status: "unpaid" }],
       })
     ).toBe("booked");
+  });
+});
+
+describe("defaultDateOrder", () => {
+  it("reads Manila as month-first", () => {
+    expect(defaultDateOrder("Asia/Manila")).toBe("MDY");
+  });
+});
+
+describe("coerceDate leniency", () => {
+  it("ignores weekday names and ordinal suffixes", () => {
+    const r = coerceDate("Mon, June 15th 2026", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-14T16:00:00.000Z" });
+  });
+});
+
+describe("coerceDate colon-less times", () => {
+  it("reads 9pm after a named-month date", () => {
+    const r = coerceDate("Jun. 15, 2026 9pm", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-15T13:00:00.000Z" });
+  });
+});
+
+describe("coerceDate noon", () => {
+  it("reads noon as 12:00 wall time", () => {
+    const r = coerceDate("06/15/2026 noon", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-15T04:00:00.000Z" });
   });
 });

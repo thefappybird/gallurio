@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAPPABLE_FIELDS,
   applyMapping,
+  assignmentSources,
   autoMapColumns,
   collectUnmappedEnumValues,
   requiredFieldsSatisfied,
@@ -154,27 +155,32 @@ describe("applyMapping", () => {
     expect(row.values.currency).toBe("PHP");
   });
 
-  it("reports a value it cannot read instead of dropping it silently", () => {
+  it("drops an unreadable amount with a note instead of failing the row", () => {
     const m = autoMapColumns(HEADERS);
     const [row] = applyMapping(
       [{ ...ROWS[0], "Package Price": "to be confirmed", "Deal Status": "Confirmed" }],
       m,
       { ...OPTS, valueMap: { status: { Confirmed: "booked" } } }
     );
-    expect(row.issues).toContainEqual({
+    expect(row.issues).toEqual([]);
+    expect(row.values.amountTotal).toBeUndefined();
+    expect(row.notes).toContainEqual({
       field: "amountTotal",
       value: "to be confirmed",
-      reason: "not_a_number",
+      reason: "amount_dropped",
     });
   });
 
-  it("reports an enum value nobody mapped, which is what the value step prevents", () => {
+  it("infers a status for a value nobody mapped, and says so", () => {
     const m = autoMapColumns(HEADERS);
     const [row] = applyMapping(ROWS, m, OPTS);
-    expect(row.issues).toContainEqual({
+    expect(row.issues).toEqual([]);
+    // Past but unpaid, so inference keeps it booked rather than completed.
+    expect(row.values.status).toBe("booked");
+    expect(row.notes).toContainEqual({
       field: "status",
       value: "Confirmed",
-      reason: "unrecognized_value",
+      reason: "status_inferred",
     });
   });
 
@@ -224,5 +230,93 @@ describe("collectUnmappedEnumValues", () => {
     const m = autoMapColumns(["Customer", "Event", "Date", "Deal Status"]);
     const rows = [{ Customer: "A", Event: "E", Date: "06/15/2026", "Deal Status": "cancelled" }];
     expect(collectUnmappedEnumValues(rows, m)).toEqual([]);
+  });
+});
+
+describe("combined columns", () => {
+  const OPTS = { timeZone: "Asia/Manila", dateOrder: "MDY" as const };
+
+  it("joins the non-blank cells of several source columns with a space", () => {
+    const m = autoMapColumns([]);
+    m.clientName = { sources: ["First", "Last"] };
+    const [row] = applyMapping([{ First: "Jane", Last: " Smith " }], m, OPTS);
+    expect(row.values.clientName).toBe("Jane Smith");
+    expect(assignmentSources(m.clientName)).toEqual(["First", "Last"]);
+  });
+});
+
+describe("combinable fields", () => {
+  it("allows free text only, never email or identities", () => {
+    const keys = MAPPABLE_FIELDS.filter((f) => f.combinable).map((f) => f.key).sort();
+    expect(keys).toEqual(["clientName", "clientPhone", "locationAddress", "notes", "title"]);
+  });
+});
+
+describe("autoMapColumns first/last name", () => {
+  it("combines a first-name and last-name column into clientName", () => {
+    const m = autoMapColumns(["First Name", "Last Name", "Date", "Event"]);
+    expect(m.clientName).toEqual({ sources: ["First Name", "Last Name"] });
+  });
+});
+
+describe("autoMapColumns lone name half", () => {
+  it("does not map a lone first-name column to clientName", () => {
+    const m = autoMapColumns(["First Name", "Date", "Event"]);
+    expect(m.clientName).toBeNull();
+  });
+});
+
+describe("applyMapping leniency", () => {
+  const OPTS = { timeZone: "Asia/Manila", dateOrder: "MDY" as const, now: new Date("2026-06-20T00:00:00Z") };
+  const BASE = { clientName: "Jane", title: "Wedding", startAt: "06/15/2026" };
+  const m = () => {
+    const mapping = autoMapColumns([]);
+    for (const k of ["clientName", "title", "startAt", "endAt", "clientEmail", "currency", "eventType", "status", "notes"]) {
+      mapping[k] = { source: k };
+    }
+    return mapping;
+  };
+
+  it("drops an unreadable end date with a note", () => {
+    const [row] = applyMapping([{ ...BASE, endAt: "later" }], m(), OPTS);
+    expect(row.issues).toEqual([]);
+    expect(row.values.endAt).toBeUndefined();
+    expect(row.notes).toContainEqual({ field: "endAt", value: "later", reason: "end_date_dropped" });
+  });
+
+  it("still blocks the row on an unreadable start date", () => {
+    const [row] = applyMapping([{ ...BASE, startAt: "someday" }], m(), OPTS);
+    expect(row.issues).toEqual([{ field: "startAt", value: "someday", reason: "not_a_date" }]);
+  });
+
+  it("drops an invalid email with a note", () => {
+    const [row] = applyMapping([{ ...BASE, clientEmail: "not-an-email" }], m(), OPTS);
+    expect(row.values.clientEmail).toBeUndefined();
+    expect(row.notes).toContainEqual({ field: "clientEmail", value: "not-an-email", reason: "email_dropped" });
+  });
+
+  it("blanks an unrecognized event type with a note", () => {
+    const [row] = applyMapping([{ ...BASE, eventType: "Gig" }], m(), OPTS);
+    expect(row.issues).toEqual([]);
+    expect(row.values.eventType).toBeUndefined();
+    expect(row.notes).toContainEqual({ field: "eventType", value: "Gig", reason: "event_type_blank" });
+  });
+
+  it("truncates over-long text with a note", () => {
+    const long = "x".repeat(170);
+    const [row] = applyMapping([{ ...BASE, title: long }], m(), OPTS);
+    expect(row.values.title).toBe("x".repeat(160));
+    expect(row.notes).toContainEqual({ field: "title", value: long, reason: "truncated" });
+  });
+
+  it("generates a title from the row when none was mapped", () => {
+    const mapping = m();
+    mapping.title = null;
+    const [row] = applyMapping([{ ...BASE }], mapping, {
+      ...OPTS,
+      titleFallback: (v) => `${v.clientName} booking`,
+    });
+    expect(row.values.title).toBe("Jane booking");
+    expect(row.notes).toContainEqual({ field: "title", value: "", reason: "title_generated" });
   });
 });

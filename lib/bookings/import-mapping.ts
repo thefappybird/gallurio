@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { BOOKING_STATUSES, EVENT_TYPES } from "@/lib/validators/booking";
 import {
   coerceCurrency,
@@ -37,6 +38,8 @@ export type MappableField = {
   group: FieldGroup;
   /** Whether "no column — use this fixed value" is offered for this field. */
   constantAllowed: boolean;
+  /** Whether several columns may be joined into this field (free text only). */
+  combinable: boolean;
 };
 
 const KIND: Record<string, FieldKind> = {
@@ -81,13 +84,16 @@ const CONSTANT_FORBIDDEN = new Set([
  */
 export const MAPPABLE_FIELDS: readonly MappableField[] = IMPORT_COLUMNS.map((col) => {
   const key = normalizeCsvHeader(col.name);
+  const kind = KIND[key] ?? "text";
   return {
     key,
     label: col.name,
     required: col.required,
-    kind: KIND[key] ?? "text",
+    kind,
     group: col.required ? "required" : (GROUP[key] ?? "common"),
     constantAllowed: !CONSTANT_FORBIDDEN.has(key),
+    // Joining only makes sense for prose; an email or an id is one value.
+    combinable: kind === "text" && !CONSTANT_FORBIDDEN.has(key) && key !== "clientEmail",
   };
 });
 
@@ -98,9 +104,18 @@ export const MAPPABLE_FIELDS: readonly MappableField[] = IMPORT_COLUMNS.map((col
  */
 export type Assignment =
   | { source: string }
+  | { sources: string[] }
   | { constant: string }
   | { infer: true }
   | null;
+
+/** The source columns an assignment reads, so the UI counts them uniformly. */
+export function assignmentSources(a: Assignment): string[] {
+  if (!a) return [];
+  if ("source" in a) return [a.source];
+  if ("sources" in a) return a.sources;
+  return [];
+}
 
 /** Target field key -> assignment. Every MAPPABLE_FIELDS key is present. */
 export type ColumnMapping = Record<string, Assignment>;
@@ -125,8 +140,15 @@ function tokens(header: string): string[] {
  * it "End Date" matches startAt's `date` and endAt is left empty, which imports
  * every booking as zero-length instead of failing loudly.
  */
+const FIRST_WORDS = ["first", "given", "fname", "firstname"];
+const LAST_WORDS = ["last", "surname", "family", "lname", "lastname"];
+
 const SYNONYMS: Record<string, { match: string[]; avoid?: string[] }> = {
-  clientName: { match: ["client", "customer", "name", "contact", "guest"] },
+  clientName: {
+    match: ["client", "customer", "name", "contact", "guest"],
+    // Half of a name is not the name; the pair rule in autoMapColumns joins them.
+    avoid: [...FIRST_WORDS, ...LAST_WORDS],
+  },
   clientEmail: { match: ["email", "mail"] },
   clientPhone: { match: ["phone", "mobile", "tel", "cell"] },
   startAt: {
@@ -187,6 +209,20 @@ export function autoMapColumns(rawHeaders: readonly string[]): ColumnMapping {
     (field, header) =>
       loose(header) === loose(field.key) || loose(header) === loose(field.label)
   );
+  // 2b. A first-name + last-name pair is one clientName, joined at import time.
+  if (!mapping.clientName) {
+    const pick = (words: string[]) =>
+      available.find((h) => !taken.has(h) && tokens(h).some((t) => words.includes(t)));
+    const first = pick(FIRST_WORDS);
+    if (first) taken.add(first);
+    const last = pick(LAST_WORDS);
+    if (first && last) {
+      mapping.clientName = { sources: [first, last] };
+      taken.add(last);
+    } else if (first) {
+      taken.delete(first);
+    }
+  }
   // 3. Whole-word synonyms. Qualified fields (endAt, amountDeposit) run before
   //    their generic siblings so they claim their column first, and the generic
   //    ones additionally refuse a header carrying the qualifier.
@@ -247,14 +283,22 @@ export type MappedRowIssue = {
   field: string;
   /** The cell text that could not be read, so the error can quote it back. */
   value: string;
-  reason: CoerceFailure | "unrecognized_value";
+  reason: CoerceFailure;
 };
+
+/** Why a cell was dropped, blanked or adjusted without failing its row. */
+export type NoteReason = "amount_dropped" | "currency_dropped" | "end_date_dropped" | "email_dropped" | "event_type_blank" | "status_inferred" | "truncated" | "title_generated";
+
+/** A non-blocking adjustment the preview can surface next to the row. */
+export type MappedRowNote = { field: string; value: string; reason: NoteReason };
 
 export type MappedRow = {
   /** Canonical field keys, ready for `bookingImportRowSchema`. */
   values: Record<string, string>;
-  /** Cells that could not be normalized. The preview shows these as row errors. */
+  /** Blocking problems only: cells the row cannot import without. */
   issues: MappedRowIssue[];
+  /** Cells that were dropped or adjusted so the row could still import. */
+  notes: MappedRowNote[];
 };
 
 export type ApplyMappingOptions = {
@@ -263,6 +307,18 @@ export type ApplyMappingOptions = {
   /** field key -> the file's value -> our value. "" means import it blank. */
   valueMap?: Record<string, Record<string, string>>;
   now?: Date;
+  /** Builds a title for a row whose own title cell is empty (title is required). */
+  titleFallback?: (values: Record<string, string>) => string;
+};
+
+const emailSchema = z.string().email();
+
+/** The caps `bookingImportRowSchema` enforces on free text. */
+const TEXT_MAX: Record<string, number> = {
+  title: 160,
+  clientName: 120,
+  locationAddress: 240,
+  notes: 2000,
 };
 
 /** Resolves an enum cell against our members, then the user's value mapping. */
@@ -270,7 +326,7 @@ function resolveEnum(
   fieldKey: string,
   raw: string,
   valueMap: ApplyMappingOptions["valueMap"]
-): { value: string } | { issue: "unrecognized_value" } {
+): { value: string } | null {
   const members = ENUM_MEMBERS[fieldKey];
   if (!members) return { value: raw };
   const direct = members.find((m) => m.toLowerCase() === raw.trim().toLowerCase());
@@ -278,15 +334,15 @@ function resolveEnum(
   const mapped = valueMap?.[fieldKey]?.[raw];
   // "" is a deliberate "import this blank", not an absent mapping.
   if (mapped !== undefined) return { value: mapped };
-  return { issue: "unrecognized_value" };
+  return null;
 }
 
 /**
  * Turns the user's column assignments into rows the import schema can read.
  *
- * A cell that cannot be normalized is reported rather than dropped: a silently
- * missing amount is indistinguishable from one the user never entered, and the
- * whole point of this step is that nothing fails without saying why.
+ * Only an unreadable start date blocks a row (`issues`). Every other bad cell is
+ * dropped, blanked or trimmed and recorded in `notes`, so the preview can say
+ * what changed instead of failing a booking over a stray amount or email.
  */
 export function applyMapping(
   rows: readonly Record<string, string>[],
@@ -298,26 +354,34 @@ export function applyMapping(
   return rows.map((source) => {
     const values: Record<string, string> = {};
     const issues: MappedRowIssue[] = [];
+    const notes: MappedRowNote[] = [];
+    // A status cell nobody mapped; settled after the loop, once dates are known.
+    let unknownStatus = "";
 
     for (const field of MAPPABLE_FIELDS) {
       const assignment = mapping[field.key];
       if (!assignment || "infer" in assignment) continue;
 
-      const raw =
-        "constant" in assignment ? assignment.constant : (source[assignment.source] ?? "");
-      const cell = stripFormulaGuard(raw).trim();
+      const read = (v: string | undefined) => stripFormulaGuard(v ?? "").trim();
+      const cell =
+        "constant" in assignment
+          ? read(assignment.constant)
+          : "sources" in assignment
+            ? assignment.sources.map((s) => read(source[s])).filter(Boolean).join(" ")
+            : read(source[assignment.source]);
       if (!cell) continue;
 
       if (field.kind === "enum") {
         const resolved = resolveEnum(field.key, cell, opts.valueMap);
-        if ("issue" in resolved) {
-          issues.push({ field: field.key, value: cell, reason: resolved.issue });
+        if (!resolved) {
+          if (field.key === "status") unknownStatus = cell;
+          else notes.push({ field: field.key, value: cell, reason: "event_type_blank" });
           continue;
         }
         // currency has no member list here; normalize it the same as any cell.
         if (field.key === "currency") {
           const c = coerceCurrency(resolved.value);
-          if (!c.ok) issues.push({ field: field.key, value: cell, reason: c.reason });
+          if (!c.ok) notes.push({ field: field.key, value: cell, reason: "currency_dropped" });
           else if (c.value) values[field.key] = c.value;
           continue;
         }
@@ -332,13 +396,31 @@ export function applyMapping(
             ? coerceMoney(cell)
             : { ok: true as const, value: cell };
 
-      if (!coerced.ok) issues.push({ field: field.key, value: cell, reason: coerced.reason });
-      else if (coerced.value) values[field.key] = coerced.value;
+      if (!coerced.ok) {
+        // An unreadable amount is dropped; an unreadable start date blocks the row.
+        if (field.kind === "money") {
+          notes.push({ field: field.key, value: cell, reason: "amount_dropped" });
+        } else if (field.key === "endAt") {
+          notes.push({ field: field.key, value: cell, reason: "end_date_dropped" });
+        } else {
+          issues.push({ field: field.key, value: cell, reason: coerced.reason });
+        }
+      } else if (field.key === "clientEmail" && !emailSchema.safeParse(coerced.value).success) {
+        // The route's schema rejects a malformed email; the booking matters more.
+        notes.push({ field: field.key, value: cell, reason: "email_dropped" });
+      } else if (coerced.value) {
+        const max = TEXT_MAX[field.key];
+        if (max && coerced.value.length > max) {
+          notes.push({ field: field.key, value: cell, reason: "truncated" });
+          values[field.key] = coerced.value.slice(0, max);
+        } else values[field.key] = coerced.value;
+      }
     }
 
     // Inference runs last: it reads the dates and amounts resolved above.
     const status = mapping.status;
-    if (status && "infer" in status && values.startAt) {
+    const infers = status && "infer" in status;
+    if ((infers || unknownStatus) && values.startAt) {
       values.status = inferStatus({
         endAt: new Date(values.endAt || values.startAt),
         now,
@@ -346,8 +428,14 @@ export function applyMapping(
         amountDeposit: values.amountDeposit ? Number(values.amountDeposit) : 0,
       });
     }
+    if (unknownStatus) notes.push({ field: "status", value: unknownStatus, reason: "status_inferred" });
 
-    return { values, issues };
+    if (!values.title && opts.titleFallback) {
+      values.title = opts.titleFallback(values).slice(0, TEXT_MAX.title);
+      notes.push({ field: "title", value: "", reason: "title_generated" });
+    }
+
+    return { values, issues, notes };
   });
 }
 
