@@ -1,5 +1,7 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
+import { INVOICE_THEME_PRESET_IDS } from "@/lib/validators/invoiceTheme";
+import { INVOICE_THEME_DEFAULT_PRESET, INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
 import {
   BRAND_KIT_THEME_PRESETS,
   BRAND_KIT_FONT_PAIRS,
@@ -299,9 +301,11 @@ const workspaceSchema = new Schema(
       },
     },
     invoiceTheme: {
-      preset: { type: String, enum: ["classic", "slate", "navyGold", "forest", "custom"], default: "classic" },
-      main: { type: String, default: "#1A1A1A" },
-      accent: { type: String, default: "#FFFFFF" },
+      preset: { type: String, enum: [...INVOICE_THEME_PRESET_IDS], default: INVOICE_THEME_DEFAULT_PRESET },
+      savedThemeId: { type: String, default: null },
+      main: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].main },
+      accent: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].accent },
+      text: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].text },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
     // Records the route the owner chose during onboarding independently from

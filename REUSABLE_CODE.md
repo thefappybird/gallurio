@@ -206,7 +206,7 @@ Composed, app-specific shared components.
 | `lib/invoices/pdfShared.tsx` | `buildInvoiceStyles(theme)`, `DocumentHeader`, `DocumentFooter`, `InfoGrid`, `PdfTheme`, `InfoCell` | Shared `@react-pdf/renderer` layout: themed full-bleed header/footer color blocks + accent strip, and the 4-col labeled info grid. Used by both `InvoiceDocument` and `ReceiptDocument` — reuse for any future PDF document instead of re-styling. |
 | `lib/invoices/filename.ts` | `buildPdfFilename({business, customer, kind, date?})` | Sanitized `BUSINESS-CUSTOMER-KIND_YYYY-MM-DD.PDF` filename builder for invoice/receipt downloads |
 | `lib/invoices/counter.ts` | `getNextInvoiceSeq(workspaceId)`, `formatInvoiceNumber(seq)` | Atomic per-workspace sequence via the `Counter` model (`findOneAndUpdate` upsert) + `INV-NNNNNN` formatter |
-| `lib/invoices/theme.ts` | `INVOICE_THEME_PRESETS`, `resolveInvoiceTheme(theme)` | Invoice PDF color presets (classic/slate/navyGold/forest) + resolver honoring a `"custom"` preset |
+| `lib/invoices/theme.ts` | `INVOICE_THEME_PRESETS`, `invoiceColorsFromBrandKit`, `contrastRatio`, `resolveInvoiceTheme(theme, brandKit?)` | Invoice PDF colors derived from the 6 portfolio theme presets; resolves presets, live `portfolio` brand kit, `saved` snapshot, `custom`; legacy ids fall back to minimal |
 
 ### `lib/email/`
 | Import | Export | Purpose |

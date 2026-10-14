@@ -41,7 +41,7 @@ import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
-import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
+import { INVOICE_THEME_DEFAULT_PRESET, INVOICE_THEME_PRESETS, invoiceColorsFromBrandKit } from "@/lib/invoices/theme";
 
 export async function generateMetadata({
   params,
@@ -290,11 +290,27 @@ async function BookingsContent({
 
   // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
   // `invoiceTheme` existed have no key at all (not the schema default) — fall
-  // back to the classic preset so the toolbar always has a value to seed.
+  // back to the minimal preset so the toolbar always has a value to seed.
   const invoiceTheme = workspace.invoiceTheme ?? {
-    preset: "classic" as const,
-    ...INVOICE_THEME_PRESETS.classic,
+    preset: INVOICE_THEME_DEFAULT_PRESET,
+    ...INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET],
   };
+  // Plain serializable colors so the theme dialog can offer "Match portfolio"
+  // and the owner's saved portfolio themes.
+  const publishedKit = workspace.publicPage?.brandKit;
+  const invoicePortfolioBrandKit = publishedKit
+    ? {
+        primaryColor: publishedKit.primaryColor,
+        accentColor: publishedKit.accentColor,
+        foregroundColor: publishedKit.foregroundColor,
+        backgroundColor: publishedKit.backgroundColor,
+      }
+    : null;
+  const invoiceSavedThemes = (workspace.publicPage?.savedThemes ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    ...invoiceColorsFromBrandKit(t.brandKit),
+  }));
   const invoiceThemeBusiness = {
     name: workspace.name,
     logoUrl: workspace.logoUrl ?? "",
@@ -330,6 +346,8 @@ async function BookingsContent({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+              invoiceSavedThemes={invoiceSavedThemes}
               invoiceThemeBusiness={invoiceThemeBusiness}
             />
           ) : null}
@@ -348,6 +366,8 @@ async function BookingsContent({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+              invoiceSavedThemes={invoiceSavedThemes}
               invoiceThemeBusiness={invoiceThemeBusiness}
               colorMode={colorMode}
               teamColorMap={teamColorMap}

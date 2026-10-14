@@ -16,7 +16,18 @@ function collectElements(node: unknown, out: Array<{ type: unknown; props: Recor
   return out;
 }
 
-const styles = buildInvoiceStyles({ main: "#0F1B33", accent: "#C9A24B" });
+const styles = buildInvoiceStyles({ main: "#0F1B33", accent: "#C9A24B", text: "#112233" });
+
+describe("buildInvoiceStyles", () => {
+  it("colors band text from theme.text, with 75% rgba variants for meta lines", () => {
+    expect(styles.businessName).toMatchObject({ color: "#112233" });
+    expect(styles.kindLabel).toMatchObject({ color: "#112233" });
+    expect(styles.docNumber).toMatchObject({ color: "#112233" });
+    expect(styles.thankYou).toMatchObject({ color: "#112233" });
+    expect(styles.businessMeta).toMatchObject({ color: "rgba(17,34,51,0.75)" });
+    expect(styles.docDate).toMatchObject({ color: "rgba(17,34,51,0.75)" });
+  });
+});
 const business = { name: "Studio Aperture", logoUrl: "https://cdn.test/logo.png", address: "123 Main St" };
 
 describe("DocumentHeader", () => {

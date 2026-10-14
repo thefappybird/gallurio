@@ -5,7 +5,13 @@ import { connectDB } from "@/lib/db/mongoose";
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
 import { Workspace } from "@/lib/db/models";
 import { invoiceThemeSchema } from "@/lib/validators/invoiceTheme";
-import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
+import {
+  INVOICE_THEME_PRESETS,
+  invoiceColorsFromBrandKit,
+  readableTextOn,
+  resolveInvoiceTheme,
+  type InvoiceColors,
+} from "@/lib/invoices/theme";
 
 export type UpdateInvoiceThemeResult = { ok: true } | { error: string };
 
@@ -21,15 +27,32 @@ export async function updateInvoiceThemeAction(input: unknown): Promise<UpdateIn
   const parsed = invoiceThemeSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_data" };
 
-  const resolved =
-    parsed.data.preset === "custom"
-      ? { main: parsed.data.main, accent: parsed.data.accent }
-      : INVOICE_THEME_PRESETS[parsed.data.preset];
+  const { preset, savedThemeId } = parsed.data;
+  const publicPage = ctx.workspace.publicPage;
+  let resolved: InvoiceColors;
+  let storedSavedThemeId: string | null = null;
+  if (preset === "custom") {
+    resolved = {
+      main: parsed.data.main,
+      accent: parsed.data.accent,
+      text: parsed.data.text ?? readableTextOn(parsed.data.main),
+    };
+  } else if (preset === "saved") {
+    // Tenant-scoped: only this workspace's own saved themes are searched.
+    const saved = savedThemeId ? publicPage?.savedThemes?.find((t) => t.id === savedThemeId) : undefined;
+    if (!saved?.brandKit) return { error: "invalid_data" };
+    resolved = invoiceColorsFromBrandKit(saved.brandKit);
+    storedSavedThemeId = savedThemeId ?? null;
+  } else if (preset === "portfolio") {
+    resolved = resolveInvoiceTheme({ preset, main: "", accent: "" }, publicPage?.brandKit);
+  } else {
+    resolved = INVOICE_THEME_PRESETS[preset];
+  }
 
   await connectDB();
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
-    { $set: { invoiceTheme: { preset: parsed.data.preset, ...resolved } } }
+    { $set: { invoiceTheme: { preset, savedThemeId: storedSavedThemeId, ...resolved } } }
   );
 
   emitDataChanged(String(ctx.workspace._id), { type: "workspace.updated" });

@@ -30,7 +30,7 @@ describe("updateInvoiceThemeAction", () => {
     requireOrgMock.mockResolvedValue({ role: "staff", workspace: { _id: "ws1" } });
     const { updateInvoiceThemeAction } = await import("./_actions");
     const result = await updateInvoiceThemeAction({
-      preset: "classic",
+      preset: "minimal",
       main: "#1a1a1a",
       accent: "#ffffff",
     });
@@ -41,24 +41,28 @@ describe("updateInvoiceThemeAction", () => {
     requireOrgMock.mockResolvedValue({ role: "owner", workspace: { _id: "ws1" } });
     const { updateInvoiceThemeAction } = await import("./_actions");
     const result = await updateInvoiceThemeAction({
-      preset: "slate",
+      preset: "luxury",
       main: "#000000",
       accent: "#000000",
     });
     expect(result).toEqual({ ok: true });
     expect(updateOneMock).toHaveBeenCalledWith(
       { _id: "ws1" },
-      { $set: { invoiceTheme: { preset: "slate", main: "#1E293B", accent: "#0EA5A4" } } }
+      {
+        $set: {
+          invoiceTheme: { preset: "luxury", savedThemeId: null, main: "#1e2431", accent: "#2f3a52", text: "#eceef4" },
+        },
+      }
     );
   });
 
   it("emits workspace.updated after a successful save and nothing for a non-owner", async () => {
     const { updateInvoiceThemeAction } = await import("./_actions");
     requireOrgMock.mockResolvedValue({ role: "staff", workspace: { _id: "ws1" } });
-    await updateInvoiceThemeAction({ preset: "slate", main: "#000000", accent: "#000000" });
+    await updateInvoiceThemeAction({ preset: "luxury", main: "#000000", accent: "#000000" });
     expect(emitMock).not.toHaveBeenCalled();
     requireOrgMock.mockResolvedValue({ role: "owner", workspace: { _id: "ws1" } });
-    await updateInvoiceThemeAction({ preset: "slate", main: "#000000", accent: "#000000" });
+    await updateInvoiceThemeAction({ preset: "luxury", main: "#000000", accent: "#000000" });
     expect(emitMock).toHaveBeenCalledWith("ws1", { type: "workspace.updated" });
   });
 
@@ -73,7 +77,69 @@ describe("updateInvoiceThemeAction", () => {
     expect(result).toEqual({ ok: true });
     expect(updateOneMock).toHaveBeenCalledWith(
       { _id: "ws1" },
-      { $set: { invoiceTheme: { preset: "custom", main: "#123456", accent: "#abcdef" } } }
+      {
+        $set: {
+          invoiceTheme: { preset: "custom", savedThemeId: null, main: "#123456", accent: "#abcdef", text: "#FFFFFF" },
+        },
+      }
+    );
+  });
+
+  const savedKit = {
+    primaryColor: "#102030",
+    accentColor: "#405060",
+    foregroundColor: "#f0f0f0",
+    backgroundColor: "#0a0a0a",
+  };
+  const wsWithThemes = {
+    _id: "ws1",
+    publicPage: {
+      brandKit: { ...savedKit, primaryColor: "#ece5d8", foregroundColor: "#1f1c16", backgroundColor: "#fcfaf6" },
+      savedThemes: [{ id: "s1", name: "Mine", brandKit: savedKit }],
+    },
+  };
+
+  it("snapshots a saved theme from this workspace's savedThemes", async () => {
+    requireOrgMock.mockResolvedValue({ role: "owner", workspace: wsWithThemes });
+    const { updateInvoiceThemeAction } = await import("./_actions");
+    const result = await updateInvoiceThemeAction({
+      preset: "saved",
+      savedThemeId: "s1",
+      main: "#000000",
+      accent: "#000000",
+    });
+    expect(result).toEqual({ ok: true });
+    expect(updateOneMock).toHaveBeenCalledWith(
+      { _id: "ws1" },
+      {
+        $set: {
+          invoiceTheme: { preset: "saved", savedThemeId: "s1", main: "#102030", accent: "#405060", text: "#f0f0f0" },
+        },
+      }
+    );
+  });
+
+  it("rejects a saved id not in this workspace (other workspace or missing)", async () => {
+    requireOrgMock.mockResolvedValue({ role: "owner", workspace: wsWithThemes });
+    const { updateInvoiceThemeAction } = await import("./_actions");
+    for (const savedThemeId of ["other-ws-theme", undefined]) {
+      const result = await updateInvoiceThemeAction({ preset: "saved", savedThemeId, main: "#000000", accent: "#000000" });
+      expect(result).toEqual({ error: "invalid_data" });
+    }
+    expect(updateOneMock).not.toHaveBeenCalled();
+  });
+
+  it("snapshots the published brand kit for the portfolio preset, ignoring client colors", async () => {
+    requireOrgMock.mockResolvedValue({ role: "owner", workspace: wsWithThemes });
+    const { updateInvoiceThemeAction } = await import("./_actions");
+    await updateInvoiceThemeAction({ preset: "portfolio", main: "#000000", accent: "#000000" });
+    expect(updateOneMock).toHaveBeenCalledWith(
+      { _id: "ws1" },
+      {
+        $set: {
+          invoiceTheme: { preset: "portfolio", savedThemeId: null, main: "#ece5d8", accent: "#405060", text: "#1f1c16" },
+        },
+      }
     );
   });
 

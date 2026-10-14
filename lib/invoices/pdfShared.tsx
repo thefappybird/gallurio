@@ -1,6 +1,12 @@
 import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 
-export type PdfTheme = { main: string; accent: string };
+export type PdfTheme = { main: string; accent: string; text: string };
+
+/** "#rrggbb" -> "rgba(r,g,b,alpha)" for translucent band text. */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${alpha})`;
+}
 
 export function buildInvoiceStyles(theme: PdfTheme) {
   return StyleSheet.create({
@@ -23,14 +29,14 @@ export function buildInvoiceStyles(theme: PdfTheme) {
     accentStrip: { height: 4, backgroundColor: theme.accent },
     logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
     logo: { width: 40, height: 40, objectFit: "contain" },
-    businessName: { fontSize: 18, fontWeight: 700, color: "#FFFFFF" },
-    businessMeta: { fontSize: 9, color: "rgba(255,255,255,0.75)" },
+    businessName: { fontSize: 18, fontWeight: 700, color: theme.text },
+    businessMeta: { fontSize: 9, color: hexToRgba(theme.text, 0.75) },
     headerLeft: { flexGrow: 1, flexBasis: 0, flexShrink: 1, paddingRight: 16 },
     footerLeft: { flexGrow: 1, flexBasis: 0, flexShrink: 1, paddingRight: 16 },
     headerRight: { alignItems: "flex-end", flexShrink: 0 },
-    kindLabel: { fontSize: 10, color: "#FFFFFF", letterSpacing: 2, marginBottom: 6 },
-    docNumber: { fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 },
-    docDate: { fontSize: 9, color: "rgba(255,255,255,0.75)" },
+    kindLabel: { fontSize: 10, color: theme.text, letterSpacing: 2, marginBottom: 6 },
+    docNumber: { fontSize: 16, fontWeight: 700, color: theme.text, marginBottom: 4 },
+    docDate: { fontSize: 9, color: hexToRgba(theme.text, 0.75) },
     infoGrid: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -59,7 +65,7 @@ export function buildInvoiceStyles(theme: PdfTheme) {
     tableLabelEmphasis: { fontSize: 12, fontWeight: 700 },
     tableValue: { fontSize: 10 },
     tableValueEmphasis: { fontSize: 12, fontWeight: 700 },
-    thankYou: { fontSize: 17, fontWeight: 700, color: "#FFFFFF" },
+    thankYou: { fontSize: 17, fontWeight: 700, color: theme.text },
     poweredBy: { fontSize: 8, color: "#9ca3af", textAlign: "center", marginTop: 8, marginBottom: 8 },
   });
 }

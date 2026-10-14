@@ -59,7 +59,7 @@ export async function GET(_req: Request, { params }: Params) {
       logoUrl: workspace.logoUrl ?? "",
       address: workspace.contact?.address ?? "",
       email: workspace.contact?.email ?? "",
-      theme: resolveInvoiceTheme(workspace.invoiceTheme),
+      theme: resolveInvoiceTheme(workspace.invoiceTheme, workspace.publicPage?.brandKit),
     },
     client: {
       name: client?.name ?? booking.clientName,
