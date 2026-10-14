@@ -33,6 +33,7 @@ function cell(row: Record<string, unknown>, key: string): string {
 
 function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
   const t = useTranslations("app.bookings.import.results");
+  const tField = useTranslations("app.bookings.import.fields");
   const [expanded, setExpanded] = useState(false);
   const csvLine = entry.index + 2;
 
@@ -66,7 +67,9 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
       <div className="px-3 py-2">
         <div className="mb-0.5 flex flex-wrap items-baseline gap-x-2">
           {entry.field ? (
-            <span className="font-mono text-[10px] text-muted-foreground">{entry.field}</span>
+            <span className="text-[10px] text-muted-foreground">
+              {tField.has(`${entry.field}.label`) ? tField(`${entry.field}.label`) : entry.field}
+            </span>
           ) : null}
           <span
             className={cn(

@@ -3,13 +3,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useInvalidateFor } from "@/hooks/use-data-events";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import type { BookingTeamOption } from "../_data/team-options";
 import { toast } from "sonner";
 import {
   CheckCircleIcon,
   FileTextIcon,
+  InfoIcon,
   Loader2Icon,
   SheetIcon,
   UploadIcon,
@@ -19,17 +20,23 @@ import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { parseCsv } from "@/lib/utils/csv-parse";
-import { bookingImportRowSchema } from "@/lib/validators/booking";
+import { EVENT_TYPES, bookingImportRowSchema } from "@/lib/validators/booking";
 import { sessionsAreSameDayInTz } from "@/lib/bookings/session-validation";
 import {
   MAPPABLE_FIELDS,
   applyMapping,
+  assignmentSources,
   autoMapColumns,
   collectUnmappedEnumValues,
   requiredFieldsSatisfied,
   type ColumnMapping,
 } from "@/lib/bookings/import-mapping";
-import { isAmbiguousDateColumn, type DateOrder } from "@/lib/bookings/import-normalize";
+import {
+  defaultDateOrder,
+  isAmbiguousDateColumn,
+  type DateOrder,
+} from "@/lib/bookings/import-normalize";
+import { formatImportInstant } from "./import-format";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import type {
   ImportResult,
@@ -52,6 +59,8 @@ type ParsedRow = {
   valid: boolean;
   error: string | null;
   errorField?: string;
+  /** Localized, non-blocking adjustments (a dropped amount, a made-up title). */
+  notes: string[];
   title: string;
   clientName: string;
   startAt: string;
@@ -87,9 +96,17 @@ export function ImportSheet({
   const tCoerce = useTranslations("app.bookings.import.coerce");
   const errMsg = useActionError();
   const tCols = useTranslations("app.bookings.import.columns");
+  const tField = useTranslations("app.bookings.import.fields");
+  const tNotes = useTranslations("app.bookings.import.notes");
+  const tEventType = useTranslations("app.bookings.eventTypes");
+  const locale = useLocale();
   const invalidateFor = useInvalidateFor();
 
   const timeZone = workspaceTimezone || FALLBACK_TZ;
+  const fieldLabel = useCallback(
+    (key: string) => (tField.has(`${key}.label`) ? tField(`${key}.label`) : key),
+    [tField]
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>("upload");
@@ -101,7 +118,7 @@ export function ImportSheet({
   const [sourceRows, setSourceRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>(() => autoMapColumns([]));
   const [valueMap, setValueMap] = useState<Record<string, Record<string, string>>>({});
-  const [dateOrder, setDateOrder] = useState<DateOrder>("MDY");
+  const [dateOrder, setDateOrder] = useState<DateOrder>(() => defaultDateOrder(timeZone));
   const [autoMapped, setAutoMapped] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -123,7 +140,7 @@ export function ImportSheet({
     setSourceRows([]);
     setMapping(autoMapColumns([]));
     setValueMap({});
-    setDateOrder("MDY");
+    setDateOrder(defaultDateOrder(timeZone));
     setAutoMapped(false);
     setParsing(false);
     setFileName(null);
@@ -133,7 +150,7 @@ export function ImportSheet({
     setShowPreviewErrors(false);
     setTeamId("");
     setDuplicateWarning(null);
-  }, []);
+  }, [timeZone]);
 
   // ── mapping-derived data ───────────────────────────────────────────────────
 
@@ -162,8 +179,8 @@ export function ImportSheet({
   const enumSourceColumns = useMemo(() => {
     const out: Record<string, string> = {};
     for (const field of MAPPABLE_FIELDS) {
-      const assignment = mapping[field.key];
-      if (assignment && "source" in assignment) out[field.key] = assignment.source;
+      const [first] = assignmentSources(mapping[field.key]);
+      if (first) out[field.key] = first;
     }
     return out;
   }, [mapping]);
@@ -178,20 +195,47 @@ export function ImportSheet({
    */
   const ambiguousDateExample = useMemo(() => {
     for (const key of ["startAt", "endAt"]) {
-      const assignment = mapping[key];
-      if (!assignment || !("source" in assignment)) continue;
-      const column = sourceRows.map((r) => r[assignment.source] ?? "");
-      if (isAmbiguousDateColumn(column)) return column.find((v) => v.trim()) ?? null;
+      for (const source of assignmentSources(mapping[key])) {
+        const column = sourceRows.map((r) => r[source] ?? "");
+        if (isAmbiguousDateColumn(column)) return column.find((v) => v.trim()) ?? null;
+      }
     }
     return null;
   }, [mapping, sourceRows]);
 
+  // Title is required, so a row without one gets a readable stand-in rather
+  // than failing: "Jane Smith – Wedding", else "Jane Smith – Jun 15, 2026".
+  const titleFallback = useCallback(
+    (values: Record<string, string>) => {
+      const client = values.clientName?.trim();
+      if (!client) return t("results.untitled");
+      const type = values.eventType?.trim();
+      if (type) {
+        const known = (EVENT_TYPES as readonly string[]).includes(type);
+        return t("titleWithType", { client, type: known ? tEventType(type) : type });
+      }
+      if (values.startAt) {
+        return t("titleWithDate", {
+          client,
+          date: formatImportInstant(values.startAt, locale, timeZone, ""),
+        });
+      }
+      return t("results.untitled");
+    },
+    [t, tEventType, locale, timeZone]
+  );
+
   const mappedRows = useMemo(
     () =>
       sourceRows.length
-        ? applyMapping(sourceRows, mapping, { timeZone, dateOrder, valueMap: effectiveValueMap })
+        ? applyMapping(sourceRows, mapping, {
+            timeZone,
+            dateOrder,
+            valueMap: effectiveValueMap,
+            titleFallback,
+          })
         : [],
-    [sourceRows, mapping, timeZone, dateOrder, effectiveValueMap]
+    [sourceRows, mapping, timeZone, dateOrder, effectiveValueMap, titleFallback]
   );
 
   /**
@@ -210,6 +254,9 @@ export function ImportSheet({
           title: raw.title ?? "",
           clientName: raw.clientName ?? "",
           startAt: raw.startAt ?? "",
+          notes: mapped.notes.map((n) =>
+            tNotes(n.reason, { field: fieldLabel(n.field), value: n.value })
+          ),
         };
 
         const issue = mapped.issues[0];
@@ -217,7 +264,7 @@ export function ImportSheet({
           return {
             ...base,
             valid: false,
-            error: tCoerce(issue.reason, { field: issue.field, value: issue.value }),
+            error: tCoerce(issue.reason, { field: fieldLabel(issue.field), value: issue.value }),
             errorField: issue.field,
           };
         }
@@ -257,7 +304,7 @@ export function ImportSheet({
 
         return { ...base, valid: true, error: null };
       }),
-    [mappedRows, timeZone, t, tCoerce]
+    [mappedRows, timeZone, t, tCoerce, tNotes, fieldLabel]
   );
 
   // Rows sharing a booking_id are ONE booking, and the route rebuilds its
@@ -276,6 +323,10 @@ export function ImportSheet({
   const validRows = useMemo(
     () => rows.filter((r) => r.valid && !blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
     [rows, blockedGroups]
+  );
+  const notedCount = useMemo(
+    () => validRows.filter((r) => r.notes.length > 0).length,
+    [validRows]
   );
   const invalidRows = useMemo(
     () => rows.filter((r) => !r.valid || blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
@@ -567,6 +618,7 @@ export function ImportSheet({
                   onChange={setMapping}
                   dateOrder={dateOrder}
                   onDateOrderChange={setDateOrder}
+                  timeZone={timeZone}
                   ambiguousDateExample={ambiguousDateExample}
                   loading={parsing}
                 />
@@ -585,8 +637,10 @@ export function ImportSheet({
                 <PreviewStep
                   rows={rows}
                   validCount={validRows.length}
+                  notedCount={notedCount}
                   invalidCount={invalidRows.length}
                   invalidIndexes={invalidIndexes}
+                  formatStart={(iso) => formatImportInstant(iso, locale, timeZone)}
                   fileName={fileName}
                   autoMapped={autoMapped}
                   onReviewMapping={() => goTo("map", "back")}
@@ -598,6 +652,7 @@ export function ImportSheet({
                   labels={{
                     preview: t("preview", { total: rows.length }),
                     valid: t("validCount", { count: validRows.length }),
+                    notes: t("notesCount", { count: notedCount }),
                     invalid: t("invalidCount", { count: invalidRows.length }),
                     reviewMapping: tNav("reviewMapping"),
                     reviewMappingAction: tNav("reviewMappingAction"),
@@ -888,8 +943,10 @@ function UploadStep({
 function PreviewStep({
   rows,
   validCount,
+  notedCount,
   invalidCount,
   invalidIndexes,
+  formatStart,
   fileName,
   autoMapped,
   onReviewMapping,
@@ -902,8 +959,10 @@ function PreviewStep({
 }: {
   rows: ParsedRow[];
   validCount: number;
+  notedCount: number;
   invalidCount: number;
   invalidIndexes: Set<number>;
+  formatStart: (iso: string) => string;
   fileName: string | null;
   autoMapped: boolean;
   onReviewMapping: () => void;
@@ -915,6 +974,7 @@ function PreviewStep({
   labels: {
     preview: string;
     valid: string;
+    notes: string;
     invalid: string;
     reviewMapping: string;
     reviewMappingAction: string;
@@ -971,6 +1031,12 @@ function PreviewStep({
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="font-medium">{labels.preview}</span>
         {validCount > 0 ? <span className="text-xs text-foreground">{labels.valid}</span> : null}
+        {notedCount > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            <span aria-hidden="true">· </span>
+            {labels.notes}
+          </span>
+        ) : null}
         {invalidCount > 0 ? (
           <button
             type="button"
@@ -1000,7 +1066,7 @@ function PreviewStep({
               <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                 {labels.col("start")}
               </th>
-              <th className="border-b border-border px-2 py-1.5 text-start font-medium text-destructive">
+              <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                 {labels.col("error")}
               </th>
             </tr>
@@ -1011,6 +1077,7 @@ function PreviewStep({
               // importable. Showing them with a green tick contradicted the
               // counts right above the table.
               const bad = invalidIndexes.has(row.index);
+              const noted = !bad && row.notes.length > 0;
               return (
                 <tr
                   key={row.index}
@@ -1025,14 +1092,25 @@ function PreviewStep({
                   <td className="px-1 py-1.5">
                     {bad ? (
                       <XCircleIcon className="size-3.5 text-destructive" />
+                    ) : noted ? (
+                      <InfoIcon className="size-3.5 text-muted-foreground" />
                     ) : (
                       <CheckCircleIcon className="size-3.5 text-foreground" />
                     )}
                   </td>
                   <td className="max-w-32 truncate px-2 py-1.5">{row.title || "—"}</td>
                   <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
-                  <td className="px-2 py-1.5 tabular-nums">{row.startAt || "—"}</td>
-                  <td className="px-2 py-1.5 text-destructive">
+                  <td className="px-2 py-1.5 tabular-nums">
+                    {row.startAt ? formatStart(row.startAt) : "—"}
+                  </td>
+                  <td
+                    className={cn(
+                      "max-w-40 px-2 py-1.5",
+                      bad ? "text-destructive" : "truncate text-muted-foreground"
+                    )}
+                    title={noted ? row.notes.join("\n") : undefined}
+                  >
+                    {noted ? row.notes[0] : null}
                     {bad ? (
                       // The cell truncates a long message; the dialog shows it
                       // whole alongside the raw row.

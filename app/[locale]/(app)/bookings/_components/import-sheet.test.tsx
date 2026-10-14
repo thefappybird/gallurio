@@ -333,8 +333,37 @@ describe("ImportSheet", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/1 valid/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 ready/i)).toBeInTheDocument();
       });
+    } finally {
+      restore();
+    }
+  });
+
+  it("counts a row with a dropped cell as ready with notes and imports it", async () => {
+    // "TBD" is not an amount. The row used to fail over it; now the amount is
+    // dropped, the preview says so, and the booking still goes in.
+    const csv = [
+      "clientName,startAt,endAt,title,amountTotal",
+      "Jane Smith,2026-06-15T01:00:00.000Z,2026-06-15T10:00:00.000Z,Smith Wedding,TBD",
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await uploadCsv(csv);
+      expect(screen.getByText(/1 ready/)).toBeInTheDocument();
+      expect(screen.getByText(/1 with notes/)).toBeInTheDocument();
+      expect(screen.queryByText(/skipped/)).not.toBeInTheDocument();
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ created: 1, updated: 0, skipped: 0, shifts: 0, errors: [] }),
+      });
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.rows).toHaveLength(1);
+      expect(body.rows[0].title).toBe("Smith Wedding");
     } finally {
       restore();
     }
@@ -399,7 +428,7 @@ describe("ImportSheet", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/with errors/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 skipped/i)).toBeInTheDocument();
       });
     } finally {
       restore();

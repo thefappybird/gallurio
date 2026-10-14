@@ -1071,8 +1071,11 @@
         "templateCsv": "Download CSV template",
         "templateXlsx": "Download XLSX template",
         "preview": "{total} row(s) found",
-        "validCount": "{count} valid",
-        "invalidCount": "{count} with errors",
+        "validCount": "{count} ready",
+        "notesCount": "{count} with notes",
+        "invalidCount": "{count} skipped",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "Import {count} %booking%(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
@@ -1087,7 +1090,7 @@
           "title": "Title",
           "client": "%Client%",
           "start": "Start",
-          "error": "Error"
+          "error": "Notes"
         },
         "results": {
           "title": "Import errors",
@@ -1116,66 +1119,38 @@
           "failedRetry": "Import failed. Please try again.",
           "close": "Close",
           "cancel": "Cancel",
-          "viewErrors": "View {n} error(s)",
-          "spec": {
-            "clientName": {
-              "note": "Full name of the %client%"
-            },
-            "clientEmail": {
-              "note": "Used to deduplicate existing %clients%"
-            },
-            "startAt": {
-              "note": "ISO 8601 — e.g. 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "Defaults to startAt if omitted"
-            },
-            "title": {
-              "note": "%Booking% title"
-            },
-            "eventType": {
-              "note": "wedding, corporate, portrait, etc."
-            },
-            "status": {
-              "note": "booked, completed, cancelled"
-            },
-            "amountTotal": {
-              "note": "Total %booking% amount"
-            },
-            "amountDeposit": {
-              "note": "Deposit amount"
-            },
-            "currency": {
-              "note": "Defaults to workspace currency"
-            },
-            "locationAddress": {
-              "note": "Venue or location text"
-            },
-            "notes": {
-              "note": "Internal notes"
-            },
-            "booking_id": {
-              "note": "From an export. Keep it to update that %booking% instead of creating a copy"
-            },
-            "session_index": {
-              "note": "Orders sessions when rows share one booking_id"
-            },
-            "clientId": {
-              "note": "From an export. Matched before clientEmail"
-            },
-            "clientPhone": {
-              "note": "Saved on a new %client%; fills a blank one, never overwrites"
-            },
-            "locationLat": {
-              "note": "Map latitude, e.g. 14.5995"
-            },
-            "locationLng": {
-              "note": "Map longitude, e.g. 120.9842"
-            },
-            "payments": {
-              "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
-            }
-          }
+          "viewErrors": "View {n} error(s)"
+        },
+        "fields": {
+          "clientName": { "label": "%Client% name", "hint": "Full name. Use + to join first and last name columns." },
+          "clientEmail": { "label": "%Client% email", "hint": "Used to match %clients% you already have." },
+          "startAt": { "label": "Start date & time", "hint": "Any date format works — we'll convert it." },
+          "endAt": { "label": "End date & time", "hint": "Leave it out and the start time is used." },
+          "title": { "label": "%Booking% title", "hint": "Blank titles are filled in from the %client% and event." },
+          "eventType": { "label": "Event type", "hint": "Wedding, corporate, portrait and so on." },
+          "status": { "label": "Status", "hint": "Booked, completed or cancelled." },
+          "amountTotal": { "label": "Total price", "hint": "The full %booking% amount." },
+          "amountDeposit": { "label": "Deposit", "hint": "How much was paid up front." },
+          "currency": { "label": "Currency", "hint": "Your workspace currency is used if left out." },
+          "locationAddress": { "label": "Venue or address", "hint": "Where the %booking% takes place." },
+          "notes": { "label": "Notes", "hint": "Private, for your team only." },
+          "bookingId": { "label": "%Booking% ID", "hint": "From a Gallurio export. Keep it to update that %booking% instead of creating a copy." },
+          "sessionIndex": { "label": "Session order", "hint": "Puts days in order when rows share one %booking% ID." },
+          "clientId": { "label": "%Client% ID", "hint": "From a Gallurio export. Checked before the email." },
+          "clientPhone": { "label": "%Client% phone", "hint": "Saved on new %clients%; fills a blank one but never overwrites." },
+          "locationLat": { "label": "Map latitude", "hint": "For the map pin, e.g. 14.5995." },
+          "locationLng": { "label": "Map longitude", "hint": "For the map pin, e.g. 120.9842." },
+          "payments": { "label": "Payment history", "hint": "Payment history from a Gallurio export." }
+        },
+        "notes": {
+          "amount_dropped": "{field}: \"{value}\" isn't an amount, so it was left blank.",
+          "currency_dropped": "{field}: \"{value}\" isn't a currency we can use, so your workspace currency applies.",
+          "email_dropped": "{field}: \"{value}\" isn't an email address, so it was left blank.",
+          "end_date_dropped": "{field}: \"{value}\" couldn't be read, so the start time is used.",
+          "event_type_blank": "{field}: \"{value}\" didn't match, so it was left blank.",
+          "status_inferred": "{field}: \"{value}\" didn't match, so it was worked out from the date.",
+          "truncated": "{field}: was too long and was shortened.",
+          "title_generated": "{field}: was empty, so we wrote one."
         },
         "steps": {
           "upload": "Upload",
@@ -1191,7 +1166,7 @@
           "rowsFound": "{count, plural, one {# row} other {# rows}}",
           "sectionRequired": "Required",
           "sectionCommon": "%Booking% details",
-          "sectionAdvanced": "Advanced and round-trip columns",
+          "sectionAdvanced": "Re-importing a Gallurio export",
           "advancedHint": "Only needed when re-importing a file you exported from Gallurio.",
           "selectColumn": "Select a column from your file",
           "notImported": "Not imported",
@@ -1203,18 +1178,14 @@
           "sample": "First row: {value}",
           "sampleEmpty": "First row is empty",
           "unassignedRequired": "Needs a column",
-          "dateOrderLabel": "Day and month order",
-          "dateOrderMDY": "MM/DD/YYYY",
-          "dateOrderDMY": "DD/MM/YYYY",
-          "dateOrderHint": "{example} could be read two ways. Pick the order your file uses.",
+          "sampleDate": "First row: {value} → {formatted}",
+          "swapDayMonth": "Swap day and month",
+          "swapDayMonthHint": "{example} could be read day-first or month-first.",
+          "combineColumns": "Combine with another column",
+          "removeColumn": "Remove this column",
+          "columnSlot": "{field}, column {n}",
           "continueBlocked": "Match the {count, plural, one {# required field} other {# required fields}} to continue.",
-          "loading": "Reading your file",
-          "kindText": "Text",
-          "kindDate": "Date",
-          "kindMoney": "Money",
-          "kindNumber": "Number",
-          "kindEnum": "Choice",
-          "kindJson": "Data"
+          "loading": "Reading your file"
         },
         "values": {
           "title": "Match your values to ours",
@@ -1223,14 +1194,14 @@
           "rowCount": "{count, plural, one {# row} other {# rows}}",
           "choose": "Choose a match",
           "leaveBlank": "Leave blank",
-          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will be skipped.} other {# values are unmatched. Rows using them will be skipped.}}"
+          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will import with that field blank.} other {# values are unmatched. Rows using them will import with that field blank.}}",
+          "unmatchedWarningStatus": "{count, plural, one {# value is unmatched. Rows using it will have the status worked out from the date.} other {# values are unmatched. Rows using them will have the status worked out from the date.}}"
         },
         "coerce": {
           "not_a_number": "{field}: we could not read \"{value}\" as an amount.",
           "negative_amount": "{field}: \"{value}\" is negative, and amounts have to be zero or more.",
           "not_a_date": "{field}: we could not read \"{value}\" as a date.",
-          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use.",
-          "unrecognized_value": "{field}: \"{value}\" was left unmatched."
+          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use."
         },
         "nav": {
           "back": "Back",

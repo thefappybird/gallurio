@@ -1071,8 +1071,11 @@
         "templateCsv": "تنزيل قالب CSV",
         "templateXlsx": "تنزيل قالب XLSX",
         "preview": "تم العثور على {total} صف",
-        "validCount": "{count} صالح",
-        "invalidCount": "{count} بها أخطاء",
+        "validCount": "{count} جاهز",
+        "notesCount": "{count} بملاحظات",
+        "invalidCount": "{count} متخطّى",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "استيراد {count} %booking%",
         "importing": "جارٍ الاستيراد…",
         "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
@@ -1087,7 +1090,7 @@
           "title": "العنوان",
           "client": "ال%client%",
           "start": "البداية",
-          "error": "الخطأ"
+          "error": "ملاحظات"
         },
         "results": {
           "title": "أخطاء الاستيراد",
@@ -1116,66 +1119,38 @@
           "failedRetry": "فشل الاستيراد. يرجى المحاولة مرة أخرى.",
           "close": "إغلاق",
           "cancel": "إلغاء",
-          "viewErrors": "عرض {n} خطأ",
-          "spec": {
-            "clientName": {
-              "note": "الاسم الكامل لل%client%"
-            },
-            "clientEmail": {
-              "note": "يُستخدم لإزالة تكرار ال%clients% الموجودين"
-            },
-            "startAt": {
-              "note": "ISO 8601 — مثال: 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "يُضبط افتراضيًا على startAt إذا تُرك فارغًا"
-            },
-            "title": {
-              "note": "عنوان ال%booking%"
-            },
-            "eventType": {
-              "note": "زفاف، شركات، بورتريه، إلخ."
-            },
-            "status": {
-              "note": "محجوز، مكتمل، ملغى"
-            },
-            "amountTotal": {
-              "note": "المبلغ الإجمالي لل%booking%"
-            },
-            "amountDeposit": {
-              "note": "مبلغ العربون"
-            },
-            "currency": {
-              "note": "يُضبط افتراضيًا على عملة مساحة العمل"
-            },
-            "locationAddress": {
-              "note": "نص القاعة أو الموقع"
-            },
-            "notes": {
-              "note": "ملاحظات داخلية"
-            },
-            "booking_id": {
-              "note": "من ملف مُصدَّر. احتفظ به لتحديث ال%booking% بدلاً من إنشاء نسخة"
-            },
-            "session_index": {
-              "note": "يرتّب الجلسات عندما تشترك الصفوف في booking_id واحد"
-            },
-            "clientId": {
-              "note": "من ملف مُصدَّر. يُطابق قبل clientEmail"
-            },
-            "clientPhone": {
-              "note": "يُحفظ لل%client% الجديد؛ يملأ الفارغ ولا يستبدل أبداً"
-            },
-            "locationLat": {
-              "note": "خط العرض على الخريطة، مثل 14.5995"
-            },
-            "locationLng": {
-              "note": "خط الطول على الخريطة، مثل 120.9842"
-            },
-            "payments": {
-              "note": "قائمة JSON من ملف مُصدَّر. تُقرأ عند الإنشاء فقط؛ والمدفوع منها يصل إلى الدفتر"
-            }
-          }
+          "viewErrors": "عرض {n} خطأ"
+        },
+        "fields": {
+          "clientName": { "label": "اسم ال%client%", "hint": "الاسم الكامل. استخدم + لدمج عمودي الاسم الأول والأخير." },
+          "clientEmail": { "label": "بريد ال%client%", "hint": "يُستخدم لمطابقة ال%clients% الموجودين لديك." },
+          "startAt": { "label": "تاريخ ووقت البداية", "hint": "يصلح أي تنسيق للتاريخ — نحن نحوّله." },
+          "endAt": { "label": "تاريخ ووقت النهاية", "hint": "إن تُرك فارغًا يُستخدم وقت البداية." },
+          "title": { "label": "عنوان ال%booking%", "hint": "العنوان الفارغ يُملأ من ال%client% والمناسبة." },
+          "eventType": { "label": "نوع المناسبة", "hint": "زفاف، شركات، بورتريه وغيرها." },
+          "status": { "label": "الحالة", "hint": "محجوز أو مكتمل أو ملغى." },
+          "amountTotal": { "label": "السعر الإجمالي", "hint": "المبلغ الكامل لل%booking%." },
+          "amountDeposit": { "label": "العربون", "hint": "المبلغ المدفوع مقدمًا." },
+          "currency": { "label": "العملة", "hint": "تُستخدم عملة مساحة العمل إن تُركت فارغة." },
+          "locationAddress": { "label": "القاعة أو العنوان", "hint": "مكان إقامة ال%booking%." },
+          "notes": { "label": "ملاحظات", "hint": "خاصة بفريقك فقط." },
+          "bookingId": { "label": "معرّف ال%booking%", "hint": "من تصدير Gallurio. احتفظ به لتحديث ال%booking% بدلًا من إنشاء نسخة." },
+          "sessionIndex": { "label": "ترتيب الجلسة", "hint": "يرتّب الأيام عندما تشترك الصفوف في معرّف %booking% واحد." },
+          "clientId": { "label": "معرّف ال%client%", "hint": "من تصدير Gallurio. يُطابق قبل البريد الإلكتروني." },
+          "clientPhone": { "label": "هاتف ال%client%", "hint": "يُحفظ لل%clients% الجدد؛ يملأ الفارغ ولا يستبدل أبدًا." },
+          "locationLat": { "label": "خط عرض الخريطة", "hint": "لدبوس الخريطة، مثل 14.5995." },
+          "locationLng": { "label": "خط طول الخريطة", "hint": "لدبوس الخريطة، مثل 120.9842." },
+          "payments": { "label": "سجل المدفوعات", "hint": "سجل المدفوعات من تصدير Gallurio." }
+        },
+        "notes": {
+          "amount_dropped": "{field}: القيمة \"{value}\" ليست مبلغًا، لذا تُركت فارغة.",
+          "currency_dropped": "{field}: القيمة \"{value}\" ليست عملة متاحة، لذا تُستخدم عملة مساحة العمل.",
+          "email_dropped": "{field}: القيمة \"{value}\" ليست بريدًا إلكترونيًا، لذا تُركت فارغة.",
+          "end_date_dropped": "{field}: تعذّرت قراءة \"{value}\"، لذا يُستخدم وقت البداية.",
+          "event_type_blank": "{field}: القيمة \"{value}\" لم تطابق، لذا تُركت فارغة.",
+          "status_inferred": "{field}: القيمة \"{value}\" لم تطابق، لذا استُنتجت من التاريخ.",
+          "truncated": "{field}: كان طويلًا جدًا فاختُصر.",
+          "title_generated": "{field}: كان فارغًا، لذا كتبنا واحدًا."
         },
         "steps": {
           "upload": "الرفع",
@@ -1191,7 +1166,7 @@
           "rowsFound": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
           "sectionRequired": "مطلوب",
           "sectionCommon": "تفاصيل ال%booking%",
-          "sectionAdvanced": "أعمدة متقدمة وأعمدة الاستيراد المتبادل",
+          "sectionAdvanced": "إعادة استيراد ملف مُصدَّر من Gallurio",
           "advancedHint": "تلزم فقط عند إعادة استيراد ملف صدّرته من Gallurio.",
           "selectColumn": "اختر عمودًا من ملفك",
           "notImported": "لن يُستورد",
@@ -1203,18 +1178,14 @@
           "sample": "الصف الأول: {value}",
           "sampleEmpty": "الصف الأول فارغ",
           "unassignedRequired": "يحتاج إلى عمود",
-          "dateOrderLabel": "ترتيب اليوم والشهر",
-          "dateOrderMDY": "شش/يي/سسسس",
-          "dateOrderDMY": "يي/شش/سسسس",
-          "dateOrderHint": "يمكن قراءة {example} بطريقتين. اختر الترتيب الذي يستخدمه ملفك.",
+          "sampleDate": "الصف الأول: {value} ← {formatted}",
+          "swapDayMonth": "تبديل اليوم والشهر",
+          "swapDayMonthHint": "يمكن قراءة {example} باليوم أولًا أو بالشهر أولًا.",
+          "combineColumns": "دمج مع عمود آخر",
+          "removeColumn": "إزالة هذا العمود",
+          "columnSlot": "{field}، العمود {n}",
           "continueBlocked": "طابق {count, plural, zero {# حقل مطلوب} one {الحقل المطلوب} two {الحقلين المطلوبين} few {# حقول مطلوبة} many {# حقلًا مطلوبًا} other {# حقل مطلوب}} للمتابعة.",
-          "loading": "جارٍ قراءة ملفك",
-          "kindText": "نص",
-          "kindDate": "تاريخ",
-          "kindMoney": "مبلغ",
-          "kindNumber": "رقم",
-          "kindEnum": "اختيار",
-          "kindJson": "بيانات"
+          "loading": "جارٍ قراءة ملفك"
         },
         "values": {
           "title": "طابق قيمك مع قيمنا",
@@ -1223,14 +1194,14 @@
           "rowCount": "{count, plural, zero {# صف} one {صف واحد} two {صفان} few {# صفوف} many {# صفًا} other {# صف}}",
           "choose": "اختر مطابقة",
           "leaveBlank": "اتركها فارغة",
-          "unmatchedWarning": "{count, plural, zero {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} one {قيمة واحدة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} two {قيمتان بلا مطابقة. ستُتخطى الصفوف التي تستخدمهما.} few {# قيم بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} many {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.} other {# قيمة بلا مطابقة. ستُتخطى الصفوف التي تستخدمها.}}"
+          "unmatchedWarning": "{count, plural, zero {# قيمة بلا مطابقة. ستُستورد الصفوف التي تستخدمها وهذا الحقل فارغ.} one {قيمة واحدة بلا مطابقة. ستُستورد الصفوف التي تستخدمها وهذا الحقل فارغ.} two {قيمتان بلا مطابقة. ستُستورد الصفوف التي تستخدمهما وهذا الحقل فارغ.} few {# قيم بلا مطابقة. ستُستورد الصفوف التي تستخدمها وهذا الحقل فارغ.} many {# قيمة بلا مطابقة. ستُستورد الصفوف التي تستخدمها وهذا الحقل فارغ.} other {# قيمة بلا مطابقة. ستُستورد الصفوف التي تستخدمها وهذا الحقل فارغ.}}",
+          "unmatchedWarningStatus": "{count, plural, zero {# قيمة بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمها من التاريخ.} one {قيمة واحدة بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمها من التاريخ.} two {قيمتان بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمهما من التاريخ.} few {# قيم بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمها من التاريخ.} many {# قيمة بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمها من التاريخ.} other {# قيمة بلا مطابقة. ستُستنتج حالة الصفوف التي تستخدمها من التاريخ.}}"
         },
         "coerce": {
           "not_a_number": "{field}: تعذّرت قراءة \"{value}\" كمبلغ.",
           "negative_amount": "{field}: القيمة \"{value}\" سالبة، والمبالغ يجب أن تكون صفرًا أو أكثر.",
           "not_a_date": "{field}: تعذّرت قراءة \"{value}\" كتاريخ.",
-          "unsupported_currency": "{field}: العملة \"{value}\" غير متاحة لمساحة العمل هذه.",
-          "unrecognized_value": "{field}: تُركت \"{value}\" بلا مطابقة."
+          "unsupported_currency": "{field}: العملة \"{value}\" غير متاحة لمساحة العمل هذه."
         },
         "nav": {
           "back": "رجوع",

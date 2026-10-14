@@ -1071,8 +1071,11 @@
         "templateCsv": "I-download ang CSV template",
         "templateXlsx": "I-download ang XLSX template",
         "preview": "{total} row(s) natagpuan",
-        "validCount": "{count} valid",
-        "invalidCount": "{count} may mga error",
+        "validCount": "{count} handa na",
+        "notesCount": "{count} may tala",
+        "invalidCount": "{count} nilaktawan",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "I-import ang {count} %booking%(s)",
         "importing": "Nag-iimport…",
         "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
@@ -1087,7 +1090,7 @@
           "title": "Pamagat",
           "client": "%Client%",
           "start": "Simula",
-          "error": "Error"
+          "error": "Mga tala"
         },
         "results": {
           "title": "Mga error sa import",
@@ -1116,66 +1119,38 @@
           "failedRetry": "Nabigo ang import. Subukan muli.",
           "close": "Isara",
           "cancel": "Kanselahin",
-          "viewErrors": "Tingnan ang {n} error(s)",
-          "spec": {
-            "clientName": {
-              "note": "Buong pangalan ng %client%"
-            },
-            "clientEmail": {
-              "note": "Ginagamit para ma-deduplicate ang mga umiiral na %client%"
-            },
-            "startAt": {
-              "note": "ISO 8601 — hal. 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "Default sa startAt kung wala"
-            },
-            "title": {
-              "note": "Pamagat ng %booking%"
-            },
-            "eventType": {
-              "note": "kasal, corporate, portrait, atb."
-            },
-            "status": {
-              "note": "booked, completed, cancelled"
-            },
-            "amountTotal": {
-              "note": "Kabuuang halaga ng %booking%"
-            },
-            "amountDeposit": {
-              "note": "Halaga ng deposito"
-            },
-            "currency": {
-              "note": "Default sa currency ng workspace"
-            },
-            "locationAddress": {
-              "note": "Venue o lokasyon"
-            },
-            "notes": {
-              "note": "Mga panloob na tala"
-            },
-            "booking_id": {
-              "note": "Mula sa export. Panatilihin ito para i-update ang %booking% sa halip na gumawa ng kopya"
-            },
-            "session_index": {
-              "note": "Nag-aayos ng mga sesyon kapag may parehong booking_id ang mga row"
-            },
-            "clientId": {
-              "note": "Mula sa export. Tinutugma bago ang clientEmail"
-            },
-            "clientPhone": {
-              "note": "Sine-save sa bagong %client%; pinupunan ang blangko, hindi pinapalitan"
-            },
-            "locationLat": {
-              "note": "Latitude sa mapa, hal. 14.5995"
-            },
-            "locationLng": {
-              "note": "Longitude sa mapa, hal. 120.9842"
-            },
-            "payments": {
-              "note": "JSON list mula sa export. Binabasa lang kapag gumagawa; ang bayad ay pumupunta sa ledger"
-            }
-          }
+          "viewErrors": "Tingnan ang {n} error(s)"
+        },
+        "fields": {
+          "clientName": { "label": "Pangalan ng %client%", "hint": "Buong pangalan. Gamitin ang + para pagsamahin ang column ng first at last name." },
+          "clientEmail": { "label": "Email ng %client%", "hint": "Ginagamit para tugmaan ang mga %clients% na mayroon ka na." },
+          "startAt": { "label": "Petsa at oras ng simula", "hint": "Gagana ang kahit anong format ng petsa — kami na ang magko-convert." },
+          "endAt": { "label": "Petsa at oras ng katapusan", "hint": "Kung walang laman, gagamitin ang oras ng simula." },
+          "title": { "label": "Pamagat ng %booking%", "hint": "Ang blangkong pamagat ay bubuuin mula sa %client% at event." },
+          "eventType": { "label": "Uri ng event", "hint": "Kasal, corporate, portrait at iba pa." },
+          "status": { "label": "Status", "hint": "Naka-book, tapos na, o nakansela." },
+          "amountTotal": { "label": "Kabuuang presyo", "hint": "Ang buong halaga ng %booking%." },
+          "amountDeposit": { "label": "Deposito", "hint": "Magkano ang binayaran nang una." },
+          "currency": { "label": "Currency", "hint": "Gagamitin ang currency ng workspace kung walang laman." },
+          "locationAddress": { "label": "Venue o address", "hint": "Kung saan gaganapin ang %booking%." },
+          "notes": { "label": "Mga tala", "hint": "Pribado, para sa inyong team lang." },
+          "bookingId": { "label": "ID ng %booking%", "hint": "Mula sa export ng Gallurio. Panatilihin ito para i-update ang %booking% sa halip na gumawa ng kopya." },
+          "sessionIndex": { "label": "Pagkakasunod ng sesyon", "hint": "Inaayos ang mga araw kapag iisa ang ID ng %booking% ng mga row." },
+          "clientId": { "label": "ID ng %client%", "hint": "Mula sa export ng Gallurio. Tinutugma bago ang email." },
+          "clientPhone": { "label": "Telepono ng %client%", "hint": "Sine-save sa bagong %clients%; pinupunan ang blangko pero hindi pinapalitan." },
+          "locationLat": { "label": "Latitude sa mapa", "hint": "Para sa pin sa mapa, hal. 14.5995." },
+          "locationLng": { "label": "Longitude sa mapa", "hint": "Para sa pin sa mapa, hal. 120.9842." },
+          "payments": { "label": "Kasaysayan ng bayad", "hint": "Kasaysayan ng bayad mula sa export ng Gallurio." }
+        },
+        "notes": {
+          "amount_dropped": "{field}: hindi halaga ang \"{value}\", kaya iniwang blangko.",
+          "currency_dropped": "{field}: hindi magagamit na currency ang \"{value}\", kaya gagamitin ang currency ng workspace.",
+          "email_dropped": "{field}: hindi email address ang \"{value}\", kaya iniwang blangko.",
+          "end_date_dropped": "{field}: hindi mabasa ang \"{value}\", kaya gagamitin ang oras ng simula.",
+          "event_type_blank": "{field}: walang katugma ang \"{value}\", kaya iniwang blangko.",
+          "status_inferred": "{field}: walang katugma ang \"{value}\", kaya hinulaan mula sa petsa.",
+          "truncated": "{field}: masyadong mahaba kaya pinaikli.",
+          "title_generated": "{field}: walang laman, kaya gumawa kami ng isa."
         },
         "steps": {
           "upload": "Mag-upload",
@@ -1191,7 +1166,7 @@
           "rowsFound": "{count, plural, one {# row} other {# row}}",
           "sectionRequired": "Kailangan",
           "sectionCommon": "Detalye ng %booking%",
-          "sectionAdvanced": "Advanced at pambalik na mga column",
+          "sectionAdvanced": "Muling pag-import ng export ng Gallurio",
           "advancedHint": "Kailangan lang kapag muling ini-import ang file na na-export ninyo mula sa Gallurio.",
           "selectColumn": "Pumili ng column mula sa inyong file",
           "notImported": "Hindi ii-import",
@@ -1203,18 +1178,14 @@
           "sample": "Unang row: {value}",
           "sampleEmpty": "Walang laman ang unang row",
           "unassignedRequired": "Kailangan ng column",
-          "dateOrderLabel": "Pagkakasunod ng araw at buwan",
-          "dateOrderMDY": "BB/AA/TTTT",
-          "dateOrderDMY": "AA/BB/TTTT",
-          "dateOrderHint": "Ang {example} ay may dalawang posibleng basa. Piliin ang pagkakasunod na ginagamit ng inyong file.",
+          "sampleDate": "Unang row: {value} → {formatted}",
+          "swapDayMonth": "Palitan ang araw at buwan",
+          "swapDayMonthHint": "Ang {example} ay mababasa na araw muna o buwan muna.",
+          "combineColumns": "Pagsamahin sa isa pang column",
+          "removeColumn": "Alisin ang column na ito",
+          "columnSlot": "{field}, column {n}",
           "continueBlocked": "Itugma ang {count, plural, one {# kailangang field} other {# kailangang field}} para makapagpatuloy.",
-          "loading": "Binabasa ang inyong file",
-          "kindText": "Teksto",
-          "kindDate": "Petsa",
-          "kindMoney": "Halaga",
-          "kindNumber": "Numero",
-          "kindEnum": "Pagpipilian",
-          "kindJson": "Datos"
+          "loading": "Binabasa ang inyong file"
         },
         "values": {
           "title": "Itugma ang inyong mga halaga sa amin",
@@ -1223,14 +1194,14 @@
           "rowCount": "{count, plural, one {# row} other {# row}}",
           "choose": "Pumili ng katugma",
           "leaveBlank": "Iwanang blangko",
-          "unmatchedWarning": "{count, plural, one {# halaga ang walang katugma. Lalaktawan ang mga row na gumagamit nito.} other {# halaga ang walang katugma. Lalaktawan ang mga row na gumagamit ng mga ito.}}"
+          "unmatchedWarning": "{count, plural, one {# halaga ang walang katugma. Ang mga row na gumagamit nito ay ii-import na blangko ang field na iyon.} other {# halaga ang walang katugma. Ang mga row na gumagamit ng mga ito ay ii-import na blangko ang field na iyon.}}",
+          "unmatchedWarningStatus": "{count, plural, one {# halaga ang walang katugma. Ang status ng mga row na gumagamit nito ay huhulaan mula sa petsa.} other {# halaga ang walang katugma. Ang status ng mga row na gumagamit ng mga ito ay huhulaan mula sa petsa.}}"
         },
         "coerce": {
           "not_a_number": "{field}: hindi namin mabasa ang \"{value}\" bilang halaga.",
           "negative_amount": "{field}: negatibo ang \"{value}\", at ang halaga ay dapat zero o higit pa.",
           "not_a_date": "{field}: hindi namin mabasa ang \"{value}\" bilang petsa.",
-          "unsupported_currency": "{field}: hindi magagamit ng workspace na ito ang \"{value}\".",
-          "unrecognized_value": "{field}: naiwang walang katugma ang \"{value}\"."
+          "unsupported_currency": "{field}: hindi magagamit ng workspace na ito ang \"{value}\"."
         },
         "nav": {
           "back": "Bumalik",

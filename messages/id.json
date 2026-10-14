@@ -1071,8 +1071,11 @@
         "templateCsv": "Unduh template CSV",
         "templateXlsx": "Unduh template XLSX",
         "preview": "{total} baris ditemukan",
-        "validCount": "{count} valid",
-        "invalidCount": "{count} dengan kesalahan",
+        "validCount": "{count} siap",
+        "notesCount": "{count} dengan catatan",
+        "invalidCount": "{count} dilewati",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "Impor {count} %booking%",
         "importing": "Mengimpor…",
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
@@ -1087,7 +1090,7 @@
           "title": "Judul",
           "client": "%Client%",
           "start": "Mulai",
-          "error": "Kesalahan"
+          "error": "Catatan"
         },
         "results": {
           "title": "Kesalahan impor",
@@ -1116,66 +1119,38 @@
           "failedRetry": "Impor gagal. Silakan coba lagi.",
           "close": "Tutup",
           "cancel": "Batal",
-          "viewErrors": "Lihat {n} kesalahan",
-          "spec": {
-            "clientName": {
-              "note": "Nama lengkap %client%"
-            },
-            "clientEmail": {
-              "note": "Digunakan untuk mendeduplikasi %client% yang ada"
-            },
-            "startAt": {
-              "note": "ISO 8601 — mis. 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "Default ke startAt jika dihilangkan"
-            },
-            "title": {
-              "note": "Judul %booking%"
-            },
-            "eventType": {
-              "note": "pernikahan, korporat, potret, dll."
-            },
-            "status": {
-              "note": "booked, completed, cancelled"
-            },
-            "amountTotal": {
-              "note": "Total jumlah %booking%"
-            },
-            "amountDeposit": {
-              "note": "Jumlah deposit"
-            },
-            "currency": {
-              "note": "Default ke mata uang ruang kerja"
-            },
-            "locationAddress": {
-              "note": "Venue atau teks lokasi"
-            },
-            "notes": {
-              "note": "Catatan internal"
-            },
-            "booking_id": {
-              "note": "Dari ekspor. Simpan untuk memperbarui %booking% itu alih-alih membuat salinan"
-            },
-            "session_index": {
-              "note": "Mengurutkan sesi saat beberapa baris berbagi satu booking_id"
-            },
-            "clientId": {
-              "note": "Dari ekspor. Dicocokkan sebelum clientEmail"
-            },
-            "clientPhone": {
-              "note": "Disimpan pada %client% baru; mengisi yang kosong, tidak pernah menimpa"
-            },
-            "locationLat": {
-              "note": "Lintang peta, mis. 14.5995"
-            },
-            "locationLng": {
-              "note": "Bujur peta, mis. 120.9842"
-            },
-            "payments": {
-              "note": "Daftar JSON dari ekspor. Dibaca hanya saat membuat; entri lunas masuk ke buku besar"
-            }
-          }
+          "viewErrors": "Lihat {n} kesalahan"
+        },
+        "fields": {
+          "clientName": { "label": "Nama %client%", "hint": "Nama lengkap. Gunakan + untuk menggabungkan kolom nama depan dan belakang." },
+          "clientEmail": { "label": "Email %client%", "hint": "Dipakai untuk mencocokkan %clients% yang sudah Anda miliki." },
+          "startAt": { "label": "Tanggal & jam mulai", "hint": "Format tanggal apa pun bisa — kami yang mengonversinya." },
+          "endAt": { "label": "Tanggal & jam selesai", "hint": "Jika dikosongkan, jam mulai yang dipakai." },
+          "title": { "label": "Judul %booking%", "hint": "Judul kosong diisi dari %client% dan acaranya." },
+          "eventType": { "label": "Jenis acara", "hint": "Pernikahan, korporat, potret, dan seterusnya." },
+          "status": { "label": "Status", "hint": "Dipesan, selesai, atau dibatalkan." },
+          "amountTotal": { "label": "Harga total", "hint": "Jumlah penuh %booking%." },
+          "amountDeposit": { "label": "Deposit", "hint": "Berapa yang dibayar di muka." },
+          "currency": { "label": "Mata uang", "hint": "Mata uang ruang kerja dipakai jika dikosongkan." },
+          "locationAddress": { "label": "Lokasi atau alamat", "hint": "Tempat %booking% berlangsung." },
+          "notes": { "label": "Catatan", "hint": "Pribadi, hanya untuk tim Anda." },
+          "bookingId": { "label": "ID %booking%", "hint": "Dari ekspor Gallurio. Simpan untuk memperbarui %booking% itu alih-alih membuat salinan." },
+          "sessionIndex": { "label": "Urutan sesi", "hint": "Mengurutkan hari saat beberapa baris berbagi satu ID %booking%." },
+          "clientId": { "label": "ID %client%", "hint": "Dari ekspor Gallurio. Dicocokkan sebelum email." },
+          "clientPhone": { "label": "Telepon %client%", "hint": "Disimpan pada %clients% baru; mengisi yang kosong tetapi tidak pernah menimpa." },
+          "locationLat": { "label": "Lintang peta", "hint": "Untuk pin peta, mis. 14.5995." },
+          "locationLng": { "label": "Bujur peta", "hint": "Untuk pin peta, mis. 120.9842." },
+          "payments": { "label": "Riwayat pembayaran", "hint": "Riwayat pembayaran dari ekspor Gallurio." }
+        },
+        "notes": {
+          "amount_dropped": "{field}: \"{value}\" bukan jumlah, jadi dibiarkan kosong.",
+          "currency_dropped": "{field}: \"{value}\" bukan mata uang yang bisa dipakai, jadi mata uang ruang kerja berlaku.",
+          "email_dropped": "{field}: \"{value}\" bukan alamat email, jadi dibiarkan kosong.",
+          "end_date_dropped": "{field}: \"{value}\" tidak dapat dibaca, jadi jam mulai yang dipakai.",
+          "event_type_blank": "{field}: \"{value}\" tidak cocok, jadi dibiarkan kosong.",
+          "status_inferred": "{field}: \"{value}\" tidak cocok, jadi disimpulkan dari tanggal.",
+          "truncated": "{field}: terlalu panjang sehingga dipersingkat.",
+          "title_generated": "{field}: kosong, jadi kami buatkan."
         },
         "steps": {
           "upload": "Unggah",
@@ -1191,7 +1166,7 @@
           "rowsFound": "{count, plural, other {# baris}}",
           "sectionRequired": "Wajib",
           "sectionCommon": "Rincian %booking%",
-          "sectionAdvanced": "Kolom lanjutan dan pulang-pergi",
+          "sectionAdvanced": "Mengimpor ulang ekspor Gallurio",
           "advancedHint": "Hanya diperlukan saat mengimpor ulang berkas yang Anda ekspor dari Gallurio.",
           "selectColumn": "Pilih kolom dari berkas Anda",
           "notImported": "Tidak diimpor",
@@ -1203,18 +1178,14 @@
           "sample": "Baris pertama: {value}",
           "sampleEmpty": "Baris pertama kosong",
           "unassignedRequired": "Perlu kolom",
-          "dateOrderLabel": "Urutan hari dan bulan",
-          "dateOrderMDY": "BB/HH/TTTT",
-          "dateOrderDMY": "HH/BB/TTTT",
-          "dateOrderHint": "{example} bisa dibaca dua cara. Pilih urutan yang dipakai berkas Anda.",
+          "sampleDate": "Baris pertama: {value} → {formatted}",
+          "swapDayMonth": "Tukar hari dan bulan",
+          "swapDayMonthHint": "{example} bisa dibaca hari dulu atau bulan dulu.",
+          "combineColumns": "Gabungkan dengan kolom lain",
+          "removeColumn": "Hapus kolom ini",
+          "columnSlot": "{field}, kolom {n}",
           "continueBlocked": "Cocokkan {count, plural, other {# bidang wajib}} untuk melanjutkan.",
-          "loading": "Membaca berkas Anda",
-          "kindText": "Teks",
-          "kindDate": "Tanggal",
-          "kindMoney": "Uang",
-          "kindNumber": "Angka",
-          "kindEnum": "Pilihan",
-          "kindJson": "Data"
+          "loading": "Membaca berkas Anda"
         },
         "values": {
           "title": "Cocokkan nilai Anda dengan nilai kami",
@@ -1223,14 +1194,14 @@
           "rowCount": "{count, plural, other {# baris}}",
           "choose": "Pilih padanan",
           "leaveBlank": "Biarkan kosong",
-          "unmatchedWarning": "{count, plural, other {# nilai belum dicocokkan. Baris yang memakainya akan dilewati.}}"
+          "unmatchedWarning": "{count, plural, other {# nilai belum dicocokkan. Baris yang memakainya akan diimpor dengan bidang itu kosong.}}",
+          "unmatchedWarningStatus": "{count, plural, other {# nilai belum dicocokkan. Status baris yang memakainya akan disimpulkan dari tanggal.}}"
         },
         "coerce": {
           "not_a_number": "{field}: kami tidak dapat membaca \"{value}\" sebagai jumlah.",
           "negative_amount": "{field}: \"{value}\" bernilai negatif, dan jumlah harus nol atau lebih.",
           "not_a_date": "{field}: kami tidak dapat membaca \"{value}\" sebagai tanggal.",
-          "unsupported_currency": "{field}: \"{value}\" bukan mata uang yang bisa dipakai ruang kerja ini.",
-          "unrecognized_value": "{field}: \"{value}\" dibiarkan tanpa padanan."
+          "unsupported_currency": "{field}: \"{value}\" bukan mata uang yang bisa dipakai ruang kerja ini."
         },
         "nav": {
           "back": "Kembali",
