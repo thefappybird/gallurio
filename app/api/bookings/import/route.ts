@@ -15,7 +15,7 @@ import {
   MAX_SESSIONS_PER_BOOKING,
 } from "@/lib/bookings/import-grouping";
 import { rateLimit } from "@/lib/server/rateLimit";
-import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
+import { parseCsv, stripFormulaGuard, decodeCsvBytes, isProbablyText } from "@/lib/utils/csv-parse";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
 import { parseXlsxToRows, looksLikeXlsx, rowsToXlsxBuffer } from "@/lib/utils/xlsx";
 import {
@@ -124,24 +124,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Bulk writes across a whole workspace: cheap to fire, expensive to absorb.
-  if (
-    !rateLimit(`bookings:import:${ctx.workspace._id.toString()}`, {
-      limit: 10,
-      windowMs: 300_000,
-    }).ok
-  ) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  }
-
   // Two shapes on one route:
   //   multipart/form-data -> PREVIEW. Parse + validate, write NOTHING.
   //   application/json     -> COMMIT. Everything re-validated below.
   // XLSX is binary, so parsing lives server-side rather than shipping a
   // spreadsheet library to the browser for an owner-only, occasional action.
   const contentType = req.headers.get("content-type") ?? "";
+  const isPreview = contentType.includes("multipart/form-data");
 
-  if (contentType.includes("multipart/form-data")) {
+  // Bulk writes across a whole workspace: cheap to fire, expensive to absorb.
+  // Previews write nothing, so they get their own, looser bucket and cannot
+  // starve the commit that follows them.
+  const limited = isPreview
+    ? rateLimit(`bookings:import-preview:${ctx.workspace._id.toString()}`, {
+        limit: 30,
+        windowMs: 300_000,
+      })
+    : rateLimit(`bookings:import:${ctx.workspace._id.toString()}`, {
+        limit: 10,
+        windowMs: 300_000,
+      });
+  if (!limited.ok) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        seconds: Math.max(1, Math.ceil((limited.resetAt - Date.now()) / 1000)),
+      },
+      { status: 429 }
+    );
+  }
+
+  if (isPreview) {
     const form = await req.formData().catch(() => null);
     const file = form?.get("file");
     // A missing part, or a text field where a file was expected, is a bad
@@ -158,9 +171,14 @@ export async function POST(req: Request) {
     // Sniff rather than trust the extension: .xlsx is a zip container.
     let parsed;
     try {
-      parsed = looksLikeXlsx(bytes)
-        ? await parseXlsxToRows(Buffer.from(bytes))
-        : parseCsv(new TextDecoder().decode(bytes));
+      if (looksLikeXlsx(bytes)) {
+        parsed = await parseXlsxToRows(Buffer.from(bytes));
+      } else if (isProbablyText(bytes)) {
+        parsed = parseCsv(decodeCsvBytes(bytes));
+      } else {
+        // Image/PDF/etc. renamed .csv: refuse rather than preview garbage.
+        return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
+      }
     } catch {
       // A crafted or truncated upload is the caller's problem, not a 500.
       return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
@@ -168,7 +186,10 @@ export async function POST(req: Request) {
     // Same cap the commit enforces: a preview that cannot be imported is not
     // worth serializing back to the browser and validating row by row.
     if (parsed.rows.length > MAX_ROWS) {
-      return NextResponse.json({ error: "too_many_rows" }, { status: 400 });
+      return NextResponse.json(
+        { error: "too_many_rows", count: parsed.rows.length, max: MAX_ROWS },
+        { status: 400 }
+      );
     }
     return NextResponse.json({ preview: true, headers: parsed.headers, rows: parsed.rows });
   }
@@ -182,7 +203,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "rows must be a non-empty array" }, { status: 400 });
   }
   if (json.rows.length > MAX_ROWS) {
-    return NextResponse.json({ error: "Maximum 500 rows per import" }, { status: 400 });
+    return NextResponse.json(
+      { error: "too_many_rows", count: json.rows.length, max: MAX_ROWS },
+      { status: 400 }
+    );
   }
 
   await connectDB();

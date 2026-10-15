@@ -163,7 +163,11 @@ const SYNONYMS: Record<string, { match: string[]; avoid?: string[] }> = {
     avoid: ["end", "finish", "until", "through", "created", "updated"],
   },
   endAt: { match: ["end", "finish", "until", "through"] },
-  title: { match: ["title", "event", "booking", "job", "summary", "description"] },
+  title: {
+    match: ["title", "event", "booking", "job", "summary", "description"],
+    // "Event Date" / "Booking Time" name the schedule, not the booking.
+    avoid: ["date", "time", "day", "when"],
+  },
   eventType: {
     match: ["type", "category", "service", "package", "kind"],
     // "Package" names a service tier, but "Package Price" names money.

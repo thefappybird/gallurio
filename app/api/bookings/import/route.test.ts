@@ -142,6 +142,53 @@ describe("POST /api/bookings/import — file preview", () => {
     expect(res.status).toBe(400);
   });
 
+  it("reports too_many_rows with count and max", async () => {
+    const csv = "title,clientName,startAt\n" + "T,C,2026-06-15T01:00:00.000Z\n".repeat(501);
+    const res = await callPreview(new Blob([csv]), "big.csv");
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "too_many_rows", count: 501, max: 500 });
+  });
+
+  it("commit reports too_many_rows with count and max", async () => {
+    const res = await callImport(Array.from({ length: 501 }, () => VALID_ROW));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "too_many_rows", count: 501, max: 500 });
+  });
+
+  it("decodes a latin1 CSV instead of mangling accents", async () => {
+    const head = new TextEncoder().encode("title,clientName\nX,Jos");
+    const bytes = new Uint8Array([...head, 0xe9, 0x20, 0x50, 0x65, 0xf1, 0x61]);
+    const res = await callPreview(new Blob([bytes]), "latin.csv");
+    expect((await res.json()).rows[0].clientName).toBe("José Peña");
+  });
+
+  it("rejects a non-text, non-xlsx upload as unreadable_file", async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]);
+    const res = await callPreview(new Blob([png]), "x.csv");
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("unreadable_file");
+  });
+
+  it("previews do not consume the commit rate-limit budget", async () => {
+    const csv = "title,clientName\nT,C\n";
+    for (let i = 0; i < 10; i++) {
+      expect((await callPreview(new Blob([csv]), "a.csv")).status).toBe(200);
+    }
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).not.toBe(429);
+  });
+
+  it("429 carries a seconds retry hint", async () => {
+    const csv = "title,clientName\nT,C\n";
+    let res!: Response;
+    for (let i = 0; i < 31; i++) res = await callPreview(new Blob([csv]), "a.csv");
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error).toBe("rate_limited");
+    expect(body.seconds).toBeGreaterThanOrEqual(1);
+    expect(body.seconds).toBeLessThanOrEqual(300);
+  });
+
   it("rejects an oversized upload before parsing it", async () => {
     // exceljs decompresses in memory, so the byte cap has to bite BEFORE the
     // parse — that is the actual defense against a zip bomb.

@@ -12,12 +12,18 @@ import { dedupeHeaders, type CsvRow, type ParsedCsv } from "./csv-parse";
  * bundled for the browser (see `serverExternalPackages` in next.config.ts).
  */
 
-/** Only the first worksheet is read — the importer has no notion of tabs. */
+/** Name of the sheet written by the exporter / template. */
 const SHEET_NAME = "Bookings";
 
 function cellToString(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) {
+    // exceljs keeps a cell's wall-clock in the UTC fields. Emit it as zoneless
+    // text so the importer applies the workspace timezone instead of treating
+    // the cell as an instant.
+    const iso = value.toISOString();
+    return iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
+  }
   if (typeof value === "object") {
     // Formula cells carry their computed result; rich text carries runs.
     if ("result" in value) return value.result == null ? "" : String(value.result);
@@ -28,26 +34,52 @@ function cellToString(value: ExcelJS.CellValue): string {
   return String(value);
 }
 
-export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<ParsedCsv> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer as ArrayBuffer);
+/** How far down a sheet to look for the header row (banners, titles). */
+const HEADER_SCAN_ROWS = 10;
 
-  const sheet = workbook.worksheets[0];
-  if (!sheet) return { headers: [], rows: [] };
-
-  const headerRow = sheet.getRow(1);
+function rowStrings(row: ExcelJS.Row): string[] {
   const raw: string[] = [];
-  headerRow.eachCell({ includeEmpty: true }, (cell, col) => {
+  row.eachCell({ includeEmpty: true }, (cell, col) => {
     raw[col - 1] = cellToString(cell.value).trim();
   });
   // eachCell skips trailing empties; normalize holes so indexes stay aligned.
   for (let i = 0; i < raw.length; i++) raw[i] ??= "";
+  return raw;
+}
+
+/** Header = first of the top rows with at least two non-empty cells. */
+function findHeader(sheet: ExcelJS.Worksheet): { rowNumber: number; raw: string[] } | null {
+  const last = Math.min(sheet.rowCount, HEADER_SCAN_ROWS);
+  for (let r = 1; r <= last; r++) {
+    const raw = rowStrings(sheet.getRow(r));
+    if (raw.filter(Boolean).length >= 2) return { rowNumber: r, raw };
+  }
+  return null;
+}
+
+export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<ParsedCsv> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as ArrayBuffer);
+
+  // First tab that actually has a header, so an "Instructions" tab is skipped.
+  let sheet: ExcelJS.Worksheet | undefined;
+  let found: { rowNumber: number; raw: string[] } | null = null;
+  for (const ws of workbook.worksheets) {
+    found = findHeader(ws);
+    if (found) {
+      sheet = ws;
+      break;
+    }
+  }
+  if (!sheet || !found) return { headers: [], rows: [] };
+
+  const headerRowNumber = found.rowNumber;
   // Header text is kept verbatim — the mapping step shows it back to the user.
-  const headers = dedupeHeaders(raw);
+  const headers = dedupeHeaders(found.raw);
 
   const rows: CsvRow[] = [];
   sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber === 1) return;
+    if (rowNumber <= headerRowNumber) return;
     const record: CsvRow = {};
     let hasValue = false;
     headers.forEach((header, idx) => {

@@ -99,6 +99,14 @@ describe("autoMapColumns with a foreign file", () => {
     expect(m.startAt).toEqual({ source: "Date" });
   });
 
+  it("maps 'Event Date' to startAt, not title", () => {
+    const m = autoMapColumns([
+      "Customer", "E-mail", "Event Date", "Package", "Package Price", "Deposit Paid", "Venue", "Remarks",
+    ]);
+    expect(m.startAt).toEqual({ source: "Event Date" });
+    expect(m.title).toBeNull();
+  });
+
   it("leaves a column it cannot place unassigned rather than guessing", () => {
     const m = autoMapColumns(["Customer", "Internal Ref Code"]);
     expect(m.clientName).toEqual({ source: "Customer" });
