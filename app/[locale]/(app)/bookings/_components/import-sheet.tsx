@@ -65,6 +65,8 @@ type ParsedRow = {
   title: string;
   clientName: string;
   startAt: string;
+  /** The raw start cell(s) startAt came from; decides whether the preview shows a time. */
+  startSource: string;
 };
 
 type Props = {
@@ -249,8 +251,9 @@ export function ImportSheet({
    * required field was missing.
    */
   const rows: ParsedRow[] = useMemo(
-    () =>
-      mappedRows.map((mapped, i) => {
+    () => {
+      const startAssignment = mapping.startAt;
+      return mappedRows.map((mapped, i) => {
         const raw = mapped.values;
         const base = {
           index: i,
@@ -258,6 +261,13 @@ export function ImportSheet({
           title: raw.title ?? "",
           clientName: raw.clientName ?? "",
           startAt: raw.startAt ?? "",
+          startSource: startAssignment
+            ? "constant" in startAssignment
+              ? startAssignment.constant
+              : assignmentSources(startAssignment)
+                  .map((s) => sourceRows[i]?.[s] ?? "")
+                  .join(" ")
+            : "",
           notes: mapped.notes.map((n) =>
             tNotes(n.reason, { field: fieldLabel(n.field), value: n.value })
           ),
@@ -307,8 +317,9 @@ export function ImportSheet({
         }
 
         return { ...base, valid: true, error: null };
-      }),
-    [mappedRows, timeZone, t, tCoerce, tNotes, fieldLabel]
+      });
+    },
+    [mappedRows, mapping, sourceRows, timeZone, t, tCoerce, tNotes, fieldLabel]
   );
 
   // Rows sharing a booking_id are ONE booking, and the route rebuilds its
@@ -661,7 +672,7 @@ export function ImportSheet({
                   notedCount={notedCount}
                   invalidCount={invalidRows.length}
                   invalidIndexes={invalidIndexes}
-                  formatStart={(iso) => formatImportInstant(iso, locale, timeZone)}
+                  formatStart={(iso, source) => formatImportInstant(iso, locale, timeZone, source)}
                   fileName={fileName}
                   autoMapped={autoMapped}
                   onReviewMapping={() => goTo("map", "back")}
@@ -992,7 +1003,7 @@ function PreviewStep({
   notedCount: number;
   invalidCount: number;
   invalidIndexes: Set<number>;
-  formatStart: (iso: string) => string;
+  formatStart: (iso: string, source: string) => string;
   fileName: string | null;
   autoMapped: boolean;
   onReviewMapping: () => void;
@@ -1141,7 +1152,7 @@ function PreviewStep({
                   <td className="max-w-32 truncate px-2 py-1.5">{row.title || "—"}</td>
                   <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
                   <td className="px-2 py-1.5 tabular-nums">
-                    {row.startAt ? formatStart(row.startAt) : "—"}
+                    {row.startAt ? formatStart(row.startAt, row.startSource) : "—"}
                   </td>
                   <td
                     className={cn(

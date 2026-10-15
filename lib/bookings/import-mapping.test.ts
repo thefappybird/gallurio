@@ -283,6 +283,19 @@ describe("autoMapColumns name pairing false positives", () => {
   });
 });
 
+describe("autoMapColumns qualified name headers", () => {
+  it("does not let Event Name block a first/last pairing", () => {
+    const m = autoMapColumns(["Event Name", "First Name", "Last Name", "Date"]);
+    expect(m.clientName).toEqual({ sources: ["First Name", "Last Name"] });
+    expect(m.title).toEqual({ source: "Event Name" });
+  });
+
+  it("keeps clientName ahead of title for a qualified contact header", () => {
+    const m = autoMapColumns(["Event Contact", "Date"]);
+    expect(m.clientName).toEqual({ source: "Event Contact" });
+  });
+});
+
 describe("autoMapColumns lone name half", () => {
   it("does not map a lone first-name column to clientName", () => {
     const m = autoMapColumns(["First Name", "Date", "Event"]);
@@ -331,6 +344,19 @@ describe("applyMapping leniency", () => {
     const [row] = applyMapping([{ ...BASE, title: long }], m(), OPTS);
     expect(row.values.title).toBe("x".repeat(160));
     expect(row.notes).toContainEqual({ field: "title", value: long, reason: "truncated" });
+  });
+
+  it("does not split an emoji when truncating at the cap", () => {
+    const long = "x".repeat(159) + "\u{1F600}" + "tail";
+    const [row] = applyMapping([{ ...BASE, title: long }], m(), OPTS);
+    expect(row.values.title).toBe("x".repeat(159));
+    expect(row.notes).toContainEqual({ field: "title", value: long, reason: "truncated" });
+  });
+
+  it("does not split an emoji at the notes cap", () => {
+    const long = "y".repeat(1999) + "\u{1F600}";
+    const [row] = applyMapping([{ ...BASE, notes: long }], m(), OPTS);
+    expect(row.values.notes).toBe("y".repeat(1999));
   });
 
   it("drops a deposit when the total was dropped or absent", () => {

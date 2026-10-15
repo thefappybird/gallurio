@@ -1,5 +1,4 @@
-/** Reads as "has a time of day": 14:30, 9am, 9 pm. Date-only cells get a date-only format. */
-const HAS_TIME = /\d{1,2}:\d{2}|\d\s?(am|pm)\b/i;
+import { hasTimeOfDay } from "@/lib/bookings/import-normalize";
 
 /**
  * Formats a coerced ISO instant for people: workspace timezone, active locale.
@@ -16,7 +15,7 @@ export function formatImportInstant(
   try {
     return new Intl.DateTimeFormat(locale, {
       dateStyle: "medium",
-      ...(HAS_TIME.test(source) || /T\d{2}:/.test(source) ? { timeStyle: "short" } : {}),
+      ...(hasTimeOfDay(source) || /T\d{2}:/.test(source) ? { timeStyle: "short" } : {}),
       timeZone,
     }).format(date);
   } catch {

@@ -110,6 +110,11 @@ function isRealDate(y: number, m: number, d: number): boolean {
 const TIME_RE =
   /(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?|\b(\d{1,2})\.(\d{2})\s*([ap]\.?m\.?)(?![a-z])|\b(\d{1,2})\s*([ap]\.?m\.?)(?![a-z])|\b(noon|midnight)\b/i;
 
+/** True when a cell carries a time of day, by the same rule coerceDate reads it with. */
+export function hasTimeOfDay(cell: string): boolean {
+  return TIME_RE.test(cell);
+}
+
 /**
  * Pulls the time out of a cell as 24-hour "HH:MM", and returns the text without it.
  * `invalid` means a time-like token was present but unreadable ("25:00", "42pm");

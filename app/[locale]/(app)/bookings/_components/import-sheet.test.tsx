@@ -334,6 +334,30 @@ describe("ImportSheet", () => {
     }
   });
 
+  it("previews a date-only start cell without a time", async () => {
+    const csv = ["clientName,startAt,title", "Jane Smith,6/15/2026,Smith Wedding"].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog({ workspaceTimezone: "Asia/Manila" });
+      await uploadCsv(csv);
+      expect(screen.getByText("Jun 15, 2026")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("previews a start cell that has a time with the time", async () => {
+    const csv = ["clientName,startAt,title", "Jane Smith,6/15/2026 9:00 AM,Smith Wedding"].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog({ workspaceTimezone: "Asia/Manila" });
+      await uploadCsv(csv);
+      expect(screen.getByText(/Jun 15, 2026,? (at )?9:00\sAM/)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
   it("shows valid row count after uploading a valid CSV", async () => {
     const restore = mockFileReader(VALID_CSV);
     try {

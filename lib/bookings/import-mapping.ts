@@ -222,11 +222,14 @@ export function autoMapColumns(rawHeaders: readonly string[]): ColumnMapping {
   //     name column ("Customer") makes the pair unnecessary.
   const hasNameColumn = () => {
     const rule = SYNONYMS.clientName;
+    // "Event Name" / "Company Name" name something else; only a header that
+    // names the client counts: client/customer/contact/guest, or just "name".
     return available.some(
       (h) =>
         !taken.has(h) &&
         !tokens(h).some((w) => rule.avoid?.includes(w)) &&
-        tokens(h).some((w) => rule.match.includes(w))
+        (["name", "fullname"].includes(loose(h)) ||
+          tokens(h).some((w) => w !== "name" && rule.match.includes(w)))
     );
   };
   if (!mapping.clientName && !hasNameColumn()) {
@@ -249,8 +252,9 @@ export function autoMapColumns(rawHeaders: readonly string[]): ColumnMapping {
   // 3. Whole-word synonyms. Qualified fields (endAt, amountDeposit) run before
   //    their generic siblings so they claim their column first, and the generic
   //    ones additionally refuse a header carrying the qualifier.
+  const GENERIC_SIBLINGS = new Set(["startAt", "eventType", "amountTotal"]);
   const synonymOrder = [...MAPPABLE_FIELDS].sort(
-    (a, b) => (SYNONYMS[a.key]?.avoid ? 1 : 0) - (SYNONYMS[b.key]?.avoid ? 1 : 0)
+    (a, b) => (GENERIC_SIBLINGS.has(a.key) ? 1 : 0) - (GENERIC_SIBLINGS.has(b.key) ? 1 : 0)
   );
   for (const field of synonymOrder) {
     if (mapping[field.key]) continue;
@@ -443,7 +447,11 @@ export function applyMapping(
         const max = TEXT_MAX[field.key];
         if (max && coerced.value.length > max) {
           notes.push({ field: field.key, value: cell, reason: "truncated" });
-          values[field.key] = coerced.value.slice(0, max);
+          let cut = coerced.value.slice(0, max);
+          // Never leave half a surrogate pair (an emoji) at the cut.
+          const last = cut.charCodeAt(cut.length - 1);
+          if (last >= 0xd800 && last <= 0xdbff) cut = cut.slice(0, -1);
+          values[field.key] = cut;
         } else values[field.key] = coerced.value;
       }
     }
