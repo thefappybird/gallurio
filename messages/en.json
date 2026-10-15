@@ -1082,6 +1082,14 @@
         "success": "{bookings, plural, one {# %booking%} other {# %bookings%}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} %booking%(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
+        "intake": {
+          "notText": "This doesn't look like a CSV file. Choose a .csv or .xlsx spreadsheet.",
+          "tooLarge": "This file is larger than the 2 MB limit. Split it into smaller files.",
+          "tooManyRows": "This file has {count} rows. Import up to {max} at a time — split it into smaller files.",
+          "empty": "This file is empty.",
+          "noRows": "We found column headers but no rows under them.",
+          "offline": "Couldn't upload the file. Check your connection and try again."
+        },
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
         "previewMore": "{count} more rows not shown",
         "groupBlocked": "Another row sharing this booking_id has an error, so the whole %booking% is held back.",

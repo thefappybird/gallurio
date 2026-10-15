@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SheetResizeHandle, useSheetResize } from "@/components/ui/sheet-resize";
 import { Button } from "@/components/ui/button";
-import { parseCsv } from "@/lib/utils/csv-parse";
+import { parseCsv, decodeCsvBytes, isProbablyText } from "@/lib/utils/csv-parse";
 import { EVENT_TYPES, bookingImportRowSchema } from "@/lib/validators/booking";
 import { sessionsAreSameDayInTz } from "@/lib/bookings/session-validation";
 import {
@@ -53,6 +53,10 @@ type Step = "upload" | "map" | "values" | "preview";
 
 /** Rows drawn in the preview table; the import still processes every row. */
 const PREVIEW_ROW_CAP = 100;
+// Mirror the server caps (POST /api/bookings/import) so oversized files are
+// refused at intake instead of failing after the owner has mapped them.
+const MAX_IMPORT_BYTES = 2_000_000;
+const MAX_IMPORT_ROWS = 500;
 
 type ParsedRow = {
   index: number;
@@ -445,7 +449,11 @@ export function ImportSheet({
       // Committing that to state and reading .errors off it throws during the
       // next render and takes the page down with it.
       if (!res.ok || !body || !Array.isArray(body.errors)) {
-        toast.error(errMsg(body?.error));
+        toast.error(
+          body?.error === "too_many_rows"
+            ? t("intake.tooManyRows", { count: body.count ?? 0, max: body.max ?? MAX_IMPORT_ROWS })
+            : errMsg(body?.error, { seconds: body?.seconds ?? 60 })
+        );
         return;
       }
 
@@ -501,12 +509,57 @@ export function ImportSheet({
     []
   );
 
+  // Size/row-count/emptiness gates shared by the CSV and XLSX paths. Sets the
+  // upload-step error and returns false when the file should be refused.
+  const checkIntake = useCallback(
+    (h: string[], r: Record<string, string>[]) => {
+      if (!h.some((x) => x.trim())) {
+        setParseError(t("intake.empty"));
+        return false;
+      }
+      if (r.length === 0) {
+        setParseError(t("intake.noRows"));
+        return false;
+      }
+      if (r.length > MAX_IMPORT_ROWS) {
+        setParseError(t("intake.tooManyRows", { count: r.length, max: MAX_IMPORT_ROWS }));
+        return false;
+      }
+      return true;
+    },
+    [t]
+  );
+
+  // Maps the preview endpoint's error body to specific copy.
+  const intakeErrorCopy = useCallback(
+    (data: { error?: string; count?: number; max?: number; seconds?: number } | null) => {
+      switch (data?.error) {
+        case "import_too_large":
+          return t("intake.tooLarge");
+        case "too_many_rows":
+          return t("intake.tooManyRows", {
+            count: data.count ?? MAX_IMPORT_ROWS + 1,
+            max: data.max ?? MAX_IMPORT_ROWS,
+          });
+        case "rate_limited":
+          return errMsg("rate_limited", { seconds: data.seconds ?? 60 });
+        default:
+          return t("parseError");
+      }
+    },
+    [t, errMsg]
+  );
+
   const processFile = useCallback(
     (file: File) => {
       const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
       const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
       if (!isXlsx && !isCsv) {
         setParseError(t("parseError"));
+        return;
+      }
+      if (file.size > MAX_IMPORT_BYTES) {
+        setParseError(t("intake.tooLarge"));
         return;
       }
       setFileName(file.name);
@@ -529,17 +582,20 @@ export function ImportSheet({
           .then(async (res) => {
             const data = await res.json().catch(() => null);
             if (!res.ok || !data?.rows) {
-              setParseError(t("parseError"));
+              setParseError(intakeErrorCopy(data));
               setStep("upload");
               return;
             }
-            receive(
-              (data.headers as string[]) ?? [],
-              data.rows as Record<string, string>[]
-            );
+            const h = (data.headers as string[]) ?? [];
+            const r = data.rows as Record<string, string>[];
+            if (!checkIntake(h, r)) {
+              setStep("upload");
+              return;
+            }
+            receive(h, r);
           })
           .catch(() => {
-            setParseError(t("parseError"));
+            setParseError(t("intake.offline"));
             setStep("upload");
           })
           .finally(() => setParsing(false));
@@ -548,17 +604,22 @@ export function ImportSheet({
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const text = e.target?.result as string;
         try {
-          const parsed = parseCsv(text);
+          const bytes = new Uint8Array(e.target?.result as ArrayBuffer);
+          if (!isProbablyText(bytes)) {
+            setParseError(t("intake.notText"));
+            return;
+          }
+          const parsed = parseCsv(decodeCsvBytes(bytes));
+          if (!checkIntake(parsed.headers, parsed.rows)) return;
           receive(parsed.headers, parsed.rows);
         } catch {
           setParseError(t("parseError"));
         }
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     },
-    [t, receive]
+    [t, receive, checkIntake, intakeErrorCopy]
   );
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1027,6 +1088,32 @@ function PreviewStep({
     col: (k: "row" | "title" | "client" | "start" | "error") => string;
   };
 }) {
+  // One reason per row, tappable (the title attr alone is hover-only). Rendered
+  // in the Notes column from sm up and under the title below it.
+  const reason = (row: ParsedRow, bad: boolean, noted: boolean) => (
+    <>
+      {noted ? (
+        <button
+          type="button"
+          onClick={onShowNotes}
+          className="block max-w-full truncate text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {row.notes[0]}
+        </button>
+      ) : null}
+      {bad ? (
+        // The cell truncates a long message; the dialog shows it whole
+        // alongside the raw row.
+        <button
+          type="button"
+          onClick={onShowErrors}
+          className="text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {row.error ?? labels.groupBlocked}
+        </button>
+      ) : null}
+    </>
+  );
   return (
     <div className="flex flex-col gap-3">
       {/* A file whose COLUMNS we matched without asking still says so, and
@@ -1117,7 +1204,7 @@ function PreviewStep({
               <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                 {labels.col("start")}
               </th>
-              <th className="border-b border-border px-2 py-1.5 text-start font-medium">
+              <th className="hidden border-b border-border px-2 py-1.5 text-start font-medium sm:table-cell">
                 {labels.col("error")}
               </th>
             </tr>
@@ -1149,39 +1236,33 @@ function PreviewStep({
                       <CheckCircleIcon className="size-3.5 text-foreground" />
                     )}
                   </td>
-                  <td className="max-w-32 truncate px-2 py-1.5">{row.title || "—"}</td>
+                  <td className="max-w-32 truncate px-2 py-1.5">
+                    {row.title || "—"}
+                    {/* Below sm the reason column is hidden (it scrolls off-screen),
+                        so the same reason sits under the title instead. */}
+                    {noted || bad ? (
+                      <div
+                        className={cn(
+                          "sm:hidden",
+                          bad ? "text-destructive" : "truncate text-muted-foreground"
+                        )}
+                      >
+                        {reason(row, bad, noted)}
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
-                  <td className="px-2 py-1.5 tabular-nums">
+                  <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">
                     {row.startAt ? formatStart(row.startAt, row.startSource) : "—"}
                   </td>
                   <td
                     className={cn(
-                      "max-w-40 px-2 py-1.5",
+                      "hidden max-w-40 px-2 py-1.5 sm:table-cell",
                       bad ? "text-destructive" : "truncate text-muted-foreground"
                     )}
                     title={noted ? row.notes.join("\n") : undefined}
                   >
-                    {noted ? (
-                      // Tap target for touch: the title attr alone is hover-only.
-                      <button
-                        type="button"
-                        onClick={onShowNotes}
-                        className="block max-w-full truncate text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      >
-                        {row.notes[0]}
-                      </button>
-                    ) : null}
-                    {bad ? (
-                      // The cell truncates a long message; the dialog shows it
-                      // whole alongside the raw row.
-                      <button
-                        type="button"
-                        onClick={onShowErrors}
-                        className="text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      >
-                        {row.error ?? labels.groupBlocked}
-                      </button>
-                    ) : null}
+                    {reason(row, bad, noted)}
                   </td>
                 </tr>
               );

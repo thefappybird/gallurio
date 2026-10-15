@@ -1082,6 +1082,14 @@
         "success": "Berhasil mengimpor {bookings} %booking% dan {shifts} shift.",
         "partialSuccess": "Mengimpor {count} %booking%. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
+        "intake": {
+          "notText": "Ini tampaknya bukan file CSV. Pilih spreadsheet .csv atau .xlsx.",
+          "tooLarge": "File ini melebihi batas 2 MB. Pecah menjadi file yang lebih kecil.",
+          "tooManyRows": "File ini memiliki {count} baris. Impor maksimal {max} sekaligus — pecah menjadi file yang lebih kecil.",
+          "empty": "File ini kosong.",
+          "noRows": "Kami menemukan header kolom tetapi tidak ada baris di bawahnya.",
+          "offline": "Tidak dapat mengunggah file. Periksa koneksi Anda lalu coba lagi."
+        },
         "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
         "previewMore": "{count} baris lainnya tidak ditampilkan",
         "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh %booking% ditahan.",

@@ -53,13 +53,15 @@ function renderDialog(overrides: Partial<Parameters<typeof ImportSheet>[0]> = {}
 
 // Build a minimal FileReader that calls onload synchronously with the given text.
 // Must be a real class (constructable with `new`) — vi.fn() stubs are not constructors.
-function mockFileReader(text: string) {
+function mockFileReader(text: string | Uint8Array) {
   const original = globalThis.FileReader;
+  const bytes = typeof text === "string" ? new TextEncoder().encode(text) : text;
   class MockFileReader {
     onload: ((e: ProgressEvent<FileReader>) => void) | null = null;
-    readAsText() {
+    readAsArrayBuffer() {
       if (this.onload) {
-        this.onload({ target: { result: text } } as unknown as ProgressEvent<FileReader>);
+        const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        this.onload({ target: { result: buf } } as unknown as ProgressEvent<FileReader>);
       }
     }
   }
@@ -416,7 +418,8 @@ describe("ImportSheet", () => {
       renderDialog();
       await uploadCsv(csv);
       expect(screen.queryByTestId("results")).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: /isn't an amount/ }));
+      // Rendered twice (inline under the title below sm, in the Notes column above).
+      fireEvent.click(screen.getAllByRole("button", { name: /isn't an amount/ })[0]);
       const dialog = screen.getByTestId("results");
       expect(dialog).toHaveAttribute("data-tone", "note");
       expect(dialog).toHaveTextContent(/isn't an amount/);
@@ -461,7 +464,7 @@ describe("ImportSheet", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/same day in your workspace timezone/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/same day in your workspace timezone/i)[0]).toBeInTheDocument();
       });
     } finally {
       restore();
@@ -482,6 +485,123 @@ describe("ImportSheet", () => {
       await waitFor(() => {
         expect(screen.getByRole("button", { name: /import 1 booking/i })).toBeInTheDocument();
       });
+    } finally {
+      restore();
+    }
+  });
+
+  // ── intake guards ──────────────────────────────────────────────────────────
+  async function dropFile(file: File) {
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
+    });
+  }
+
+  it("decodes a windows-1252 CSV instead of showing replacement characters", async () => {
+    const header = "clientName,startAt,title";
+    const row = "José Peña,2026-06-15T01:00:00.000Z,Boda";
+    const bytes = Uint8Array.from(
+      Array.from(`${header}\n${row}`).map((c) => (c.charCodeAt(0) > 255 ? 63 : c.charCodeAt(0)))
+    );
+    const restore = mockFileReader(bytes);
+    try {
+      renderDialog();
+      await dropFile(new File([bytes], "ansi.csv", { type: "text/csv" }));
+      await waitFor(() => expect(screen.getAllByText(/José Peña/).length).toBeGreaterThan(0));
+    } finally {
+      restore();
+    }
+  });
+
+  it("refuses a binary file renamed to .csv", async () => {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]);
+    const restore = mockFileReader(png);
+    try {
+      renderDialog();
+      await dropFile(new File([png], "pic.csv", { type: "text/csv" }));
+      expect(await screen.findByText(/doesn't look like a CSV/i)).toBeInTheDocument();
+      expect(screen.getByTestId("import-upload-step")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("refuses a CSV over 2 MB up front", async () => {
+    renderDialog();
+    const big = new File(["a"], "big.csv", { type: "text/csv" });
+    Object.defineProperty(big, "size", { value: 2_000_001 });
+    await dropFile(big);
+    expect(await screen.findByText(/2 MB limit/i)).toBeInTheDocument();
+  });
+
+  it("refuses more than 500 rows with the count", async () => {
+    const csv = [
+      "clientName,startAt,title",
+      ...Array.from({ length: 501 }, (_, i) => `C${i},2026-06-15T01:00:00.000Z,T${i}`),
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await dropFile(new File([csv], "many.csv", { type: "text/csv" }));
+      expect(await screen.findByText(/has 501 rows. Import up to 500/i)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("says so when the file is empty", async () => {
+    const restore = mockFileReader("");
+    try {
+      renderDialog();
+      await dropFile(new File([""], "e.csv", { type: "text/csv" }));
+      expect(await screen.findByText("This file is empty.")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("says so when there are headers but no rows", async () => {
+    const restore = mockFileReader("clientName,startAt,title\n");
+    try {
+      renderDialog();
+      await dropFile(new File(["x"], "h.csv", { type: "text/csv" }));
+      expect(await screen.findByText(/headers but no rows/i)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it.each([
+    [413, { error: "import_too_large" }, /2 MB limit/i],
+    [400, { error: "too_many_rows", count: 600, max: 500 }, /has 600 rows/i],
+    [429, { error: "rate_limited", seconds: 12 }, /12 seconds/i],
+    [400, { error: "unreadable_file" }, /Could not read this file/i],
+  ])("maps XLSX preview error %s to specific copy", async (status, body, copy) => {
+    mockFetch.mockResolvedValue({ ok: false, status, json: async () => body });
+    renderDialog();
+    await dropFile(new File([new Uint8Array([0x50, 0x4b])], "r.xlsx"));
+    expect(await screen.findByText(copy)).toBeInTheDocument();
+  });
+
+  it("tells the owner to check their connection when the XLSX upload fails to send", async () => {
+    mockFetch.mockRejectedValue(new TypeError("Failed to fetch"));
+    renderDialog();
+    await dropFile(new File([new Uint8Array([0x50, 0x4b])], "r.xlsx"));
+    expect(await screen.findByText(/Check your connection/i)).toBeInTheDocument();
+  });
+
+  it("repeats a row's reason under its title for narrow screens", async () => {
+    const csv = ",x@example.com,bad-date,,Title,,,,,,,";
+    const full = `clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes\n${csv}`;
+    const restore = mockFileReader(full);
+    try {
+      renderDialog();
+      await uploadCsv(full);
+      const reasons = document.querySelectorAll("td div.sm\\:hidden");
+      expect(reasons).toHaveLength(1);
+      expect(reasons[0].querySelector("button")).not.toBeNull();
+      expect(document.querySelector("th.hidden.sm\\:table-cell")).not.toBeNull();
     } finally {
       restore();
     }

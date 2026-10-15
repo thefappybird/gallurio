@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   // handlers). Keeping it external stops the bundler from trying to pull its
   // Node built-in dependencies into a browser bundle.
   serverExternalPackages: ["exceljs"],
+  experimental: { globalNotFound: true },
   allowedDevOrigins: ["http://localhost:3000", "dev.gallurio.com"],
   images: {
     remotePatterns: [
