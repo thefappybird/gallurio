@@ -28,6 +28,13 @@ describe("useSheetResize", () => {
     expect(screen.getByRole("separator", { name: "Resize panel" })).toHaveAttribute("aria-valuenow", "448");
   });
 
+  it("renders an aria-hidden grip with three dots", () => {
+    renderHarness();
+    const grip = screen.getByRole("separator").querySelector('[data-slot="sheet-resize-grip"]');
+    expect(grip).toHaveAttribute("aria-hidden", "true");
+    expect(grip?.children).toHaveLength(3);
+  });
+
   it("restores a persisted width", () => {
     window.localStorage.setItem("gw:sheet-w:test", "520");
     renderHarness();

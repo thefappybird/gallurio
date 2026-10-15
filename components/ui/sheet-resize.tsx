@@ -137,7 +137,7 @@ export function SheetResizeHandle({ resize }: { resize: SheetResize }) {
       aria-label={t("resizePanel")}
       // Right sheets stay on the physical right even in RTL (ar), so their
       // resize edge is the physical left: `left-0` is deliberate, not `start-0`.
-      className="absolute inset-y-0 left-0 z-10 hidden w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-transparent after:transition-colors hover:after:bg-brand focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:after:bg-brand active:after:bg-brand sm:block"
+      className="group absolute inset-y-0 left-0 z-10 hidden w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-transparent after:transition-colors hover:after:bg-brand focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:after:bg-brand active:after:bg-brand sm:block"
       aria-valuenow={resize.width}
       aria-valuemin={resize.min}
       aria-valuemax={resize.max}
@@ -159,6 +159,21 @@ export function SheetResizeHandle({ resize }: { resize: SheetResize }) {
         e.preventDefault()
         resize.commit(next)
       }}
-    />
+    >
+      {/* Decorative sash grip, always visible; the whole separator stays the hit target.
+          Kept inside the edge: some sheets clip overflow (invoice theme). */}
+      <span
+        aria-hidden="true"
+        data-slot="sheet-resize-grip"
+        className="pointer-events-none absolute left-0.5 top-1/2 flex h-7 w-1.5 -translate-y-1/2 flex-col items-center justify-center gap-0.5 rounded-full bg-background ring-1 ring-foreground/15 transition-colors group-hover:ring-brand group-focus-visible:ring-brand group-active:ring-brand"
+      >
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="size-1 rounded-full bg-muted-foreground/60 transition-colors group-hover:bg-brand group-focus-visible:bg-brand group-active:bg-brand"
+          />
+        ))}
+      </span>
+    </div>
   )
 }
