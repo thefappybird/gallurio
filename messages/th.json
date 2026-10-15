@@ -1071,7 +1071,7 @@
         "templateCsv": "ดาวน์โหลดเทมเพลต CSV",
         "templateXlsx": "ดาวน์โหลดเทมเพลต XLSX",
         "preview": "พบ {total} แถว",
-        "validCount": "{count} รายการพร้อม",
+        "totalCount": "ทั้งหมด {count} รายการ",
         "notesCount": "{count} รายการมีหมายเหตุ",
         "invalidCount": "{count} รายการถูกข้าม",
         "titleWithType": "{client} – {type}",
@@ -1152,7 +1152,6 @@
           "event_type_blank": "{field}: \"{value}\" ไม่ตรงกับตัวเลือกใด จึงเว้นว่างไว้",
           "status_inferred": "{field}: \"{value}\" ไม่ตรงกับตัวเลือกใด จึงอนุมานจากวันที่",
           "truncated": "{field}: ยาวเกินไป จึงตัดให้สั้นลง",
-          "title_generated": "{field}: ว่างเปล่า เราจึงตั้งให้",
           "phone_dropped": "{field}: \"{value}\" ยาวเกินกว่าจะเป็นเบอร์โทร จึงเว้นว่างไว้",
           "deposit_dropped": "{field}: \"{value}\" ต้องมียอดรวมที่ครอบคลุม จึงเว้นว่างไว้"
         },

@@ -1071,7 +1071,7 @@
         "templateCsv": "تنزيل قالب CSV",
         "templateXlsx": "تنزيل قالب XLSX",
         "preview": "تم العثور على {total} صف",
-        "validCount": "{count} جاهز",
+        "totalCount": "{count} إجمالًا",
         "notesCount": "{count} بملاحظات",
         "invalidCount": "{count} متخطّى",
         "titleWithType": "{client} – {type}",
@@ -1152,7 +1152,6 @@
           "event_type_blank": "{field}: القيمة \"{value}\" لم تطابق، لذا تُركت فارغة.",
           "status_inferred": "{field}: القيمة \"{value}\" لم تطابق، لذا استُنتجت من التاريخ.",
           "truncated": "{field}: كان طويلًا جدًا فاختُصر.",
-          "title_generated": "{field}: كان فارغًا، لذا كتبنا واحدًا.",
           "phone_dropped": "{field}: \"{value}\" أطول من أن يكون رقم هاتف، لذا تُرك فارغًا.",
           "deposit_dropped": "{field}: \"{value}\" يحتاج إلى إجمالي يغطيه، لذا تُرك فارغًا."
         },

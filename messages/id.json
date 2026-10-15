@@ -1071,7 +1071,7 @@
         "templateCsv": "Unduh template CSV",
         "templateXlsx": "Unduh template XLSX",
         "preview": "{total} baris ditemukan",
-        "validCount": "{count} siap",
+        "totalCount": "{count} total",
         "notesCount": "{count} dengan catatan",
         "invalidCount": "{count} dilewati",
         "titleWithType": "{client} – {type}",
@@ -1152,7 +1152,6 @@
           "event_type_blank": "{field}: \"{value}\" tidak cocok, jadi dibiarkan kosong.",
           "status_inferred": "{field}: \"{value}\" tidak cocok, jadi disimpulkan dari tanggal.",
           "truncated": "{field}: terlalu panjang sehingga dipersingkat.",
-          "title_generated": "{field}: kosong, jadi kami buatkan.",
           "phone_dropped": "{field}: \"{value}\" terlalu panjang untuk nomor telepon, jadi dikosongkan.",
           "deposit_dropped": "{field}: \"{value}\" butuh total yang mencakupnya, jadi dikosongkan."
         },

@@ -1071,7 +1071,7 @@
         "templateCsv": "Download CSV template",
         "templateXlsx": "Download XLSX template",
         "preview": "{total} row(s) found",
-        "validCount": "{count} ready",
+        "totalCount": "{count} total",
         "notesCount": "{count} with notes",
         "invalidCount": "{count} skipped",
         "titleWithType": "{client} – {type}",
@@ -1152,7 +1152,6 @@
           "event_type_blank": "{field}: \"{value}\" didn't match, so it was left blank.",
           "status_inferred": "{field}: \"{value}\" didn't match, so it was worked out from the date.",
           "truncated": "{field}: was too long and was shortened.",
-          "title_generated": "{field}: was empty, so we wrote one.",
           "phone_dropped": "{field}: \"{value}\" is too long for a phone number, so it was left blank.",
           "deposit_dropped": "{field}: \"{value}\" needs a total that covers it, so it was left blank."
         },

@@ -346,7 +346,7 @@ describe("ImportSheet", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/1 ready/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 total/i)).toBeInTheDocument();
       });
     } finally {
       restore();
@@ -364,7 +364,7 @@ describe("ImportSheet", () => {
     try {
       renderDialog();
       await uploadCsv(csv);
-      expect(screen.getByText(/1 ready/)).toBeInTheDocument();
+      expect(screen.getByText(/1 total/)).toBeInTheDocument();
       expect(screen.getByText(/1 with notes/)).toBeInTheDocument();
       expect(screen.queryByText(/skipped/)).not.toBeInTheDocument();
 

@@ -135,7 +135,7 @@ test.describe("Scenario A - foreign file, desktop 1280", () => {
     await expect(page.getByText("3 row(s) found")).toBeVisible();
     // all 3 rows valid = money (PHP 85,000.00 / ₱45,000 / 28,500.00) and dates
     // (06/15/2027 etc.) all normalized without a coercion error
-    await expect(page.getByText("3 ready")).toBeVisible();
+    await expect(page.getByText("3 total")).toBeVisible();
     await expect(page.getByText(/skipped$/)).toHaveCount(0);
     const firstRow = page.locator(`${SHEET} table tbody tr`).first();
     await expect(firstRow).toContainText("2027");

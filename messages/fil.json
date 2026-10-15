@@ -1071,7 +1071,7 @@
         "templateCsv": "I-download ang CSV template",
         "templateXlsx": "I-download ang XLSX template",
         "preview": "{total} row(s) natagpuan",
-        "validCount": "{count} handa na",
+        "totalCount": "{count} lahat",
         "notesCount": "{count} may tala",
         "invalidCount": "{count} nilaktawan",
         "titleWithType": "{client} – {type}",
@@ -1152,7 +1152,6 @@
           "event_type_blank": "{field}: walang katugma ang \"{value}\", kaya iniwang blangko.",
           "status_inferred": "{field}: walang katugma ang \"{value}\", kaya hinulaan mula sa petsa.",
           "truncated": "{field}: masyadong mahaba kaya pinaikli.",
-          "title_generated": "{field}: walang laman, kaya gumawa kami ng isa.",
           "phone_dropped": "{field}: \"{value}\" ay masyadong mahaba para sa numero ng telepono, kaya iniwang blangko.",
           "deposit_dropped": "{field}: \"{value}\" ay nangangailangan ng kabuuang sasaklaw dito, kaya iniwang blangko."
         },

@@ -658,7 +658,6 @@ export function ImportSheet({
               {step === "preview" ? (
                 <PreviewStep
                   rows={rows}
-                  validCount={validRows.length}
                   notedCount={notedCount}
                   invalidCount={invalidRows.length}
                   invalidIndexes={invalidIndexes}
@@ -674,7 +673,7 @@ export function ImportSheet({
                   disabled={busy}
                   labels={{
                     preview: t("preview", { total: rows.length }),
-                    valid: t("validCount", { count: validRows.length }),
+                    total: t("totalCount", { count: rows.length }),
                     notes: t("notesCount", { count: notedCount }),
                     invalid: t("invalidCount", { count: invalidRows.length }),
                     reviewMapping: tNav("reviewMapping"),
@@ -974,7 +973,6 @@ function UploadStep({
 
 function PreviewStep({
   rows,
-  validCount,
   notedCount,
   invalidCount,
   invalidIndexes,
@@ -991,7 +989,6 @@ function PreviewStep({
   labels,
 }: {
   rows: ParsedRow[];
-  validCount: number;
   notedCount: number;
   invalidCount: number;
   invalidIndexes: Set<number>;
@@ -1007,7 +1004,7 @@ function PreviewStep({
   disabled: boolean;
   labels: {
     preview: string;
-    valid: string;
+    total: string;
     notes: string;
     invalid: string;
     reviewMapping: string;
@@ -1064,7 +1061,7 @@ function PreviewStep({
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="font-medium">{labels.preview}</span>
-        {validCount > 0 ? <span className="text-xs text-foreground">{labels.valid}</span> : null}
+        <span className="text-xs text-foreground">{labels.total}</span>
         {notedCount > 0 ? (
           <span className="text-xs text-muted-foreground">
             <span aria-hidden="true">· </span>
@@ -1078,13 +1075,16 @@ function PreviewStep({
           </span>
         ) : null}
         {invalidCount > 0 ? (
-          <button
-            type="button"
-            onClick={onShowErrors}
-            className="text-xs text-destructive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            {labels.invalid}
-          </button>
+          <span className="text-xs text-muted-foreground">
+            <span aria-hidden="true">· </span>
+            <button
+              type="button"
+              onClick={onShowErrors}
+              className="text-destructive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {labels.invalid}
+            </button>
+          </span>
         ) : null}
         <span className="ms-auto text-xs text-muted-foreground">{fileName}</span>
       </div>
