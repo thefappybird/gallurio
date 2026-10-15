@@ -94,15 +94,20 @@ const LEGACY_PALETTES: Record<string, { main: string; accent: string }> = {
 
 export const LEGACY_INVOICE_PRESET_IDS = Object.keys(LEGACY_PALETTES) as ["classic", "slate", "navyGold", "forest"];
 
+/** A theme as stored: may still carry a retired preset id until normalized. */
+export type StoredInvoiceTheme = Omit<InvoiceTheme, "preset"> & {
+  preset: InvoiceTheme["preset"] | (typeof LEGACY_INVOICE_PRESET_IDS)[number];
+};
+
 /**
  * Normalizes a stored theme on read. Current presets pass through; legacy ids
  * (classic/slate/navyGold/forest) become a `custom` theme keeping their colors;
  * any other unknown id falls back to the default preset.
  */
-export function normalizeInvoiceTheme(theme: InvoiceTheme): InvoiceTheme {
+export function normalizeInvoiceTheme(theme: StoredInvoiceTheme): InvoiceTheme {
   const id = theme.preset as string;
-  if (id === "portfolio" || id === "saved" || id === "custom") return theme;
-  if ((BRAND_KIT_THEME_PRESETS as readonly string[]).includes(id)) return theme;
+  if (id === "portfolio" || id === "saved" || id === "custom") return theme as InvoiceTheme;
+  if ((BRAND_KIT_THEME_PRESETS as readonly string[]).includes(id)) return theme as InvoiceTheme;
   const legacy = Object.hasOwn(LEGACY_PALETTES, id) ? LEGACY_PALETTES[id] : null;
   if (!legacy) return { preset: INVOICE_THEME_DEFAULT_PRESET, ...INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET] };
   const main = validHex(theme.main) ? theme.main : legacy.main;
@@ -125,7 +130,7 @@ export const LEGACY_DEFAULT_INVOICE_THEME: InvoiceTheme = {
 };
 
 export function resolveInvoiceTheme(
-  rawTheme: InvoiceTheme | null | undefined,
+  rawTheme: StoredInvoiceTheme | null | undefined,
   brandKit?: BrandKitColors | null
 ): InvoiceColors {
   const theme = normalizeInvoiceTheme(rawTheme ?? LEGACY_DEFAULT_INVOICE_THEME);
