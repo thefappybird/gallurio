@@ -6,6 +6,9 @@ import {
   contrastRatio,
   INVOICE_THEME_DEFAULT_PRESET,
   invoiceColorsFromBrandKit,
+  LEGACY_DEFAULT_INVOICE_THEME,
+  LEGACY_INVOICE_PRESET_IDS,
+  hexToRgb,
   normalizeInvoiceTheme,
   publishedBrandKit,
   resolveInvoiceTheme,
@@ -15,8 +18,9 @@ const MINIMAL = { main: "#ece5d8", accent: "#ddd0ba", text: "#1f1c16" };
 const kit = THEME_PRESET_DEFINITIONS.bold.brandKit;
 
 describe("resolveInvoiceTheme", () => {
-  it("falls back to the minimal preset (with dark text) when theme is null", () => {
-    expect(resolveInvoiceTheme(null)).toEqual(MINIMAL);
+  it("keeps the legacy classic dark look when no theme is stored", () => {
+    expect(resolveInvoiceTheme(null)).toEqual({ main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" });
+    expect(LEGACY_DEFAULT_INVOICE_THEME.preset).toBe("custom");
   });
 
   it("keeps a legacy preset's stored colors (as custom) instead of falling back", () => {
@@ -123,5 +127,25 @@ describe("contrastRatio", () => {
   it("is 21 for black on white and symmetric", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
     expect(contrastRatio("#ffffff", "#000000")).toBeCloseTo(21, 5);
+  });
+});
+
+describe("hexToRgb", () => {
+  it("parses #rrggbb", () => {
+    expect(hexToRgb("#0F1B33")).toEqual([15, 27, 51]);
+  });
+
+  it("returns null for anything that is not a 6-digit hex", () => {
+    for (const bad of ["", "#fff", "0F1B33", "#GGGGGG", "#0F1B33zz"]) expect(hexToRgb(bad)).toBeNull();
+  });
+
+  it("contrastRatio treats an invalid color as black instead of NaN", () => {
+    expect(Number.isNaN(contrastRatio("nope", "#ffffff"))).toBe(false);
+  });
+});
+
+describe("LEGACY_INVOICE_PRESET_IDS", () => {
+  it("lists the retired preset ids", () => {
+    expect([...LEGACY_INVOICE_PRESET_IDS]).toEqual(["classic", "slate", "navyGold", "forest"]);
   });
 });

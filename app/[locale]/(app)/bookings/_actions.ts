@@ -8,8 +8,8 @@ import { invoiceThemeSchema } from "@/lib/validators/invoiceTheme";
 import {
   INVOICE_THEME_PRESETS,
   invoiceColorsFromBrandKit,
+  publishedBrandKit,
   readableTextOn,
-  resolveInvoiceTheme,
   type InvoiceColors,
 } from "@/lib/invoices/theme";
 
@@ -44,7 +44,10 @@ export async function updateInvoiceThemeAction(input: unknown): Promise<UpdateIn
     resolved = invoiceColorsFromBrandKit(saved.brandKit);
     storedSavedThemeId = savedThemeId ?? null;
   } else if (preset === "portfolio") {
-    resolved = resolveInvoiceTheme({ preset, main: "", accent: "" }, publicPage?.brandKit);
+    // Only a published kit may be snapshotted; a draft-only kit must not leak into documents.
+    const kit = publishedBrandKit(publicPage);
+    if (!kit) return { error: "invalid_data" };
+    resolved = invoiceColorsFromBrandKit(kit);
   } else {
     resolved = INVOICE_THEME_PRESETS[preset];
   }

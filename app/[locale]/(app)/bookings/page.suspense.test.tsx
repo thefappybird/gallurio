@@ -34,6 +34,7 @@ vi.mock("./_components/booking-url-modals", () => ({ BookingUrlModals: () => nul
 vi.mock("@/lib/invoices/theme", () => ({
   INVOICE_THEME_PRESETS: { minimal: { main: "#000000", accent: "#ffffff", text: "#ffffff" } },
   INVOICE_THEME_DEFAULT_PRESET: "minimal",
+  LEGACY_DEFAULT_INVOICE_THEME: { preset: "custom", main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" },
   invoiceColorsFromBrandKit: () => ({ main: "#000000", accent: "#ffffff", text: "#ffffff" }),
 }));
 

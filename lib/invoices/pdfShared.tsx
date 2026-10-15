@@ -1,11 +1,12 @@
 import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { hexToRgb } from "./theme";
 
 export type PdfTheme = { main: string; accent: string; text: string };
 
 /** "#rrggbb" -> "rgba(r,g,b,alpha)" for translucent band text. */
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace("#", "");
-  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${alpha})`;
+export function hexToRgba(hex: string, alpha: number): string {
+  const rgb = hexToRgb(hex);
+  return rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})` : hex;
 }
 
 export function buildInvoiceStyles(theme: PdfTheme) {

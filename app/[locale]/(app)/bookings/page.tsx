@@ -42,8 +42,7 @@ import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 import {
-  INVOICE_THEME_DEFAULT_PRESET,
-  INVOICE_THEME_PRESETS,
+  LEGACY_DEFAULT_INVOICE_THEME,
   invoiceColorsFromBrandKit,
   normalizeInvoiceTheme,
   publishedBrandKit,
@@ -296,13 +295,10 @@ async function BookingsContent({
 
   // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
   // `invoiceTheme` existed have no key at all (not the schema default) — fall
-  // back to the minimal preset so the toolbar always has a value to seed.
+  // back to the legacy classic look those workspaces' documents always had.
   const invoiceTheme = workspace.invoiceTheme
     ? normalizeInvoiceTheme(workspace.invoiceTheme)
-    : {
-        preset: INVOICE_THEME_DEFAULT_PRESET,
-        ...INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET],
-      };
+    : LEGACY_DEFAULT_INVOICE_THEME;
   // Plain serializable colors so the theme dialog can offer "Match portfolio"
   // (only once published) and the owner's saved portfolio themes.
   const publishedKit = publishedBrandKit(workspace.publicPage);

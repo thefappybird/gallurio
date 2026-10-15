@@ -1,7 +1,7 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { INVOICE_THEME_PRESET_IDS } from "@/lib/validators/invoiceTheme";
-import { INVOICE_THEME_DEFAULT_PRESET, INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
+import { INVOICE_THEME_DEFAULT_PRESET, INVOICE_THEME_PRESETS, LEGACY_INVOICE_PRESET_IDS } from "@/lib/invoices/theme";
 import {
   BRAND_KIT_THEME_PRESETS,
   BRAND_KIT_FONT_PAIRS,
@@ -301,7 +301,12 @@ const workspaceSchema = new Schema(
       },
     },
     invoiceTheme: {
-      preset: { type: String, enum: [...INVOICE_THEME_PRESET_IDS], default: INVOICE_THEME_DEFAULT_PRESET },
+      // Legacy ids stay valid here so hydrated saves of old docs don't fail; writes are gated by the Zod validator.
+      preset: {
+        type: String,
+        enum: [...INVOICE_THEME_PRESET_IDS, ...LEGACY_INVOICE_PRESET_IDS],
+        default: INVOICE_THEME_DEFAULT_PRESET,
+      },
       savedThemeId: { type: String, default: null },
       main: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].main },
       accent: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].accent },

@@ -214,3 +214,19 @@ describe("Workspace.invoiceTheme defaults", () => {
     expect(ws.invoiceTheme?.savedThemeId).toBeNull();
   });
 });
+
+describe("Workspace.invoiceTheme.preset", () => {
+  const base = { slug: "inv-theme", name: "Inv", ownerUserId: "user_inv", country: "PH", currency: "PHP", timezone: "Asia/Manila" };
+
+  it("accepts legacy preset ids so hydrated old docs still validate", async () => {
+    for (const preset of ["classic", "slate", "navyGold", "forest"]) {
+      const ws = new Workspace({ ...base, invoiceTheme: { preset } });
+      expect(ws.validateSync()?.errors["invoiceTheme.preset"]).toBeUndefined();
+    }
+  });
+
+  it("still rejects an unknown preset id", () => {
+    const ws = new Workspace({ ...base, invoiceTheme: { preset: "bogus" } });
+    expect(ws.validateSync()?.errors["invoiceTheme.preset"]).toBeDefined();
+  });
+});

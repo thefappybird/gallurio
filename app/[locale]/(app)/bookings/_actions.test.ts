@@ -94,6 +94,7 @@ describe("updateInvoiceThemeAction", () => {
   const wsWithThemes = {
     _id: "ws1",
     publicPage: {
+      publishedAt: new Date("2026-01-01"),
       brandKit: { ...savedKit, primaryColor: "#ece5d8", foregroundColor: "#1f1c16", backgroundColor: "#fcfaf6" },
       savedThemes: [{ id: "s1", name: "Mine", brandKit: savedKit }],
     },
@@ -141,6 +142,17 @@ describe("updateInvoiceThemeAction", () => {
         },
       }
     );
+  });
+
+  it("rejects the portfolio preset while the portfolio is unpublished (no draft kit leak)", async () => {
+    requireOrgMock.mockResolvedValue({
+      role: "owner",
+      workspace: { ...wsWithThemes, publicPage: { ...wsWithThemes.publicPage, publishedAt: null } },
+    });
+    const { updateInvoiceThemeAction } = await import("./_actions");
+    const result = await updateInvoiceThemeAction({ preset: "portfolio", main: "#000000", accent: "#000000" });
+    expect(result).toEqual({ error: "invalid_data" });
+    expect(updateOneMock).not.toHaveBeenCalled();
   });
 
   it("rejects a malformed hex color", async () => {

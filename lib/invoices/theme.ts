@@ -12,11 +12,19 @@ function toLinear(channel: number): number {
   return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+const validHex = (v: unknown): v is string => typeof v === "string" && HEX6.test(v);
+
+/** "#rrggbb" -> [r, g, b], or null when not a valid 6-digit hex. */
+export function hexToRgb(hex: string): [number, number, number] | null {
+  if (!validHex(hex)) return null;
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+
 function luminance(hex: string): number {
-  const h = hex.replace("#", "");
-  const r = toLinear(parseInt(h.slice(0, 2), 16));
-  const g = toLinear(parseInt(h.slice(2, 4), 16));
-  const b = toLinear(parseInt(h.slice(4, 6), 16));
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = rgb.map(toLinear);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
@@ -84,8 +92,7 @@ const LEGACY_PALETTES: Record<string, { main: string; accent: string }> = {
   forest: { main: "#1F3D2B", accent: "#E8E2D0" },
 };
 
-const HEX6 = /^#[0-9a-fA-F]{6}$/;
-const validHex = (v: unknown): v is string => typeof v === "string" && HEX6.test(v);
+export const LEGACY_INVOICE_PRESET_IDS = Object.keys(LEGACY_PALETTES) as ["classic", "slate", "navyGold", "forest"];
 
 /**
  * Normalizes a stored theme on read. Current presets pass through; legacy ids
@@ -109,11 +116,19 @@ export function normalizeInvoiceTheme(theme: InvoiceTheme): InvoiceTheme {
   };
 }
 
+/** Theme for a workspace with no stored invoiceTheme (pre-feature): keeps the original classic dark look. */
+export const LEGACY_DEFAULT_INVOICE_THEME: InvoiceTheme = {
+  preset: "custom",
+  savedThemeId: null,
+  ...LEGACY_PALETTES.classic,
+  text: readableTextOn(LEGACY_PALETTES.classic.main),
+};
+
 export function resolveInvoiceTheme(
   rawTheme: InvoiceTheme | null | undefined,
   brandKit?: BrandKitColors | null
 ): InvoiceColors {
-  const theme = rawTheme ? normalizeInvoiceTheme(rawTheme) : rawTheme;
+  const theme = normalizeInvoiceTheme(rawTheme ?? LEGACY_DEFAULT_INVOICE_THEME);
   if (theme?.preset === "portfolio" && brandKit) return invoiceColorsFromBrandKit(brandKit);
   // "portfolio" with no (published) kit degrades to its stored snapshot.
   if (theme && (theme.preset === "saved" || theme.preset === "custom" || theme.preset === "portfolio")) {

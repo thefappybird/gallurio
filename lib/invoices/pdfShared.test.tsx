@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { View, Image } from "@react-pdf/renderer";
-import { DocumentFooter, DocumentHeader, buildInvoiceStyles } from "./pdfShared";
+import { DocumentFooter, DocumentHeader, buildInvoiceStyles, hexToRgba } from "./pdfShared";
 
 function collectElements(node: unknown, out: Array<{ type: unknown; props: Record<string, unknown> }> = []) {
   if (node == null || typeof node === "boolean") return out;
@@ -67,5 +67,19 @@ describe("DocumentHeader", () => {
     expect(styles.footerLeft).toMatchObject({ flexGrow: 1, flexBasis: 0, flexShrink: 1 });
     expect(styles.headerRight).toMatchObject({ flexShrink: 0 });
     expect(footerRight).toBeDefined();
+  });
+});
+
+describe("hexToRgba", () => {
+  it("converts a valid hex", () => {
+    expect(hexToRgba("#112233", 0.75)).toBe("rgba(17,34,51,0.75)");
+  });
+
+  it("returns an invalid color unchanged, never NaN", () => {
+    for (const bad of ["", "red", "#12"]) {
+      const out = hexToRgba(bad, 0.75);
+      expect(out).toBe(bad);
+      expect(out).not.toContain("NaN");
+    }
   });
 });
