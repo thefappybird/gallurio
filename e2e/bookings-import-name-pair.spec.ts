@@ -16,21 +16,16 @@ test("import: name pair beside Event Name, preview times follow the source cell"
   await page.goto("/bookings");
   await page.getByRole("button", { name: "Import", exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles(CSV);
-  await expect(page.getByText("Match your columns to ours")).toBeVisible();
-
+  // Every column maps on its own (First + Last paired, Event Name as title), so
+  // the sheet skips straight to the preview.
   const sheet = page.locator(SHEET);
-  await expect(sheet.getByText("First row: Ana Cruz")).toBeVisible();
-  await expect(sheet.getByText("First row: Garden Wedding")).toBeVisible();
-  await page.screenshot({ path: path.join(SHOTS, "map-1280.png") });
-
-  await page.getByRole("button", { name: "Continue" }).click();
-  if (await page.getByText("Match your values to ours").isVisible().catch(() => false)) {
-    await page.getByRole("button", { name: "Continue" }).click();
-  }
+  await expect(sheet.getByText("Columns matched automatically")).toBeVisible();
   await expect(sheet.locator("table")).toBeVisible();
+  const row = (client: string) => sheet.locator("table tbody tr", { hasText: client });
+  await expect(row("Ana Cruz")).toContainText("Garden Wedding");
 
-  const startCell = (client: string) =>
-    sheet.locator("table tbody tr", { hasText: client }).locator("td").nth(3);
+  // Columns: #, status, title, client, start.
+  const startCell = (client: string) => row(client).locator("td").nth(4);
   const dateOnly = (await startCell("Ana Cruz").innerText()).trim();
   const noon = (await startCell("Ben Reyes").innerText()).trim();
   const evening = (await startCell("Cara Lim").innerText()).trim();
