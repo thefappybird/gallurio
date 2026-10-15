@@ -71,23 +71,49 @@ export function publishedBrandKit<K extends BrandKitColors>(
   return publicPage?.publishedAt && publicPage.brandKit ? publicPage.brandKit : null;
 }
 
-/** Maps unknown or legacy preset ids (classic/slate/navyGold/forest) to the default preset. */
-export function normalizeInvoicePreset(preset: string): InvoiceTheme["preset"] {
-  if (preset === "portfolio" || preset === "saved" || preset === "custom") return preset;
-  return (BRAND_KIT_THEME_PRESETS as readonly string[]).includes(preset)
-    ? (preset as InvoiceThemePresetId)
-    : INVOICE_THEME_DEFAULT_PRESET;
-}
-
 /** Plain-white vs near-black text, whichever reads better on `main` (for stored colors lacking `text`). */
 export function readableTextOn(main: string): string {
   return betterText(main, ["#FFFFFF", "#111111"]);
 }
 
+/** Palettes of the retired preset ids, used when a stored legacy theme has no valid colors. */
+const LEGACY_PALETTES: Record<string, { main: string; accent: string }> = {
+  classic: { main: "#1A1A1A", accent: "#FFFFFF" },
+  slate: { main: "#1E293B", accent: "#0EA5A4" },
+  navyGold: { main: "#0F1B33", accent: "#C9A24B" },
+  forest: { main: "#1F3D2B", accent: "#E8E2D0" },
+};
+
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+const validHex = (v: unknown): v is string => typeof v === "string" && HEX6.test(v);
+
+/**
+ * Normalizes a stored theme on read. Current presets pass through; legacy ids
+ * (classic/slate/navyGold/forest) become a `custom` theme keeping their colors;
+ * any other unknown id falls back to the default preset.
+ */
+export function normalizeInvoiceTheme(theme: InvoiceTheme): InvoiceTheme {
+  const id = theme.preset as string;
+  if (id === "portfolio" || id === "saved" || id === "custom") return theme;
+  if ((BRAND_KIT_THEME_PRESETS as readonly string[]).includes(id)) return theme;
+  const legacy = Object.hasOwn(LEGACY_PALETTES, id) ? LEGACY_PALETTES[id] : null;
+  if (!legacy) return { preset: INVOICE_THEME_DEFAULT_PRESET, ...INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET] };
+  const main = validHex(theme.main) ? theme.main : legacy.main;
+  const accent = validHex(theme.accent) ? theme.accent : legacy.accent;
+  return {
+    preset: "custom",
+    savedThemeId: null,
+    main,
+    accent,
+    text: validHex(theme.text) ? theme.text : readableTextOn(main),
+  };
+}
+
 export function resolveInvoiceTheme(
-  theme: InvoiceTheme | null | undefined,
+  rawTheme: InvoiceTheme | null | undefined,
   brandKit?: BrandKitColors | null
 ): InvoiceColors {
+  const theme = rawTheme ? normalizeInvoiceTheme(rawTheme) : rawTheme;
   if (theme?.preset === "portfolio" && brandKit) return invoiceColorsFromBrandKit(brandKit);
   // "portfolio" with no (published) kit degrades to its stored snapshot.
   if (theme && (theme.preset === "saved" || theme.preset === "custom" || theme.preset === "portfolio")) {

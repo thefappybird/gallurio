@@ -388,6 +388,6 @@ describe("applyMapping leniency", () => {
       titleFallback: (v) => `${v.clientName} booking`,
     });
     expect(row.values.title).toBe("Jane booking");
-    expect(row.notes).toContainEqual({ field: "title", value: "", reason: "title_generated" });
+    expect(row.notes.filter((n) => n.field === "title")).toEqual([]);
   });
 });

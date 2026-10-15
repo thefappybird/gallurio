@@ -310,7 +310,7 @@ export type MappedRowIssue = {
 };
 
 /** Why a cell was dropped, blanked or adjusted without failing its row. */
-export type NoteReason = "amount_dropped" | "currency_dropped" | "end_date_dropped" | "email_dropped" | "event_type_blank" | "status_inferred" | "truncated" | "title_generated" | "phone_dropped" | "deposit_dropped";
+export type NoteReason = "amount_dropped" | "currency_dropped" | "end_date_dropped" | "email_dropped" | "event_type_blank" | "status_inferred" | "truncated" | "phone_dropped" | "deposit_dropped";
 
 /** A non-blocking adjustment the preview can surface next to the row. */
 export type MappedRowNote = { field: string; value: string; reason: NoteReason };
@@ -473,9 +473,7 @@ export function applyMapping(
     if (unknownStatus) notes.push({ field: "status", value: unknownStatus, reason: "status_inferred" });
 
     if (!values.title && opts.titleFallback) {
-      values.title = opts.titleFallback(values).slice(0, TEXT_MAX.title);
-      notes.push({ field: "title", value: "", reason: "title_generated" });
-    }
+      values.title = opts.titleFallback(values).slice(0, TEXT_MAX.title);    }
 
     return { values, issues, notes };
   });

@@ -6,7 +6,7 @@ import {
   contrastRatio,
   INVOICE_THEME_DEFAULT_PRESET,
   invoiceColorsFromBrandKit,
-  normalizeInvoicePreset,
+  normalizeInvoiceTheme,
   publishedBrandKit,
   resolveInvoiceTheme,
 } from "./theme";
@@ -19,9 +19,9 @@ describe("resolveInvoiceTheme", () => {
     expect(resolveInvoiceTheme(null)).toEqual(MINIMAL);
   });
 
-  it("falls back to minimal for a legacy preset id", () => {
+  it("keeps a legacy preset's stored colors (as custom) instead of falling back", () => {
     const legacy = { preset: "classic", main: "#1A1A1A", accent: "#FFFFFF" } as never;
-    expect(resolveInvoiceTheme(legacy)).toEqual(MINIMAL);
+    expect(resolveInvoiceTheme(legacy)).toEqual({ main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" });
   });
 
   it("resolves every portfolio preset from its definition", () => {
@@ -70,15 +70,44 @@ describe("publishedBrandKit", () => {
   });
 });
 
-describe("normalizeInvoicePreset", () => {
-  it("maps legacy and unknown ids to the default, keeps valid ones", () => {
-    for (const legacy of ["classic", "slate", "navyGold", "forest", "nope"]) {
-      expect(normalizeInvoicePreset(legacy)).toBe(INVOICE_THEME_DEFAULT_PRESET);
+describe("normalizeInvoiceTheme", () => {
+  it("turns a legacy theme into custom keeping stored colors", () => {
+    const legacy = { preset: "slate", main: "#123456", accent: "#abcdef" } as never;
+    expect(normalizeInvoiceTheme(legacy)).toEqual({
+      preset: "custom",
+      savedThemeId: null,
+      main: "#123456",
+      accent: "#abcdef",
+      text: "#FFFFFF",
+    });
+  });
+
+  it("uses the legacy palette when stored colors are not valid hex", () => {
+    const legacy = { preset: "navyGold", main: "bad", accent: "" } as never;
+    expect(normalizeInvoiceTheme(legacy)).toEqual({
+      preset: "custom",
+      savedThemeId: null,
+      main: "#0F1B33",
+      accent: "#C9A24B",
+      text: "#FFFFFF",
+    });
+  });
+
+  it("keeps a valid stored text color on a legacy theme", () => {
+    const legacy = { preset: "forest", main: "#1F3D2B", accent: "#E8E2D0", text: "#fafafa" } as never;
+    expect(normalizeInvoiceTheme(legacy).text).toBe("#fafafa");
+  });
+
+  it("falls back to minimal for an unknown id", () => {
+    const t = { preset: "nope", main: "#123456", accent: "#abcdef" } as never;
+    expect(normalizeInvoiceTheme(t)).toEqual({ preset: INVOICE_THEME_DEFAULT_PRESET, ...MINIMAL });
+  });
+
+  it("returns current presets unchanged", () => {
+    for (const preset of ["bold", "portfolio", "saved", "custom"] as const) {
+      const t = { preset, main: "#123456", accent: "#abcdef" };
+      expect(normalizeInvoiceTheme(t)).toBe(t);
     }
-    expect(normalizeInvoicePreset("bold")).toBe("bold");
-    expect(normalizeInvoicePreset("portfolio")).toBe("portfolio");
-    expect(normalizeInvoicePreset("saved")).toBe("saved");
-    expect(normalizeInvoicePreset("custom")).toBe("custom");
   });
 });
 

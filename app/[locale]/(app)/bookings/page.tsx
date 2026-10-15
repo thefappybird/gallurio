@@ -45,7 +45,7 @@ import {
   INVOICE_THEME_DEFAULT_PRESET,
   INVOICE_THEME_PRESETS,
   invoiceColorsFromBrandKit,
-  normalizeInvoicePreset,
+  normalizeInvoiceTheme,
   publishedBrandKit,
 } from "@/lib/invoices/theme";
 
@@ -298,7 +298,7 @@ async function BookingsContent({
   // `invoiceTheme` existed have no key at all (not the schema default) — fall
   // back to the minimal preset so the toolbar always has a value to seed.
   const invoiceTheme = workspace.invoiceTheme
-    ? { ...workspace.invoiceTheme, preset: normalizeInvoicePreset(workspace.invoiceTheme.preset) }
+    ? normalizeInvoiceTheme(workspace.invoiceTheme)
     : {
         preset: INVOICE_THEME_DEFAULT_PRESET,
         ...INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET],
