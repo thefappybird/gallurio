@@ -52,6 +52,14 @@ function ErrorRow({ entry, tone }: { entry: ImportErrorEntry; tone: "error" | "n
     lookup: t("kindLookup"),
     server: t("kindServer"),
   };
+  const message =
+    entry.message === "booking_not_found_in_workspace"
+      ? t("bookingNotFound")
+      : entry.message === "client_not_found_in_workspace"
+        ? t("clientNotFound")
+        : entry.message === "completed_booking_not_paid"
+          ? t("completedNotPaid")
+          : entry.message;
 
   return (
     <div className="border-b border-border last:border-0">
@@ -93,7 +101,7 @@ function ErrorRow({ entry, tone }: { entry: ImportErrorEntry; tone: "error" | "n
             tone === "error" ? "text-destructive" : "whitespace-pre-line text-foreground"
           )}
         >
-          {entry.message}
+          {message}
         </p>
 
         <button

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Standalone Node CommonJS QA utility. */
 // Generates import QA fixtures. Usage: node gen-import-qa.js <repoRoot> <outDir>
 const fs = require("fs");
 const path = require("path");

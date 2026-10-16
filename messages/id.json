@@ -1082,7 +1082,9 @@
         "success": "Berhasil mengimpor {bookings} %booking% dan {shifts} shift.",
         "partialSuccess": "Mengimpor {count} %booking%. {failed} baris tidak dapat diimpor.",
         "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
+        "missingClientName": "Nama %client% kosong. Tambahkan nama sebelum mengimpor baris ini.",
         "intake": {
+          "oldExcel": "Ini file Excel lama. Simpan sebagai .xlsx lalu coba lagi.",
           "notText": "Ini tampaknya bukan file CSV. Pilih spreadsheet .csv atau .xlsx.",
           "tooLarge": "File ini melebihi batas 2 MB. Pecah menjadi file yang lebih kecil.",
           "tooManyRows": "File ini memiliki {count} baris. Impor maksimal {max} sekaligus — pecah menjadi file yang lebih kecil.",
@@ -1101,6 +1103,9 @@
           "error": "Catatan"
         },
         "results": {
+          "bookingNotFound": "ID %booking% ini tidak cocok dengan %booking% di ruang kerja ini.",
+          "clientNotFound": "ID %client% ini tidak cocok dengan %client% di ruang kerja ini.",
+          "completedNotPaid": "%Booking% yang selesai harus lunas. Deposit dan pembayaran lunas harus sama dengan jumlah total.",
           "title": "Kesalahan impor",
           "kindValidation": "Validasi",
           "kindLookup": "Pencarian",

@@ -287,6 +287,15 @@ export function ImportSheet({
           };
         }
 
+        if (!raw.clientName?.trim()) {
+          return {
+            ...base,
+            valid: false,
+            error: t("missingClientName"),
+            errorField: "clientName",
+          };
+        }
+
         const result = bookingImportRowSchema.safeParse({
           ...raw,
           amountTotal: raw.amountTotal || undefined,
@@ -555,7 +564,7 @@ export function ImportSheet({
       const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
       const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
       if (!isXlsx && !isCsv) {
-        setParseError(t("parseError"));
+        setParseError(file.name.toLowerCase().endsWith(".xls") ? t("intake.oldExcel") : t("parseError"));
         return;
       }
       if (file.size > MAX_IMPORT_BYTES) {
@@ -1187,7 +1196,30 @@ function PreviewStep({
         <span className="ms-auto text-xs text-muted-foreground">{fileName}</span>
       </div>
 
-      <div className="overflow-auto border border-border">
+      <div className="border border-border sm:hidden">
+        {rows.slice(0, PREVIEW_ROW_CAP).map((row) => {
+          const bad = invalidIndexes.has(row.index);
+          const noted = !bad && row.notes.length > 0;
+          return (
+            <div key={row.index} className={cn("min-w-0 border-b border-border px-3 py-2 last:border-0", bad && "bg-destructive/5")}>
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="shrink-0 tabular-nums text-muted-foreground">{row.index + 1}</span>
+                {bad ? <XCircleIcon className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : noted ? <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" /> : <CheckCircleIcon className="mt-0.5 size-3.5 shrink-0 text-foreground" />}
+                <div className="min-w-0 flex-1">
+                  <p className="break-words font-medium">{row.title || "—"}</p>
+                  <p className="break-words text-muted-foreground">{row.clientName || "—"}</p>
+                  {bad || noted ? <div className={cn("mt-1 break-words", bad ? "text-destructive" : "text-muted-foreground")}>{reason(row, bad, noted)}</div> : null}
+                </div>
+              </div>
+              <p className="mt-1 whitespace-nowrap ps-9 tabular-nums text-muted-foreground">
+                {labels.col("start")}: {row.startAt ? formatStart(row.startAt, row.startSource) : "—"}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-auto border border-border sm:block">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-muted text-muted-foreground">
             <tr>

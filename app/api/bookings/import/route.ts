@@ -13,6 +13,7 @@ import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-vali
 import {
   groupImportRows,
   MAX_SESSIONS_PER_BOOKING,
+  type ImportGroup,
 } from "@/lib/bookings/import-grouping";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { parseCsv, stripFormulaGuard, decodeCsvBytes, isProbablyText } from "@/lib/utils/csv-parse";
@@ -299,7 +300,7 @@ export async function POST(req: Request) {
   // already exists elsewhere and on which team.
   if (!json.confirmDuplicates) {
     const duplicates: DuplicateWarning[] = [];
-
+    const candidates: { index: number; title: string; startAt: Date }[] = [];
     for (const group of groups) {
       const first = group.rows[0] as Record<string, unknown>;
       const title = typeof first.title === "string" ? first.title.trim() : "";
@@ -309,24 +310,29 @@ export async function POST(req: Request) {
       // An explicit booking_id is an update, which is never a duplicate.
       if (group.bookingId && /^[a-f0-9]{24}$/i.test(group.bookingId)) continue;
 
-      const match = await Booking.findOne({
+      candidates.push({ index: group.rowNumbers[0] - 1, title, startAt });
+    }
+    const matches = candidates.length
+      ? await Booking.find({
         workspaceId: ctx.workspace._id,
-        firstSessionStart: startAt,
-        title,
+        $or: candidates.map(({ title, startAt }) => ({ firstSessionStart: startAt, title })),
       })
-        .select({ _id: 1, teamId: 1 })
-        .lean();
+        .select({ _id: 1, teamId: 1, title: 1, firstSessionStart: 1 })
+        .lean()
+      : [];
+    const matchByKey = new Map(matches.map((match) => [`${match.title}\0${match.firstSessionStart?.toISOString()}`, match]));
+    const teamIds = [...new Set(matches.map((match) => match.teamId?.toString()).filter((id): id is string => Boolean(id)))];
+    const teams = teamIds.length
+      ? await Team.find({ _id: { $in: teamIds }, workspaceId: ctx.workspace._id }).select({ name: 1 }).lean()
+      : [];
+    const teamNameById = new Map(teams.map((team) => [team._id.toString(), team.name]));
+    for (const candidate of candidates) {
+      const match = matchByKey.get(`${candidate.title}\0${candidate.startAt.toISOString()}`);
       if (!match) continue;
-
-      const team = match.teamId
-        ? await Team.findOne({ _id: match.teamId, workspaceId: ctx.workspace._id })
-            .select({ name: 1 })
-            .lean()
-        : null;
       duplicates.push({
-        index: group.rowNumbers[0] - 1,
-        title,
-        teamName: team?.name ?? null,
+        index: candidate.index,
+        title: candidate.title,
+        teamName: match.teamId ? teamNameById.get(match.teamId.toString()) ?? null : null,
       });
     }
 
@@ -335,7 +341,7 @@ export async function POST(req: Request) {
     }
   }
 
-  for (const group of groups) {
+  const processGroup = async (group: ImportGroup) => {
     // Errors are reported against the group's first source row.
     const i = group.rowNumbers[0] - 1;
     const raw: Record<string, unknown> = group.rows[0] as Record<string, unknown>;
@@ -349,7 +355,7 @@ export async function POST(req: Request) {
         message: `A booking cannot have more than ${MAX_SESSIONS_PER_BOOKING} sessions.`,
       });
       skippedRows += group.rows.length;
-      continue;
+      return;
     }
 
     // Export-only columns (payments, invoiceNumber, teamName, createdAt) ride
@@ -379,7 +385,7 @@ export async function POST(req: Request) {
     if (rowError) {
       errors.push(rowError);
       skippedRows += group.rows.length;
-      continue;
+      return;
     }
 
     // Booking-level fields come from the group's first row; later rows in a
@@ -423,7 +429,7 @@ export async function POST(req: Request) {
           message: "booking_not_found_in_workspace",
         });
         skippedRows += group.rows.length;
-        continue;
+        return;
       }
     }
 
@@ -447,7 +453,7 @@ export async function POST(req: Request) {
         message: "Session must start and end on the same day in the workspace timezone.",
       });
       skippedRows += group.rows.length;
-      continue;
+      return;
     }
 
     const firstSessionStart = new Date(
@@ -476,11 +482,10 @@ export async function POST(req: Request) {
         row: raw,
         field: "status",
         kind: "validation",
-        message:
-          "A completed booking must be fully paid: the deposit plus all paid payments has to equal the total.",
+        message: "completed_booking_not_paid",
       });
       skippedRows += group.rows.length;
-      continue;
+      return;
     }
 
     // ── update path ────────────────────────────────────────────────────────
@@ -506,7 +511,7 @@ export async function POST(req: Request) {
             "Amounts cannot be changed by import because they are linked to the payment ledger. Edit them on the booking instead.",
         });
         skippedRows += group.rows.length;
-        continue;
+        return;
       }
 
       const updateSession = await mongoose.startSession();
@@ -566,7 +571,7 @@ export async function POST(req: Request) {
       } finally {
         await updateSession.endSession();
       }
-      continue;
+      return;
     }
 
     const session = await mongoose.startSession();
@@ -773,7 +778,30 @@ export async function POST(req: Request) {
     } finally {
       await session.endSession();
     }
+  };
+
+  // A transaction changes its client's journal and summary. Run independent
+  // clients together, while keeping groups for the same client in order so
+  // email deduplication and client totals remain correct.
+  const MAX_CONCURRENT_GROUPS = 8;
+  let batch: ImportGroup[] = [];
+  const clientKeys = new Set<string>();
+  const flush = async () => {
+    await Promise.all(batch.map(processGroup));
+    batch = [];
+    clientKeys.clear();
+  };
+  for (const group of groups) {
+    const first = group.rows[0];
+    const clientId = typeof first.clientId === "string" ? first.clientId.trim() : "";
+    const email = typeof first.clientEmail === "string" ? first.clientEmail.trim().toLowerCase() : "";
+    const keys = [clientId ? `id:${clientId}` : "", email ? `email:${email}` : ""].filter(Boolean);
+    if (batch.length >= MAX_CONCURRENT_GROUPS || keys.some((key) => clientKeys.has(key))) await flush();
+    batch.push(group);
+    for (const key of keys) clientKeys.add(key);
   }
+  if (batch.length) await flush();
+  errors.sort((a, b) => a.index - b.index);
 
   if (created.length + updated.length > 0) {
     emitDataChanged(ctx.workspace._id.toString(), { type: "bookings.imported" });

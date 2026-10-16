@@ -1,6 +1,6 @@
 # Bookings import: manual test guide
 
-Branch: `fix/import-bookings-feature` (pushed, head `39eaf1eb`).
+Branch: `fix/import-bookings-feature` (QA baseline `04867504`; fixes in this working tree).
 Test files: `qa/bookings-import/files/`. This folder is committed for manual testing only; remove it before the PR merges.
 
 All test data is tagged: titles start with `QA-IMP` and client names start with `QA `. That way cleanup only removes test rows (see the end of this guide).
@@ -29,15 +29,15 @@ All test data is tagged: titles start with `QA-IMP` and client names start with 
 ## 2. Mixed good and bad rows
 
 `13-bad-values.csv` has 15 data rows, each one a different problem. In my run, 11 imported and the rest were skipped with a reason. Check that:
-- Every skipped row has a reason you can understand. Known weak spot: the empty-client row only says "Required".
+- Every skipped row has a reason you can understand. The empty-client row now names the missing client name.
 - `TBD` as a date is flagged, not imported as "today".
-- End before start is flagged. The 22:00 → 02:00 row is accepted as crossing midnight.
+- End before start is flagged. The 22:00 → 02:00 row currently skips because booking sessions must stay within one workspace day; see the findings report for the expectation mismatch.
 - Deposit greater than total, a negative total, currency `XYZ`, status `Maybe?` and email `bad@` are each either flagged or handled sensibly.
 - The 160-character title with an emoji at the end is trimmed cleanly (no broken `�` character).
 - The `=HYPERLINK(...)` title and `@SUM` note import as plain text. If you export bookings afterwards and open the file in Excel, nothing should run as a formula.
 - The note with a line break keeps its line break. The 3,000-character note doesn't stretch the table.
 - The rows with extra columns and with too few columns don't shift values into the wrong columns.
-- At **375px**: each row's reason shows under its title, and the Notes column is hidden. Known issue: the Start column is still slightly clipped, so the table scrolls sideways.
+- At **375px**: rows use compact cards, with the reason under the title and the start date on its own line. The sheet should have no sideways overflow.
 
 ## 3. Files that should be refused, each with a clear message
 
@@ -50,7 +50,7 @@ All test data is tagged: titles start with `QA-IMP` and client names start with 
 | `15-rows-600.xlsx` | The same 600-row message. |
 | `16-big-3mb.xlsx` | "This file is larger than the 2 MB limit. Split it into smaller files." |
 | `17-big-8mb.csv` | The same 2 MB message, shown right away. The tab should not freeze. |
-| `09-old-excel.xls` | The generic "Could not read this file…". Known gap: it should say "save as .xlsx". |
+| `09-old-excel.xls` | "This is an older Excel file. Save it as .xlsx and try again." |
 | `10-corrupt.xlsx` | The generic "Could not read this file…". |
 
 After each refusal, check that you can choose another file without closing the sheet.
@@ -61,13 +61,13 @@ After each refusal, check that you can choose another file without closing the s
 - The row with an unknown `booking_id` fails.
 - The "completed" row that isn't fully paid fails.
 
-**Known issue:** the results dialog currently shows the raw code `booking_not_found_in_workspace`. It also shows the English message "A completed booking must be fully paid…", which says "booking" instead of your workspace's term (e.g. "appointment") and isn't translated. A fix is queued.
+The results dialog should show localized explanations for an unknown booking ID and an unpaid completed booking, using the workspace's booking term.
 
 ## 5. Large file and performance
 
 `18-rows-500.csv` has exactly 500 rows, the maximum allowed.
 - The preview should appear within a few seconds.
-- **Known issue:** the commit takes about 1 second per row, so roughly 8 minutes for all 500. Only start it if you want to watch the progress and confirm the sheet stays usable. The speed fix is queued as the next task.
+- The 500-row commit took about 94 seconds in the October 2026 development QA run after bounded parallel writes. It remains a long wait; measure it again against the target deployment before release.
 - In the Network tab, an import should make one `POST` commit request and then **a single** `GET /bookings` refresh, not a burst of requests.
 - Previews have their own rate limit (30 per 5 minutes) and commits have theirs (10 per 5 minutes). If you hit one, the message should say how many seconds to wait.
 
@@ -88,7 +88,7 @@ Run this from the repo root after testing:
 node qa/bookings-import/cleanup-import-qa.js . --show     # list what would be deleted
 node qa/bookings-import/cleanup-import-qa.js . --apply    # delete it
 ```
-It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs and imported clients. It refuses to run if a matched booking points at a non-test client.
+It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs and imported clients. The four encoding-fixture names are allowed only when their clients came from import. It refuses to run if a matched booking points at another client or a client is also linked to a non-QA booking.
 
 To regenerate fresh files (new unique emails), run:
 `node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. You don't need to; the files that are there now are fresh, and the dev DB currently has 0 QA rows.

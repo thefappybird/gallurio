@@ -1082,7 +1082,9 @@
         "success": "تم استيراد {bookings} %booking% و{shifts} وردية بنجاح.",
         "partialSuccess": "تم استيراد {count} %booking%. تعذّر استيراد {failed} صف.",
         "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
+        "missingClientName": "اسم ال%client% مفقود. أضف اسمًا قبل استيراد هذا الصف.",
         "intake": {
+          "oldExcel": "هذا ملف Excel قديم. احفظه بصيغة .xlsx ثم حاول مرة أخرى.",
           "notText": "لا يبدو أن هذا ملف CSV. اختر جدولًا بامتداد .csv أو .xlsx.",
           "tooLarge": "هذا الملف أكبر من حد 2 ميجابايت. قسّمه إلى ملفات أصغر.",
           "tooManyRows": "يحتوي هذا الملف على {count} صفًا. استورد حتى {max} في المرة الواحدة — قسّمه إلى ملفات أصغر.",
@@ -1101,6 +1103,9 @@
           "error": "ملاحظات"
         },
         "results": {
+          "bookingNotFound": "معرّف ال%booking% هذا لا يطابق أي %booking% في مساحة العمل هذه.",
+          "clientNotFound": "معرّف ال%client% هذا لا يطابق أي %client% في مساحة العمل هذه.",
+          "completedNotPaid": "يجب سداد قيمة ال%booking% المكتمل بالكامل. يجب أن يساوي العربون والمدفوعات المسددة المبلغ الإجمالي.",
           "title": "أخطاء الاستيراد",
           "kindValidation": "تحقّق",
           "kindLookup": "بحث",

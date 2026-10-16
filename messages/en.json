@@ -1082,7 +1082,9 @@
         "success": "{bookings, plural, one {# %booking%} other {# %bookings%}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} %booking%(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
+        "missingClientName": "Client name is missing. Add a name before importing this row.",
         "intake": {
+          "oldExcel": "This is an older Excel file. Save it as .xlsx and try again.",
           "notText": "This doesn't look like a CSV file. Choose a .csv or .xlsx spreadsheet.",
           "tooLarge": "This file is larger than the 2 MB limit. Split it into smaller files.",
           "tooManyRows": "This file has {count} rows. Import up to {max} at a time — split it into smaller files.",
@@ -1101,6 +1103,9 @@
           "error": "Notes"
         },
         "results": {
+          "bookingNotFound": "This booking ID does not match a booking in this workspace.",
+          "clientNotFound": "This client ID does not match a client in this workspace.",
+          "completedNotPaid": "A completed %booking% must be fully paid. The deposit and paid payments must equal the total.",
           "title": "Import errors",
           "kindValidation": "Validation",
           "kindLookup": "Lookup",

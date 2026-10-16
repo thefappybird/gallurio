@@ -67,6 +67,16 @@ describe("ImportResultsDialog", () => {
     expect(screen.getByText("Database write failed")).toBeDefined();
   });
 
+  it("translates known import failures before showing them", () => {
+    renderDialog(true, [
+      { ...VALIDATION_ERROR, kind: "lookup", message: "booking_not_found_in_workspace" },
+      { ...SERVER_ERROR, kind: "validation", message: "completed_booking_not_paid" },
+    ]);
+    expect(screen.getByText(/does not match a booking in this workspace/i)).toBeInTheDocument();
+    expect(screen.getByText(/must be fully paid/i)).toBeInTheDocument();
+    expect(screen.queryByText("booking_not_found_in_workspace")).not.toBeInTheDocument();
+  });
+
   it("heads each error with the booking title and client", () => {
     // A line number alone identifies nothing in a 500-row file.
     renderDialog(true);

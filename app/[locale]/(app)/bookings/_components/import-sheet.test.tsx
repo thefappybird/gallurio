@@ -107,6 +107,26 @@ describe("ImportSheet", () => {
     expect(screen.getByText("Import bookings")).toBeInTheDocument();
   });
 
+  it("explains the missing client name on the review row", async () => {
+    const csv = "title,clientName,startAt\nQA row,,2031-11-01 10:00";
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog();
+      await uploadCsv(csv);
+      expect(screen.getAllByText(/Client name is missing/i).length).toBeGreaterThan(0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("explains how to convert an old Excel file", () => {
+    renderDialog();
+    fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
+      target: { files: [new File(["old workbook"], "old.xls")] },
+    });
+    expect(screen.getByText(/Save it as \.xlsx/i)).toBeInTheDocument();
+  });
+
   it("renders cancel button", () => {
     renderDialog();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
@@ -177,7 +197,7 @@ describe("ImportSheet", () => {
       await waitFor(() => {
         expect(screen.getByText(/row\(s\) found/i)).toBeInTheDocument();
       });
-      expect(screen.getByText("Garden Wedding")).toBeInTheDocument();
+      expect(screen.getAllByText("Garden Wedding").length).toBeGreaterThan(0);
 
       const [, init] = fetchSpy.mock.calls[0];
       expect((init as RequestInit).body).toBeInstanceOf(FormData);
@@ -329,7 +349,7 @@ describe("ImportSheet", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("=SUM(1) Wedding")).toBeInTheDocument();
+        expect(screen.getAllByText("=SUM(1) Wedding").length).toBeGreaterThan(0);
       });
     } finally {
       restore();
@@ -342,7 +362,7 @@ describe("ImportSheet", () => {
     try {
       renderDialog({ workspaceTimezone: "Asia/Manila" });
       await uploadCsv(csv);
-      expect(screen.getByText("Jun 15, 2026")).toBeInTheDocument();
+      expect(screen.getAllByText(/Jun 15, 2026/).length).toBeGreaterThan(0);
     } finally {
       restore();
     }
@@ -354,7 +374,7 @@ describe("ImportSheet", () => {
     try {
       renderDialog({ workspaceTimezone: "Asia/Manila" });
       await uploadCsv(csv);
-      expect(screen.getByText(/Jun 15, 2026,? (at )?9:00\sAM/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Jun 15, 2026,? (at )?9:00\sAM/).length).toBeGreaterThan(0);
     } finally {
       restore();
     }

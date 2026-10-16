@@ -711,7 +711,7 @@ describe("POST /api/bookings/import", () => {
     const body = await res.json();
 
     expect(body.created).toBe(0);
-    expect(body.errors[0].message).toMatch(/paid|payment/i);
+    expect(body.errors[0].message).toBe("completed_booking_not_paid");
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
 
@@ -739,6 +739,42 @@ describe("POST /api/bookings/import", () => {
 
     const bookings = await Booking.find({ workspaceId: WS_ID });
     expect(bookings).toHaveLength(2);
+  });
+
+  it("writes independent client batches while preserving shared-client totals", async () => {
+    const rows = Array.from({ length: 16 }, (_, index) => ({
+      ...VALID_ROW,
+      title: `Batch booking ${index}`,
+      clientName: index === 0 || index === 8 ? "Shared client" : `Client ${index}`,
+      clientEmail: index === 0 || index === 8 ? "shared@example.test" : `client${index}@example.test`,
+    }));
+    const response = await callImport(rows);
+    const body = await response.json();
+    expect(body.created).toBe(16);
+    expect(body.errors).toEqual([]);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(16);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(15);
+    const shared = await Client.findOne({ workspaceId: WS_ID, email: "shared@example.test" }).lean();
+    expect(shared?.bookingsCount).toBe(2);
+    expect(shared?.transactions).toHaveLength(2);
+  });
+
+  it("serializes rows that identify the same client by ID and email", async () => {
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "Existing client",
+      email: "existing@example.test",
+      source: "manual",
+    });
+    const response = await callImport([
+      { ...VALID_ROW, title: "First", clientId: client._id.toString(), clientEmail: "existing@example.test" },
+      { ...VALID_ROW, title: "Second", clientEmail: "existing@example.test" },
+    ]);
+    const body = await response.json();
+    expect(body.created).toBe(2);
+    expect(body.errors).toEqual([]);
+    const stored = await Client.findById(client._id).lean();
+    expect(stored?.bookingsCount).toBe(2);
   });
 
   it("creates booking without client email", async () => {
