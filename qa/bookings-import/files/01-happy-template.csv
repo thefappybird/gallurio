@@ -1,0 +1,6 @@
+title,clientName,clientEmail,clientPhone,startAt,endAt,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes
+QA-IMP Happy 1,QA Happy Client 1,qa-imp-mvbgmmeq-h1@example.test,+639170000001,2031-07-01 14:00,2031-07-01 18:00,wedding,booked,50000,10000,PHP,Tagaytay,Happy path row
+QA-IMP Happy 2,QA Happy Client 2,qa-imp-mvbgmmeq-h2@example.test,+639170000002,2031-07-02 14:00,2031-07-02 18:00,wedding,booked,50000,10000,PHP,Tagaytay,Happy path row
+QA-IMP Happy 3,QA Happy Client 3,qa-imp-mvbgmmeq-h3@example.test,+639170000003,2031-07-03 14:00,2031-07-03 18:00,wedding,booked,50000,10000,PHP,Tagaytay,Happy path row
+QA-IMP Happy 4,QA Happy Client 4,qa-imp-mvbgmmeq-h4@example.test,+639170000004,2031-07-04 14:00,2031-07-04 18:00,wedding,booked,50000,10000,PHP,Tagaytay,Happy path row
+QA-IMP Happy 5,QA Happy Client 5,qa-imp-mvbgmmeq-h5@example.test,+639170000005,2031-07-05 14:00,2031-07-05 18:00,wedding,booked,50000,10000,PHP,Tagaytay,Happy path row
