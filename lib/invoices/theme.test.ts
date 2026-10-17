@@ -54,6 +54,19 @@ describe("resolveInvoiceTheme", () => {
     expect(resolveInvoiceTheme(t, kit)).toEqual({ main: "#123456", accent: "#abcdef", text: "#ffffff" });
   });
 
+  it("saved follows the saved theme's edited colors, not the apply-time snapshot", () => {
+    const t = { preset: "saved", savedThemeId: "s1", main: "#123456", accent: "#abcdef", text: "#ffffff" } as const;
+    const edited = { ...kit, primaryColor: "#102030" };
+    expect(resolveInvoiceTheme(t, null, [{ id: "s1", brandKit: edited }])).toEqual(invoiceColorsFromBrandKit(edited));
+  });
+
+  it("saved falls back to the snapshot when the saved theme was deleted", () => {
+    const t = { preset: "saved", savedThemeId: "gone", main: "#123456", accent: "#abcdef", text: "#ffffff" } as const;
+    expect(resolveInvoiceTheme(t, null, [{ id: "s1", brandKit: kit }])).toEqual({
+      main: "#123456", accent: "#abcdef", text: "#ffffff",
+    });
+  });
+
   it("custom uses its colors and computes text when missing", () => {
     expect(resolveInvoiceTheme({ preset: "custom", main: "#111111", accent: "#222222" })).toEqual({
       main: "#111111",

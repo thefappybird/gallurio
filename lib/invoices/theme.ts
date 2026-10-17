@@ -129,12 +129,22 @@ export const LEGACY_DEFAULT_INVOICE_THEME: InvoiceTheme = {
   text: readableTextOn(LEGACY_PALETTES.classic.main),
 };
 
+/** The workspace's own saved portfolio themes, as stored on publicPage.savedThemes. */
+export type InvoiceSavedThemeSource = { id: string; brandKit?: BrandKitColors | null };
+
 export function resolveInvoiceTheme(
   rawTheme: StoredInvoiceTheme | null | undefined,
-  brandKit?: BrandKitColors | null
+  brandKit?: BrandKitColors | null,
+  savedThemes?: readonly InvoiceSavedThemeSource[] | null
 ): InvoiceColors {
   const theme = normalizeInvoiceTheme(rawTheme ?? LEGACY_DEFAULT_INVOICE_THEME);
   if (theme?.preset === "portfolio" && brandKit) return invoiceColorsFromBrandKit(brandKit);
+  // "saved" follows the saved theme's current colors (same mapping the dialog preview uses);
+  // a deleted theme degrades to the snapshot stored at apply time.
+  if (theme?.preset === "saved" && theme.savedThemeId) {
+    const live = savedThemes?.find((t) => t.id === theme.savedThemeId)?.brandKit;
+    if (live) return invoiceColorsFromBrandKit(live);
+  }
   // "portfolio" with no (published) kit degrades to its stored snapshot.
   if (theme && (theme.preset === "saved" || theme.preset === "custom" || theme.preset === "portfolio")) {
     return { main: theme.main, accent: theme.accent, text: theme.text || readableTextOn(theme.main) };

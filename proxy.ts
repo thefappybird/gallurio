@@ -114,10 +114,6 @@ const UNAUTHENTICATED_PATHS = [
   "/api/health",
   // Scheduled jobs authenticate with Authorization: Bearer CRON_SECRET.
   "/api/cron/(.*)",
-  // The custom server calls the import route's recovery sweep with an
-  // ephemeral bearer token. Every other import operation checks requireOrg()
-  // inside the route handler, so bypassing AuthKit here grants no tenant data.
-  "/api/bookings/import",
   // Public portfolio pages live outside the [locale] segment
   "/w/(.*)",
 ];

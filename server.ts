@@ -91,7 +91,7 @@ app.prepare().then(() => {
 
   const recoverImports = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/api/bookings/import?recover=1`, {
+      const response = await fetch(`http://127.0.0.1:${port}/api/cron/import-recovery`, {
         headers: { authorization: `Bearer ${importRecoveryToken}` },
         signal: AbortSignal.timeout(30_000),
       })

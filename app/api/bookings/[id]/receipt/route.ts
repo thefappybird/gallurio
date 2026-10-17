@@ -61,7 +61,11 @@ export async function GET(_req: Request, { params }: Params) {
       logoUrl: workspace.logoUrl ?? "",
       address: workspace.contact?.address ?? "",
       email: workspace.contact?.email ?? "",
-      theme: resolveInvoiceTheme(workspace.invoiceTheme, publishedBrandKit(workspace.publicPage)),
+      theme: resolveInvoiceTheme(
+        workspace.invoiceTheme,
+        publishedBrandKit(workspace.publicPage),
+        workspace.publicPage?.savedThemes,
+      ),
     },
     client: {
       name: client?.name ?? booking.clientName,

@@ -239,10 +239,14 @@ describe("background booking import jobs", () => {
     const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
     process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
     try {
-      const { GET } = await import("./route");
-      const denied = await GET(new Request("http://localhost/api/bookings/import?recover=1"));
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      const denied = await GET(new Request("http://localhost/api/cron/import-recovery"));
       expect(denied.status).toBe(401);
-      const recovered = await GET(new Request("http://localhost/api/bookings/import?recover=1", {
+      const wrong = await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer wrong-token" },
+      }));
+      expect(wrong.status).toBe(401);
+      const recovered = await GET(new Request("http://localhost/api/cron/import-recovery", {
         headers: { authorization: "Bearer test-recovery-token" },
       }));
       expect(recovered.status).toBe(200);
@@ -293,8 +297,8 @@ describe("background booking import jobs", () => {
     const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
     process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
     try {
-      const { GET } = await import("./route");
-      const response = await GET(new Request("http://localhost/api/bookings/import?recover=1", {
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      const response = await GET(new Request("http://localhost/api/cron/import-recovery", {
         headers: { authorization: "Bearer test-recovery-token" },
       }));
       expect((await response.json()).notifications).toBe(1);
@@ -327,6 +331,72 @@ describe("background booking import jobs", () => {
     await afterCallbacks.shift()!();
     expect((await (await getJob(jobId)).json()).job.status).toBe("failed");
     expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_failed" }));
+  });
+});
+
+describe("background import: attempts cap and data freshness", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+  const SECOND_ROW = { ...VALID_ROW, title: "Second Event", startAt: "2026-07-15T09:00:00.000Z" };
+
+  async function sweep() {
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      return await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+    } finally {
+      delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    }
+  }
+
+  it("never re-claims an exhausted expired job; the sweep fails and notifies it", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    const run = afterCallbacks.shift()!;
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID },
+      { $set: { status: "running", attempts: 3, leaseUntil: new Date(0) } });
+    await run();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect((await BookingImportJob.findById(jobId).lean())?.attempts).toBe(3);
+
+    const res = await sweep();
+    expect(res.status).toBe(200);
+    const job = await BookingImportJob.findById(jobId).lean();
+    expect(job).toMatchObject({ status: "failed", active: false, lastError: "background_failed", leaseUntil: null });
+    expect(afterCallbacks).toHaveLength(0);
+    expect(progressEmit).toHaveBeenCalledWith("user_test", expect.objectContaining({ jobId, status: "failed" }));
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_failed" }));
+    expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(false);
+  });
+
+  it("emits bookings.imported during a run, throttled to once per window", async () => {
+    // Same client forces two sequential batches; only the first may emit mid-run.
+    const { jobId } = await (await callBackground([VALID_ROW, SECOND_ROW], requestId)).json();
+    await afterCallbacks.shift()!();
+    expect((await BookingImportJob.findById(jobId).lean())?.status).toBe("completed");
+    // 1 mid-run (batch 1) + 1 terminal; batch 2 is inside the 5s window.
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenCalledWith(WS_ID.toString(), { type: "bookings.imported" });
+  });
+
+  it("emits bookings.imported when a job that already wrote then fails", async () => {
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    const original = BookingImportJobItem.find.bind(BookingImportJobItem);
+    const spy = vi.spyOn(BookingImportJobItem, "find").mockImplementation(((filter: Record<string, unknown>) => {
+      if (!("status" in filter)) throw new Error("boom");
+      return original(filter);
+    }) as never);
+    try {
+      await afterCallbacks.shift()!();
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect((await BookingImportJob.findById(jobId).lean())?.status).toBe("queued");
+    // 1 mid-run flush + 1 from the requeue path (no completion emit happened).
+    expect(emit).toHaveBeenCalledTimes(2);
   });
 });
 

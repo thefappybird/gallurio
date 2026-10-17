@@ -86,8 +86,19 @@ describe("proxy", () => {
             "/api/public/(.*)",
             "/api/health",
             "/api/cron/(.*)",
-            "/api/bookings/import",
           ]),
+        }),
+      }),
+    );
+  });
+
+  it("keeps the bookings import API behind AuthKit (its recovery sweep lives under /api/cron)", async () => {
+    await import("./proxy");
+
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.not.arrayContaining(["/api/bookings/import"]),
         }),
       }),
     );
