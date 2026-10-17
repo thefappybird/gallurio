@@ -1132,6 +1132,8 @@
           "duplicateNoTeam": "Hindi alam ang %team%",
           "duplicateContinue": "I-import pa rin",
           "failedRetry": "Nabigo ang import. Subukan muli.",
+          "failedConnection": "Hindi matiyak kung nagsimula ang import. Suriin ang koneksyon at buksan muli ang Import para ipagpatuloy bago subukan muli.",
+          "anotherActive": "May isa pang import na tumatakbo. Ipinapakita ang progreso nito; hindi pa nagsimula ang file na ito.",
           "close": "Isara",
           "cancel": "Kanselahin",
           "viewErrors": "Tingnan ang {n} error(s)"
@@ -1224,7 +1226,9 @@
           "continue": "Magpatuloy",
           "reviewMapping": "Awtomatikong naitugma ang mga column",
           "reviewMappingAction": "Suriin",
-          "committing": "Ini-import ang inyong %bookings%"
+          "committing": "Ini-import ang inyong %bookings%",
+          "progress": "Naproseso ang {done} sa {total}",
+          "background": "Maaari mong isara ang panel na ito. Magpapatuloy ang import."
         }
       },
       "export": {

@@ -1132,6 +1132,8 @@
           "duplicateNoTeam": "%Team% unknown",
           "duplicateContinue": "Import anyway",
           "failedRetry": "Import failed. Please try again.",
+          "failedConnection": "Couldn't confirm whether the import started. Check your connection and reopen Import to resume before trying again.",
+          "anotherActive": "Another import is already running. Showing its progress; this file has not started.",
           "close": "Close",
           "cancel": "Cancel",
           "viewErrors": "View {n} error(s)"
@@ -1224,7 +1226,9 @@
           "continue": "Continue",
           "reviewMapping": "Columns matched automatically",
           "reviewMappingAction": "Review",
-          "committing": "Importing your %bookings%"
+          "committing": "Importing your %bookings%",
+          "progress": "Processed {done} of {total}",
+          "background": "You can close this panel. The import will continue."
         }
       },
       "export": {

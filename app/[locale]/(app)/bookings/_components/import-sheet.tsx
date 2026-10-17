@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useLocale, useTranslations } from "next-intl";
@@ -116,6 +116,7 @@ export function ImportSheet({
     [tField]
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef<string | null>(null);
 
   const [step, setStep] = useState<Step>("upload");
   // Drives which way a step animates in. Purely presentational.
@@ -141,8 +142,12 @@ export function ImportSheet({
   );
   const [teamId, setTeamId] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(null);
 
   const resetImportState = useCallback(() => {
+    sessionStorage.removeItem("gw:booking-import-job");
+    sessionStorage.removeItem("gw:booking-import-request");
     setStep("upload");
     setDirection("forward");
     setHeaders([]);
@@ -160,6 +165,9 @@ export function ImportSheet({
     setShowPreviewNotes(false);
     setTeamId("");
     setDuplicateWarning(null);
+    requestIdRef.current = null;
+    setActiveJobId(null);
+    setJobProgress(null);
   }, [timeZone]);
 
   // ── mapping-derived data ───────────────────────────────────────────────────
@@ -424,6 +432,114 @@ export function ImportSheet({
 
   // ── import ─────────────────────────────────────────────────────────────────
 
+  const activateJob = useCallback((jobId: string) => {
+    sessionStorage.setItem("gw:booking-import-job", jobId);
+    sessionStorage.removeItem("gw:booking-import-request");
+    setActiveJobId(jobId);
+    setJobProgress(null);
+  }, []);
+
+  const applyResult = useCallback((data: ImportResult) => {
+    sessionStorage.removeItem("gw:booking-import-job");
+    sessionStorage.removeItem("gw:booking-import-request");
+    requestIdRef.current = null;
+    setActiveJobId(null);
+    setJobProgress(null);
+    setImportResult(data);
+
+    const written = data.created + data.updated;
+    if (written > 0) {
+      toast.success(t("success", { bookings: written, shifts: data.shifts }));
+      invalidateFor({ type: "bookings.imported" });
+      if (data.errors.length === 0) {
+        resetImportState();
+        onClose();
+      }
+    }
+    if (data.errors.length > 0) {
+      setShowResultsDialog(true);
+      if (written === 0) toast.error(tDialog("failedWithDetails"));
+    }
+  }, [t, tDialog, invalidateFor, resetImportState, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const saved = sessionStorage.getItem("gw:booking-import-job");
+    if (saved) {
+      queueMicrotask(() => {
+        if (!cancelled) setActiveJobId(saved);
+      });
+      return () => { cancelled = true; };
+    }
+    const pendingRequest = sessionStorage.getItem("gw:booking-import-request");
+    if (!pendingRequest) return;
+    void fetch(`/api/bookings/import?requestId=${pendingRequest}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (res.status === 404) {
+          sessionStorage.removeItem("gw:booking-import-request");
+          return;
+        }
+        const body = await res.json();
+        if (!cancelled && res.ok && body?.job?.jobId) activateJob(body.job.jobId);
+      })
+      .catch(() => {
+        // Keep the request ID for the next open when the connection returns.
+      });
+    return () => { cancelled = true; };
+  }, [open, activateJob]);
+
+  useEffect(() => {
+    if (!activeJobId) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/bookings/import?jobId=${encodeURIComponent(activeJobId)}`, {
+          cache: "no-store",
+        });
+        const body = await res.json().catch(() => null);
+        if (stopped) return;
+        if (!res.ok || !body?.job) {
+          if (res.status === 404) {
+            sessionStorage.removeItem("gw:booking-import-job");
+            requestIdRef.current = null;
+            setActiveJobId(null);
+            toast.error(tDialog("failedRetry"));
+            return;
+          }
+        } else {
+          const job = body.job as {
+            status: string;
+            doneGroups: number;
+            totalGroups: number;
+            result?: ImportResult;
+          };
+          setJobProgress({ done: job.doneGroups, total: job.totalGroups });
+          if (job.status === "completed" && job.result) {
+            applyResult(job.result);
+            return;
+          }
+          if (job.status === "failed") {
+            sessionStorage.removeItem("gw:booking-import-job");
+            requestIdRef.current = null;
+            setActiveJobId(null);
+            toast.error(tDialog("failedRetry"));
+            return;
+          }
+        }
+      } catch {
+        // A temporary disconnect must not cancel a job running on the server.
+      }
+      if (!stopped) timer = setTimeout(poll, 1500);
+    };
+    void poll();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [activeJobId, applyResult, tDialog]);
+
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
     useCallback(async (confirmDuplicates = false) => {
       if (validRows.length === 0) return;
@@ -436,21 +552,57 @@ export function ImportSheet({
         clientEmail: r.raw.clientEmail || null,
         currency: r.raw.currency || defaultCurrency,
       }));
+      const requestId = requestIdRef.current ?? crypto.randomUUID();
+      requestIdRef.current = requestId;
+      sessionStorage.setItem("gw:booking-import-request", requestId);
 
-      const res = await fetch("/api/bookings/import", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          rows: payload,
-          ...(teamId ? { teamId } : {}),
-          ...(confirmDuplicates ? { confirmDuplicates: true } : {}),
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch("/api/bookings/import", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            rows: payload,
+            background: true,
+            requestId,
+            ...(teamId ? { teamId } : {}),
+            ...(confirmDuplicates ? { confirmDuplicates: true } : {}),
+          }),
+        });
+      } catch {
+        // The start response may have been lost after the job was saved.
+        // Recover by the stable request ID before showing an uncertain result.
+        try {
+          const lookup = await fetch(`/api/bookings/import?requestId=${requestId}`, {
+            cache: "no-store",
+          });
+          const found = await lookup.json();
+          if (lookup.ok && found?.job?.jobId) {
+            activateJob(found.job.jobId);
+            return;
+          }
+        } catch {
+          // Still offline; the same request ID is reused if the owner retries.
+        }
+        toast.error(tDialog("failedConnection"));
+        return;
+      }
       const body = await res.json().catch(() => null);
 
       // Looks already imported. Nothing was written; ask before proceeding.
       if (res.ok && body?.needsConfirmation) {
         setDuplicateWarning(body.duplicates as DuplicateWarning[]);
+        return;
+      }
+
+      if (body?.error === "import_active" && body?.jobId) {
+        toast.message(tDialog("anotherActive"));
+        requestIdRef.current = null;
+        activateJob(body.jobId);
+        return;
+      }
+      if (res.status === 202 && body?.jobId) {
+        activateJob(body.jobId);
         return;
       }
 
@@ -467,27 +619,8 @@ export function ImportSheet({
       }
 
       const data: ImportResult = body;
-      setImportResult(data);
-
-      const written = data.created + data.updated;
-      if (written > 0) {
-        toast.success(t("success", { bookings: written, shifts: data.shifts }));
-        invalidateFor({ type: "bookings.imported" });
-        // A clean import is complete. Leave a partial import open so its
-        // actionable errors stay available; otherwise return the owner to the
-        // refreshed booking view rather than making them dismiss this sheet.
-        if (data.errors.length === 0) {
-          resetImportState();
-          onClose();
-        }
-      }
-      if (data.errors.length > 0) {
-        setShowResultsDialog(true);
-        if (written === 0) {
-          toast.error(tDialog("failedWithDetails"));
-        }
-      }
-    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, invalidateFor, resetImportState, onClose]),
+      applyResult(data);
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, applyResult, activateJob]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -497,7 +630,7 @@ export function ImportSheet({
 
   // The sheet stays locked while the import request is in flight. The table
   // behind it refreshes via the data-event invalidation, not a blocking refresh.
-  const busy = importing;
+  const busy = importing || activeJobId !== null;
 
   // ── file intake ────────────────────────────────────────────────────────────
 
@@ -572,6 +705,7 @@ export function ImportSheet({
         return;
       }
       setFileName(file.name);
+      requestIdRef.current = crypto.randomUUID();
       setHeaders([]);
       setSourceRows([]);
       setImportResult(null);
@@ -648,7 +782,11 @@ export function ImportSheet({
   );
 
   function handleClose() {
-    if (busy) return;
+    if (importing) return;
+    if (activeJobId) {
+      onClose();
+      return;
+    }
     resetImportState();
     onClose();
   }
@@ -779,6 +917,26 @@ export function ImportSheet({
                 <p className="text-sm text-muted-foreground">
                   {tNav("committing")}
                 </p>
+                {activeJobId && jobProgress ? (
+                  <div className="w-56 space-y-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {tNav("progress", { done: jobProgress.done, total: jobProgress.total })}
+                    </p>
+                    <div
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={jobProgress.total}
+                      aria-valuenow={jobProgress.done}
+                      className="h-2 overflow-hidden rounded-full bg-muted"
+                    >
+                      <div
+                        className="h-full bg-brand transition-[width]"
+                        style={{ width: `${jobProgress.total ? (jobProgress.done / jobProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{tNav("background")}</p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -788,10 +946,10 @@ export function ImportSheet({
               type="button"
               variant="outline"
               size="sm"
-              onClick={stepIndex > 0 && !done ? goBack : handleClose}
-              disabled={busy}
+              onClick={!activeJobId && stepIndex > 0 && !done ? goBack : handleClose}
+              disabled={importing}
             >
-              {stepIndex > 0 && !done ? tNav("back") : done ? tDialog("close") : tDialog("cancel")}
+              {activeJobId ? tDialog("close") : stepIndex > 0 && !done ? tNav("back") : done ? tDialog("close") : tDialog("cancel")}
             </Button>
 
             {step !== "preview" && step !== "upload" ? (

@@ -6,12 +6,20 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Booking, Client, Transaction, Team, ActivityLog } from "@/lib/db/models";
+import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
+import { BookingImportJobItem } from "@/lib/db/models/BookingImportJobItem";
 import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import * as clientTransactions from "@/lib/db/clientTransactions";
 
 const WS_ID = new Types.ObjectId();
 const WS_A = new Types.ObjectId();
 const WS_B = new Types.ObjectId();
+
+const afterCallbacks = vi.hoisted(() => [] as Array<() => Promise<void>>);
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return { ...actual, after: (callback: () => Promise<void>) => afterCallbacks.push(callback) };
+});
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
@@ -52,6 +60,7 @@ afterAll(async () => {
   await stopInMemoryMongo();
 });
 beforeEach(async () => {
+  afterCallbacks.length = 0;
   await clearCollections();
   // The limiter is a module-level Map shared by every case in this file, so
   // without this the suite exhausts its own window part-way through.
@@ -89,6 +98,20 @@ async function callImport(rows: unknown[], teamId?: string, confirmDuplicates?: 
   return POST(req);
 }
 
+async function callBackground(rows: unknown[], requestId: string, confirmDuplicates = true) {
+  const { POST } = await import("./route");
+  return POST(new Request("http://localhost/api/bookings/import", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ rows, requestId, background: true, confirmDuplicates }),
+  }));
+}
+
+async function getJob(jobId: string) {
+  const { GET } = await import("./route");
+  return GET(new Request(`http://localhost/api/bookings/import?jobId=${jobId}`));
+}
+
 const VALID_ROW = {
   title: "Smith Wedding",
   clientName: "Jane Smith",
@@ -100,6 +123,106 @@ const VALID_ROW = {
   amountDeposit: 10000,
   currency: "PHP",
 };
+
+describe("background booking import jobs", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+
+  it("returns promptly, records progress, and completes after the response", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    expect(start.status).toBe(202);
+    const { jobId } = await start.json();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await BookingImportJobItem.countDocuments({ workspaceId: WS_ID, jobId })).toBe(1);
+    expect((await (await getJob(jobId)).json()).job.doneGroups).toBe(0);
+
+    const run = afterCallbacks.shift();
+    expect(run).toBeDefined();
+    await run!();
+
+    const status = await (await getJob(jobId)).json();
+    expect(status.job.status).toBe("completed");
+    expect(status.job.doneGroups).toBe(1);
+    expect(status.job.result.created).toBe(1);
+    expect(status.job.result.errors).toEqual([]);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("returns the same job for a repeated request ID without writing twice", async () => {
+    const first = await callBackground([VALID_ROW], requestId);
+    const second = await callBackground([VALID_ROW], requestId);
+    expect((await second.json()).jobId).toBe((await first.json()).jobId);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(afterCallbacks).toHaveLength(1);
+    await afterCallbacks.shift()!();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("allows only one active job per workspace and blocks a synchronous import beside it", async () => {
+    const first = await callBackground([VALID_ROW], requestId);
+    expect(first.status).toBe(202);
+    const { jobId } = await first.json();
+    const second = await callBackground(
+      [{ ...VALID_ROW, title: "Another event", clientEmail: "another@example.test" }],
+      "00000000-0000-4000-8000-000000000002"
+    );
+    expect(second.status).toBe(409);
+    expect((await second.json()).jobId).toBe(jobId);
+    const direct = await callImport([VALID_ROW]);
+    expect(direct.status).toBe(409);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
+  it("stores per-group validation errors and successful writes in one final result", async () => {
+    const start = await callBackground(
+      [VALID_ROW, { ...VALID_ROW, title: "Bad", clientName: "", clientEmail: "bad@example.test" }],
+      requestId
+    );
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    const status = await (await getJob(jobId)).json();
+    expect(status.job.result.created).toBe(1);
+    expect(status.job.result.skipped).toBe(1);
+    expect(status.job.result.errors).toHaveLength(1);
+    expect(status.job.result.errors[0].index).toBe(1);
+    expect(await BookingImportJobItem.countDocuments({ workspaceId: WS_ID, jobId, status: "done" })).toBe(2);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("does not enqueue a duplicate file before the owner confirms", async () => {
+    await callImport([VALID_ROW]);
+    const response = await callBackground([VALID_ROW], requestId, false);
+    expect((await response.json()).needsConfirmation).toBe(true);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
+  it("resumes a completed group without duplicating its booking", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    await BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: WS_ID },
+      { $set: { status: "running", active: true, result: null, leaseUntil: new Date(0) } }
+    );
+
+    const status = await getJob(jobId);
+    expect(status.status).toBe(200);
+    expect(afterCallbacks).toHaveLength(1);
+    await afterCallbacks.shift()!();
+    const recovered = await (await getJob(jobId)).json();
+    expect(recovered.job.status).toBe("completed");
+    expect(recovered.job.result.created).toBe(1);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(await ActivityLog.countDocuments({ workspaceId: WS_ID, entity: "booking" })).toBe(1);
+  });
+
+  it("keeps another workspace from reading a job", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const response = await getJob(jobId);
+    expect(response.status).toBe(404);
+  });
+});
 
 describe("POST /api/bookings/import — file preview", () => {
   async function callPreview(file: Blob, filename: string) {
@@ -723,7 +846,13 @@ describe("POST /api/bookings/import", () => {
       source: "manual",
     });
 
-    await callImport([VALID_ROW]);
+    const exists = vi.spyOn(Client, "exists");
+    try {
+      await callImport([VALID_ROW]);
+      expect(exists).toHaveBeenCalledOnce();
+    } finally {
+      exists.mockRestore();
+    }
 
     const clients = await Client.find({ workspaceId: WS_ID });
     expect(clients).toHaveLength(1);
@@ -786,6 +915,23 @@ describe("POST /api/bookings/import", () => {
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBeNull();
     expect(client?.source).toBe("import");
+  });
+
+  it("skips a redundant existence read for clients created in the import transaction", async () => {
+    const exists = vi.spyOn(Client, "exists");
+    try {
+      const res = await callImport([
+        { ...VALID_ROW, title: "New client with email", clientEmail: "new@example.test" },
+        { ...VALID_ROW, title: "New client without email", clientEmail: undefined },
+      ]);
+      const body = await res.json();
+      expect(body.created).toBe(2);
+      expect(body.errors).toEqual([]);
+      expect(exists).not.toHaveBeenCalled();
+      expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(2);
+    } finally {
+      exists.mockRestore();
+    }
   });
 
   it("returns error for row missing required title", async () => {

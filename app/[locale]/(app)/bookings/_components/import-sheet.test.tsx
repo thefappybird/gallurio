@@ -8,7 +8,7 @@ import { toast } from "sonner";
 // so useRouter() works without extra mocking.
 
 // Prevent sonner toast from throwing in jsdom
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn() } }));
 
 const invalidateSpy = vi.hoisted(() => vi.fn());
 vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => invalidateSpy }));
@@ -99,6 +99,9 @@ describe("ImportSheet", () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    vi.mocked(toast.message).mockClear();
+    sessionStorage.clear();
   });
 
   // ── 1. Smoke test ─────────────────────────────────────────────────────────
@@ -707,6 +710,8 @@ describe("ImportSheet", () => {
 describe("ImportSheet steps", () => {
   beforeEach(() => {
     mockFetch.mockReset();
+    vi.mocked(toast.error).mockClear();
+    sessionStorage.clear();
   });
 
   // Headers no Gallurio file would ever have, so the mapping step is required.
@@ -868,6 +873,191 @@ describe("ImportSheet steps", () => {
       await waitFor(() =>
         expect(screen.queryByText("Importing your bookings")).not.toBeInTheDocument()
       );
+    } finally {
+      restore();
+    }
+  });
+
+  it("warns that a lost start response is uncertain and permits a retry with the same request ID", async () => {
+    mockFetch
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockRejectedValueOnce(new TypeError("Still offline"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] }),
+      });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(
+          "Couldn't confirm whether the import started. Check your connection and reopen Import to resume before trying again."
+        )
+      );
+      expect(screen.getByRole("button", { name: /import 1 booking/i })).toBeEnabled();
+
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
+      const first = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const retry = JSON.parse(mockFetch.mock.calls[2][1].body);
+      expect(retry.requestId).toBe(first.requestId);
+    } finally {
+      restore();
+    }
+  });
+
+  it("recovers a job when its start response is lost", async () => {
+    const jobId = "cccccccccccccccccccccccc";
+    mockFetch
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ job: { jobId, status: "running" } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ job: { jobId, status: "running", doneGroups: 1, totalGroups: 3 } }),
+      });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      expect(await screen.findByText("Processed 1 of 3")).toBeInTheDocument();
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch.mock.calls[1][0]).toMatch(/\?requestId=/);
+      expect(sessionStorage.getItem("gw:booking-import-job")).toBe(jobId);
+      expect(toast.error).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
+  it("says when another active job is shown instead of the submitted file", async () => {
+    const jobId = "dddddddddddddddddddddddd";
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: "import_active", jobId }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ job: { jobId, status: "running", doneGroups: 0, totalGroups: 3 } }),
+      });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      expect(await screen.findByText("Processed 0 of 3")).toBeInTheDocument();
+      expect(toast.message).toHaveBeenCalledWith(
+        "Another import is already running. Showing its progress; this file has not started."
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it("uses a new request ID when retrying after a terminal job failure", async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, status: 202, json: async () => ({ jobId: "eeeeeeeeeeeeeeeeeeeeeeee" }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ job: { status: "failed", doneGroups: 0, totalGroups: 1 } }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 202, json: async () => ({ jobId: "ffffffffffffffffffffffff" }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ job: { status: "running", doneGroups: 0, totalGroups: 1 } }),
+      });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Import failed. Please try again."));
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      expect(await screen.findByText("Processed 0 of 1")).toBeInTheDocument();
+      const first = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const retry = JSON.parse(mockFetch.mock.calls[2][1].body);
+      expect(retry.requestId).not.toBe(first.requestId);
+    } finally {
+      restore();
+    }
+  });
+
+  it("shows background progress and lets the owner close the sheet", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        json: async () => ({ jobId: "aaaaaaaaaaaaaaaaaaaaaaaa" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          job: { jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "running", doneGroups: 1, totalGroups: 3 },
+        }),
+      });
+    const onClose = vi.fn();
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog({ onClose });
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+
+      expect(await screen.findByText("Processed 1 of 3")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+      expect(screen.getByText(/import will continue/i)).toBeInTheDocument();
+      fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
+      expect(onClose).toHaveBeenCalledOnce();
+      expect(sessionStorage.getItem("gw:booking-import-job")).toBe("aaaaaaaaaaaaaaaaaaaaaaaa");
+    } finally {
+      restore();
+    }
+  });
+
+  it("applies a completed background job result and clears its resume key", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        json: async () => ({ jobId: "bbbbbbbbbbbbbbbbbbbbbbbb" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          job: {
+            jobId: "bbbbbbbbbbbbbbbbbbbbbbbb",
+            status: "completed",
+            doneGroups: 1,
+            totalGroups: 1,
+            result: { created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] },
+          },
+        }),
+      });
+    const onClose = vi.fn();
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog({ onClose });
+      await uploadCsv(VALID_CSV);
+      fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+      expect(sessionStorage.getItem("gw:booking-import-job")).toBeNull();
+      expect(invalidateSpy).toHaveBeenCalledWith({ type: "bookings.imported" });
     } finally {
       restore();
     }

@@ -1132,6 +1132,8 @@
           "duplicateNoTeam": "%Team% tidak diketahui",
           "duplicateContinue": "Tetap impor",
           "failedRetry": "Impor gagal. Silakan coba lagi.",
+          "failedConnection": "Tidak dapat memastikan apakah impor dimulai. Periksa koneksi dan buka kembali Impor untuk melanjutkan sebelum mencoba lagi.",
+          "anotherActive": "Impor lain sedang berjalan. Progresnya ditampilkan; file ini belum dimulai.",
           "close": "Tutup",
           "cancel": "Batal",
           "viewErrors": "Lihat {n} kesalahan"
@@ -1224,7 +1226,9 @@
           "continue": "Lanjutkan",
           "reviewMapping": "Kolom dicocokkan otomatis",
           "reviewMappingAction": "Tinjau",
-          "committing": "Mengimpor %booking% Anda"
+          "committing": "Mengimpor %booking% Anda",
+          "progress": "Diproses {done} dari {total}",
+          "background": "Anda dapat menutup panel ini. Impor akan tetap berjalan."
         }
       },
       "export": {

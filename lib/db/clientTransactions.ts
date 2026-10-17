@@ -325,6 +325,8 @@ type RecordBookingOpts = {
   };
   source: "manual" | "import" | "webhook" | "seed";
   session?: mongoose.ClientSession;
+  /** The caller inserted this client in the supplied transaction. */
+  clientCreatedInSession?: boolean;
 };
 
 type SyncBookingPaymentsOpts = {
@@ -437,16 +439,20 @@ export async function syncBookingPaymentsForClient(opts: SyncBookingPaymentsOpts
 export async function recordBookingForClient(opts: RecordBookingOpts): Promise<void> {
   const { workspaceId, clientId, booking, source } = opts;
 
-  // Precheck: verify the client exists before performing writes. When the caller
-  // supplies a session, the client may have been created in that same transaction
-  // and won't be visible outside it — pass the session so the read is consistent.
-  const existsQuery = Client.exists({ _id: clientId, workspaceId });
-  if (opts.session) existsQuery.session(opts.session);
-  const clientExists = await existsQuery;
-  if (!clientExists) {
-    throw new Error(
-      `recordBookingForClient: client not found — clientId=${clientId} workspaceId=${workspaceId}`
-    );
+  // A client inserted by this same transaction cannot disappear before commit.
+  // Other callers still need the scoped existence guard before ledger writes.
+  if (opts.clientCreatedInSession && !opts.session) {
+    throw new Error("clientCreatedInSession requires a session");
+  }
+  if (!opts.clientCreatedInSession) {
+    const existsQuery = Client.exists({ _id: clientId, workspaceId });
+    if (opts.session) existsQuery.session(opts.session);
+    const clientExists = await existsQuery;
+    if (!clientExists) {
+      throw new Error(
+        `recordBookingForClient: client not found — clientId=${clientId} workspaceId=${workspaceId}`
+      );
+    }
   }
 
   const deposit = booking.amount.deposit;

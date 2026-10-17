@@ -1,6 +1,6 @@
 # Bookings import: manual test guide
 
-Branch: `fix/import-bookings-feature` (QA baseline `04867504`; fixes in this working tree).
+Branch: `fix/import-bookings-feature` (QA baseline `04867504`; later fixes are recorded in `FINDINGS-2026-10-17.md`).
 Test files: `qa/bookings-import/files/`. This folder is committed for manual testing only; remove it before the PR merges.
 
 All test data is tagged: titles start with `QA-IMP` and client names start with `QA `. That way cleanup only removes test rows (see the end of this guide).
@@ -31,7 +31,7 @@ All test data is tagged: titles start with `QA-IMP` and client names start with 
 `13-bad-values.csv` has 15 data rows, each one a different problem. In my run, 11 imported and the rest were skipped with a reason. Check that:
 - Every skipped row has a reason you can understand. The empty-client row now names the missing client name.
 - `TBD` as a date is flagged, not imported as "today".
-- End before start is flagged. The 22:00 → 02:00 row currently skips because booking sessions must stay within one workspace day; see the findings report for the expectation mismatch.
+- End before start is flagged. The 22:00 → 02:00 row is expected to skip because booking sessions must stay within one workspace day.
 - Deposit greater than total, a negative total, currency `XYZ`, status `Maybe?` and email `bad@` are each either flagged or handled sensibly.
 - The 160-character title with an emoji at the end is trimmed cleanly (no broken `�` character).
 - The `=HYPERLINK(...)` title and `@SUM` note import as plain text. If you export bookings afterwards and open the file in Excel, nothing should run as a formula.
@@ -67,13 +67,14 @@ The results dialog should show localized explanations for an unknown booking ID 
 
 `18-rows-500.csv` has exactly 500 rows, the maximum allowed.
 - The preview should appear within a few seconds.
-- The 500-row commit took about 94 seconds in the October 2026 development QA run after bounded parallel writes. It remains a long wait; measure it again against the target deployment before release.
-- In the Network tab, an import should make one `POST` commit request and then **a single** `GET /bookings` refresh, not a burst of requests.
+- The import now starts a durable job and returns a job ID. The panel shows processed groups and can be closed while the job runs. Reopen Import to recover progress. A process restart is recoverable when the owner requests the job status again.
+- In the October 2026 development browser run, the 500-row start request took **3.7 seconds** and all 500 finished in **99.7 seconds** with no row errors. Measure the same path on the target deployment before release.
+- In the Network tab, expect one `POST /api/bookings/import` start request, periodic `GET /api/bookings/import?jobId=…` progress requests, then a bookings refresh on completion.
 - Previews have their own rate limit (30 per 5 minutes) and commits have theirs (10 per 5 minutes). If you hit one, the message should say how many seconds to wait.
 
 ## 6. Network errors (DevTools)
 - Set DevTools → Network to **Offline**, then upload an `.xlsx` file. Expect "Couldn't upload the file. Check your connection and try again."
-- Set it to Offline right after clicking Import on a CSV. You should get a readable error, not a stuck spinner.
+- Set it to Offline right after clicking Import on a CSV. The sheet should warn that it cannot confirm whether the job started. Reopen Import after reconnecting to recover the job before retrying. A retry uses the same request ID, so a lost start response cannot create a second job.
 
 ## 7. Other things in this branch
 - **Sheet resize grip:** on the Import, Export and Invoice theme sheets, the left edge shows a small pill with 3 dots. It turns teal on hover or drag. Check it in light and dark mode. It's hidden at 375px.
@@ -88,7 +89,7 @@ Run this from the repo root after testing:
 node qa/bookings-import/cleanup-import-qa.js . --show     # list what would be deleted
 node qa/bookings-import/cleanup-import-qa.js . --apply    # delete it
 ```
-It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs and imported clients. The four encoding-fixture names are allowed only when their clients came from import. It refuses to run if a matched booking points at another client or a client is also linked to a non-QA booking.
+It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs, imported clients, and terminal QA import jobs/items. The four encoding-fixture names are allowed only when their clients came from import. It refuses to run if a matched booking points at another client, a client is also linked to a non-QA booking, or a QA job is active or contains non-QA rows.
 
 To regenerate fresh files (new unique emails), run:
 `node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. You don't need to; the files that are there now are fresh, and the dev DB currently has 0 QA rows.

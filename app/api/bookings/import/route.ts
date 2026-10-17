@@ -1,9 +1,12 @@
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
+import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
+import { BookingImportJobItem } from "@/lib/db/models/BookingImportJobItem";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
@@ -71,6 +74,38 @@ export type ImportResult = {
   errors: ImportErrorEntry[];
 };
 
+type ImportContext = {
+  userId: string;
+  workspace: {
+    _id: mongoose.Types.ObjectId;
+    currency?: string | null;
+    timezone?: string | null;
+  };
+};
+
+type ImportPayload = {
+  rows: Record<string, unknown>[];
+  teamId?: unknown;
+  confirmDuplicates?: boolean;
+};
+
+type JobOutcome = {
+  created?: number;
+  updated?: number;
+  shifts?: number;
+  skipped?: number;
+  error?: ImportErrorEntry;
+};
+
+type JobRun = {
+  id: mongoose.Types.ObjectId;
+  token: string;
+  doneIndices: Set<number>;
+};
+
+const JOB_LEASE_MS = 180_000;
+const MAX_COMMIT_BYTES = 8_000_000;
+
 /**
  * Downloadable import template, in the same two formats the importer accepts.
  *
@@ -85,7 +120,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const format = new URL(req.url).searchParams.get("format") ?? "csv";
+  const params = new URL(req.url).searchParams;
+  if (params.has("jobId") || params.has("requestId") || params.has("latest")) {
+    return getImportJobStatus(ctx, params);
+  }
+
+  const format = params.get("format") ?? "csv";
   if (format !== "csv" && format !== "xlsx") {
     return NextResponse.json({ error: "invalid_format" }, { status: 400 });
   }
@@ -199,7 +239,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unsupported_media_type" }, { status: 415 });
   }
 
-  const json = await req.json().catch(() => ({}));
+  const rawBody = await req.text().catch(() => "");
+  if (Buffer.byteLength(rawBody) > MAX_COMMIT_BYTES) {
+    return NextResponse.json({ error: "import_too_large" }, { status: 413 });
+  }
+  let json: ImportPayload & { background?: boolean; requestId?: string };
+  try {
+    json = JSON.parse(rawBody || "{}");
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+  if (!json || typeof json !== "object" || Array.isArray(json)) {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
   if (!Array.isArray(json.rows) || json.rows.length === 0) {
     return NextResponse.json({ error: "rows must be a non-empty array" }, { status: 400 });
   }
@@ -210,6 +262,25 @@ export async function POST(req: Request) {
     );
   }
 
+  if (json.background) return startImportJob(ctx, json);
+  await connectDB();
+  const activeJob = await BookingImportJob.findOne({ workspaceId: ctx.workspace._id, active: true })
+    .select({ _id: 1 })
+    .lean();
+  if (activeJob) {
+    return NextResponse.json(
+      { error: "import_active", jobId: activeJob._id.toString() },
+      { status: 409 }
+    );
+  }
+  return processImportRows(ctx, json);
+}
+
+async function processImportRows(
+  ctx: ImportContext,
+  json: ImportPayload,
+  options: { preflightOnly?: boolean; job?: JobRun } = {}
+) {
   await connectDB();
 
   const mainTeam = await Team.findOne({ workspaceId: ctx.workspace._id, isDefault: true })
@@ -292,6 +363,25 @@ export async function POST(req: Request) {
   // fanning out into N separate bookings. Rows without a booking_id keep the
   // original one-row-one-booking behaviour.
   const groups = groupImportRows(json.rows as Record<string, unknown>[]);
+  const markItem = async (
+    groupIndex: number,
+    outcome: JobOutcome,
+    session?: mongoose.ClientSession
+  ) => {
+    if (!options.job) return;
+    const marked = await BookingImportJobItem.updateOne(
+      {
+        workspaceId: ctx.workspace._id,
+        jobId: options.job.id,
+        groupIndex,
+        status: "pending",
+        leaseToken: options.job.token,
+      },
+      { $set: { status: "done", outcome } },
+      { session }
+    );
+    if (marked.matchedCount !== 1) throw new Error("import_job_claim_lost");
+  };
 
   // Pre-flight: does this file look like one already imported? Runs before any
   // write so the answer can be "ask the owner" rather than a half-applied file.
@@ -341,20 +431,27 @@ export async function POST(req: Request) {
     }
   }
 
-  const processGroup = async (group: ImportGroup) => {
+  if (options.preflightOnly) return NextResponse.json({ ready: true, totalGroups: groups.length });
+
+  const processGroup = async (group: ImportGroup, groupIndex: number) => {
+    if (options.job?.doneIndices.has(groupIndex)) return;
     // Errors are reported against the group's first source row.
     const i = group.rowNumbers[0] - 1;
     const raw: Record<string, unknown> = group.rows[0] as Record<string, unknown>;
+    const failGroup = async (error: ImportErrorEntry) => {
+      await markItem(groupIndex, { skipped: group.rows.length, error });
+      errors.push(error);
+      skippedRows += group.rows.length;
+    };
 
     if (group.error === "too_many_sessions") {
-      errors.push({
+      await failGroup({
         index: i,
         row: raw,
         field: "sessionIndex",
         kind: "validation",
         message: `A booking cannot have more than ${MAX_SESSIONS_PER_BOOKING} sessions.`,
       });
-      skippedRows += group.rows.length;
       return;
     }
 
@@ -383,8 +480,7 @@ export async function POST(req: Request) {
       parsedRows.push(parsed.data);
     }
     if (rowError) {
-      errors.push(rowError);
-      skippedRows += group.rows.length;
+      await failGroup(rowError);
       return;
     }
 
@@ -421,14 +517,13 @@ export async function POST(req: Request) {
         .lean();
 
       if (!existingBooking) {
-        errors.push({
+        await failGroup({
           index: i,
           row: raw,
           field: "bookingId",
           kind: "lookup",
           message: "booking_not_found_in_workspace",
         });
-        skippedRows += group.rows.length;
         return;
       }
     }
@@ -445,14 +540,13 @@ export async function POST(req: Request) {
       ctx.workspace.timezone ?? FALLBACK_TZ
     );
     if (!tzCheck.ok) {
-      errors.push({
+      await failGroup({
         index: i,
         row: raw,
         field: "endAt",
         kind: "validation",
         message: "Session must start and end on the same day in the workspace timezone.",
       });
-      skippedRows += group.rows.length;
       return;
     }
 
@@ -477,14 +571,13 @@ export async function POST(req: Request) {
         deposit: row.amountDeposit ?? 0,
       })
     ) {
-      errors.push({
+      await failGroup({
         index: i,
         row: raw,
         field: "status",
         kind: "validation",
         message: "completed_booking_not_paid",
       });
-      skippedRows += group.rows.length;
       return;
     }
 
@@ -502,7 +595,7 @@ export async function POST(req: Request) {
       const wantsTotal = row.amountTotal ?? storedTotal;
       const wantsDeposit = row.amountDeposit ?? storedDeposit;
       if (wantsTotal !== storedTotal || wantsDeposit !== storedDeposit) {
-        errors.push({
+        await failGroup({
           index: i,
           row: raw,
           field: "amountTotal",
@@ -510,7 +603,6 @@ export async function POST(req: Request) {
           message:
             "Amounts cannot be changed by import because they are linked to the payment ledger. Edit them on the booking instead.",
         });
-        skippedRows += group.rows.length;
         return;
       }
 
@@ -556,18 +648,19 @@ export async function POST(req: Request) {
             ],
             { session: updateSession }
           );
+          await markItem(groupIndex, { updated: 1, shifts: sessions.length }, updateSession);
         });
         updated.push(i);
         importedShifts += sessions.length;
       } catch (err) {
+        if (err instanceof Error && err.message === "import_job_claim_lost") throw err;
         console.error("[bookings.import] group update failed", { index: i, err });
-        errors.push({
+        await failGroup({
           index: i,
           row: raw,
           kind: "server",
           message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
         });
-        skippedRows += group.rows.length;
       } finally {
         await updateSession.endSession();
       }
@@ -590,6 +683,7 @@ export async function POST(req: Request) {
         // the booking and financial writes. We never leave orphan clients.
         let clientId: string;
         let clientName: string;
+        let clientCreatedInSession = false;
 
         // Resolution ladder. clientId wins because it is exact; email is the
         // legacy path; otherwise a new client is created. Deliberately NOT
@@ -638,6 +732,7 @@ export async function POST(req: Request) {
                 ],
                 { session }
               );
+              clientCreatedInSession = true;
             } else if (row.clientPhone && !client.phone) {
               // Fill a gap, never overwrite: a stale sheet must not clobber a
               // number the owner maintains in the CRM.
@@ -666,6 +761,7 @@ export async function POST(req: Request) {
           );
           clientId = newClient._id.toString();
           clientName = newClient.name;
+          clientCreatedInSession = true;
           // No email — cannot be cached for deduplication; no-op.
         }
 
@@ -752,7 +848,9 @@ export async function POST(req: Request) {
           },
           source: "import",
           session,
+          clientCreatedInSession,
         });
+        await markItem(groupIndex, { created: 1, shifts: sessions.length }, session);
       });
 
       // Only populate the cache after the transaction has been committed.
@@ -765,8 +863,9 @@ export async function POST(req: Request) {
       created.push(i);
       importedShifts += sessions.length;
     } catch (err) {
+      if (err instanceof Error && err.message === "import_job_claim_lost") throw err;
       console.error("[bookings.import] row transaction failed", { index: i, err });
-      errors.push({
+      await failGroup({
         index: i,
         row: raw,
         kind: err instanceof Error && err.message === "client_not_found_in_workspace"
@@ -774,7 +873,6 @@ export async function POST(req: Request) {
           : "server",
         message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
       });
-      skippedRows += group.rows.length;
     } finally {
       await session.endSession();
     }
@@ -784,26 +882,26 @@ export async function POST(req: Request) {
   // clients together, while keeping groups for the same client in order so
   // email deduplication and client totals remain correct.
   const MAX_CONCURRENT_GROUPS = 8;
-  let batch: ImportGroup[] = [];
+  let batch: { group: ImportGroup; groupIndex: number }[] = [];
   const clientKeys = new Set<string>();
   const flush = async () => {
-    await Promise.all(batch.map(processGroup));
+    await Promise.all(batch.map(({ group, groupIndex }) => processGroup(group, groupIndex)));
     batch = [];
     clientKeys.clear();
   };
-  for (const group of groups) {
+  for (const [groupIndex, group] of groups.entries()) {
     const first = group.rows[0];
     const clientId = typeof first.clientId === "string" ? first.clientId.trim() : "";
     const email = typeof first.clientEmail === "string" ? first.clientEmail.trim().toLowerCase() : "";
     const keys = [clientId ? `id:${clientId}` : "", email ? `email:${email}` : ""].filter(Boolean);
     if (batch.length >= MAX_CONCURRENT_GROUPS || keys.some((key) => clientKeys.has(key))) await flush();
-    batch.push(group);
+    batch.push({ group, groupIndex });
     for (const key of keys) clientKeys.add(key);
   }
   if (batch.length) await flush();
   errors.sort((a, b) => a.index - b.index);
 
-  if (created.length + updated.length > 0) {
+  if (!options.job && created.length + updated.length > 0) {
     emitDataChanged(ctx.workspace._id.toString(), { type: "bookings.imported" });
   }
 
@@ -823,4 +921,246 @@ export async function POST(req: Request) {
     } satisfies ImportResult,
     { status: errors.length === json.rows.length ? 422 : 200 }
   );
+}
+
+async function startImportJob(
+  ctx: ImportContext,
+  json: ImportPayload & { requestId?: string }
+) {
+  if (typeof json.requestId !== "string" || !/^[0-9a-f-]{36}$/i.test(json.requestId)) {
+    return NextResponse.json({ error: "invalid_request_id" }, { status: 400 });
+  }
+  await connectDB();
+  await Promise.all([BookingImportJob.init(), BookingImportJobItem.init()]);
+  const workspaceId = ctx.workspace._id;
+  const existing = await BookingImportJob.findOne({ workspaceId, requestId: json.requestId })
+    .select({ _id: 1 })
+    .lean();
+  if (existing) return NextResponse.json({ jobId: existing._id.toString() }, { status: 202 });
+
+  const active = await BookingImportJob.findOne({ workspaceId, active: true })
+    .select({ _id: 1 })
+    .lean();
+  if (active) {
+    return NextResponse.json({ error: "import_active", jobId: active._id.toString() }, { status: 409 });
+  }
+
+  const preflight = await processImportRows(ctx, json, { preflightOnly: true });
+  const preflightBody = await preflight.clone().json();
+  if (preflight.status !== 200 || !preflightBody.ready) return preflight;
+
+  const jobId = new mongoose.Types.ObjectId();
+  const groups = groupImportRows(json.rows);
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await BookingImportJob.create(
+        [{
+          _id: jobId,
+          workspaceId,
+          requestId: json.requestId,
+          actorUserId: ctx.userId,
+          rows: json.rows,
+          teamId: json.teamId ?? null,
+          currency: ctx.workspace.currency ?? "PHP",
+          timezone: ctx.workspace.timezone ?? FALLBACK_TZ,
+          totalGroups: groups.length,
+          status: "queued",
+          active: true,
+          expiresAt,
+        }],
+        { session }
+      );
+      await BookingImportJobItem.insertMany(
+        groups.map((_, groupIndex) => ({
+          workspaceId,
+          jobId,
+          groupIndex,
+          status: "pending",
+          expiresAt,
+        })),
+        { session }
+      );
+    });
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000) {
+      const prior = await BookingImportJob.findOne({ workspaceId, requestId: json.requestId })
+        .select({ _id: 1 })
+        .lean();
+      if (prior) return NextResponse.json({ jobId: prior._id.toString() }, { status: 202 });
+      const running = await BookingImportJob.findOne({ workspaceId, active: true })
+        .select({ _id: 1 })
+        .lean();
+      if (running) {
+        return NextResponse.json({ error: "import_active", jobId: running._id.toString() }, { status: 409 });
+      }
+    }
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+
+  after(() => processImportJob(jobId));
+  return NextResponse.json({ jobId: jobId.toString() }, { status: 202 });
+}
+
+async function getImportJobStatus(ctx: ImportContext, params: URLSearchParams) {
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+  const jobId = params.get("jobId");
+  const requestId = params.get("requestId");
+  let job;
+  if (jobId) {
+    if (!/^[a-f0-9]{24}$/i.test(jobId)) {
+      return NextResponse.json({ error: "job_not_found" }, { status: 404 });
+    }
+    job = await BookingImportJob.findOne({ _id: jobId, workspaceId }).select({ rows: 0 }).lean();
+  } else if (requestId) {
+    job = await BookingImportJob.findOne({ requestId, workspaceId }).select({ rows: 0 }).lean();
+  } else {
+    job = await BookingImportJob.findOne({ workspaceId, active: true })
+      .select({ rows: 0 })
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+  if (!job) {
+    return params.has("latest")
+      ? NextResponse.json({ job: null }, { headers: { "Cache-Control": "no-store" } })
+      : NextResponse.json({ error: "job_not_found" }, { status: 404 });
+  }
+
+  const doneGroups = await BookingImportJobItem.countDocuments({
+    workspaceId,
+    jobId: job._id,
+    status: "done",
+  });
+  if (job.active && (job.status === "queued" || !job.leaseUntil || job.leaseUntil < new Date())) {
+    after(() => processImportJob(job._id));
+  }
+  return NextResponse.json(
+    {
+      job: {
+        jobId: job._id.toString(),
+        status: job.status,
+        doneGroups,
+        totalGroups: job.totalGroups,
+        result: job.result,
+        lastError: job.lastError,
+      },
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
+}
+
+async function processImportJob(jobId: mongoose.Types.ObjectId) {
+  await connectDB();
+  const now = new Date();
+  const token = randomUUID();
+  const claimed = await BookingImportJob.findOneAndUpdate(
+    {
+      _id: jobId,
+      active: true,
+      $or: [
+        { status: "queued" },
+        { status: "running", leaseUntil: { $lte: now } },
+      ],
+    },
+    {
+      $set: {
+        status: "running",
+        leaseToken: token,
+        leaseUntil: new Date(now.getTime() + JOB_LEASE_MS),
+        lastError: null,
+      },
+      $inc: { attempts: 1 },
+    },
+    { new: true }
+  ).lean();
+  if (!claimed) return;
+
+  try {
+    await BookingImportJobItem.updateMany(
+      { workspaceId: claimed.workspaceId, jobId, status: "pending" },
+      { $set: { leaseToken: token } }
+    );
+    const done = await BookingImportJobItem.find({
+      workspaceId: claimed.workspaceId,
+      jobId,
+      status: "done",
+    }).select({ groupIndex: 1 }).lean();
+    const ctx: ImportContext = {
+      userId: claimed.actorUserId,
+      workspace: {
+        _id: claimed.workspaceId,
+        currency: claimed.currency,
+        timezone: claimed.timezone,
+      },
+    };
+    await processImportRows(
+      ctx,
+      { rows: claimed.rows as Record<string, unknown>[], teamId: claimed.teamId ?? undefined, confirmDuplicates: true },
+      { job: { id: jobId, token, doneIndices: new Set(done.map((item) => item.groupIndex)) } }
+    );
+
+    const items = await BookingImportJobItem.find({ workspaceId: claimed.workspaceId, jobId })
+      .select({ status: 1, outcome: 1 })
+      .lean();
+    if (items.length !== claimed.totalGroups || items.some((item) => item.status !== "done")) {
+      throw new Error("import_job_incomplete");
+    }
+    const result: ImportResult = {
+      created: 0,
+      updated: 0,
+      shifts: 0,
+      skipped: 0,
+      validationErrors: 0,
+      serverErrors: 0,
+      errors: [],
+    };
+    for (const item of items) {
+      const outcome = item.outcome as JobOutcome;
+      result.created += outcome.created ?? 0;
+      result.updated += outcome.updated ?? 0;
+      result.shifts += outcome.shifts ?? 0;
+      result.skipped += outcome.skipped ?? 0;
+      if (outcome.error) {
+        result.errors.push(outcome.error);
+        if (outcome.error.kind === "validation") result.validationErrors++;
+        if (outcome.error.kind === "server") result.serverErrors++;
+      }
+    }
+    result.errors.sort((a, b) => a.index - b.index);
+    const completed = await BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: claimed.workspaceId, leaseToken: token, status: "running" },
+      {
+        $set: {
+          status: "completed",
+          active: false,
+          result,
+          completedAt: new Date(),
+          leaseUntil: null,
+        },
+      }
+    );
+    if (completed.matchedCount === 1 && result.created + result.updated > 0) {
+      emitDataChanged(claimed.workspaceId.toString(), { type: "bookings.imported" });
+    }
+  } catch (error) {
+    console.error("[bookings.import] background job failed", {
+      jobId: jobId.toString(),
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+    await BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: claimed.workspaceId, leaseToken: token, status: "running" },
+      {
+        $set: {
+          status: claimed.attempts >= 3 ? "failed" : "queued",
+          active: claimed.attempts < 3,
+          lastError: "background_failed",
+          leaseUntil: null,
+        },
+      }
+    );
+  }
 }

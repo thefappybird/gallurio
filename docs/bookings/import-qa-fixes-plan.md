@@ -1,6 +1,6 @@
 # Bookings import: QA fixes plan
 
-Source: exploratory Playwright pass (Run 1, 16 files, preview only). Run 2 (commits) is pending a re-run after these fixes.
+Source: exploratory Playwright pass (Run 1, 16 files, preview only). The commit and follow-up runs are recorded in `qa/bookings-import/FINDINGS-2026-10-17.md`.
 
 ## Backend wave (lib + route) — first
 - A1 `Event Date`-style headers map to start date, not title (`SYNONYMS.title` avoids date/time words).
@@ -23,4 +23,4 @@ Source: exploratory Playwright pass (Run 1, 16 files, preview only). Run 2 (comm
 - All new copy in en, fil, id, ar, th.
 
 ## Verify
-Scoped unit tests per change; orchestrator typecheck; then the Playwright re-run (Run 1 regressions + Run 2 commits) and DB cleanup.
+Completed: scoped unit tests, typecheck, lint, Playwright fixture commits, and development DB cleanup. The 500-row request-timeout risk led to a persisted background job with progress, idempotent start requests, and resumable group outcomes. The target-deployment timing and process-restart recovery checks remain release gates in the findings report.
