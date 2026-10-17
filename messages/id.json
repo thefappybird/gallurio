@@ -1132,6 +1132,7 @@
           "duplicateNoTeam": "%Team% tidak diketahui",
           "duplicateContinue": "Tetap impor",
           "failedRetry": "Impor gagal. Silakan coba lagi.",
+          "resultUnavailable": "Hasil impor ini sudah tidak tersedia.",
           "failedConnection": "Tidak dapat memastikan apakah impor dimulai. Periksa koneksi dan buka kembali Impor untuk melanjutkan sebelum mencoba lagi.",
           "anotherActive": "Impor lain sedang berjalan. Progresnya ditampilkan; file ini belum dimulai.",
           "close": "Tutup",

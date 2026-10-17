@@ -46,6 +46,7 @@ function renderDialog(overrides: Partial<Parameters<typeof ImportSheet>[0]> = {}
     open: true,
     onClose: vi.fn(),
     defaultCurrency: "PHP",
+    workspaceId: "ws1",
     ...overrides,
   };
   return renderWithProviders(<ImportSheet {...defaultProps} />);
@@ -932,7 +933,7 @@ describe("ImportSheet steps", () => {
       expect(await screen.findByText("Processed 1 of 3")).toBeInTheDocument();
       expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(mockFetch.mock.calls[1][0]).toMatch(/\?requestId=/);
-      expect(sessionStorage.getItem("gw:booking-import-job")).toBe(jobId);
+      expect(sessionStorage.getItem("gw:booking-import-job:ws1")).toBe(jobId);
       expect(toast.error).not.toHaveBeenCalled();
     } finally {
       restore();
@@ -1022,7 +1023,7 @@ describe("ImportSheet steps", () => {
       expect(screen.getByText(/import will continue/i)).toBeInTheDocument();
       fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
       expect(onClose).toHaveBeenCalledOnce();
-      expect(sessionStorage.getItem("gw:booking-import-job")).toBe("aaaaaaaaaaaaaaaaaaaaaaaa");
+      expect(sessionStorage.getItem("gw:booking-import-job:ws1")).toBe("aaaaaaaaaaaaaaaaaaaaaaaa");
     } finally {
       restore();
     }
@@ -1056,7 +1057,7 @@ describe("ImportSheet steps", () => {
       fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
 
       await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
-      expect(sessionStorage.getItem("gw:booking-import-job")).toBeNull();
+      expect(sessionStorage.getItem("gw:booking-import-job:ws1")).toBeNull();
       expect(invalidateSpy).toHaveBeenCalledWith({ type: "bookings.imported" });
     } finally {
       restore();
@@ -1135,5 +1136,120 @@ describe("ImportSheet steps", () => {
     } finally {
       restore();
     }
+  });
+
+  describe("watched job lifecycle", () => {
+    const jobId = "123456789012345678901234";
+    const done = { created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] };
+    const jobResponse = (job: Record<string, unknown>) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ job: { jobId, doneGroups: 1, totalGroups: 1, ...job } }),
+    });
+
+    beforeEach(() => {
+      invalidateSpy.mockClear();
+      for (const fn of [toast.success, toast.error, toast.message]) vi.mocked(fn).mockClear();
+    });
+
+    it("does not refetch status when the parent re-renders with a new onClose", async () => {
+      mockFetch.mockResolvedValue(jobResponse({ status: "running" }));
+      const view = renderDialog({ initialJobId: jobId });
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+      await screen.findByText("Processed 1 of 1");
+      view.rerender(
+        <ImportSheet open onClose={vi.fn()} defaultCurrency="PHP" workspaceId="ws1" initialJobId={jobId} />
+      );
+      await act(async () => {});
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("styles the failed alert with the destructive tokens", async () => {
+      mockFetch.mockResolvedValue(jobResponse({ status: "failed" }));
+      renderDialog({ initialJobId: jobId });
+      const alert = await screen.findByRole("alert");
+      expect(alert.className).toContain("destructive");
+      expect(alert.className).not.toContain("danger");
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("labels the progress bar", async () => {
+      mockFetch.mockResolvedValue(jobResponse({ status: "running" }));
+      renderDialog({ initialJobId: jobId });
+      expect(await screen.findByRole("progressbar", { name: "Importing your bookings" })).toBeInTheDocument();
+    });
+
+    it("replays a finished job from storage without toast, invalidation, or auto-close", async () => {
+      sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
+      mockFetch.mockResolvedValue(jobResponse({ status: "completed", result: done }));
+      const onClose = vi.fn();
+      renderDialog({ onClose });
+      await waitFor(() => expect(sessionStorage.getItem("gw:booking-import-job:ws1")).toBeNull());
+      await act(async () => {});
+      expect(onClose).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    });
+
+    it("replays an opened result without side effects and without a busy overlay first", async () => {
+      let release: (value: unknown) => void = () => {};
+      mockFetch.mockReturnValue(new Promise((resolve) => { release = resolve; }));
+      renderDialog({ initialJobId: jobId });
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+      expect(screen.queryByText("Importing your bookings")).not.toBeInTheDocument();
+      await act(async () => {
+        release(jobResponse({ status: "completed", result: done }));
+      });
+      expect((await screen.findAllByText(/imported successfully/i)).length).toBeGreaterThan(0);
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    });
+
+    it("still announces and closes for a job it watched run", async () => {
+      sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
+      mockFetch
+        .mockResolvedValueOnce(jobResponse({ status: "running" }))
+        .mockResolvedValue(jobResponse({ status: "completed", result: done }));
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const onClose = vi.fn();
+        const onJobFinished = vi.fn();
+        renderDialog({ onClose, onJobFinished });
+        await screen.findByText("Processed 1 of 1");
+        await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+        await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+        expect(toast.success).toHaveBeenCalled();
+        expect(invalidateSpy).toHaveBeenCalledWith({ type: "bookings.imported" });
+        expect(onJobFinished).toHaveBeenCalledWith(jobId);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("tells a bell-link opener the result expired instead of reporting a failure", async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: "not_found" }) });
+      renderDialog({ initialJobId: jobId });
+      await waitFor(() =>
+        expect(toast.message).toHaveBeenCalledWith("This import result is no longer available.")
+      );
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("silently drops a stale resumed job id on 404", async () => {
+      sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
+      mockFetch.mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: "not_found" }) });
+      renderDialog();
+      await waitFor(() => expect(sessionStorage.getItem("gw:booking-import-job:ws1")).toBeNull());
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.message).not.toHaveBeenCalled();
+    });
+
+    it("never resumes a job saved under another workspace", async () => {
+      sessionStorage.setItem("gw:booking-import-job:ws2", jobId);
+      renderDialog();
+      await act(async () => {});
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem("gw:booking-import-job:ws2")).toBe(jobId);
+    });
   });
 });

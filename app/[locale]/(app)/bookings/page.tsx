@@ -340,6 +340,7 @@ async function BookingsContent({
             <TableBookingManager
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
+              workspaceId={workspace._id.toString()}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}
@@ -360,6 +361,7 @@ async function BookingsContent({
               defaultDate={defaultDate}
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
+              workspaceId={workspace._id.toString()}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}

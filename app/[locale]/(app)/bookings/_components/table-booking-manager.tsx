@@ -14,6 +14,7 @@ import type { InvoicePortfolioBrandKit, InvoiceSavedTheme, InvoiceThemeValue } f
 type Props = {
   defaultCurrency: SupportedCurrency;
   locale: string;
+  workspaceId?: string;
   workspaceTimezone?: string;
   /** Whether the current user may create bookings (owner-only in Phase 4). */
   canCreate: boolean;
@@ -45,6 +46,7 @@ type Props = {
 export function TableBookingManager({
   defaultCurrency,
   locale,
+  workspaceId,
   workspaceTimezone,
   canCreate,
   defaultTeamId,
@@ -119,6 +121,7 @@ export function TableBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceId={workspaceId}
         workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         canCreate={canCreate}

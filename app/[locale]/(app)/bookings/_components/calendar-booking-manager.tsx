@@ -15,6 +15,7 @@ type Props = {
   defaultDate?: Date;
   defaultCurrency: SupportedCurrency;
   locale: string;
+  workspaceId?: string;
   workspaceTimezone?: string;
   messages: React.ComponentProps<typeof CalendarView>["messages"];
   /** Whether the current user may create bookings (owner-only in Phase 4). */
@@ -52,6 +53,7 @@ export function CalendarBookingManager({
   defaultDate,
   defaultCurrency,
   locale,
+  workspaceId,
   workspaceTimezone,
   messages,
   canCreate,
@@ -94,6 +96,7 @@ export function CalendarBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceId={workspaceId}
         workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         view="calendar"

@@ -1132,6 +1132,7 @@
           "duplicateNoTeam": "Hindi alam ang %team%",
           "duplicateContinue": "I-import pa rin",
           "failedRetry": "Nabigo ang import. Subukan muli.",
+          "resultUnavailable": "Hindi na available ang resulta ng import na ito.",
           "failedConnection": "Hindi matiyak kung nagsimula ang import. Suriin ang koneksyon at buksan muli ang Import para ipagpatuloy bago subukan muli.",
           "anotherActive": "May isa pang import na tumatakbo. Ipinapakita ang progreso nito; hindi pa nagsimula ang file na ito.",
           "close": "Isara",

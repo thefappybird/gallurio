@@ -1132,6 +1132,7 @@
           "duplicateNoTeam": "%Team% unknown",
           "duplicateContinue": "Import anyway",
           "failedRetry": "Import failed. Please try again.",
+          "resultUnavailable": "This import result is no longer available.",
           "failedConnection": "Couldn't confirm whether the import started. Check your connection and reopen Import to resume before trying again.",
           "anotherActive": "Another import is already running. Showing its progress; this file has not started.",
           "close": "Close",

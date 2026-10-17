@@ -3,7 +3,7 @@
  * mobile/desktop week-view visibility (Bug 1 + Bug 2 fixes).
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { enMessages } from "@/test-utils/messages";
 import { BookingsToolbar } from "./bookings-toolbar";
@@ -64,6 +64,28 @@ describe("BookingsToolbar import progress", () => {
     expect(screen.getByRole("button", { name: /^Import$/i })).not.toHaveAttribute("data-import-unread");
   });
 
+  it("passes the workspace id to the importer", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate workspaceId="ws-9" />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: /^Import$/i }));
+    expect(sheetMounts.workspaceId).toHaveBeenLastCalledWith("ws-9");
+  });
+
+  it("marks the result notification of a watched job read when it arrives after the job finished", () => {
+    const jobId = "aaaaaaaaaaaaaaaaaaaaaaaa";
+    const { rerender } = render(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: /^Import$/i }));
+    act(() => sheetMounts.finished.current?.(jobId));
+    expect(notificationMock.markRead).not.toHaveBeenCalled();
+
+    notificationMock.items = [
+      { _id: "late", entityId: jobId, entityType: "booking_import", type: "booking.import_completed", read: false, silent: true },
+      { _id: "other", entityId: "bbbbbbbbbbbbbbbbbbbbbbbb", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+    ];
+    rerender(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate />);
+    expect(notificationMock.markRead).toHaveBeenCalledWith("late");
+    expect(notificationMock.markRead).not.toHaveBeenCalledWith("other");
+  });
+
   it("keeps team members on their bell notification rather than showing an owner-only import result", () => {
     notificationMock.items = [
       { _id: "team-import", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
@@ -96,16 +118,23 @@ const preloadSpy = vi.hoisted(() => vi.fn());
 vi.mock("./booking-wizard-dynamic", () => ({ preloadBookingWizard: preloadSpy }));
 
 // ── Lazy sheets: stubs record mounts; export keeps the real dialog ────────────
-const sheetMounts = vi.hoisted(() => ({ import: vi.fn(), importJobId: vi.fn(), theme: vi.fn() }));
+const sheetMounts = vi.hoisted(() => ({
+  import: vi.fn(), importJobId: vi.fn(), theme: vi.fn(), workspaceId: vi.fn(),
+  finished: { current: undefined as ((jobId: string) => void) | undefined },
+}));
 const sheetPreloads = vi.hoisted(() => ({ import: vi.fn(), export: vi.fn(), theme: vi.fn() }));
 vi.mock("./bookings-toolbar-dynamic", async () => {
   const real = await vi.importActual<typeof import("./bookings-export-dialog")>(
     "./bookings-export-dialog"
   );
   return {
-    ImportSheetLazy: ({ initialJobId }: { initialJobId?: string }) => {
+    ImportSheetLazy: ({ initialJobId, workspaceId, onJobFinished }: {
+      initialJobId?: string; workspaceId?: string; onJobFinished?: (jobId: string) => void;
+    }) => {
       sheetMounts.import();
       sheetMounts.importJobId(initialJobId);
+      sheetMounts.workspaceId(workspaceId);
+      sheetMounts.finished.current = onJobFinished;
       return null;
     },
     InvoiceThemeDialogLazy: () => {

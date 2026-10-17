@@ -39,6 +39,7 @@ const ALL = "__all__";
 
 export function BookingsToolbar({
   defaultCurrency,
+  workspaceId,
   workspaceTimezone,
   onAddClick,
   view = "table",
@@ -53,6 +54,8 @@ export function BookingsToolbar({
   onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Scopes the importer's sessionStorage resume keys to this workspace. */
+  workspaceId?: string;
   /** Passed to the importer so its preview applies the same same-day rule the
    *  route enforces at commit. */
   workspaceTimezone?: string;
@@ -104,6 +107,21 @@ export function BookingsToolbar({
   const [selectedImportJobId, setSelectedImportJobId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<BookingImportProgress | null>(null);
   const importEventVersion = useRef(0);
+  // Jobs the owner watched finish in the sheet. Their result notification is
+  // already "seen", but may arrive after the sheet closed, so it is marked read
+  // here (the toolbar outlives the sheet) whenever it shows up.
+  const [watchedFinishedJobIds, setWatchedFinishedJobIds] = useState<string[]>([]);
+  const onImportJobFinished = useCallback((jobId: string) => {
+    setWatchedFinishedJobIds((ids) => (ids.includes(jobId) ? ids : [...ids, jobId]));
+  }, []);
+  useEffect(() => {
+    if (watchedFinishedJobIds.length === 0) return;
+    for (const n of notifications) {
+      if (n.entityType === "booking_import" && !n.read && n.entityId && watchedFinishedJobIds.includes(n.entityId)) {
+        markRead(n._id);
+      }
+    }
+  }, [notifications, watchedFinishedJobIds, markRead]);
   const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
 
@@ -204,6 +222,12 @@ export function BookingsToolbar({
     },
     [router, pathname]
   );
+
+  const closeImport = useCallback(() => {
+    setImportOpen(false);
+    setSelectedImportJobId(null);
+    if (searchParamsRef.current.has("importJob")) pushParams({ importJob: null });
+  }, [pushParams]);
 
   // Debounce the search-box input. The only deps that should change here are
   // `q` (typed by the user) and `pushParams` (stable unless route changes).
@@ -386,11 +410,9 @@ export function BookingsToolbar({
         {isOwner && canCreate && importOpen ? (
           <ImportSheetLazy
             open
-            onClose={() => {
-              setImportOpen(false);
-              setSelectedImportJobId(null);
-              if (searchParamsRef.current.has("importJob")) pushParams({ importJob: null });
-            }}
+            onClose={closeImport}
+            onJobFinished={onImportJobFinished}
+            workspaceId={workspaceId ?? ""}
             initialJobId={searchParams.get("importJob") ?? selectedImportJobId ?? undefined}
             defaultCurrency={defaultCurrency}
             workspaceTimezone={workspaceTimezone}

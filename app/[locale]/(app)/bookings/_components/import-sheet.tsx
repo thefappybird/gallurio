@@ -79,6 +79,10 @@ type Props = {
   onClose: () => void;
   defaultCurrency: string;
   initialJobId?: string;
+  /** Scopes the sessionStorage resume keys so a workspace switch never reads another workspace's job. */
+  workspaceId: string;
+  /** Fired once when a job THIS sheet watched run reaches a terminal state. */
+  onJobFinished?: (jobId: string) => void;
   /**
    * Workspace IANA timezone. Both the preview and date coercion need it — a
    * bare "2026-06-15" has to land on the workspace's day, not the browser's.
@@ -96,6 +100,8 @@ export function ImportSheet({
   onClose,
   defaultCurrency,
   initialJobId,
+  workspaceId,
+  onJobFinished,
   workspaceTimezone,
   teams = [],
 }: Props) {
@@ -120,6 +126,13 @@ export function ImportSheet({
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef<string | null>(null);
+  const jobKey = `gw:booking-import-job:${workspaceId}`;
+  const requestKey = `gw:booking-import-request:${workspaceId}`;
+  // Where the watched job id came from, and whether THIS mount saw it queued/
+  // running. A job first seen already finished is a replay: no toast, no
+  // invalidation, no auto-close.
+  const jobSourceRef = useRef<"started" | "resume" | "initial">("started");
+  const watchedLiveRef = useRef(false);
 
   const [step, setStep] = useState<Step>("upload");
   // Drives which way a step animates in. Purely presentational.
@@ -148,10 +161,13 @@ export function ImportSheet({
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(null);
   const [jobFailed, setJobFailed] = useState(false);
+  // True only once the job is known queued/running; a resumed id is not busy
+  // until the first status response says so.
+  const [jobLive, setJobLive] = useState(false);
 
   const resetImportState = useCallback(() => {
-    sessionStorage.removeItem("gw:booking-import-job");
-    sessionStorage.removeItem("gw:booking-import-request");
+    sessionStorage.removeItem(jobKey);
+    sessionStorage.removeItem(requestKey);
     setStep("upload");
     setDirection("forward");
     setHeaders([]);
@@ -173,7 +189,8 @@ export function ImportSheet({
     setActiveJobId(null);
     setJobProgress(null);
     setJobFailed(false);
-  }, [timeZone]);
+    setJobLive(false);
+  }, [timeZone, jobKey, requestKey]);
 
   // ── mapping-derived data ───────────────────────────────────────────────────
 
@@ -438,20 +455,34 @@ export function ImportSheet({
   // ── import ─────────────────────────────────────────────────────────────────
 
   const activateJob = useCallback((jobId: string) => {
-    sessionStorage.setItem("gw:booking-import-job", jobId);
-    sessionStorage.removeItem("gw:booking-import-request");
+    sessionStorage.setItem(jobKey, jobId);
+    sessionStorage.removeItem(requestKey);
+    jobSourceRef.current = "started";
+    watchedLiveRef.current = true;
     setActiveJobId(jobId);
+    setJobLive(true);
     setJobProgress(null);
-  }, []);
+  }, [jobKey, requestKey]);
 
-  const applyResult = useCallback((data: ImportResult) => {
-    sessionStorage.removeItem("gw:booking-import-job");
-    sessionStorage.removeItem("gw:booking-import-request");
-    requestIdRef.current = null;
+  // `replay`: the job was already finished when first seen (bell link, badge,
+  // or a resumed id). Show the result without repeating its side effects.
+  const applyResult = useCallback((data: ImportResult, jobId?: string, replay = false) => {
+    // Only drop the resume key if it is this job's; a replayed old job must
+    // not erase the key of a different job that is still running.
+    if (!jobId || sessionStorage.getItem(jobKey) === jobId) sessionStorage.removeItem(jobKey);
+    if (!replay) {
+      sessionStorage.removeItem(requestKey);
+      requestIdRef.current = null;
+    }
     setActiveJobId(null);
+    setJobLive(false);
     setJobProgress(null);
     setImportResult(data);
 
+    if (replay) {
+      if (data.errors.length > 0) setShowResultsDialog(true);
+      return;
+    }
     const written = data.created + data.updated;
     if (written > 0) {
       toast.success(t("success", { bookings: written, shifts: data.shifts }));
@@ -465,24 +496,38 @@ export function ImportSheet({
       setShowResultsDialog(true);
       if (written === 0) toast.error(tDialog("failedWithDetails"));
     }
-  }, [t, tDialog, invalidateFor, resetImportState, onClose, initialJobId]);
+  }, [t, tDialog, invalidateFor, resetImportState, onClose, initialJobId, jobKey, requestKey]);
+
+  // Volatile callbacks live in refs so the poll effect depends only on the
+  // job id: a parent re-render (e.g. each socket progress event) must not
+  // tear the poll down and fire an extra status GET.
+  const applyResultRef = useRef(applyResult);
+  const tDialogRef = useRef(tDialog);
+  const onJobFinishedRef = useRef(onJobFinished);
+  useEffect(() => {
+    applyResultRef.current = applyResult;
+    tDialogRef.current = tDialog;
+    onJobFinishedRef.current = onJobFinished;
+  });
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    const saved = initialJobId ?? sessionStorage.getItem("gw:booking-import-job");
+    const saved = initialJobId ?? sessionStorage.getItem(jobKey);
     if (saved) {
+      jobSourceRef.current = initialJobId ? "initial" : "resume";
+      watchedLiveRef.current = false;
       queueMicrotask(() => {
         if (!cancelled) setActiveJobId(saved);
       });
       return () => { cancelled = true; };
     }
-    const pendingRequest = sessionStorage.getItem("gw:booking-import-request");
+    const pendingRequest = sessionStorage.getItem(requestKey);
     if (!pendingRequest) return;
     void fetch(`/api/bookings/import?requestId=${pendingRequest}`, { cache: "no-store" })
       .then(async (res) => {
         if (res.status === 404) {
-          sessionStorage.removeItem("gw:booking-import-request");
+          sessionStorage.removeItem(requestKey);
           return;
         }
         const body = await res.json();
@@ -492,7 +537,7 @@ export function ImportSheet({
         // Keep the request ID for the next open when the connection returns.
       });
     return () => { cancelled = true; };
-  }, [open, activateJob, initialJobId]);
+  }, [open, activateJob, initialJobId, jobKey, requestKey]);
 
   useEffect(() => {
     if (!activeJobId) return;
@@ -514,10 +559,14 @@ export function ImportSheet({
         if (stopped) return;
         if (!res.ok || !body?.job) {
           if (res.status === 404) {
-            sessionStorage.removeItem("gw:booking-import-job");
+            if (sessionStorage.getItem(jobKey) === activeJobId) sessionStorage.removeItem(jobKey);
             requestIdRef.current = null;
             setActiveJobId(null);
-            toast.error(tDialog("failedRetry"));
+            setJobLive(false);
+            // Job docs expire after 30 days while their notification stays, and
+            // a resumed id can belong to another session: neither is a failure.
+            if (jobSourceRef.current === "initial") toast.message(tDialogRef.current("resultUnavailable"));
+            else if (jobSourceRef.current === "started") toast.error(tDialogRef.current("failedRetry"));
             return;
           }
         } else {
@@ -528,16 +577,26 @@ export function ImportSheet({
             result?: ImportResult;
           };
           setJobProgress({ done: job.doneGroups, total: job.totalGroups });
+          if (job.status === "queued" || job.status === "running") {
+            watchedLiveRef.current = true;
+            setJobLive(true);
+          }
+          const replay = !watchedLiveRef.current;
           if (job.status === "completed" && job.result) {
-            applyResult(job.result);
+            applyResultRef.current(job.result, activeJobId, replay);
+            if (!replay) onJobFinishedRef.current?.(activeJobId);
             return;
           }
           if (job.status === "failed") {
-            sessionStorage.removeItem("gw:booking-import-job");
-            requestIdRef.current = null;
+            if (sessionStorage.getItem(jobKey) === activeJobId) sessionStorage.removeItem(jobKey);
+            if (!replay) requestIdRef.current = null;
             setActiveJobId(null);
+            setJobLive(false);
             setJobFailed(true);
-            toast.error(tDialog("failedRetry"));
+            if (!replay) {
+              toast.error(tDialogRef.current("failedRetry"));
+              onJobFinishedRef.current?.(activeJobId);
+            }
             return;
           }
         }
@@ -552,7 +611,7 @@ export function ImportSheet({
       window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
       if (timer) clearTimeout(timer);
     };
-  }, [activeJobId, applyResult, tDialog]);
+  }, [activeJobId, jobKey]);
 
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
     useCallback(async (confirmDuplicates = false) => {
@@ -645,7 +704,7 @@ export function ImportSheet({
 
   // The sheet stays locked while the import request is in flight. The table
   // behind it refreshes via the data-event invalidation, not a blocking refresh.
-  const busy = importing || activeJobId !== null;
+  const busy = importing || (activeJobId !== null && jobLive);
 
   // ── file intake ────────────────────────────────────────────────────────────
 
@@ -840,8 +899,8 @@ export function ImportSheet({
                 {t("success", { bookings: importResult.created + importResult.updated, shifts: importResult.shifts })}
               </div>
             ) : null}
-            {initialJobId && jobFailed ? (
-              <div role="alert" className="mb-4 border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+            {jobFailed ? (
+              <div role="alert" className="mb-4 border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                 {tDialog("failedRetry")}
               </div>
             ) : null}
@@ -949,6 +1008,7 @@ export function ImportSheet({
                     </p>
                     <div
                       role="progressbar"
+                      aria-label={tNav("committing")}
                       aria-valuemin={0}
                       aria-valuemax={jobProgress.total}
                       aria-valuenow={jobProgress.done}
