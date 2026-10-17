@@ -3,18 +3,21 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.7.0] - 2026-10-17
+
+Release PR #120 (booking import improvements and document themes).
 
 ### Added
-- Booking imports now run as resumable background jobs with live progress and in-app outcome notifications. The Import button and sheet show a single 0–100% progress ring; its dot pulses during work, then uses success or warning color for the outcome.
+- Booking imports run as resumable background jobs with live progress and in-app outcome notifications. The Import button and sheet show 0–100% progress; the button's dot pulses while running and shows a success or warning color when the job finishes.
 - Invoice and receipt themes can use portfolio presets, a published brand kit, saved themes, or custom colors. Document previews can expand to a full-screen view.
 
 ### Changed
-- The import sheet has clearer column matching, combined name columns, more forgiving date and cell handling, and a review of skipped rows and notes. Import, export, and theme sheets can be resized on desktop.
-- The marketing import images now show the current mobile sheet in light and dark mode. The local import QA kit is excluded from the repository.
+- The import sheet has clearer column matching, combined name columns, broader date and spreadsheet-format support, and a review of skipped rows and notes. Import, export, and theme sheets can be resized on desktop.
+- The marketing import images now show the current mobile sheet in light and dark mode.
 
 ### Fixed
 - Reopening an active import shows progress immediately with one loader. Lost start responses retain their workspace-scoped request ID for safe recovery, and finished results replay without duplicate side effects.
+- Import errors identify empty, oversized, unsupported, or unreadable files more clearly; large XLSX decompression is bounded.
 
 ## [1.6.0] - 2026-10-10
 
