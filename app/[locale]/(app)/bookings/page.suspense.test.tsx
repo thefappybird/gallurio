@@ -31,7 +31,12 @@ vi.mock("./_components/calendar-booking-manager", () => ({ CalendarBookingManage
 vi.mock("./_components/table-booking-manager", () => ({ TableBookingManager: () => null }));
 vi.mock("./_components/bookings-page-client", () => ({ BookingsPageClient: () => null }));
 vi.mock("./_components/booking-url-modals", () => ({ BookingUrlModals: () => null }));
-vi.mock("@/lib/invoices/theme", () => ({ INVOICE_THEME_PRESETS: {} }));
+vi.mock("@/lib/invoices/theme", () => ({
+  INVOICE_THEME_PRESETS: { minimal: { main: "#000000", accent: "#ffffff", text: "#ffffff" } },
+  INVOICE_THEME_DEFAULT_PRESET: "minimal",
+  LEGACY_DEFAULT_INVOICE_THEME: { preset: "custom", main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" },
+  invoiceColorsFromBrandKit: () => ({ main: "#000000", accent: "#ffffff", text: "#ffffff" }),
+}));
 
 import BookingsPage from "./page";
 

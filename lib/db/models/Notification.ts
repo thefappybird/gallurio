@@ -11,6 +11,9 @@ const notificationSchema = new Schema(
         'inquiry.created',
         'booking.team_assigned',
         'booking.status_changed',
+        'booking.import_completed',
+        'booking.import_partial',
+        'booking.import_failed',
         'team.invitation',
         'team.invite_accepted',
         'team.removed',
@@ -18,7 +21,7 @@ const notificationSchema = new Schema(
       ],
     },
     entityId: { type: Schema.Types.ObjectId, required: true },
-    entityType: { type: String, required: true, enum: ['inquiry', 'booking', 'team'] },
+    entityType: { type: String, required: true, enum: ['inquiry', 'booking', 'booking_import', 'team'] },
     triggeredByWorkosUserId: { type: String, required: true },
     read: { type: Boolean, default: false },
     readAt: { type: Date, default: null },
@@ -35,11 +38,18 @@ const notificationSchema = new Schema(
 
 notificationSchema.index({ workspaceId: 1, recipientWorkosUserId: 1, read: 1, createdAt: -1 })
 notificationSchema.index({ workspaceId: 1, recipientWorkosUserId: 1, createdAt: -1 })
+notificationSchema.index(
+  { workspaceId: 1, recipientWorkosUserId: 1, entityId: 1, type: 1 },
+  { unique: true, partialFilterExpression: { entityType: 'booking_import' } },
+)
 
 export type NotificationType =
   | 'inquiry.created'
   | 'booking.team_assigned'
   | 'booking.status_changed'
+  | 'booking.import_completed'
+  | 'booking.import_partial'
+  | 'booking.import_failed'
   | 'team.invitation'
   | 'team.invite_accepted'
   | 'team.removed'

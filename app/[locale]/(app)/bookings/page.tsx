@@ -41,7 +41,12 @@ import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
-import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
+import {
+  LEGACY_DEFAULT_INVOICE_THEME,
+  invoiceColorsFromBrandKit,
+  normalizeInvoiceTheme,
+  publishedBrandKit,
+} from "@/lib/invoices/theme";
 
 export async function generateMetadata({
   params,
@@ -290,11 +295,24 @@ async function BookingsContent({
 
   // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
   // `invoiceTheme` existed have no key at all (not the schema default) — fall
-  // back to the classic preset so the toolbar always has a value to seed.
-  const invoiceTheme = workspace.invoiceTheme ?? {
-    preset: "classic" as const,
-    ...INVOICE_THEME_PRESETS.classic,
-  };
+  // back to the legacy classic look those workspaces' documents always had.
+  const invoiceTheme = workspace.invoiceTheme
+    ? normalizeInvoiceTheme(workspace.invoiceTheme)
+    : LEGACY_DEFAULT_INVOICE_THEME;
+  // Plain serializable colors so the theme dialog can offer "Match portfolio"
+  // (only once published) and the owner's saved portfolio themes.
+  const publishedKit = publishedBrandKit(workspace.publicPage);
+  const invoicePortfolioBrandKit = publishedKit
+    ? {
+        primaryColor: publishedKit.primaryColor,
+        accentColor: publishedKit.accentColor,
+        foregroundColor: publishedKit.foregroundColor,
+        backgroundColor: publishedKit.backgroundColor,
+      }
+    : null;
+  const invoiceSavedThemes = (workspace.publicPage?.savedThemes ?? []).flatMap((t) =>
+    t.brandKit ? [{ id: t.id, name: t.name, ...invoiceColorsFromBrandKit(t.brandKit) }] : []
+  );
   const invoiceThemeBusiness = {
     name: workspace.name,
     logoUrl: workspace.logoUrl ?? "",
@@ -322,6 +340,7 @@ async function BookingsContent({
             <TableBookingManager
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
+              workspaceId={workspace._id.toString()}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}
@@ -330,6 +349,8 @@ async function BookingsContent({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+              invoiceSavedThemes={invoiceSavedThemes}
               invoiceThemeBusiness={invoiceThemeBusiness}
             />
           ) : null}
@@ -340,6 +361,7 @@ async function BookingsContent({
               defaultDate={defaultDate}
               defaultCurrency={workspace.currency as SupportedCurrency}
               locale={locale}
+              workspaceId={workspace._id.toString()}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
               canCreate={canCreate}
               defaultTeamId={defaultTeamId}
@@ -348,6 +370,8 @@ async function BookingsContent({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+              invoiceSavedThemes={invoiceSavedThemes}
               invoiceThemeBusiness={invoiceThemeBusiness}
               colorMode={colorMode}
               teamColorMap={teamColorMap}

@@ -3,6 +3,7 @@ import {
   coerceCurrency,
   coerceDate,
   coerceMoney,
+  defaultDateOrder,
   inferStatus,
   isAmbiguousDateColumn,
 } from "./import-normalize";
@@ -141,6 +142,11 @@ describe("isAmbiguousDateColumn", () => {
     expect(isAmbiguousDateColumn(["2026-06-15", "June 7, 2026"])).toBe(false);
     expect(isAmbiguousDateColumn([])).toBe(false);
   });
+
+  it("sees through a time, weekday or ordinal glued to the date", () => {
+    expect(isAmbiguousDateColumn(["03/04/2026 2:00 PM", "05/06/2026 9pm"])).toBe(true);
+    expect(isAmbiguousDateColumn(["Mon 03/04/2026 2:00 PM", "25/06/2026 9pm"])).toBe(false);
+  });
 });
 
 describe("inferStatus", () => {
@@ -188,5 +194,67 @@ describe("inferStatus", () => {
         payments: [{ price: 40000, status: "unpaid" }],
       })
     ).toBe("booked");
+  });
+});
+
+describe("defaultDateOrder", () => {
+  it("reads Manila as month-first", () => {
+    expect(defaultDateOrder("Asia/Manila")).toBe("MDY");
+  });
+
+  it("reads Latin America as day-first and US/Canada zones as month-first", () => {
+    expect(defaultDateOrder("America/Sao_Paulo")).toBe("DMY");
+    expect(defaultDateOrder("America/Mexico_City")).toBe("DMY");
+    expect(defaultDateOrder("America/Chicago")).toBe("MDY");
+    expect(defaultDateOrder("America/Indiana/Indianapolis")).toBe("MDY");
+    expect(defaultDateOrder("America/Toronto")).toBe("MDY");
+    expect(defaultDateOrder("Pacific/Honolulu")).toBe("MDY");
+    expect(defaultDateOrder("Europe/London")).toBe("DMY");
+  });
+});
+
+describe("coerceDate leniency", () => {
+  it("ignores weekday names and ordinal suffixes", () => {
+    const r = coerceDate("Mon, June 15th 2026", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-14T16:00:00.000Z" });
+  });
+});
+
+describe("coerceDate colon-less times", () => {
+  it("reads 9pm after a named-month date", () => {
+    const r = coerceDate("Jun. 15, 2026 9pm", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-15T13:00:00.000Z" });
+  });
+});
+
+describe("coerceDate dotted times", () => {
+  it("reads 7.30pm as 19:30 wall time", () => {
+    const r = coerceDate("Jun 15, 2026 7.30pm", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-15T11:30:00.000Z" });
+  });
+});
+
+describe("coerceDate midnight", () => {
+  it("reads midnight as 00:00 wall time", () => {
+    const r = coerceDate("Jun 15, 2026 midnight", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-14T16:00:00.000Z" });
+  });
+});
+
+describe("coerceDate unreadable time", () => {
+  it("rejects a time-like token it cannot read instead of defaulting to 00:00", () => {
+    expect(coerceDate("Jun 15, 2026 25:00", "Asia/Manila", "MDY")).toEqual({ ok: false, reason: "not_a_date" });
+    expect(coerceDate("Jun 15, 2026 42pm", "Asia/Manila", "MDY")).toEqual({ ok: false, reason: "not_a_date" });
+  });
+
+  it("keeps a plain date with no time at 00:00", () => {
+    expect(coerceDate("Jun 15, 2026", "Asia/Manila", "MDY")).toEqual({ ok: true, value: "2026-06-14T16:00:00.000Z" });
+  });
+});
+
+describe("coerceDate noon", () => {
+  it("reads noon as 12:00 wall time", () => {
+    const r = coerceDate("06/15/2026 noon", "Asia/Manila", "MDY");
+    expect(r).toEqual({ ok: true, value: "2026-06-15T04:00:00.000Z" });
   });
 });

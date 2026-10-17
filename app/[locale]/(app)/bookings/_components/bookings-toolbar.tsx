@@ -27,15 +27,20 @@ import {
   preloadInvoiceThemeDialog,
 } from "./bookings-toolbar-dynamic";
 import { TeamPicker } from "./team-picker";
+import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
+import { ImportProgressRing, importProgressPercent } from "./import-progress-ring";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
 import { parseBookingsToggleFilters } from "../_data/booking-filters";
-import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoicePortfolioBrandKit, InvoiceSavedTheme, InvoiceThemeValue } from "./invoice-theme-dialog";
 
 const ALL = "__all__";
 
 export function BookingsToolbar({
   defaultCurrency,
+  workspaceId,
   workspaceTimezone,
   onAddClick,
   view = "table",
@@ -44,10 +49,14 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  invoicePortfolioBrandKit = null,
+  invoiceSavedThemes = [],
   invoiceThemeBusiness,
   onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Scopes the importer's sessionStorage resume keys to this workspace. */
+  workspaceId?: string;
   /** Passed to the importer so its preview applies the same same-day rule the
    *  route enforces at commit. */
   workspaceTimezone?: string;
@@ -62,9 +71,8 @@ export function BookingsToolbar({
    *  the team-filter dropdown in calendar view, where the calendar's own
    *  clickable team legend owns team filtering instead. */
   view?: BookingsView;
-  /** When false, the "New Booking" and "Import" buttons are hidden. Members
-   *  are view-only — only owners can create or bulk-import bookings. Export
-   *  remains visible because it is team-scoped server-side. */
+  /** When false, "New Booking" is hidden. Import also requires isOwner;
+   *  team leads may create bookings but only owners can bulk-import. */
   canCreate?: boolean;
   /** Available teams for the team filter picker. */
   teams?: BookingTeamOption[];
@@ -73,7 +81,9 @@ export function BookingsToolbar({
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
-  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  initialInvoiceTheme?: InvoiceThemeValue;
+  invoicePortfolioBrandKit?: InvoicePortfolioBrandKit | null;
+  invoiceSavedThemes?: InvoiceSavedTheme[];
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 }) {
   const router = useRouter();
@@ -81,6 +91,12 @@ export function BookingsToolbar({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
   const tBookings = useTranslations("app.bookings");
+  const { notifications, markRead } = useNotifications();
+  const unreadImportOutcomes = notifications.filter((notification) => isOwner &&
+    notification.entityType === "booking_import" && !notification.read && !notification.silent);
+  const unreadImportCount = unreadImportOutcomes.length;
+  const unreadImportLabel = unreadImportCount
+    ? tBookings("import.nav.resultsReady", { count: unreadImportCount }) : null;
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -89,8 +105,80 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedImportJobId, setSelectedImportJobId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<BookingImportProgress | null>(null);
+  const [finishedImportStatus, setFinishedImportStatus] = useState<"completed" | "failed" | null>(null);
+  const importEventVersion = useRef(0);
+  // Jobs the owner watched finish in the sheet. Their result notification is
+  // already "seen", but may arrive after the sheet closed, so it is marked read
+  // here (the toolbar outlives the sheet) whenever it shows up.
+  const [watchedFinishedJobIds, setWatchedFinishedJobIds] = useState<string[]>([]);
+  const onImportJobFinished = useCallback((jobId: string) => {
+    setWatchedFinishedJobIds((ids) => (ids.includes(jobId) ? ids : [...ids, jobId]));
+  }, []);
+  useEffect(() => {
+    if (watchedFinishedJobIds.length === 0) return;
+    for (const n of notifications) {
+      if (n.entityType === "booking_import" && !n.read && n.entityId && watchedFinishedJobIds.includes(n.entityId)) {
+        markRead(n._id);
+      }
+    }
+  }, [notifications, watchedFinishedJobIds, markRead]);
   const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOwner || !canCreate) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const eventVersion = importEventVersion.current;
+      try {
+        const response = await fetch("/api/bookings/import?latest", { cache: "no-store" });
+        if (!response.ok) return;
+        const { job } = await response.json();
+        if (cancelled || eventVersion !== importEventVersion.current) return;
+        setImportProgress(job?.status === "queued" || job?.status === "running"
+          ? { workspaceId: "", jobId: job.jobId, status: job.status,
+              doneGroups: job.doneGroups, totalGroups: job.totalGroups }
+          : null);
+      } catch {
+        // The socket carries live updates; the next poll or focus retries this fallback.
+      }
+    };
+    const onProgress = (event: Event) => {
+      const progress = (event as CustomEvent<BookingImportProgress>).detail;
+      if (workspaceId && progress.workspaceId !== workspaceId) return;
+      importEventVersion.current += 1;
+      if (progress.status === "completed" || progress.status === "failed") {
+        setFinishedImportStatus(progress.status);
+        setImportProgress(null);
+      } else {
+        setFinishedImportStatus(null);
+        setImportProgress(progress);
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+    };
+  }, [isOwner, canCreate, workspaceId]);
+
+  const importChipStatus = importProgress ? "running"
+    : unreadImportOutcomes[0]?.type === "booking.import_failed" || unreadImportOutcomes[0]?.type === "booking.import_partial"
+      ? "failed"
+      : unreadImportCount > 0 ? "completed" : finishedImportStatus;
+
+  useEffect(() => {
+    if (isOwner && canCreate && searchParams.get("importJob")) {
+      queueMicrotask(() => setImportOpen(true));
+    }
+  }, [isOwner, canCreate, searchParams]);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
   // closure AND never needs searchParams in its own dependency array (which
@@ -148,6 +236,12 @@ export function BookingsToolbar({
     },
     [router, pathname]
   );
+
+  const closeImport = useCallback(() => {
+    setImportOpen(false);
+    setSelectedImportJobId(null);
+    if (searchParamsRef.current.has("importJob")) pushParams({ importJob: null });
+  }, [pushParams]);
 
   // Debounce the search-box input. The only deps that should change here are
   // `q` (typed by the user) and `pushParams` (stable unless route changes).
@@ -254,16 +348,40 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        {canCreate ? (
+        {isOwner && canCreate ? (
           <Button
             variant="outline"
             size="sm"
-            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            data-import-unread={unreadImportCount > 0 || undefined}
+            data-import-status={importChipStatus ?? undefined}
+            className="relative min-h-11 flex-1 overflow-visible sm:flex-none sm:min-h-0"
             onPointerEnter={preloadImportSheet}
             onFocus={preloadImportSheet}
-            onClick={() => setImportOpen(true)}
+            onClick={() => {
+              const outcome = importProgress ? undefined : unreadImportOutcomes[0];
+              setSelectedImportJobId(outcome?.entityId ?? null);
+              if (outcome) markRead(outcome._id);
+              if (!importProgress) setFinishedImportStatus(null);
+              setImportOpen(true);
+            }}
+            aria-label={importProgress || unreadImportLabel
+              ? `${t("import")}: ${[
+                  importProgress ? `${tBookings("import.nav.progress", {
+                    done: importProgress.doneGroups, total: importProgress.totalGroups,
+                  })} (${importProgressPercent(importProgress.doneGroups, importProgress.totalGroups)}%)` : null,
+                  unreadImportLabel,
+                ].filter(Boolean).join("; ")}`
+              : finishedImportStatus ? tBookings(`import.nav.${finishedImportStatus}`) : undefined}
           >
-            <UploadIcon className="size-4" />
+            {importChipStatus ? (
+              <span aria-hidden="true" className={`absolute -top-1.5 -end-1.5 z-10 size-3 rounded-full ring-2 ring-background ${
+                importChipStatus === "running" ? "bg-brand motion-safe:animate-pulse"
+                  : importChipStatus === "completed" ? "bg-[var(--success-border)]" : "bg-[var(--warning-border)]"
+              }`} />
+            ) : null}
+            {importProgress ? (
+              <ImportProgressRing done={importProgress.doneGroups} total={importProgress.totalGroups} className="size-4 text-brand" />
+            ) : <UploadIcon className="size-4" />}
             {t("import")}
           </Button>
         ) : null}
@@ -301,10 +419,14 @@ export function BookingsToolbar({
             teams={teams}
           />
         ) : null}
-        {importOpen ? (
+        {isOwner && canCreate && importOpen ? (
           <ImportSheetLazy
             open
-            onClose={() => setImportOpen(false)}
+            onClose={closeImport}
+            onJobFinished={onImportJobFinished}
+            workspaceId={workspaceId ?? ""}
+            initialJobId={searchParams.get("importJob") ?? selectedImportJobId ?? undefined}
+            runningJobProgress={importProgress}
             defaultCurrency={defaultCurrency}
             workspaceTimezone={workspaceTimezone}
             teams={teams}
@@ -315,6 +437,8 @@ export function BookingsToolbar({
             open
             onClose={() => setInvoiceThemeOpen(false)}
             initialTheme={initialInvoiceTheme}
+            portfolioBrandKit={invoicePortfolioBrandKit}
+            savedThemes={invoiceSavedThemes}
             business={invoiceThemeBusiness}
           />
         ) : null}

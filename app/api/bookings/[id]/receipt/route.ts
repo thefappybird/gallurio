@@ -7,7 +7,7 @@ import { Booking, Client } from "@/lib/db/models";
 import { ReceiptDocument, type ReceiptData } from "@/lib/invoices/ReceiptDocument";
 import { buildPdfFilename } from "@/lib/invoices/filename";
 import { getNextInvoiceSeq, formatInvoiceNumber } from "@/lib/invoices/counter";
-import { resolveInvoiceTheme } from "@/lib/invoices/theme";
+import { publishedBrandKit, resolveInvoiceTheme } from "@/lib/invoices/theme";
 
 export const runtime = "nodejs";
 
@@ -61,7 +61,11 @@ export async function GET(_req: Request, { params }: Params) {
       logoUrl: workspace.logoUrl ?? "",
       address: workspace.contact?.address ?? "",
       email: workspace.contact?.email ?? "",
-      theme: resolveInvoiceTheme(workspace.invoiceTheme),
+      theme: resolveInvoiceTheme(
+        workspace.invoiceTheme,
+        publishedBrandKit(workspace.publicPage),
+        workspace.publicPage?.savedThemes,
+      ),
     },
     client: {
       name: client?.name ?? booking.clientName,

@@ -1071,14 +1071,27 @@
         "templateCsv": "ดาวน์โหลดเทมเพลต CSV",
         "templateXlsx": "ดาวน์โหลดเทมเพลต XLSX",
         "preview": "พบ {total} แถว",
-        "validCount": "{count} รายการถูกต้อง",
-        "invalidCount": "{count} รายการมีข้อผิดพลาด",
+        "totalCount": "ทั้งหมด {count} รายการ",
+        "notesCount": "{count} รายการมีหมายเหตุ",
+        "invalidCount": "{count} รายการถูกข้าม",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "นำเข้า {count} %booking%",
         "importing": "กำลังนำเข้า…",
         "noValidRows": "ไม่มีแถวที่ถูกต้องให้นำเข้า แก้ไขข้อผิดพลาดด้านบนก่อน",
         "success": "นำเข้า {bookings} %booking%และ {shifts} กะงานสำเร็จแล้ว",
         "partialSuccess": "นำเข้า {count} %booking%แล้ว มี {failed} แถวที่นำเข้าไม่ได้",
         "parseError": "ไม่สามารถอ่านไฟล์นี้ได้ ตรวจสอบว่าเป็นไฟล์ CSV หรือ XLSX ที่ถูกต้อง",
+        "missingClientName": "ไม่มีชื่อ %client% โปรดเพิ่มชื่อก่อนนำเข้าแถวนี้",
+        "intake": {
+          "oldExcel": "ไฟล์นี้เป็นไฟล์ Excel รุ่นเก่า โปรดบันทึกเป็น .xlsx แล้วลองอีกครั้ง",
+          "notText": "ไม่เหมือนไฟล์ CSV กรุณาเลือกสเปรดชีต .csv หรือ .xlsx",
+          "tooLarge": "ไฟล์นี้ใหญ่เกินขีดจำกัด 2 MB กรุณาแบ่งเป็นไฟล์เล็กลง",
+          "tooManyRows": "ไฟล์นี้มี {count} แถว นำเข้าได้ครั้งละสูงสุด {max} แถว — กรุณาแบ่งเป็นไฟล์เล็กลง",
+          "empty": "ไฟล์นี้ว่างเปล่า",
+          "noRows": "พบหัวคอลัมน์แต่ไม่มีแถวข้อมูลอยู่ด้านล่าง",
+          "offline": "อัปโหลดไฟล์ไม่ได้ ตรวจสอบการเชื่อมต่อแล้วลองใหม่"
+        },
         "crossesMidnight": "เวลาเริ่มและสิ้นสุดต้องอยู่ในวันเดียวกันตามเขตเวลาของเวิร์กสเปซ ({tz})",
         "previewMore": "ยังมีอีก {count} แถวที่ไม่ได้แสดง",
         "groupBlocked": "มีอีกแถวที่ใช้ booking_id เดียวกันเกิดข้อผิดพลาด จึงระงับ%booking%ทั้งรายการไว้ก่อน",
@@ -1087,9 +1100,12 @@
           "title": "ชื่อรายการ",
           "client": "%client%",
           "start": "เริ่ม",
-          "error": "ข้อผิดพลาด"
+          "error": "หมายเหตุ"
         },
         "results": {
+          "bookingNotFound": "รหัส %booking% นี้ไม่ตรงกับ %booking% ใดในเวิร์กสเปซนี้",
+          "clientNotFound": "รหัส %client% นี้ไม่ตรงกับ %client% ใดในเวิร์กสเปซนี้",
+          "completedNotPaid": "%booking% ที่เสร็จสมบูรณ์ต้องชำระเงินครบ ยอดมัดจำและยอดชำระแล้วต้องเท่ากับยอดรวม",
           "title": "ข้อผิดพลาดในการนำเข้า",
           "kindValidation": "การตรวจสอบความถูกต้อง",
           "kindLookup": "การค้นหา",
@@ -1100,7 +1116,9 @@
           "untitled": "%booking%ที่ไม่มีชื่อ",
           "summary": "นำเข้าแล้ว {created} · อัปเดตแล้ว {updated} · ข้ามไป {skipped}",
           "hint": "แก้ไขแถวด้านบนแล้วอัปโหลดใหม่เพื่อนำเข้า",
-          "previewHint": "ยังไม่มีการนำเข้าใด ๆ แก้ไขแถวเหล่านี้แล้วอัปโหลดไฟล์อีกครั้ง"
+          "previewHint": "ยังไม่มีการนำเข้าใด ๆ แก้ไขแถวเหล่านี้แล้วอัปโหลดไฟล์อีกครั้ง",
+          "notesTitle": "หมายเหตุการนำเข้า",
+          "notesHint": "แถวเหล่านี้จะถูกนำเข้า พร้อมการเปลี่ยนแปลงที่แสดงไว้ที่นี่"
         },
         "dialog": {
           "required": "จำเป็น",
@@ -1114,68 +1132,44 @@
           "duplicateNoTeam": "ไม่ทราบ%team%",
           "duplicateContinue": "นำเข้าต่อไป",
           "failedRetry": "นำเข้าไม่สำเร็จ โปรดลองอีกครั้ง",
+          "resultUnavailable": "ผลการนำเข้านี้ไม่พร้อมใช้งานแล้ว",
+          "failedConnection": "ไม่สามารถยืนยันได้ว่าเริ่มนำเข้าแล้วหรือไม่ ตรวจสอบการเชื่อมต่อและเปิดหน้านำเข้าอีกครั้งเพื่อดำเนินการต่อก่อนลองใหม่",
+          "anotherActive": "มีการนำเข้าอื่นกำลังทำงาน กำลังแสดงความคืบหน้าของงานนั้น ไฟล์นี้ยังไม่ได้เริ่มนำเข้า",
           "close": "ปิด",
           "cancel": "ยกเลิก",
-          "viewErrors": "ดูข้อผิดพลาด {n} รายการ",
-          "spec": {
-            "clientName": {
-              "note": "ชื่อเต็มของ%client%"
-            },
-            "clientEmail": {
-              "note": "ใช้เพื่อตรวจสอบ%client%ซ้ำ"
-            },
-            "startAt": {
-              "note": "รูปแบบ ISO 8601 — เช่น 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "ใช้ค่าเดียวกับ startAt หากไม่ระบุ"
-            },
-            "title": {
-              "note": "ชื่อ%booking%"
-            },
-            "eventType": {
-              "note": "wedding, corporate, portrait ฯลฯ"
-            },
-            "status": {
-              "note": "booked, completed, cancelled"
-            },
-            "amountTotal": {
-              "note": "ยอดรวม%booking%"
-            },
-            "amountDeposit": {
-              "note": "ยอดมัดจำ"
-            },
-            "currency": {
-              "note": "ใช้สกุลเงินของเวิร์กสเปซหากไม่ระบุ"
-            },
-            "locationAddress": {
-              "note": "ข้อความสถานที่หรือที่อยู่"
-            },
-            "notes": {
-              "note": "หมายเหตุภายใน"
-            },
-            "booking_id": {
-              "note": "จากไฟล์ส่งออก เก็บไว้เพื่ออัปเดต%booking%นั้นแทนการสร้างซ้ำ"
-            },
-            "session_index": {
-              "note": "จัดลำดับเซสชันเมื่อหลายแถวใช้ booking_id เดียวกัน"
-            },
-            "clientId": {
-              "note": "จากไฟล์ส่งออก จับคู่ก่อน clientEmail"
-            },
-            "clientPhone": {
-              "note": "บันทึกให้%client%ใหม่ เติมช่องว่าง ไม่เขียนทับ"
-            },
-            "locationLat": {
-              "note": "ละติจูดบนแผนที่ เช่น 14.5995"
-            },
-            "locationLng": {
-              "note": "ลองจิจูดบนแผนที่ เช่น 120.9842"
-            },
-            "payments": {
-              "note": "รายการ JSON จากไฟล์ส่งออก อ่านเฉพาะตอนสร้าง รายการที่ชำระแล้วจะเข้าบัญชี"
-            }
-          }
+          "viewErrors": "ดูข้อผิดพลาด {n} รายการ"
+        },
+        "fields": {
+          "clientName": { "label": "ชื่อ%client%", "hint": "ชื่อเต็ม ใช้ + เพื่อรวมคอลัมน์ชื่อและนามสกุล" },
+          "clientEmail": { "label": "อีเมล%client%", "hint": "ใช้จับคู่กับ%client%ที่คุณมีอยู่แล้ว" },
+          "startAt": { "label": "วันที่และเวลาเริ่ม", "hint": "รูปแบบวันที่แบบไหนก็ได้ — เราแปลงให้เอง" },
+          "endAt": { "label": "วันที่และเวลาสิ้นสุด", "hint": "หากเว้นว่างไว้ จะใช้เวลาเริ่มแทน" },
+          "title": { "label": "ชื่อ%booking%", "hint": "ไม่บังคับ — เราจะสร้างให้จาก%client%และประเภทงาน" },
+          "eventType": { "label": "ประเภทงาน", "hint": "งานแต่งงาน องค์กร พอร์เทรต และอื่น ๆ" },
+          "status": { "label": "สถานะ", "hint": "จองแล้ว เสร็จสิ้น หรือยกเลิก" },
+          "amountTotal": { "label": "ราคารวม", "hint": "ยอดเต็มของ%booking%" },
+          "amountDeposit": { "label": "มัดจำ", "hint": "ยอดที่ชำระล่วงหน้า" },
+          "currency": { "label": "สกุลเงิน", "hint": "หากเว้นว่าง จะใช้สกุลเงินของเวิร์กสเปซ" },
+          "locationAddress": { "label": "สถานที่หรือที่อยู่", "hint": "สถานที่จัด%booking%" },
+          "notes": { "label": "หมายเหตุ", "hint": "เป็นส่วนตัว สำหรับทีมของคุณเท่านั้น" },
+          "bookingId": { "label": "รหัส%booking%", "hint": "จากไฟล์ส่งออกของ Gallurio เก็บไว้เพื่ออัปเดต%booking%นั้นแทนการสร้างซ้ำ" },
+          "sessionIndex": { "label": "ลำดับเซสชัน", "hint": "จัดลำดับวันเมื่อหลายแถวใช้รหัส%booking%เดียวกัน" },
+          "clientId": { "label": "รหัส%client%", "hint": "จากไฟล์ส่งออกของ Gallurio จับคู่ก่อนอีเมล" },
+          "clientPhone": { "label": "เบอร์โทร%client%", "hint": "บันทึกให้%client%ใหม่ เติมช่องที่ว่างแต่ไม่เขียนทับ" },
+          "locationLat": { "label": "ละติจูดบนแผนที่", "hint": "สำหรับหมุดบนแผนที่ เช่น 14.5995" },
+          "locationLng": { "label": "ลองจิจูดบนแผนที่", "hint": "สำหรับหมุดบนแผนที่ เช่น 120.9842" },
+          "payments": { "label": "ประวัติการชำระเงิน", "hint": "ประวัติการชำระเงินจากไฟล์ส่งออกของ Gallurio" }
+        },
+        "notes": {
+          "amount_dropped": "{field}: \"{value}\" ไม่ใช่จำนวนเงิน จึงเว้นว่างไว้",
+          "currency_dropped": "{field}: \"{value}\" ไม่ใช่สกุลเงินที่ใช้ได้ จึงใช้สกุลเงินของเวิร์กสเปซแทน",
+          "email_dropped": "{field}: \"{value}\" ไม่ใช่อีเมล จึงเว้นว่างไว้",
+          "end_date_dropped": "{field}: อ่าน \"{value}\" ไม่ได้ จึงใช้เวลาเริ่มแทน",
+          "event_type_blank": "{field}: \"{value}\" ไม่ตรงกับตัวเลือกใด จึงเว้นว่างไว้",
+          "status_inferred": "{field}: \"{value}\" ไม่ตรงกับตัวเลือกใด จึงอนุมานจากวันที่",
+          "truncated": "{field}: ยาวเกินไป จึงตัดให้สั้นลง",
+          "phone_dropped": "{field}: \"{value}\" ยาวเกินกว่าจะเป็นเบอร์โทร จึงเว้นว่างไว้",
+          "deposit_dropped": "{field}: \"{value}\" ต้องมียอดรวมที่ครอบคลุม จึงเว้นว่างไว้"
         },
         "steps": {
           "upload": "อัปโหลด",
@@ -1191,7 +1185,7 @@
           "rowsFound": "{count, plural, other {# แถว}}",
           "sectionRequired": "จำเป็น",
           "sectionCommon": "รายละเอียด%booking%",
-          "sectionAdvanced": "คอลัมน์ขั้นสูงและคอลัมน์สำหรับนำกลับเข้า",
+          "sectionAdvanced": "นำเข้าไฟล์ส่งออกของ Gallurio อีกครั้ง",
           "advancedHint": "ต้องใช้เฉพาะเมื่อนำเข้าไฟล์ที่คุณส่งออกจาก Gallurio อีกครั้ง",
           "selectColumn": "เลือกคอลัมน์จากไฟล์ของคุณ",
           "notImported": "ไม่นำเข้า",
@@ -1203,18 +1197,14 @@
           "sample": "แถวแรก: {value}",
           "sampleEmpty": "แถวแรกว่างเปล่า",
           "unassignedRequired": "ต้องมีคอลัมน์",
-          "dateOrderLabel": "ลำดับวันและเดือน",
-          "dateOrderMDY": "ดด/วว/ปปปป",
-          "dateOrderDMY": "วว/ดด/ปปปป",
-          "dateOrderHint": "{example} อ่านได้สองแบบ เลือกลำดับที่ไฟล์ของคุณใช้",
+          "sampleDate": "แถวแรก: {value} → {formatted}",
+          "swapDayMonth": "สลับวันและเดือน",
+          "swapDayMonthHint": "{example} อ่านได้ทั้งแบบวันก่อนหรือเดือนก่อน",
+          "combineColumns": "รวมกับอีกคอลัมน์",
+          "removeColumn": "เอาคอลัมน์นี้ออก",
+          "columnSlot": "{field} คอลัมน์ที่ {n}",
           "continueBlocked": "จับคู่{count, plural, other {ฟิลด์ที่จำเป็น # ฟิลด์}}เพื่อไปต่อ",
-          "loading": "กำลังอ่านไฟล์ของคุณ",
-          "kindText": "ข้อความ",
-          "kindDate": "วันที่",
-          "kindMoney": "จำนวนเงิน",
-          "kindNumber": "ตัวเลข",
-          "kindEnum": "ตัวเลือก",
-          "kindJson": "ข้อมูล"
+          "loading": "กำลังอ่านไฟล์ของคุณ"
         },
         "values": {
           "title": "จับคู่ค่าของคุณกับของเรา",
@@ -1223,21 +1213,27 @@
           "rowCount": "{count, plural, other {# แถว}}",
           "choose": "เลือกค่าที่ตรงกัน",
           "leaveBlank": "เว้นว่างไว้",
-          "unmatchedWarning": "{count, plural, other {ยังไม่ได้จับคู่ # ค่า แถวที่ใช้ค่าเหล่านี้จะถูกข้าม}}"
+          "unmatchedWarning": "{count, plural, other {ยังไม่ได้จับคู่ # ค่า แถวที่ใช้ค่าเหล่านี้จะถูกนำเข้าโดยเว้นช่องนั้นว่าง}}",
+          "unmatchedWarningStatus": "{count, plural, other {ยังไม่ได้จับคู่ # ค่า สถานะของแถวที่ใช้ค่าเหล่านี้จะอนุมานจากวันที่}}"
         },
         "coerce": {
           "not_a_number": "{field}: เราอ่าน \"{value}\" เป็นจำนวนเงินไม่ได้",
           "negative_amount": "{field}: \"{value}\" ติดลบ จำนวนเงินต้องเป็นศูนย์หรือมากกว่า",
           "not_a_date": "{field}: เราอ่าน \"{value}\" เป็นวันที่ไม่ได้",
-          "unsupported_currency": "{field}: \"{value}\" ไม่ใช่สกุลเงินที่พื้นที่ทำงานนี้ใช้ได้",
-          "unrecognized_value": "{field}: \"{value}\" ยังไม่ได้จับคู่"
+          "unsupported_currency": "{field}: \"{value}\" ไม่ใช่สกุลเงินที่พื้นที่ทำงานนี้ใช้ได้"
         },
         "nav": {
           "back": "ย้อนกลับ",
           "continue": "ไปต่อ",
           "reviewMapping": "จับคู่คอลัมน์ให้อัตโนมัติแล้ว",
           "reviewMappingAction": "ตรวจทาน",
-          "committing": "กำลังนำเข้า%booking%ของคุณ"
+          "committing": "กำลังนำเข้า%booking%ของคุณ",
+          "progress": "ดำเนินการแล้ว {done} จาก {total}",
+
+          "resultsReady": "{count, plural, other {มีผลการนำเข้า # รายการพร้อมตรวจสอบ}}",
+          "completed": "นำเข้าเสร็จแล้ว",
+          "failed": "นำเข้าไม่สำเร็จ",
+          "background": "คุณปิดแผงนี้ได้ การนำเข้าจะดำเนินต่อไป"
         }
       },
       "export": {
@@ -1301,12 +1297,12 @@
         "invoice": "ใบแจ้งหนี้",
         "receipt": "ใบเสร็จ",
         "presets": {
-          "classic": "คลาสสิก",
-          "slate": "สเลท",
-          "navyGold": "กรมท่าทอง",
-          "forest": "ป่าไม้",
           "custom": "กำหนดเอง"
         },
+        "matchPortfolio": "ให้ตรงกับพอร์ตโฟลิโอของฉัน",
+        "publishFirst": "เผยแพร่พอร์ตโฟลิโอของคุณก่อน",
+        "savedThemes": "ธีมที่บันทึกไว้",
+        "expandPreview": "ขยายตัวอย่าง",
         "mainColor": "สีหลัก",
         "accentColor": "สีเน้น",
         "saveAndApply": "บันทึกและนำไปใช้",
@@ -3555,6 +3551,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {ยกเลิก%booking%แล้ว} completed {%booking%เสร็จสิ้นแล้ว} booked {ยืนยัน%booking%แล้ว} other {อัปเดตสถานะ%booking%แล้ว}}",
             "body": "{newStatus, select, cancelled {{actorName} ยกเลิก%booking%} completed {{actorName} ทำเครื่องหมาย%booking%ว่าเสร็จสิ้น} booked {{actorName} ยืนยัน%booking%} other {{actorName} เปลี่ยนสถานะ%booking%เป็น {newStatus}}}"
+          },
+          "import_completed": {
+            "title": "นำเข้า%booking%เสร็จแล้ว",
+            "body": "การนำเข้าสำหรับ%team%ของคุณเสร็จแล้ว {importViewer, select, team {เปิดรายการจองเพื่อดูข้อมูลที่นำเข้า} other {เปิดเพื่อดูผลลัพธ์}}"
+          },
+          "import_partial": {
+            "title": "ต้องตรวจสอบการนำเข้า%booking%",
+            "body": "การนำเข้าสำหรับ%team%ของคุณเสร็จแล้ว แต่มีบางแถวถูกข้าม {importViewer, select, team {เปิดรายการจองเพื่อดูข้อมูลที่นำเข้า} other {เปิดเพื่อตรวจสอบแถวที่ถูกข้าม}}"
+          },
+          "import_failed": {
+            "title": "นำเข้า%booking%ไม่สำเร็จ",
+            "body": "การนำเข้าสำหรับ%team%ของคุณหยุดก่อนเสร็จสิ้น {importViewer, select, team {ขอให้เจ้าของเวิร์กสเปซตรวจสอบการนำเข้า} other {เปิดเพื่อดูสถานะ}}"
           }
         },
         "team": {
@@ -3695,6 +3703,7 @@
     "clearFilters": "ล้างตัวกรอง",
     "loading": "กำลังโหลด…",
     "close": "ปิด",
+    "resizePanel": "ปรับขนาดแผง",
     "promoCode": {
       "disclosureLabel": "มีโค้ดโปรโมชันหรือไม่?",
       "close": "ปิดโค้ดโปรโมชัน",

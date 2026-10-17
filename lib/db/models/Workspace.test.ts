@@ -9,6 +9,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models";
+import { resolveInvoiceTheme } from "@/lib/invoices/theme";
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
@@ -201,14 +202,33 @@ describe("Workspace.publicPage.collectionsPopup popupLayout / imageModalLayout d
 });
 
 describe("Workspace.invoiceTheme defaults", () => {
-  it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
+  it("new workspace stores no invoiceTheme, so it resolves to the same classic default as legacy workspaces", async () => {
     const ws = await Workspace.create({
       slug: "invoice-theme-studio",
       name: "Invoice Theme Studio",
       ownerUserId: "user_invoice_1",
     });
-    expect(ws.invoiceTheme?.preset).toBe("classic");
-    expect(ws.invoiceTheme?.main).toBe("#1A1A1A");
-    expect(ws.invoiceTheme?.accent).toBe("#FFFFFF");
+    // Hydrated (non-lean) docs must not materialize a truthy {} either.
+    expect(ws.invoiceTheme).toBeUndefined();
+    expect((await Workspace.findById(ws._id))?.invoiceTheme).toBeUndefined();
+    const stored = await Workspace.findById(ws._id).lean();
+    expect(stored?.invoiceTheme?.preset).toBeUndefined();
+    expect(resolveInvoiceTheme(undefined).main).toBe("#1A1A1A");
+  });
+});
+
+describe("Workspace.invoiceTheme.preset", () => {
+  const base = { slug: "inv-theme", name: "Inv", ownerUserId: "user_inv", country: "PH", currency: "PHP", timezone: "Asia/Manila" };
+
+  it("accepts legacy preset ids so hydrated old docs still validate", async () => {
+    for (const preset of ["classic", "slate", "navyGold", "forest"]) {
+      const ws = new Workspace({ ...base, invoiceTheme: { preset } });
+      expect(ws.validateSync()?.errors["invoiceTheme.preset"]).toBeUndefined();
+    }
+  });
+
+  it("still rejects an unknown preset id", () => {
+    const ws = new Workspace({ ...base, invoiceTheme: { preset: "bogus" } });
+    expect(ws.validateSync()?.errors["invoiceTheme.preset"]).toBeDefined();
   });
 });

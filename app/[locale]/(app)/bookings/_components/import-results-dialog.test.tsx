@@ -42,12 +42,39 @@ function renderDialog(
   );
 }
 
+describe("ImportResultsDialog note tone", () => {
+  it("titles the dialog as notes and drops the error kind label", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ImportResultsDialog
+          open
+          onClose={vi.fn()}
+          tone="note"
+          errors={[{ ...VALIDATION_ERROR, message: "first note\nsecond note" }]}
+        />
+      </NextIntlClientProvider>
+    );
+    expect(screen.getByText("Import notes")).toBeInTheDocument();
+    expect(screen.queryByText("Validation")).not.toBeInTheDocument();
+  });
+});
+
 describe("ImportResultsDialog", () => {
   it("renders both error rows when open", () => {
     renderDialog(true);
     // Each error row shows its message.
     expect(screen.getByText("Title is required")).toBeDefined();
     expect(screen.getByText("Database write failed")).toBeDefined();
+  });
+
+  it("translates known import failures before showing them", () => {
+    renderDialog(true, [
+      { ...VALIDATION_ERROR, kind: "lookup", message: "booking_not_found_in_workspace" },
+      { ...SERVER_ERROR, kind: "validation", message: "completed_booking_not_paid" },
+    ]);
+    expect(screen.getByText(/does not match a booking in this workspace/i)).toBeInTheDocument();
+    expect(screen.getByText(/must be fully paid/i)).toBeInTheDocument();
+    expect(screen.queryByText("booking_not_found_in_workspace")).not.toBeInTheDocument();
   });
 
   it("heads each error with the booking title and client", () => {

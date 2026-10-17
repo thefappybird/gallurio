@@ -1,0 +1,47 @@
+# Bookings import and document themes
+
+## Problem
+The bookings importer worked but was hard to use: step-2 dropdowns clipped at the screen edge, developer field names and badges, strict date format, one bad cell dropped a whole row, cramped sheets. Invoice and receipt themes used their own 4 color pairs instead of the portfolio themes, and previews were too small to judge.
+
+## What shipped
+- **Import mapping:** plain-language field labels and hints (`app.bookings.import.fields.*`), "Required" badge only, advanced section renamed "Re-importing a Gallurio export". Select popups no longer clip (`components/ui/select.tsx`).
+- **Combine columns:** `Assignment` may be `{ sources: string[] }` on text fields (`combinable`). `applyMapping` trims, drops blanks, joins with a space. `autoMapColumns` maps First/Last name pairs automatically. Card has `+` (combine) and `×` (remove).
+- **Lenient notes:** `MappedRow.notes` (non-blocking) next to blocking `issues`. Unreadable/negative amount, unsupported currency, bad email, unmatched type/status, over-long text import with a note. A missing title is generated silently via `titleFallback` (no note). Missing client name, unreadable start date, and sessions crossing midnight in the workspace timezone skip a row. Review shows total / with notes / skipped counts (ready count is on the Import button).
+- **Date handling:** `defaultDateOrder(timeZone)` seeds the order. `coerceDate` accepts weekday names, ordinals, "9am"/"noon", dotted month abbreviations. Date card shows the readable result plus a "Swap day and month" link when the column is ambiguous. MM/DD radio group removed.
+- **Resizable sheets:** `useSheetResize` + `<SheetResizeHandle/>` on the import, export and invoice-theme sheets. Pointer capture, rAF writes `--sheet-w` to the DOM during drag, commit to state and `localStorage` on pointerup. Arrows step 32px, Home/End jump. Phones stay full width, handle hidden.
+- **Portfolio-based document themes:** the 6 `BRAND_KIT_THEME_PRESETS`, "Match my portfolio" (live published brand kit), saved portfolio themes, Custom. Band = `primaryColor`, accent strip = `accentColor`, page body stays white. `InvoiceTheme = { preset, savedThemeId?, main, accent, text }`. `"portfolio"` follows the published brand kit at render time (stored snapshot if unpublished). `"saved"` renders from the workspace's current saved theme and falls back to the stored snapshot when that theme was deleted, so invoices never break. `"custom"` uses its stored colors. Workspaces with no stored theme render the classic dark palette. Band text is a readable color computed from the main color unless the theme stores its own `text`. This intentionally changed existing custom themes from always-white band text to contrast-picked text. Legacy presets (classic/slate/navyGold/forest) are converted on read to a Custom theme keeping their stored colors (`normalizeInvoiceTheme` in `lib/invoices/theme.ts`).
+- **Full-screen preview:** Expand button opens `DocumentPreviewDialog` (dark scrim, A4 scaled to viewport height, Esc, focus trap, focus returns to Expand).
+- **Background booking import:** commit starts a workspace-scoped `BookingImportJob` and returns 202 with a job ID. One `BookingImportJobItem` per booking group; successful booking, ledger, audit, and item-outcome writes share a Mongo transaction, so a resumed worker skips committed groups.
+  - Uniqueness: unique `workspaceId`/`requestId` (a lost start response reuses the same ID, no second job) and a unique partial index allowing one active job per workspace.
+  - Worker: lease + heartbeat, `MAX_IMPORT_ATTEMPTS` = 3 with exponential retry backoff. Job rows are removed when a job reaches a terminal state; job docs also TTL after 30 days.
+  - Recovery: the custom server calls the sweep at startup and every minute via `GET /api/cron/import-recovery`, authenticated with a per-process bearer token (`GALLURIO_IMPORT_RECOVERY_TOKEN`, generated in `server.ts`, never configured). The import route itself stays behind AuthKit. The owner status request also reclaims an expired lease.
+  - Access: import is owner-only (team leads can create bookings but not import). The owner's Import button shows a determinate 0–100% ring from completed/total groups, with a pulsing primary-color dot while active and a success or warning dot at the terminal outcome. The sheet shows one percentage ring and loads directly into that state when an active job is reopened. Socket events update progress; workspace-scoped status polling restores it after missed events. Unread completion, partial completion, and terminal failure also send in-app bell notifications to the owner and assigned team's current members; the owner's entry reopens the result, team members open bookings. A pending-delivery marker retries missed notifications. No import email.
+  - Validation: a session must end on the same workspace day; overnight rows are skipped.
+
+## Key files
+- `lib/bookings/import-normalize.ts` (dates), `lib/bookings/import-mapping.ts` (mapping, notes, combine)
+- `app/(app)/bookings/` import-sheet, import-column-mapping, bookings-export-dialog, invoice-theme-dialog
+- `components/ui/sheet-resize.tsx`, `components/ui/select.tsx`
+- `lib/invoices/theme.ts` (`resolveInvoiceTheme`), `lib/invoices/pdfShared.tsx`, `lib/validators/invoiceTheme.ts`
+- `app/api/bookings/[id]/{invoice,receipt}/route.ts`, `lib/db/models/Workspace.ts`
+- E2E: `e2e/bookings-import-mapping.spec.ts`
+
+## Gotchas
+- Consumers of `useSheetResize` must use `!` on width and max-width. The base sheet's `data-[side=right]:sm:max-w-sm` attribute selector outranks plain overrides.
+- Base UI nested dialogs skip their Backdrop unless `forceRender` is set (needed for the full-screen preview over a sheet).
+- `"source" in assignment` misses `{ sources }`. Use `assignmentSources`.
+- The import route and `bookingImportRowSchema` stay strict. Leniency happens client-side in `applyMapping`, so the server boundary is unchanged.
+- Date order default is per timezone (`MDY` for `Asia/Manila` and `America/*`, else `DMY`). It is swapped only when the column is ambiguous.
+- The seed workspace vocabulary renders %booking% as "appointment", so e2e button text reads "Import 3 appointment(s)". Assert `/^Import 3 /`.
+- The worker runs through Next `after()` in the self-hosted app. The custom server calls a bearer-protected recovery endpoint at startup and every minute. A process restart leaves the job and completed group outcomes in MongoDB; an expired lease is reclaimed within about one sweep after the 180-second lease expires. A 500-row import takes roughly 100 s locally, so keep polling load in mind. The import chip reads only the notification provider's 10 most recent entries; with 10+ newer notifications an unread result can drop off the chip (the bell keeps it).
+
+## Open release gates
+- [ ] Repeat a 500-row import behind the deployed Caddy/Cloudflare stack.
+- [ ] Verify Socket.IO progress/notification delivery there.
+- [ ] Exercise a real mid-import process restart (local QA only simulated an expired lease).
+- [ ] Review the new job, item, and notification indexes before rollout (no reindex script was run).
+
+## Local verification (2026-10-17)
+
+- A seeded-owner Playwright run completed a five-row background import and replay checks; a separate 50-row QA import delivered monotonic Socket.IO counts through 50/50 and showed one progress ring immediately after closing and reopening the sheet. These runs do not replace the deployed-stack or process-restart gates above.
+- The six marketing import images were recaptured from the 375 px mobile sheet at 2x pixel density in light and dark themes. The local `qa/bookings-import/` kit is ignored by Git; the CI smoke test carries its own small CSV fixture under `e2e/fixtures/`.

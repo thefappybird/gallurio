@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
+
 import { renderWithProviders } from "@/test-utils/render";
 import { autoMapColumns } from "@/lib/bookings/import-mapping";
-import { ImportColumnMapping } from "./import-column-mapping";
+import { ImportColumnMapping, assignSlot } from "./import-column-mapping";
 
 const HEADERS = ["Customer", "Event", "Date", "Package Price", "Deal Status"];
 const SAMPLE = {
@@ -22,12 +23,19 @@ function render(overrides: Partial<Parameters<typeof ImportColumnMapping>[0]> = 
     onChange: vi.fn(),
     dateOrder: "MDY" as const,
     onDateOrderChange: vi.fn(),
+    timeZone: "Asia/Manila",
     ambiguousDateExample: null,
     loading: false,
     ...overrides,
   };
   return { ...renderWithProviders(<ImportColumnMapping {...props} />), props };
 }
+
+describe("assignSlot", () => {
+  it("turns a column picked in the second slot into a combined sources assignment", () => {
+    expect(assignSlot(["Customer"], 1, "Event")).toEqual({ sources: ["Customer", "Event"] });
+  });
+});
 
 describe("ImportColumnMapping", () => {
   it("shows what was found in the file", () => {
@@ -43,12 +51,89 @@ describe("ImportColumnMapping", () => {
     expect(screen.getByText("First row: Smith Wedding")).toBeInTheDocument();
   });
 
+  it("labels fields in plain words, not by their column key", () => {
+    render();
+    expect(screen.getByText("Client name")).toBeInTheDocument();
+    expect(screen.queryByText("clientName")).not.toBeInTheDocument();
+  });
+
+  it("opens a second picker when combining with another column", async () => {
+    render();
+    expect(screen.queryByLabelText("Client name, column 2")).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Combine with another column" })[0]);
+    expect(screen.getByLabelText("Client name, column 2")).toBeInTheDocument();
+  });
+
+  it("shows the joined first-row value for a combined field", () => {
+    const mapping = autoMapColumns(HEADERS);
+    mapping.clientName = { sources: ["Customer", "Event"] };
+    render({ mapping });
+    expect(screen.getByText("First row: Jane Smith Smith Wedding")).toBeInTheDocument();
+  });
+
+  it("removes an extra column and writes a single source again", async () => {
+    const mapping = autoMapColumns(HEADERS);
+    mapping.clientName = { sources: ["Customer", "Event"] };
+    const { props } = render({ mapping });
+    fireEvent.click(screen.getByRole("button", { name: "Remove this column" }));
+    expect(props.onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ clientName: { source: "Customer" } })
+    );
+  });
+
+  it("reads the sample date back and lets the day/month order be swapped", () => {
+    const sampleRow = { ...SAMPLE, Date: "03/04/2026" };
+    const { props } = render({ sampleRow, ambiguousDateExample: "03/04/2026" });
+    expect(screen.getByText(/First row: 03\/04\/2026 → Mar 4, 2026/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Swap day and month" }));
+    expect(props.onDateOrderChange).toHaveBeenCalledWith("DMY");
+  });
+
+  it("shows the ambiguous-date hint as visible text and exposes the active order", () => {
+    const { rerender, props } = render({ ambiguousDateExample: "03/04/2026" });
+    const hint = screen.getByText("03/04/2026 could be read day-first or month-first.");
+    expect(hint).toBeVisible();
+    const swap = screen.getByRole("button", { name: "Swap day and month" });
+    expect(swap).toHaveAttribute("aria-pressed", "false");
+    expect(swap).toHaveAccessibleDescription(hint.textContent ?? "");
+    rerender(<ImportColumnMapping {...props} dateOrder="DMY" ambiguousDateExample="03/04/2026" />);
+    expect(screen.getByRole("button", { name: "Swap day and month" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("keeps the same picker mounted when its column changes, so focus survives a pick", () => {
+    const mapping = autoMapColumns(HEADERS);
+    mapping.clientName = { sources: ["Customer", "Event"] };
+    const { rerender, props } = render({ mapping });
+    const slot = screen.getByLabelText("Client name, column 2");
+    slot.focus();
+    rerender(
+      <ImportColumnMapping
+        {...props}
+        mapping={{ ...mapping, clientName: { sources: ["Customer", "Package Price"] } }}
+      />
+    );
+    const after = screen.getByLabelText("Client name, column 2");
+    expect(after).toBe(slot);
+    expect(after).toHaveFocus();
+  });
+
+  it("moves focus to the previous picker after removing a combined column", () => {
+    const mapping = autoMapColumns(HEADERS);
+    mapping.clientName = { sources: ["Customer", "Event"] };
+    render({ mapping });
+    fireEvent.click(screen.getByRole("button", { name: "Remove this column" }));
+    expect(screen.getByLabelText("Client name, column 1")).toHaveFocus();
+  });
+
   it("keeps the advanced round-trip columns collapsed", () => {
     // Six identity columns nobody migrating from another CRM will ever set.
     render();
     expect(screen.queryByText("payments")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /advanced and round-trip columns/i })
+      screen.getByRole("button", { name: /re-importing a gallurio export/i })
     ).toHaveAttribute("aria-expanded", "false");
   });
 

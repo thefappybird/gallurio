@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChevronDownIcon, DownloadIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { SheetResizeHandle, useSheetResize } from "@/components/ui/sheet-resize";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BookingTeamOption } from "../_data/team-options";
 import { TeamLegend } from "./team-legend";
@@ -27,6 +28,7 @@ const FIELD_CLASS =
 
 export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: Props) {
   const t = useTranslations("app.bookings.exportDialog");
+  const resize = useSheetResize({ storageKey: "gw:sheet-w:export", defaultWidth: 448 });
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [ranged, setRanged] = useState(false);
   const [from, setFrom] = useState("");
@@ -94,7 +96,12 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
+      <SheetContent
+        side="right"
+        {...resize.sheetProps}
+        className="w-full! gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
+      >
+        <SheetResizeHandle resize={resize} />
         <SheetHeader className="border-b border-border pe-12">
           <SheetTitle>{t("title")}</SheetTitle>
         </SheetHeader>

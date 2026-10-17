@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCsv, normalizeCsvHeader, stripFormulaGuard } from "./csv-parse";
+import { parseCsv, normalizeCsvHeader, stripFormulaGuard, decodeCsvBytes, isProbablyText } from "./csv-parse";
 
 describe("stripFormulaGuard", () => {
   it("reverses the export-side apostrophe guard, and only that", () => {
@@ -156,5 +156,61 @@ describe("parseCsv", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0].title).toBe("#3 Anniversary");
     expect(rows[1].title).toBe("#4 Wedding");
+  });
+});
+describe("parseCsv delimiter detection", () => {
+  it("parses a semicolon-delimited file", () => {
+    const { headers, rows } = parseCsv("title;client\nWedding;Ana\n");
+    expect(headers).toEqual(["title", "client"]);
+    expect(rows[0]).toEqual({ title: "Wedding", client: "Ana" });
+  });
+});
+
+describe("parseCsv delimiter detection (tab, quoted)", () => {
+  it("parses a tab-delimited file", () => {
+    const { headers, rows } = parseCsv("title\tclient\nWedding\tAna\n");
+    expect(headers).toEqual(["title", "client"]);
+    expect(rows[0]).toEqual({ title: "Wedding", client: "Ana" });
+  });
+
+  it("stays comma when semicolons only appear inside quoted cells", () => {
+    const { headers, rows } = parseCsv('"a;b;c",client\n"x;y",Ana\n');
+    expect(headers).toEqual(["a;b;c", "client"]);
+    expect(rows[0]).toEqual({ "a;b;c": "x;y", client: "Ana" });
+  });
+});
+
+describe("decodeCsvBytes", () => {
+  it("falls back to windows-1252 when bytes are not valid UTF-8", () => {
+    // "José Peña" as latin1: é = 0xE9, ñ = 0xF1
+    const bytes = new Uint8Array([0x4a, 0x6f, 0x73, 0xe9, 0x20, 0x50, 0x65, 0xf1, 0x61]);
+    expect(decodeCsvBytes(bytes)).toBe("José Peña");
+  });
+});
+
+describe("decodeCsvBytes (utf-8, BOM)", () => {
+  it("leaves valid UTF-8 Thai and emoji unchanged", () => {
+    const s = "สวัสดี 🎉";
+    expect(decodeCsvBytes(new TextEncoder().encode(s))).toBe(s);
+  });
+
+  it("strips a leading BOM", () => {
+    const bytes = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode("a,b")]);
+    expect(decodeCsvBytes(bytes)).toBe("a,b");
+  });
+});
+
+describe("isProbablyText", () => {
+  it("accepts plain CSV text", () => {
+    expect(isProbablyText(new TextEncoder().encode("a,b\n1,2\r\n\t"))).toBe(true);
+  });
+
+  it("rejects a PNG header (NUL byte)", () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
+    expect(isProbablyText(png)).toBe(false);
+  });
+
+  it("rejects >10% control bytes without NUL", () => {
+    expect(isProbablyText(new Uint8Array([1, 2, 3, 4, 65, 66, 67, 68, 69, 70]))).toBe(false);
   });
 });
