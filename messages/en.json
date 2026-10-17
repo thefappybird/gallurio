@@ -1228,6 +1228,8 @@
           "reviewMappingAction": "Review",
           "committing": "Importing your %bookings%",
           "progress": "Processed {done} of {total}",
+
+          "resultsReady": "{count, plural, one {# import result ready} other {# import results ready}}",
           "background": "You can close this panel. The import will continue."
         }
       },

@@ -1228,6 +1228,8 @@
           "reviewMappingAction": "مراجعة",
           "committing": "جارٍ استيراد %bookings% لديك",
           "progress": "تمت معالجة {done} من {total}",
+
+          "resultsReady": "{count} من نتائج الاستيراد جاهزة للمراجعة",
           "background": "يمكنك إغلاق هذه اللوحة. سيستمر الاستيراد."
         }
       },

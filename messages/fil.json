@@ -1228,6 +1228,8 @@
           "reviewMappingAction": "Suriin",
           "committing": "Ini-import ang inyong %bookings%",
           "progress": "Naproseso ang {done} sa {total}",
+
+          "resultsReady": "{count} resulta ng pag-import na handa nang tingnan",
           "background": "Maaari mong isara ang panel na ito. Magpapatuloy ang import."
         }
       },

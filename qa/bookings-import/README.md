@@ -69,6 +69,7 @@ The results dialog should show localized explanations for an unknown booking ID 
 - The preview should appear within a few seconds.
 - The import starts a durable job and returns a job ID. The panel shows processed groups; after closing it, the Import icon becomes a progress ring with a processed count. Reopen Import to see the job. A custom-server sweep resumes queued or expired jobs automatically after a restart, and the owner status request can also reclaim one.
 - On completion, partial completion, or terminal failure, the initiating owner and members of the assigned team receive in-app bell notifications only. The owner's entry reopens the import result; team members open the bookings list. Closing the sheet must not suppress these notifications.
+- An unread import outcome gives the owner's Import button a numbered circle and a brand-color highlight. Clicking it opens the newest unread result and clears that outcome's chip; reading it from the bell clears it too.
 - In the October 2026 development browser run, the 500-row start request took **3.7 seconds** and all 500 finished in **99.7 seconds** with no row errors. Measure the same path on the target deployment before release.
 - In the Network tab, expect one `POST /api/bookings/import` start request, periodic `GET /api/bookings/import?jobId=…` progress requests, then a bookings refresh on completion.
 - Previews have their own rate limit (30 per 5 minutes) and commits have theirs (10 per 5 minutes). If you hit one, the message should say how many seconds to wait.

@@ -28,6 +28,7 @@ import {
 } from "./bookings-toolbar-dynamic";
 import { TeamPicker } from "./team-picker";
 import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
 import { parseBookingsToggleFilters } from "../_data/booking-filters";
@@ -66,9 +67,8 @@ export function BookingsToolbar({
    *  the team-filter dropdown in calendar view, where the calendar's own
    *  clickable team legend owns team filtering instead. */
   view?: BookingsView;
-  /** When false, the "New Booking" and "Import" buttons are hidden. Members
-   *  are view-only — only owners can create or bulk-import bookings. Export
-   *  remains visible because it is team-scoped server-side. */
+  /** When false, "New Booking" is hidden. Import also requires isOwner;
+   *  team leads may create bookings but only owners can bulk-import. */
   canCreate?: boolean;
   /** Available teams for the team filter picker. */
   teams?: BookingTeamOption[];
@@ -87,6 +87,12 @@ export function BookingsToolbar({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
   const tBookings = useTranslations("app.bookings");
+  const { notifications, markRead } = useNotifications();
+  const unreadImportOutcomes = notifications.filter((notification) => isOwner &&
+    notification.entityType === "booking_import" && !notification.read && !notification.silent);
+  const unreadImportCount = unreadImportOutcomes.length;
+  const unreadImportLabel = unreadImportCount
+    ? tBookings("import.nav.resultsReady", { count: unreadImportCount }) : null;
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -95,13 +101,14 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedImportJobId, setSelectedImportJobId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<BookingImportProgress | null>(null);
   const importEventVersion = useRef(0);
   const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
 
   useEffect(() => {
-    if (!canCreate) return;
+    if (!isOwner || !canCreate) return;
     let cancelled = false;
     const refresh = async () => {
       const eventVersion = importEventVersion.current;
@@ -133,13 +140,13 @@ export function BookingsToolbar({
       window.removeEventListener("focus", refresh);
       window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
     };
-  }, [canCreate]);
+  }, [isOwner, canCreate]);
 
   useEffect(() => {
-    if (searchParams.get("importJob")) {
+    if (isOwner && canCreate && searchParams.get("importJob")) {
       queueMicrotask(() => setImportOpen(true));
     }
-  }, [searchParams]);
+  }, [isOwner, canCreate, searchParams]);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
   // closure AND never needs searchParams in its own dependency array (which
@@ -303,20 +310,34 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        {canCreate ? (
+        {isOwner && canCreate ? (
           <Button
             variant="outline"
             size="sm"
-            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            data-import-unread={unreadImportCount > 0 || undefined}
+            className="relative min-h-11 flex-1 overflow-visible data-[import-unread=true]:border-brand data-[import-unread=true]:bg-brand/10 data-[import-unread=true]:text-brand data-[import-unread=true]:hover:bg-brand/15 sm:flex-none sm:min-h-0"
             onPointerEnter={preloadImportSheet}
             onFocus={preloadImportSheet}
-            onClick={() => setImportOpen(true)}
-            aria-label={importProgress
-              ? `${t("import")}: ${tBookings("import.nav.progress", {
-                  done: importProgress.doneGroups, total: importProgress.totalGroups,
-                })}`
+            onClick={() => {
+              const outcome = importProgress ? undefined : unreadImportOutcomes[0];
+              setSelectedImportJobId(outcome?.entityId ?? null);
+              if (outcome) markRead(outcome._id);
+              setImportOpen(true);
+            }}
+            aria-label={importProgress || unreadImportLabel
+              ? `${t("import")}: ${[
+                  importProgress ? tBookings("import.nav.progress", {
+                    done: importProgress.doneGroups, total: importProgress.totalGroups,
+                  }) : null,
+                  unreadImportLabel,
+                ].filter(Boolean).join("; ")}`
               : undefined}
           >
+            {unreadImportCount > 0 ? (
+              <span aria-hidden="true" className="absolute -top-2 -end-2 z-10 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] leading-none font-medium text-white ring-2 ring-background">
+                {unreadImportCount}
+              </span>
+            ) : null}
             {importProgress ? (
               <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 text-brand motion-safe:animate-spin">
                 <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
@@ -362,14 +383,15 @@ export function BookingsToolbar({
             teams={teams}
           />
         ) : null}
-        {importOpen ? (
+        {isOwner && canCreate && importOpen ? (
           <ImportSheetLazy
             open
             onClose={() => {
               setImportOpen(false);
+              setSelectedImportJobId(null);
               if (searchParamsRef.current.has("importJob")) pushParams({ importJob: null });
             }}
-            initialJobId={searchParams.get("importJob") ?? undefined}
+            initialJobId={searchParams.get("importJob") ?? selectedImportJobId ?? undefined}
             defaultCurrency={defaultCurrency}
             workspaceTimezone={workspaceTimezone}
             teams={teams}

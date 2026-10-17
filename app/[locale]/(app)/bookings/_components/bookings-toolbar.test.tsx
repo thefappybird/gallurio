@@ -9,6 +9,14 @@ import { enMessages } from "@/test-utils/messages";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { BOOKING_IMPORT_PROGRESS_EVENT } from "@/lib/bookings/import-progress";
 
+const notificationMock = vi.hoisted(() => ({
+  items: [] as Array<{ _id: string; entityId: string; entityType: string; type: string; read: boolean; silent: boolean }>,
+  markRead: vi.fn(),
+}));
+vi.mock("@/lib/hooks/useNotifications", () => ({
+  useNotifications: () => ({ notifications: notificationMock.items, markRead: notificationMock.markRead }),
+}));
+
 describe("BookingsToolbar compact filter layout", () => {
   it("wraps filters only when needed instead of forcing each control into its own row", () => {
     const { getByTestId } = render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
@@ -21,7 +29,7 @@ describe("BookingsToolbar compact filter layout", () => {
 
 describe("BookingsToolbar import progress", () => {
   it("replaces the import icon with live progress and restores it on completion", async () => {
-    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
     window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
       workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "running",
       doneGroups: 2, totalGroups: 4,
@@ -33,6 +41,36 @@ describe("BookingsToolbar import progress", () => {
       doneGroups: 4, totalGroups: 4,
     } }));
     await waitFor(() => expect(screen.getByRole("button", { name: /^Import$/i })).toBeInTheDocument());
+  });
+
+  it("highlights unread import outcomes and opens the newest result", () => {
+    notificationMock.items = [
+      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+      { _id: "booking-other", entityId: "bbbbbbbbbbbbbbbbbbbbbbbb", entityType: "booking", type: "booking.status_changed", read: false, silent: false },
+      { _id: "import-older", entityId: "cccccccccccccccccccccccc", entityType: "booking_import", type: "booking.import_partial", read: false, silent: false },
+    ];
+    const { rerender } = render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    const button = screen.getByRole("button", { name: /Import: 2 import results ready/i });
+    expect(button).toHaveAttribute("data-import-unread", "true");
+    expect(button.querySelector("span[aria-hidden='true']")).toHaveTextContent("2");
+
+    fireEvent.click(button);
+    expect(notificationMock.markRead).toHaveBeenCalledWith("import-new");
+    expect(sheetMounts.importJobId).toHaveBeenLastCalledWith("aaaaaaaaaaaaaaaaaaaaaaaa");
+
+    notificationMock.items = notificationMock.items.map((item) =>
+      item.entityType === "booking_import" ? { ...item, read: true } : item);
+    rerender(<BookingsToolbar defaultCurrency="PHP" isOwner />);
+    expect(screen.getByRole("button", { name: /^Import$/i })).not.toHaveAttribute("data-import-unread");
+  });
+
+  it("keeps team members on their bell notification rather than showing an owner-only import result", () => {
+    notificationMock.items = [
+      { _id: "team-import", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+    ];
+    render(<BookingsToolbar defaultCurrency="PHP" canCreate />, { wrapper });
+    expect(screen.queryByRole("button", { name: /^Import$/i })).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });
 
@@ -58,15 +96,16 @@ const preloadSpy = vi.hoisted(() => vi.fn());
 vi.mock("./booking-wizard-dynamic", () => ({ preloadBookingWizard: preloadSpy }));
 
 // ── Lazy sheets: stubs record mounts; export keeps the real dialog ────────────
-const sheetMounts = vi.hoisted(() => ({ import: vi.fn(), theme: vi.fn() }));
+const sheetMounts = vi.hoisted(() => ({ import: vi.fn(), importJobId: vi.fn(), theme: vi.fn() }));
 const sheetPreloads = vi.hoisted(() => ({ import: vi.fn(), export: vi.fn(), theme: vi.fn() }));
 vi.mock("./bookings-toolbar-dynamic", async () => {
   const real = await vi.importActual<typeof import("./bookings-export-dialog")>(
     "./bookings-export-dialog"
   );
   return {
-    ImportSheetLazy: () => {
+    ImportSheetLazy: ({ initialJobId }: { initialJobId?: string }) => {
       sheetMounts.import();
+      sheetMounts.importJobId(initialJobId);
       return null;
     },
     InvoiceThemeDialogLazy: () => {
@@ -138,6 +177,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  notificationMock.items = [];
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ job: null }) }));
 });
 afterEach(() => vi.unstubAllGlobals());
