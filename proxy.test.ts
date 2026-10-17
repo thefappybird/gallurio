@@ -86,6 +86,7 @@ describe("proxy", () => {
             "/api/public/(.*)",
             "/api/health",
             "/api/cron/(.*)",
+            "/api/bookings/import",
           ]),
         }),
       }),

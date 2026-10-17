@@ -15,6 +15,21 @@ vi.mock('next-intl/server', () => ({
 import { getMessages } from 'next-intl/server'
 import { buildNotificationContent } from './messages'
 
+describe('booking import notification links', () => {
+  it('links the owner to the job result and team members to bookings', async () => {
+    vi.mocked(getMessages).mockResolvedValue(enMessagesRaw as never)
+    const owner = await buildNotificationContent('booking.import_partial', 'en',
+      'aaaaaaaaaaaaaaaaaaaaaaaa', 'booking_import', { importViewer: 'owner' })
+    const member = await buildNotificationContent('booking.import_partial', 'en',
+      'aaaaaaaaaaaaaaaaaaaaaaaa', 'booking_import', { importViewer: 'team' })
+    expect(owner.href).toBe('/en/bookings?importJob=aaaaaaaaaaaaaaaaaaaaaaaa')
+    expect(member.href).toBe('/en/bookings')
+    expect(owner.title).toContain('import')
+    expect(owner.body).toContain('review the skipped rows')
+    expect(member.body).toContain('Open bookings')
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Build a loosely-typed translator for app.notifications from real en.json.
 // We cast away the strict JSON-literal key inference because the ICU select

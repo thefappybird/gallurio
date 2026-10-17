@@ -1063,6 +1063,22 @@ describe("ImportSheet steps", () => {
     }
   });
 
+  it("opens a completed job from a notification link without closing the result", async () => {
+    const jobId = "abababababababababababab";
+    mockFetch.mockResolvedValueOnce({
+      ok: true, status: 200,
+      json: async () => ({ job: { jobId, status: "completed", doneGroups: 1, totalGroups: 1,
+        result: { created: 1, updated: 0, shifts: 1, skipped: 0, errors: [] } } }),
+    });
+    const onClose = vi.fn();
+    renderDialog({ onClose, initialJobId: jobId });
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(
+      `/api/bookings/import?jobId=${jobId}`, { cache: "no-store" }
+    ));
+    expect((await screen.findAllByText(/imported successfully/i)).length).toBeGreaterThan(0);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("previews at most 100 rows and says how many more are not shown", async () => {
     const header = VALID_CSV.split("\n")[0];
     const lines = Array.from(

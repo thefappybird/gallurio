@@ -18,6 +18,7 @@ const bookingImportJobSchema = new Schema(
     result: { type: Schema.Types.Mixed, default: null },
     lastError: { type: String, default: null },
     attempts: { type: Number, default: 0 },
+    notificationPending: { type: Boolean, default: false },
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true }
@@ -29,6 +30,9 @@ bookingImportJobSchema.index(
   { unique: true, partialFilterExpression: { active: true } }
 );
 bookingImportJobSchema.index({ workspaceId: 1, createdAt: -1 });
+// The custom server's recovery sweep spans tenants and only reads active jobs.
+bookingImportJobSchema.index({ active: 1 });
+bookingImportJobSchema.index({ notificationPending: 1 });
 bookingImportJobSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export type BookingImportJobDoc = InferSchemaType<typeof bookingImportJobSchema> & {

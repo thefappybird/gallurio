@@ -3546,6 +3546,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {%Booking% cancelled} completed {%Booking% completed} booked {%Booking% confirmed} other {%Booking% status updated}}",
             "body": "{newStatus, select, cancelled {{actorName} cancelled %a_booking%.} completed {{actorName} marked %a_booking% completed.} booked {{actorName} confirmed %a_booking%.} other {{actorName} changed %a_booking% status to {newStatus}.}}"
+          },
+          "import_completed": {
+            "title": "%Booking% import completed",
+            "body": "The import for your %team% finished. {importViewer, select, team {Open bookings to see the imported records.} other {Open it to review the result.}}"
+          },
+          "import_partial": {
+            "title": "%Booking% import needs review",
+            "body": "The import for your %team% finished with skipped rows. {importViewer, select, team {Open bookings to see the imported records.} other {Open it to review the skipped rows.}}"
+          },
+          "import_failed": {
+            "title": "%Booking% import failed",
+            "body": "The import for your %team% stopped before it finished. {importViewer, select, team {Ask the workspace owner to review the import.} other {Open it to review the status.}}"
           }
         },
         "team": {

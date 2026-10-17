@@ -2,11 +2,12 @@
  * Tests for BookingsToolbar: "New Booking" button behavior and
  * mobile/desktop week-view visibility (Bug 1 + Bug 2 fixes).
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { enMessages } from "@/test-utils/messages";
 import { BookingsToolbar } from "./bookings-toolbar";
+import { BOOKING_IMPORT_PROGRESS_EVENT } from "@/lib/bookings/import-progress";
 
 describe("BookingsToolbar compact filter layout", () => {
   it("wraps filters only when needed instead of forcing each control into its own row", () => {
@@ -15,6 +16,23 @@ describe("BookingsToolbar compact filter layout", () => {
 
     expect(filters).toHaveClass("flex-wrap");
     expect(filters).not.toHaveClass("flex-col");
+  });
+});
+
+describe("BookingsToolbar import progress", () => {
+  it("replaces the import icon with live progress and restores it on completion", async () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "running",
+      doneGroups: 2, totalGroups: 4,
+    } }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Import: Processed 2 of 4/ })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Import: Processed 2 of 4/ }).querySelector("svg circle")).toBeTruthy();
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "completed",
+      doneGroups: 4, totalGroups: 4,
+    } }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Import$/i })).toBeInTheDocument());
   });
 });
 
@@ -120,7 +138,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ job: null }) }));
 });
+afterEach(() => vi.unstubAllGlobals());
 
 describe("BookingsToolbar — New Booking button", () => {
   it("renders the 'New Booking' (add) button", () => {

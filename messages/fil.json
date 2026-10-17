@@ -3546,6 +3546,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {%Booking% na-cancel} completed {%Booking% nakumpleto} booked {%Booking% nakumpirma} other {Na-update ang status ng %booking%}}",
             "body": "{newStatus, select, cancelled {Kinansela ni {actorName} ang isang %booking%.} completed {Minarkahan ni {actorName} na kumpleto ang %booking%.} booked {Kinumpirma ni {actorName} ang isang %booking%.} other {Binago ni {actorName} ang status ng %booking% sa {newStatus}.}}"
+          },
+          "import_completed": {
+            "title": "Natapos ang pag-import ng %booking%",
+            "body": "Natapos ang pag-import para sa iyong %team%. {importViewer, select, team {Buksan ang mga booking upang makita ang mga na-import na tala.} other {Buksan ito upang suriin ang resulta.}}"
+          },
+          "import_partial": {
+            "title": "Kailangang suriin ang pag-import ng %booking%",
+            "body": "Natapos ang pag-import para sa iyong %team% na may mga nalaktawang row. {importViewer, select, team {Buksan ang mga booking upang makita ang mga na-import na tala.} other {Buksan ito upang suriin ang mga nalaktawang row.}}"
+          },
+          "import_failed": {
+            "title": "Nabigo ang pag-import ng %booking%",
+            "body": "Huminto ang pag-import para sa iyong %team% bago matapos. {importViewer, select, team {Hilingin sa may-ari ng workspace na suriin ang pag-import.} other {Buksan ito upang suriin ang status.}}"
           }
         },
         "team": {

@@ -23,4 +23,4 @@ Source: exploratory Playwright pass (Run 1, 16 files, preview only). The commit 
 - All new copy in en, fil, id, ar, th.
 
 ## Verify
-Completed: scoped unit tests, typecheck, lint, Playwright fixture commits, and development DB cleanup. The 500-row request-timeout risk led to a persisted background job with progress, idempotent start requests, and resumable group outcomes. The target-deployment timing and process-restart recovery checks remain release gates in the findings report.
+Completed: scoped unit tests, typecheck, lint, Playwright fixture commits, and development DB cleanup. The 500-row request-timeout risk led to a persisted background job with progress, idempotent start requests, and resumable group outcomes. Socket progress in the Import button, in-app lifecycle notifications, and automatic startup/periodic recovery were added in the lifecycle follow-up. Local restart recovery passed; target-deployment timing and recovery remain release gates in the findings report.

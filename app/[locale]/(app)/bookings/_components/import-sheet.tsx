@@ -48,6 +48,7 @@ import { ImportResultsDialog } from "./import-results-dialog";
 import { ImportColumnMapping } from "./import-column-mapping";
 import { ImportValueMapping } from "./import-value-mapping";
 import { cn } from "@/lib/utils";
+import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
 
 type Step = "upload" | "map" | "values" | "preview";
 
@@ -77,6 +78,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   defaultCurrency: string;
+  initialJobId?: string;
   /**
    * Workspace IANA timezone. Both the preview and date coercion need it — a
    * bare "2026-06-15" has to land on the workspace's day, not the browser's.
@@ -93,6 +95,7 @@ export function ImportSheet({
   open,
   onClose,
   defaultCurrency,
+  initialJobId,
   workspaceTimezone,
   teams = [],
 }: Props) {
@@ -144,6 +147,7 @@ export function ImportSheet({
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(null);
+  const [jobFailed, setJobFailed] = useState(false);
 
   const resetImportState = useCallback(() => {
     sessionStorage.removeItem("gw:booking-import-job");
@@ -168,6 +172,7 @@ export function ImportSheet({
     requestIdRef.current = null;
     setActiveJobId(null);
     setJobProgress(null);
+    setJobFailed(false);
   }, [timeZone]);
 
   // ── mapping-derived data ───────────────────────────────────────────────────
@@ -451,7 +456,7 @@ export function ImportSheet({
     if (written > 0) {
       toast.success(t("success", { bookings: written, shifts: data.shifts }));
       invalidateFor({ type: "bookings.imported" });
-      if (data.errors.length === 0) {
+      if (data.errors.length === 0 && !initialJobId) {
         resetImportState();
         onClose();
       }
@@ -460,12 +465,12 @@ export function ImportSheet({
       setShowResultsDialog(true);
       if (written === 0) toast.error(tDialog("failedWithDetails"));
     }
-  }, [t, tDialog, invalidateFor, resetImportState, onClose]);
+  }, [t, tDialog, invalidateFor, resetImportState, onClose, initialJobId]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    const saved = sessionStorage.getItem("gw:booking-import-job");
+    const saved = initialJobId ?? sessionStorage.getItem("gw:booking-import-job");
     if (saved) {
       queueMicrotask(() => {
         if (!cancelled) setActiveJobId(saved);
@@ -487,10 +492,17 @@ export function ImportSheet({
         // Keep the request ID for the next open when the connection returns.
       });
     return () => { cancelled = true; };
-  }, [open, activateJob]);
+  }, [open, activateJob, initialJobId]);
 
   useEffect(() => {
     if (!activeJobId) return;
+    const onProgress = (event: Event) => {
+      const progress = (event as CustomEvent<BookingImportProgress>).detail;
+      if (progress.jobId === activeJobId) {
+        setJobProgress({ done: progress.doneGroups, total: progress.totalGroups });
+      }
+    };
+    window.addEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const poll = async () => {
@@ -524,6 +536,7 @@ export function ImportSheet({
             sessionStorage.removeItem("gw:booking-import-job");
             requestIdRef.current = null;
             setActiveJobId(null);
+            setJobFailed(true);
             toast.error(tDialog("failedRetry"));
             return;
           }
@@ -531,11 +544,12 @@ export function ImportSheet({
       } catch {
         // A temporary disconnect must not cancel a job running on the server.
       }
-      if (!stopped) timer = setTimeout(poll, 1500);
+      if (!stopped) timer = setTimeout(poll, 5000);
     };
     void poll();
     return () => {
       stopped = true;
+      window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
       if (timer) clearTimeout(timer);
     };
   }, [activeJobId, applyResult, tDialog]);
@@ -545,6 +559,7 @@ export function ImportSheet({
       if (validRows.length === 0) return;
 
       setImportResult(null);
+      setJobFailed(false);
       const payload = validRows.map((r) => ({
         ...r.raw,
         amountTotal: r.raw.amountTotal || undefined,
@@ -820,6 +835,16 @@ export function ImportSheet({
           </div>
 
           <div className="@container relative min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            {initialJobId && importResult ? (
+              <div role="status" className="mb-4 border border-border bg-muted/30 p-3 text-sm">
+                {t("success", { bookings: importResult.created + importResult.updated, shifts: importResult.shifts })}
+              </div>
+            ) : null}
+            {initialJobId && jobFailed ? (
+              <div role="alert" className="mb-4 border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+                {tDialog("failedRetry")}
+              </div>
+            ) : null}
             <div
               key={step}
               data-direction={direction}

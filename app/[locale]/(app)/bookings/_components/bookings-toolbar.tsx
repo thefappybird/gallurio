@@ -27,6 +27,7 @@ import {
   preloadInvoiceThemeDialog,
 } from "./bookings-toolbar-dynamic";
 import { TeamPicker } from "./team-picker";
+import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
 import { parseBookingsToggleFilters } from "../_data/booking-filters";
@@ -94,8 +95,51 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [importProgress, setImportProgress] = useState<BookingImportProgress | null>(null);
+  const importEventVersion = useRef(0);
   const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
+
+  useEffect(() => {
+    if (!canCreate) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const eventVersion = importEventVersion.current;
+      try {
+        const response = await fetch("/api/bookings/import?latest", { cache: "no-store" });
+        if (!response.ok) return;
+        const { job } = await response.json();
+        if (cancelled || eventVersion !== importEventVersion.current) return;
+        setImportProgress(job?.status === "queued" || job?.status === "running"
+          ? { workspaceId: "", jobId: job.jobId, status: job.status,
+              doneGroups: job.doneGroups, totalGroups: job.totalGroups }
+          : null);
+      } catch {
+        // The socket carries live updates; the next poll or focus retries this fallback.
+      }
+    };
+    const onProgress = (event: Event) => {
+      const progress = (event as CustomEvent<BookingImportProgress>).detail;
+      importEventVersion.current += 1;
+      setImportProgress(progress.status === "completed" || progress.status === "failed" ? null : progress);
+    };
+    void refresh();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+    };
+  }, [canCreate]);
+
+  useEffect(() => {
+    if (searchParams.get("importJob")) {
+      queueMicrotask(() => setImportOpen(true));
+    }
+  }, [searchParams]);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
   // closure AND never needs searchParams in its own dependency array (which
@@ -267,8 +311,20 @@ export function BookingsToolbar({
             onPointerEnter={preloadImportSheet}
             onFocus={preloadImportSheet}
             onClick={() => setImportOpen(true)}
+            aria-label={importProgress
+              ? `${t("import")}: ${tBookings("import.nav.progress", {
+                  done: importProgress.doneGroups, total: importProgress.totalGroups,
+                })}`
+              : undefined}
           >
-            <UploadIcon className="size-4" />
+            {importProgress ? (
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 text-brand motion-safe:animate-spin">
+                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeDasharray="44" strokeDashoffset={44 * (1 - Math.max(0.08, importProgress.totalGroups
+                    ? importProgress.doneGroups / importProgress.totalGroups : 0))} strokeLinecap="round" />
+              </svg>
+            ) : <UploadIcon className="size-4" />}
             {t("import")}
           </Button>
         ) : null}
@@ -309,7 +365,11 @@ export function BookingsToolbar({
         {importOpen ? (
           <ImportSheetLazy
             open
-            onClose={() => setImportOpen(false)}
+            onClose={() => {
+              setImportOpen(false);
+              if (searchParamsRef.current.has("importJob")) pushParams({ importJob: null });
+            }}
+            initialJobId={searchParams.get("importJob") ?? undefined}
             defaultCurrency={defaultCurrency}
             workspaceTimezone={workspaceTimezone}
             teams={teams}

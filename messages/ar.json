@@ -3546,6 +3546,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {تم إلغاء ال%booking%} completed {تم إكمال ال%booking%} booked {تم تأكيد ال%booking%} other {تم تحديث حالة ال%booking%}}",
             "body": "{newStatus, select, cancelled {ألغى {actorName} %booking%.} completed {وضع {actorName} علامة مكتمل على %booking%.} booked {أكّد {actorName} %booking%.} other {غيّر {actorName} حالة %booking% إلى {newStatus}.}}"
+          },
+          "import_completed": {
+            "title": "اكتمل استيراد %booking%",
+            "body": "اكتمل الاستيراد لفريقك. {importViewer, select, team {افتح الحجوزات لرؤية السجلات المستوردة.} other {افتحه لمراجعة النتيجة.}}"
+          },
+          "import_partial": {
+            "title": "استيراد %booking% يحتاج إلى مراجعة",
+            "body": "اكتمل الاستيراد لفريقك مع تخطي بعض الصفوف. {importViewer, select, team {افتح الحجوزات لرؤية السجلات المستوردة.} other {افتحه لمراجعة الصفوف المتخطاة.}}"
+          },
+          "import_failed": {
+            "title": "فشل استيراد %booking%",
+            "body": "توقف الاستيراد لفريقك قبل اكتماله. {importViewer, select, team {اطلب من مالك مساحة العمل مراجعة الاستيراد.} other {افتحه لمراجعة الحالة.}}"
           }
         },
         "team": {

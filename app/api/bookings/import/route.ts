@@ -1,10 +1,12 @@
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
+import { emitImportProgress } from "@/lib/sockets/emitImportProgress";
 import { after, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
+import { Booking, Client, ActivityLog, Team, User } from "@/lib/db/models";
+import { Notification } from "@/lib/db/models/Notification";
 import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
 import { BookingImportJobItem } from "@/lib/db/models/BookingImportJobItem";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
@@ -27,6 +29,9 @@ import {
   buildImportTemplateRows,
 } from "@/lib/bookings/import-template";
 import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
+import { sendNotification } from "@/lib/notifications/send";
+import { resolveTeamRecipients } from "@/lib/notifications/recipients";
+import type { NotificationType } from "@/lib/notifications/types";
 
 export const runtime = "nodejs";
 
@@ -101,6 +106,8 @@ type JobRun = {
   id: mongoose.Types.ObjectId;
   token: string;
   doneIndices: Set<number>;
+  actorUserId: string;
+  totalGroups: number;
 };
 
 const JOB_LEASE_MS = 180_000;
@@ -114,13 +121,14 @@ const MAX_COMMIT_BYTES = 8_000_000;
  * comes from here too so both formats can never disagree.
  */
 export async function GET(req: Request) {
+  const params = new URL(req.url).searchParams;
+  if (params.has("recover")) return recoverImportJobs(req);
   const ctx = await requireOrg();
 
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const params = new URL(req.url).searchParams;
   if (params.has("jobId") || params.has("requestId") || params.has("latest")) {
     return getImportJobStatus(ctx, params);
   }
@@ -156,6 +164,29 @@ export async function GET(req: Request) {
       "Cache-Control": "no-store",
     },
   });
+}
+
+/** Called only by the custom server with a per-process token after startup and each minute. */
+async function recoverImportJobs(req: Request) {
+  const expected = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+  const supplied = req.headers.get("authorization") ?? "";
+  if (!expected || !timingSafeEqual(
+    createHash("sha256").update(supplied).digest(),
+    createHash("sha256").update(`Bearer ${expected}`).digest()
+  )) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  await connectDB();
+  const jobs = await BookingImportJob.find({
+    active: true,
+    $or: [{ status: "queued" }, { status: "running", leaseUntil: { $lte: new Date() } }],
+  }).select({ _id: 1 }).sort({ createdAt: 1 }).limit(1).lean();
+  for (const job of jobs) after(() => processImportJob(job._id));
+  const pending = await BookingImportJob.findOne({ notificationPending: true, active: false })
+    .select({ _id: 1 }).sort({ updatedAt: 1 }).lean();
+  if (pending) after(() => deliverPendingImportNotification(pending._id));
+  return NextResponse.json({ scheduled: jobs.length, notifications: pending ? 1 : 0 },
+    { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(req: Request) {
@@ -883,9 +914,20 @@ async function processImportRows(
   // email deduplication and client totals remain correct.
   const MAX_CONCURRENT_GROUPS = 8;
   let batch: { group: ImportGroup; groupIndex: number }[] = [];
+  let completedInRun = 0;
   const clientKeys = new Set<string>();
   const flush = async () => {
     await Promise.all(batch.map(({ group, groupIndex }) => processGroup(group, groupIndex)));
+    if (options.job) {
+      completedInRun += batch.filter(({ groupIndex }) => !options.job!.doneIndices.has(groupIndex)).length;
+      emitImportProgress(options.job.actorUserId, {
+        workspaceId: ctx.workspace._id.toString(),
+        jobId: options.job.id.toString(),
+        status: "running",
+        doneGroups: options.job.doneIndices.size + completedInRun,
+        totalGroups: options.job.totalGroups,
+      });
+    }
     batch = [];
     clientKeys.clear();
   };
@@ -968,6 +1010,7 @@ async function startImportJob(
           totalGroups: groups.length,
           status: "queued",
           active: true,
+          notificationPending: true,
           expiresAt,
         }],
         { session }
@@ -1002,6 +1045,10 @@ async function startImportJob(
   }
 
   after(() => processImportJob(jobId));
+  emitImportProgress(ctx.userId, {
+    workspaceId: workspaceId.toString(), jobId: jobId.toString(), status: "queued",
+    doneGroups: 0, totalGroups: groups.length,
+  });
   return NextResponse.json({ jobId: jobId.toString() }, { status: 202 });
 }
 
@@ -1053,6 +1100,57 @@ async function getImportJobStatus(ctx: ImportContext, params: URLSearchParams) {
   );
 }
 
+async function notifyImportOutcome(
+  job: { _id: mongoose.Types.ObjectId; workspaceId: mongoose.Types.ObjectId;
+    actorUserId: string; teamId?: mongoose.Types.ObjectId | null },
+  type: Extract<NotificationType, `booking.import_${string}`>
+) {
+  const workspaceId = job.workspaceId;
+  const owner = await User.findOne({
+    workosUserId: job.actorUserId,
+    memberships: { $elemMatch: { workspaceId, role: "owner" } },
+  }).select({ workosUserId: 1, email: 1, name: 1 }).lean();
+  const teamId = job.teamId ?? (await Team.findOne({ workspaceId, isDefault: true })
+    .select({ _id: 1 }).lean())?._id;
+  const teamRecipients = teamId ? await resolveTeamRecipients(workspaceId, teamId) : [];
+  const existing = await Notification.find({
+    workspaceId, entityId: job._id, type, entityType: "booking_import",
+  }).select({ recipientWorkosUserId: 1 }).lean();
+  const notified = new Set(existing.map((item) => item.recipientWorkosUserId));
+  const base = {
+    workspaceId: workspaceId.toString(), type, entityId: job._id.toString(),
+    entityType: "booking_import" as const, triggeredByWorkosUserId: "system:booking-import",
+    locale: "en", inAppOnly: true,
+  };
+  if (owner && !notified.has(owner.workosUserId)) {
+    await sendNotification({ ...base, recipients: [{
+      workosUserId: owner.workosUserId, email: owner.email, name: owner.name || undefined,
+    }], vars: { importViewer: "owner" } });
+  }
+  const others = teamRecipients.filter((recipient) =>
+    recipient.workosUserId !== job.actorUserId && !notified.has(recipient.workosUserId));
+  if (others.length) {
+    await sendNotification({ ...base, recipients: others, vars: { importViewer: "team" } });
+  }
+}
+
+async function deliverPendingImportNotification(jobId: mongoose.Types.ObjectId) {
+  const job = await BookingImportJob.findOne({
+    _id: jobId, notificationPending: true, active: false,
+    status: { $in: ["completed", "failed"] },
+  }).select({ workspaceId: 1, actorUserId: 1, teamId: 1, status: 1, result: 1 }).lean();
+  if (!job) return;
+  const type: Extract<NotificationType, `booking.import_${string}`> = job.status === "failed"
+    ? "booking.import_failed"
+    : (job.result as ImportResult | null)?.errors?.length
+      ? "booking.import_partial" : "booking.import_completed";
+  await notifyImportOutcome(job, type);
+  await BookingImportJob.updateOne(
+    { _id: jobId, workspaceId: job.workspaceId, notificationPending: true },
+    { $set: { notificationPending: false } }
+  );
+}
+
 async function processImportJob(jobId: mongoose.Types.ObjectId) {
   await connectDB();
   const now = new Date();
@@ -1079,6 +1177,14 @@ async function processImportJob(jobId: mongoose.Types.ObjectId) {
   ).lean();
   if (!claimed) return;
 
+  const heartbeat = setInterval(() => {
+    void BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: claimed.workspaceId, leaseToken: token, status: "running" },
+      { $set: { leaseUntil: new Date(Date.now() + JOB_LEASE_MS) } }
+    ).catch((error) => console.error("[bookings.import] lease heartbeat failed", error));
+  }, 60_000);
+  heartbeat.unref();
+
   try {
     await BookingImportJobItem.updateMany(
       { workspaceId: claimed.workspaceId, jobId, status: "pending" },
@@ -1089,6 +1195,10 @@ async function processImportJob(jobId: mongoose.Types.ObjectId) {
       jobId,
       status: "done",
     }).select({ groupIndex: 1 }).lean();
+    emitImportProgress(claimed.actorUserId, {
+      workspaceId: claimed.workspaceId.toString(), jobId: jobId.toString(), status: "running",
+      doneGroups: done.length, totalGroups: claimed.totalGroups,
+    });
     const ctx: ImportContext = {
       userId: claimed.actorUserId,
       workspace: {
@@ -1100,7 +1210,8 @@ async function processImportJob(jobId: mongoose.Types.ObjectId) {
     await processImportRows(
       ctx,
       { rows: claimed.rows as Record<string, unknown>[], teamId: claimed.teamId ?? undefined, confirmDuplicates: true },
-      { job: { id: jobId, token, doneIndices: new Set(done.map((item) => item.groupIndex)) } }
+      { job: { id: jobId, token, doneIndices: new Set(done.map((item) => item.groupIndex)),
+        actorUserId: claimed.actorUserId, totalGroups: claimed.totalGroups } }
     );
 
     const items = await BookingImportJobItem.find({ workspaceId: claimed.workspaceId, jobId })
@@ -1143,24 +1254,48 @@ async function processImportJob(jobId: mongoose.Types.ObjectId) {
         },
       }
     );
-    if (completed.matchedCount === 1 && result.created + result.updated > 0) {
-      emitDataChanged(claimed.workspaceId.toString(), { type: "bookings.imported" });
+    if (completed.matchedCount === 1) {
+      emitImportProgress(claimed.actorUserId, {
+        workspaceId: claimed.workspaceId.toString(), jobId: jobId.toString(), status: "completed",
+        doneGroups: claimed.totalGroups, totalGroups: claimed.totalGroups,
+      });
+      if (result.created + result.updated > 0) {
+        emitDataChanged(claimed.workspaceId.toString(), { type: "bookings.imported" });
+      }
+      await deliverPendingImportNotification(jobId)
+        .catch((error) => console.error("[bookings.import] terminal notification failed", error));
     }
   } catch (error) {
     console.error("[bookings.import] background job failed", {
       jobId: jobId.toString(),
       message: error instanceof Error ? error.message : "Unknown error",
     });
-    await BookingImportJob.updateOne(
+    const failed = claimed.attempts >= 3;
+    const transitioned = await BookingImportJob.updateOne(
       { _id: jobId, workspaceId: claimed.workspaceId, leaseToken: token, status: "running" },
       {
         $set: {
-          status: claimed.attempts >= 3 ? "failed" : "queued",
-          active: claimed.attempts < 3,
+          status: failed ? "failed" : "queued",
+          active: !failed,
           lastError: "background_failed",
           leaseUntil: null,
         },
       }
     );
+    if (transitioned.matchedCount === 1) {
+      const doneGroups = await BookingImportJobItem.countDocuments({
+        workspaceId: claimed.workspaceId, jobId, status: "done",
+      });
+      emitImportProgress(claimed.actorUserId, {
+        workspaceId: claimed.workspaceId.toString(), jobId: jobId.toString(),
+        status: failed ? "failed" : "queued", doneGroups, totalGroups: claimed.totalGroups,
+      });
+      if (failed) {
+        await deliverPendingImportNotification(jobId)
+          .catch((notifyError) => console.error("[bookings.import] failure notification failed", notifyError));
+      }
+    }
+  } finally {
+    clearInterval(heartbeat);
   }
 }

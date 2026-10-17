@@ -34,7 +34,10 @@ const mongoose = require(path.join(repo, "node_modules", "mongoose"));
   );
   const jobIds = jobs.map((job) => job._id);
   const jobItems = await db.collection("bookingimportjobitems").countDocuments({ jobId: { $in: jobIds } });
-  console.log({ bookings: bookings.length, clients: clients.length, strayClients: strayClients.length, foreignClients: foreign.map((c) => c.name), nonQaLinks, transactions: tx, activityLogs: logs, importJobs: jobs.length, importJobItems: jobItems, unsafeImportJobs: unsafeJobs.length });
+  const importNotifications = await db.collection("notifications").countDocuments({
+    entityType: "booking_import", entityId: { $in: jobIds },
+  });
+  console.log({ bookings: bookings.length, clients: clients.length, strayClients: strayClients.length, foreignClients: foreign.map((c) => c.name), nonQaLinks, transactions: tx, activityLogs: logs, importJobs: jobs.length, importJobItems: jobItems, importNotifications, unsafeImportJobs: unsafeJobs.length });
   if (process.argv.includes("--show")) {
     for (const b of bookings) console.log(String(b._id), b.title.slice(0, 60), b.firstSessionStart?.toISOString(), (b.sessions ?? []).length);
   }
@@ -43,6 +46,7 @@ const mongoose = require(path.join(repo, "node_modules", "mongoose"));
     if (unsafeJobs.length) throw new Error("refusing: a QA import job is active or contains non-QA rows");
     const ids = [...clientIds, ...strayClients.map((c) => c._id)];
     console.log("deleted", {
+      importNotifications: (await db.collection("notifications").deleteMany({ entityType: "booking_import", entityId: { $in: jobIds } })).deletedCount,
       importJobItems: (await db.collection("bookingimportjobitems").deleteMany({ jobId: { $in: jobIds } })).deletedCount,
       importJobs: (await db.collection("bookingimportjobs").deleteMany({ _id: { $in: jobIds } })).deletedCount,
       transactions: (await db.collection("transactions").deleteMany({ bookingId: { $in: bookingIds } })).deletedCount,

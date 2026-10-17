@@ -5,6 +5,7 @@ import { io, type Socket } from 'socket.io-client'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { DATA_CHANGED_EVENT, type DataChangedPayload } from '@/lib/data-events'
+import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from '@/lib/bookings/import-progress'
 import { isLocalEcho } from '@/lib/query/invalidation'
 import { queryKeys } from '@/lib/query/keys'
 import { clearDirtyRoutes } from '@/lib/query/dirty-routes'
@@ -169,6 +170,11 @@ export function NotificationProvider({
       // The actor's own tab already invalidated locally.
       if (isLocalEcho(payload.event)) return
       applyRef.current(payload.event)
+    })
+
+    socket.on(BOOKING_IMPORT_PROGRESS_EVENT, (payload: BookingImportProgress) => {
+      if (payload.workspaceId !== workspaceId) return
+      window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: payload }))
     })
 
     socket.on('notification:read', ({ id }: { id: string }) => {

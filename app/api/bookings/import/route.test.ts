@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, Transaction, Team, ActivityLog } from "@/lib/db/models";
+import { Booking, Client, Transaction, Team, ActivityLog, User, TeamMembership } from "@/lib/db/models";
 import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
 import { BookingImportJobItem } from "@/lib/db/models/BookingImportJobItem";
 import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
@@ -49,6 +49,10 @@ const fx = vi.hoisted(() => ({
 }));
 const emit = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+const progressEmit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitImportProgress", () => ({ emitImportProgress: progressEmit }));
+const notificationSend = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/notifications/send", () => ({ sendNotification: notificationSend }));
 vi.mock("@/lib/pricing/fxRates", () => ({
   resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
 }));
@@ -67,6 +71,8 @@ beforeEach(async () => {
   const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
   __resetRateLimitForTests();
   emit.mockClear();
+  progressEmit.mockClear();
+  notificationSend.mockClear();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   fx.resolveFxFreeze.mockReset();
@@ -145,6 +151,9 @@ describe("background booking import jobs", () => {
     expect(status.job.result.created).toBe(1);
     expect(status.job.result.errors).toEqual([]);
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(progressEmit).toHaveBeenCalledWith("user_test", expect.objectContaining({
+      jobId, status: "completed", doneGroups: 1, totalGroups: 1,
+    }));
   });
 
   it("returns the same job for a repeated request ID without writing twice", async () => {
@@ -221,6 +230,103 @@ describe("background booking import jobs", () => {
     mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
     const response = await getJob(jobId);
     expect(response.status).toBe(404);
+  });
+
+  it("schedules an expired job through the protected recovery endpoint", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    afterCallbacks.length = 0; // Simulate losing the original after() callback on restart.
+    const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("./route");
+      const denied = await GET(new Request("http://localhost/api/bookings/import?recover=1"));
+      expect(denied.status).toBe(401);
+      const recovered = await GET(new Request("http://localhost/api/bookings/import?recover=1", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+      expect(recovered.status).toBe(200);
+      expect((await recovered.json()).scheduled).toBe(1);
+      expect(afterCallbacks).toHaveLength(1);
+      await afterCallbacks.shift()!();
+      expect((await (await getJob(jobId)).json()).job.status).toBe("completed");
+      expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    } finally {
+      if (previous === undefined) delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+      else process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = previous;
+    }
+  });
+
+  it("notifies the initiating owner and assigned team members in-app on completion", async () => {
+    const team = await Team.findOne({ workspaceId: WS_ID, isDefault: true }).lean();
+    await User.create([
+      { workosUserId: "user_test", email: "owner@example.test", memberships: [{ workspaceId: WS_ID, role: "owner" }] },
+      { workosUserId: "member_test", email: "member@example.test", memberships: [{ workspaceId: WS_ID, role: "staff" }] },
+    ]);
+    await TeamMembership.create({ workspaceId: WS_ID, teamId: team!._id, workosUserId: "member_test", role: "member" });
+    const start = await callBackground([VALID_ROW], requestId);
+    await afterCallbacks.shift()!();
+    const { jobId } = await start.json();
+    expect(notificationSend).toHaveBeenCalledTimes(2);
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: "booking.import_completed", entityId: jobId, inAppOnly: true,
+      recipients: [expect.objectContaining({ workosUserId: "user_test" })],
+      vars: { importViewer: "owner" },
+    }));
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: "booking.import_completed", entityId: jobId, inAppOnly: true,
+      recipients: [expect.objectContaining({ workosUserId: "member_test" })],
+      vars: { importViewer: "team" },
+    }));
+  });
+
+  it("retries a missed completion notification on the recovery sweep", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    notificationSend.mockRejectedValueOnce(new Error("notification database unavailable"));
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    expect((await (await getJob(jobId)).json()).job.status).toBe("completed");
+    expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(true);
+
+    const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("./route");
+      const response = await GET(new Request("http://localhost/api/bookings/import?recover=1", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+      expect((await response.json()).notifications).toBe(1);
+      await afterCallbacks.shift()!();
+      expect(notificationSend).toHaveBeenCalledTimes(2);
+      expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+      else process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = previous;
+    }
+  });
+
+  it("distinguishes row failures from a terminal worker failure in notifications", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const partial = await callBackground([
+      VALID_ROW,
+      { ...VALID_ROW, title: "Missing client", clientName: "", clientEmail: "bad@example.test" },
+    ], requestId);
+    await afterCallbacks.shift()!();
+    expect((await partial.json()).jobId).toBeTruthy();
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_partial" }));
+
+    notificationSend.mockClear();
+    const start = await callBackground([{ ...VALID_ROW, title: "Second", clientEmail: "second@example.test" }],
+      "00000000-0000-4000-8000-000000000002");
+    const { jobId } = await start.json();
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID }, { $set: { attempts: 2 } });
+    await Team.deleteMany({ workspaceId: WS_ID });
+    await afterCallbacks.shift()!();
+    expect((await (await getJob(jobId)).json()).job.status).toBe("failed");
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_failed" }));
   });
 });
 

@@ -1,6 +1,7 @@
 import { createServer } from 'http'
 import { parse } from 'url'
 import path from 'path'
+import { randomBytes } from 'crypto'
 import next from 'next'
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
@@ -35,6 +36,12 @@ if (!(process.env as Record<string, string | undefined>)["NODE_ENV"]) {
 // lib/env.ts for why (build-time NODE_ENV=production without real secrets).
 import { validateEnv } from './lib/env'
 validateEnv()
+
+// Internal recovery calls use an ephemeral token shared only within this app
+// process. It is generated before Next prepares route handlers and never sent
+// to browsers or stored in deployment configuration.
+const importRecoveryToken = randomBytes(32).toString('hex')
+process.env['GALLURIO_IMPORT_RECOVERY_TOKEN'] = importRecoveryToken
 
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)
@@ -79,7 +86,22 @@ app.prepare().then(() => {
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`)
+    void recoverImports()
   })
+
+  const recoverImports = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/bookings/import?recover=1`, {
+        headers: { authorization: `Bearer ${importRecoveryToken}` },
+        signal: AbortSignal.timeout(30_000),
+      })
+      if (!response.ok) console.error('[bookings.import] recovery sweep failed', response.status)
+    } catch (error) {
+      console.error('[bookings.import] recovery sweep unavailable', error)
+    }
+  }
+  const importRecoveryTimer = setInterval(() => { void recoverImports() }, 60_000)
+  importRecoveryTimer.unref()
 
   // Graceful shutdown on SIGTERM (PM2 restart/reboot) and SIGINT (Ctrl+C):
   // stop accepting new connections, close Socket.IO, close the Mongo
@@ -90,6 +112,10 @@ app.prepare().then(() => {
     closeMongoConnection: () => mongoose.connection.close(),
     exit: (code) => process.exit(code),
   })
-  process.on('SIGTERM', shutdown)
-  process.on('SIGINT', shutdown)
+  const stop = () => {
+    clearInterval(importRecoveryTimer)
+    shutdown()
+  }
+  process.on('SIGTERM', stop)
+  process.on('SIGINT', stop)
 })

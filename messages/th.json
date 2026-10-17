@@ -3546,6 +3546,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {ยกเลิก%booking%แล้ว} completed {%booking%เสร็จสิ้นแล้ว} booked {ยืนยัน%booking%แล้ว} other {อัปเดตสถานะ%booking%แล้ว}}",
             "body": "{newStatus, select, cancelled {{actorName} ยกเลิก%booking%} completed {{actorName} ทำเครื่องหมาย%booking%ว่าเสร็จสิ้น} booked {{actorName} ยืนยัน%booking%} other {{actorName} เปลี่ยนสถานะ%booking%เป็น {newStatus}}}"
+          },
+          "import_completed": {
+            "title": "นำเข้า%booking%เสร็จแล้ว",
+            "body": "การนำเข้าสำหรับ%team%ของคุณเสร็จแล้ว {importViewer, select, team {เปิดรายการจองเพื่อดูข้อมูลที่นำเข้า} other {เปิดเพื่อดูผลลัพธ์}}"
+          },
+          "import_partial": {
+            "title": "ต้องตรวจสอบการนำเข้า%booking%",
+            "body": "การนำเข้าสำหรับ%team%ของคุณเสร็จแล้ว แต่มีบางแถวถูกข้าม {importViewer, select, team {เปิดรายการจองเพื่อดูข้อมูลที่นำเข้า} other {เปิดเพื่อตรวจสอบแถวที่ถูกข้าม}}"
+          },
+          "import_failed": {
+            "title": "นำเข้า%booking%ไม่สำเร็จ",
+            "body": "การนำเข้าสำหรับ%team%ของคุณหยุดก่อนเสร็จสิ้น {importViewer, select, team {ขอให้เจ้าของเวิร์กสเปซตรวจสอบการนำเข้า} other {เปิดเพื่อดูสถานะ}}"
           }
         },
         "team": {

@@ -3546,6 +3546,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {Pemesanan dibatalkan} completed {Pemesanan selesai} booked {Pemesanan dikonfirmasi} other {Status %booking% diperbarui}}",
             "body": "{newStatus, select, cancelled {{actorName} membatalkan %booking%.} completed {{actorName} menandai %booking% selesai.} booked {{actorName} mengonfirmasi %booking%.} other {{actorName} mengubah status %booking% menjadi {newStatus}.}}"
+          },
+          "import_completed": {
+            "title": "Impor %booking% selesai",
+            "body": "Impor untuk %team% Anda selesai. {importViewer, select, team {Buka pemesanan untuk melihat data yang diimpor.} other {Buka untuk melihat hasilnya.}}"
+          },
+          "import_partial": {
+            "title": "Impor %booking% perlu ditinjau",
+            "body": "Impor untuk %team% Anda selesai dengan beberapa baris dilewati. {importViewer, select, team {Buka pemesanan untuk melihat data yang diimpor.} other {Buka untuk meninjau baris yang dilewati.}}"
+          },
+          "import_failed": {
+            "title": "Impor %booking% gagal",
+            "body": "Impor untuk %team% Anda berhenti sebelum selesai. {importViewer, select, team {Minta pemilik ruang kerja meninjau impor.} other {Buka untuk melihat statusnya.}}"
           }
         },
         "team": {

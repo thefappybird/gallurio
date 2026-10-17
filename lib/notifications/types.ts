@@ -2,12 +2,15 @@ export type NotificationType =
   | 'inquiry.created'
   | 'booking.team_assigned'
   | 'booking.status_changed'
+  | 'booking.import_completed'
+  | 'booking.import_partial'
+  | 'booking.import_failed'
   | 'team.invitation'
   | 'team.invite_accepted'
   | 'team.removed'
   | 'team.deleted'
 
-export type NotificationEntityType = 'inquiry' | 'booking' | 'team'
+export type NotificationEntityType = 'inquiry' | 'booking' | 'booking_import' | 'team'
 
 export interface NotificationVars {
   clientName?: string
@@ -19,6 +22,7 @@ export interface NotificationVars {
   teamName?: string
   actorName?: string
   newStatus?: string
+  importViewer?: 'owner' | 'team'
 }
 
 export interface NotificationRecipient {
@@ -36,6 +40,8 @@ export interface SendNotificationOptions {
   triggeredByWorkosUserId: string
   locale: string
   vars?: NotificationVars
+  /** Background job updates use the in-app bell without sending email. */
+  inAppOnly?: boolean
 }
 
 export interface SerializedNotificationPayload {

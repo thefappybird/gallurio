@@ -15,7 +15,7 @@ All test data is tagged: titles start with `QA-IMP` and client names start with 
 
 | File | Case | Expected |
 |---|---|---|
-| `01-happy-template.csv` | Our own template headers | Skips the mapping step and goes straight to the preview with 5 valid rows. Import closes the sheet and shows a success toast. The 5 bookings appear in the list with no page reload. |
+| `01-happy-template.csv` | Our own template headers | Skips the mapping step and goes straight to the preview with 5 valid rows. Import starts a job and shows 5 created in the result. The 5 bookings appear in the list with no page reload. |
 | `01-happy-template.csv` (upload again) | Re-import of the same file | Shows an **"Already imported?"** dialog before anything is written. Cancelling writes nothing. |
 | `02-foreign-crm.xlsx` | Another CRM's export: "Customer", "Event Date", ₱ number format, a formula | Auto-maps: "Event Date" → start date (not title), "Package Price" → total. Dates read **Jun 11–14, 2031** with no day shift. |
 | `03-semicolon.csv` | European Excel CSV that uses `;` | Columns split correctly (4 columns, not 1). |
@@ -67,7 +67,8 @@ The results dialog should show localized explanations for an unknown booking ID 
 
 `18-rows-500.csv` has exactly 500 rows, the maximum allowed.
 - The preview should appear within a few seconds.
-- The import now starts a durable job and returns a job ID. The panel shows processed groups and can be closed while the job runs. Reopen Import to recover progress. A process restart is recoverable when the owner requests the job status again.
+- The import starts a durable job and returns a job ID. The panel shows processed groups; after closing it, the Import icon becomes a progress ring with a processed count. Reopen Import to see the job. A custom-server sweep resumes queued or expired jobs automatically after a restart, and the owner status request can also reclaim one.
+- On completion, partial completion, or terminal failure, the initiating owner and members of the assigned team receive in-app bell notifications only. The owner's entry reopens the import result; team members open the bookings list. Closing the sheet must not suppress these notifications.
 - In the October 2026 development browser run, the 500-row start request took **3.7 seconds** and all 500 finished in **99.7 seconds** with no row errors. Measure the same path on the target deployment before release.
 - In the Network tab, expect one `POST /api/bookings/import` start request, periodic `GET /api/bookings/import?jobId=…` progress requests, then a bookings refresh on completion.
 - Previews have their own rate limit (30 per 5 minutes) and commits have theirs (10 per 5 minutes). If you hit one, the message should say how many seconds to wait.
@@ -92,4 +93,6 @@ node qa/bookings-import/cleanup-import-qa.js . --apply    # delete it
 It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs, imported clients, and terminal QA import jobs/items. The four encoding-fixture names are allowed only when their clients came from import. It refuses to run if a matched booking points at another client, a client is also linked to a non-QA booking, or a QA job is active or contains non-QA rows.
 
 To regenerate fresh files (new unique emails), run:
-`node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. You don't need to; the files that are there now are fresh, and the dev DB currently has 0 QA rows.
+`node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. The committed files are ready for manual testing; inspect the cleanup dry run before deleting development data.
+
+The cleanup also removes in-app import notifications linked to the matched terminal QA jobs.
