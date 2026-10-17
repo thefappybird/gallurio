@@ -174,6 +174,19 @@ describe("recordBookingForClient", () => {
     ).rejects.toThrow("client not found");
   });
 
+  it("requires a transaction before trusting a newly-created client", async () => {
+    await expect(
+      recordBookingForClient({
+        workspaceId: WS_ID,
+        clientId: new Types.ObjectId(),
+        booking: BASE_BOOKING,
+        source: "import",
+        clientCreatedInSession: true,
+      })
+    ).rejects.toThrow("clientCreatedInSession requires a session");
+    expect(await Transaction.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
   it("rejects cross-workspace client and does NOT create an orphaned Transaction", async () => {
     const clientA = await Client.create({ workspaceId: WS_A, name: "A", source: "manual" });
     await expect(

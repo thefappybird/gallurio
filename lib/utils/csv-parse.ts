@@ -13,6 +13,8 @@ export type ParsedCsv = {
  */
 export function parseCsv(text: string): ParsedCsv {
   const rawLines = splitCsvLines(text);
+  const headerLine = rawLines.find((l) => l.trim() && !l.trimStart().startsWith("#"));
+  const delimiter = headerLine ? detectDelimiter(headerLine) : ",";
 
   // State machine: skip leading comment/blank lines until we find the header,
   // then parse every remaining line as data — no # stripping after the header.
@@ -30,14 +32,14 @@ export function parseCsv(text: string): ParsedCsv {
       // mapping step shows these names back to the user, so the parser must not
       // rewrite them. `trim` also drops Excel's UTF-8 BOM, which normalization
       // used to absorb.
-      headers = dedupeHeaders(parseFields(line).map((h) => h.trim()));
+      headers = dedupeHeaders(parseFields(line, delimiter).map((h) => h.trim()));
       headerSeen = true;
       continue;
     }
 
     // Data row: only skip truly blank lines; # is valid data content.
     if (!line.trim()) continue;
-    const values = parseFields(line);
+    const values = parseFields(line, delimiter);
     const row: CsvRow = {};
     headers.forEach((h, idx) => {
       row[h] = (values[idx] ?? "").trim();
@@ -46,6 +48,35 @@ export function parseCsv(text: string): ParsedCsv {
   }
 
   return { headers, rows };
+}
+
+/**
+ * Decodes uploaded CSV bytes: strict UTF-8 (BOM stripped), falling back to
+ * windows-1252 for legacy Excel "CSV" exports. Browser-safe.
+ */
+export function decodeCsvBytes(bytes: Uint8Array): string {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    text = new TextDecoder("windows-1252").decode(bytes);
+  }
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+/**
+ * Cheap binary sniff on the first 8 KB: a NUL byte, or more than 10% control
+ * bytes other than tab/LF/CR, means this is not a text file.
+ */
+export function isProbablyText(bytes: Uint8Array): boolean {
+  const n = Math.min(bytes.length, 8192);
+  let control = 0;
+  for (let i = 0; i < n; i++) {
+    const b = bytes[i];
+    if (b === 0) return false;
+    if (b < 32 && b !== 9 && b !== 10 && b !== 13) control++;
+  }
+  return n === 0 || control / n <= 0.1;
 }
 
 /**
@@ -152,8 +183,24 @@ function splitCsvLines(text: string): string[] {
   return lines;
 }
 
+/**
+ * Picks `,` `;` or tab by how often each appears in the header line outside
+ * quotes. Ties and no-delimiter lines fall back to comma.
+ */
+function detectDelimiter(headerLine: string): string {
+  const counts: Record<string, number> = { ",": 0, ";": 0, "\t": 0 };
+  let inQuotes = false;
+  for (const ch of headerLine) {
+    if (ch === '"') inQuotes = !inQuotes;
+    else if (!inQuotes && ch in counts) counts[ch]++;
+  }
+  let best = ",";
+  for (const d of [";", "\t"]) if (counts[d] > counts[best]) best = d;
+  return best;
+}
+
 /** Parses a single CSV line into field values, stripping outer quotes. */
-function parseFields(line: string): string[] {
+function parseFields(line: string, delimiter = ","): string[] {
   const fields: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -169,7 +216,7 @@ function parseFields(line: string): string[] {
       } else {
         inQuotes = false;
       }
-    } else if (ch === "," && !inQuotes) {
+    } else if (ch === delimiter && !inQuotes) {
       fields.push(current);
       current = "";
     } else {

@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useInvalidateFor } from "@/hooks/use-data-events";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import type { BookingTeamOption } from "../_data/team-options";
 import { toast } from "sonner";
 import {
   CheckCircleIcon,
   FileTextIcon,
+  InfoIcon,
   Loader2Icon,
   SheetIcon,
   UploadIcon,
@@ -17,19 +18,26 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { SheetResizeHandle, useSheetResize } from "@/components/ui/sheet-resize";
 import { Button } from "@/components/ui/button";
-import { parseCsv } from "@/lib/utils/csv-parse";
-import { bookingImportRowSchema } from "@/lib/validators/booking";
+import { parseCsv, decodeCsvBytes, isProbablyText } from "@/lib/utils/csv-parse";
+import { EVENT_TYPES, bookingImportRowSchema } from "@/lib/validators/booking";
 import { sessionsAreSameDayInTz } from "@/lib/bookings/session-validation";
 import {
   MAPPABLE_FIELDS,
   applyMapping,
+  assignmentSources,
   autoMapColumns,
   collectUnmappedEnumValues,
   requiredFieldsSatisfied,
   type ColumnMapping,
 } from "@/lib/bookings/import-mapping";
-import { isAmbiguousDateColumn, type DateOrder } from "@/lib/bookings/import-normalize";
+import {
+  defaultDateOrder,
+  isAmbiguousDateColumn,
+  type DateOrder,
+} from "@/lib/bookings/import-normalize";
+import { formatImportInstant } from "./import-format";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import type {
   ImportResult,
@@ -40,11 +48,17 @@ import { ImportResultsDialog } from "./import-results-dialog";
 import { ImportColumnMapping } from "./import-column-mapping";
 import { ImportValueMapping } from "./import-value-mapping";
 import { cn } from "@/lib/utils";
+import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
+import { ImportProgressRing, importProgressPercent } from "./import-progress-ring";
 
 type Step = "upload" | "map" | "values" | "preview";
 
 /** Rows drawn in the preview table; the import still processes every row. */
 const PREVIEW_ROW_CAP = 100;
+// Mirror the server caps (POST /api/bookings/import) so oversized files are
+// refused at intake instead of failing after the owner has mapped them.
+const MAX_IMPORT_BYTES = 2_000_000;
+const MAX_IMPORT_ROWS = 500;
 
 type ParsedRow = {
   index: number;
@@ -52,15 +66,26 @@ type ParsedRow = {
   valid: boolean;
   error: string | null;
   errorField?: string;
+  /** Localized, non-blocking adjustments (a dropped amount, a made-up title). */
+  notes: string[];
   title: string;
   clientName: string;
   startAt: string;
+  /** The raw start cell(s) startAt came from; decides whether the preview shows a time. */
+  startSource: string;
 };
 
 type Props = {
   open: boolean;
   onClose: () => void;
   defaultCurrency: string;
+  initialJobId?: string;
+  /** Latest owner-scoped status, so reopening an active job has no upload flash. */
+  runningJobProgress?: BookingImportProgress | null;
+  /** Scopes the sessionStorage resume keys so a workspace switch never reads another workspace's job. */
+  workspaceId: string;
+  /** Fired once when a job THIS sheet watched run reaches a terminal state. */
+  onJobFinished?: (jobId: string) => void;
   /**
    * Workspace IANA timezone. Both the preview and date coercion need it — a
    * bare "2026-06-15" has to land on the workspace's day, not the browser's.
@@ -77,9 +102,14 @@ export function ImportSheet({
   open,
   onClose,
   defaultCurrency,
+  initialJobId,
+  runningJobProgress,
+  workspaceId,
+  onJobFinished,
   workspaceTimezone,
   teams = [],
 }: Props) {
+  const resize = useSheetResize({ storageKey: "gw:sheet-w:import", defaultWidth: 672 });
   const t = useTranslations("app.bookings.import");
   const tDialog = useTranslations("app.bookings.import.dialog");
   const tSteps = useTranslations("app.bookings.import.steps");
@@ -87,10 +117,27 @@ export function ImportSheet({
   const tCoerce = useTranslations("app.bookings.import.coerce");
   const errMsg = useActionError();
   const tCols = useTranslations("app.bookings.import.columns");
+  const tField = useTranslations("app.bookings.import.fields");
+  const tNotes = useTranslations("app.bookings.import.notes");
+  const tEventType = useTranslations("app.bookings.eventTypes");
+  const locale = useLocale();
   const invalidateFor = useInvalidateFor();
 
   const timeZone = workspaceTimezone || FALLBACK_TZ;
+  const fieldLabel = useCallback(
+    (key: string) => (tField.has(`${key}.label`) ? tField(`${key}.label`) : key),
+    [tField]
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef<string | null>(null);
+  const jobKey = `gw:booking-import-job:${workspaceId}`;
+  const requestKey = `gw:booking-import-request:${workspaceId}`;
+  // Where the watched job id came from, and whether THIS mount saw it queued/
+  // running. A job first seen already finished is a replay: no toast, no
+  // invalidation, no auto-close.
+  const jobSourceRef = useRef<"started" | "resume" | "initial">("started");
+  const watchedLiveRef = useRef(false);
+  const initialRunningJobIdRef = useRef(runningJobProgress?.jobId);
 
   const [step, setStep] = useState<Step>("upload");
   // Drives which way a step animates in. Purely presentational.
@@ -101,13 +148,14 @@ export function ImportSheet({
   const [sourceRows, setSourceRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>(() => autoMapColumns([]));
   const [valueMap, setValueMap] = useState<Record<string, Record<string, string>>>({});
-  const [dateOrder, setDateOrder] = useState<DateOrder>("MDY");
+  const [dateOrder, setDateOrder] = useState<DateOrder>(() => defaultDateOrder(timeZone));
   const [autoMapped, setAutoMapped] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showPreviewErrors, setShowPreviewErrors] = useState(false);
+  const [showPreviewNotes, setShowPreviewNotes] = useState(false);
 
   const writableTeams = useMemo(
     () => teams.filter((team) => team.isActive && team.isLead),
@@ -115,15 +163,26 @@ export function ImportSheet({
   );
   const [teamId, setTeamId] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(() =>
+    initialJobId ? null : runningJobProgress?.jobId ?? sessionStorage.getItem(jobKey));
+  const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(() =>
+    !initialJobId && runningJobProgress
+      ? { done: runningJobProgress.doneGroups, total: runningJobProgress.totalGroups } : null);
+  const [jobFailed, setJobFailed] = useState(false);
+  // True only once the job is known queued/running; a resumed id is not busy
+  // until the first status response says so.
+  const [jobLive, setJobLive] = useState(() => activeJobId !== null);
 
   const resetImportState = useCallback(() => {
+    sessionStorage.removeItem(jobKey);
+    sessionStorage.removeItem(requestKey);
     setStep("upload");
     setDirection("forward");
     setHeaders([]);
     setSourceRows([]);
     setMapping(autoMapColumns([]));
     setValueMap({});
-    setDateOrder("MDY");
+    setDateOrder(defaultDateOrder(timeZone));
     setAutoMapped(false);
     setParsing(false);
     setFileName(null);
@@ -131,9 +190,15 @@ export function ImportSheet({
     setImportResult(null);
     setShowResultsDialog(false);
     setShowPreviewErrors(false);
+    setShowPreviewNotes(false);
     setTeamId("");
     setDuplicateWarning(null);
-  }, []);
+    requestIdRef.current = null;
+    setActiveJobId(null);
+    setJobProgress(null);
+    setJobFailed(false);
+    setJobLive(false);
+  }, [timeZone, jobKey, requestKey]);
 
   // ── mapping-derived data ───────────────────────────────────────────────────
 
@@ -162,8 +227,8 @@ export function ImportSheet({
   const enumSourceColumns = useMemo(() => {
     const out: Record<string, string> = {};
     for (const field of MAPPABLE_FIELDS) {
-      const assignment = mapping[field.key];
-      if (assignment && "source" in assignment) out[field.key] = assignment.source;
+      const [first] = assignmentSources(mapping[field.key]);
+      if (first) out[field.key] = first;
     }
     return out;
   }, [mapping]);
@@ -178,20 +243,47 @@ export function ImportSheet({
    */
   const ambiguousDateExample = useMemo(() => {
     for (const key of ["startAt", "endAt"]) {
-      const assignment = mapping[key];
-      if (!assignment || !("source" in assignment)) continue;
-      const column = sourceRows.map((r) => r[assignment.source] ?? "");
-      if (isAmbiguousDateColumn(column)) return column.find((v) => v.trim()) ?? null;
+      for (const source of assignmentSources(mapping[key])) {
+        const column = sourceRows.map((r) => r[source] ?? "");
+        if (isAmbiguousDateColumn(column)) return column.find((v) => v.trim()) ?? null;
+      }
     }
     return null;
   }, [mapping, sourceRows]);
 
+  // Title is required, so a row without one gets a readable stand-in rather
+  // than failing: "Jane Smith – Wedding", else "Jane Smith – Jun 15, 2026".
+  const titleFallback = useCallback(
+    (values: Record<string, string>) => {
+      const client = values.clientName?.trim();
+      if (!client) return t("results.untitled");
+      const type = values.eventType?.trim();
+      if (type) {
+        const known = (EVENT_TYPES as readonly string[]).includes(type);
+        return t("titleWithType", { client, type: known ? tEventType(type) : type });
+      }
+      if (values.startAt) {
+        return t("titleWithDate", {
+          client,
+          date: formatImportInstant(values.startAt, locale, timeZone, ""),
+        });
+      }
+      return t("results.untitled");
+    },
+    [t, tEventType, locale, timeZone]
+  );
+
   const mappedRows = useMemo(
     () =>
       sourceRows.length
-        ? applyMapping(sourceRows, mapping, { timeZone, dateOrder, valueMap: effectiveValueMap })
+        ? applyMapping(sourceRows, mapping, {
+            timeZone,
+            dateOrder,
+            valueMap: effectiveValueMap,
+            titleFallback,
+          })
         : [],
-    [sourceRows, mapping, timeZone, dateOrder, effectiveValueMap]
+    [sourceRows, mapping, timeZone, dateOrder, effectiveValueMap, titleFallback]
   );
 
   /**
@@ -201,8 +293,9 @@ export function ImportSheet({
    * required field was missing.
    */
   const rows: ParsedRow[] = useMemo(
-    () =>
-      mappedRows.map((mapped, i) => {
+    () => {
+      const startAssignment = mapping.startAt;
+      return mappedRows.map((mapped, i) => {
         const raw = mapped.values;
         const base = {
           index: i,
@@ -210,6 +303,16 @@ export function ImportSheet({
           title: raw.title ?? "",
           clientName: raw.clientName ?? "",
           startAt: raw.startAt ?? "",
+          startSource: startAssignment
+            ? "constant" in startAssignment
+              ? startAssignment.constant
+              : assignmentSources(startAssignment)
+                  .map((s) => sourceRows[i]?.[s] ?? "")
+                  .join(" ")
+            : "",
+          notes: mapped.notes.map((n) =>
+            tNotes(n.reason, { field: fieldLabel(n.field), value: n.value })
+          ),
         };
 
         const issue = mapped.issues[0];
@@ -217,8 +320,17 @@ export function ImportSheet({
           return {
             ...base,
             valid: false,
-            error: tCoerce(issue.reason, { field: issue.field, value: issue.value }),
+            error: tCoerce(issue.reason, { field: fieldLabel(issue.field), value: issue.value }),
             errorField: issue.field,
+          };
+        }
+
+        if (!raw.clientName?.trim()) {
+          return {
+            ...base,
+            valid: false,
+            error: t("missingClientName"),
+            errorField: "clientName",
           };
         }
 
@@ -256,8 +368,9 @@ export function ImportSheet({
         }
 
         return { ...base, valid: true, error: null };
-      }),
-    [mappedRows, timeZone, t, tCoerce]
+      });
+    },
+    [mappedRows, mapping, sourceRows, timeZone, t, tCoerce, tNotes, fieldLabel]
   );
 
   // Rows sharing a booking_id are ONE booking, and the route rebuilds its
@@ -276,6 +389,10 @@ export function ImportSheet({
   const validRows = useMemo(
     () => rows.filter((r) => r.valid && !blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
     [rows, blockedGroups]
+  );
+  const notedCount = useMemo(
+    () => validRows.filter((r) => r.notes.length > 0).length,
+    [validRows]
   );
   const invalidRows = useMemo(
     () => rows.filter((r) => !r.valid || blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
@@ -299,6 +416,20 @@ export function ImportSheet({
         message: r.error ?? t("groupBlocked"),
       })),
     [invalidRows, t]
+  );
+
+  // Notes ride the same dialog (tone="note"): one entry per row, every note on it.
+  const previewNotes: ImportErrorEntry[] = useMemo(
+    () =>
+      validRows
+        .filter((r) => r.notes.length > 0)
+        .map((r) => ({
+          index: r.index,
+          row: r.raw,
+          kind: "validation" as const,
+          message: r.notes.join("\n"),
+        })),
+    [validRows]
   );
 
   // ── steps ──────────────────────────────────────────────────────────────────
@@ -331,11 +462,171 @@ export function ImportSheet({
 
   // ── import ─────────────────────────────────────────────────────────────────
 
+  const activateJob = useCallback((jobId: string) => {
+    sessionStorage.setItem(jobKey, jobId);
+    sessionStorage.removeItem(requestKey);
+    jobSourceRef.current = "started";
+    watchedLiveRef.current = true;
+    setActiveJobId(jobId);
+    setJobLive(true);
+    setJobProgress(null);
+  }, [jobKey, requestKey]);
+
+  // `replay`: the job was already finished when first seen (bell link, badge,
+  // or a resumed id). Show the result without repeating its side effects.
+  const applyResult = useCallback((data: ImportResult, jobId?: string, replay = false) => {
+    // Only drop the resume key if it is this job's; a replayed old job must
+    // not erase the key of a different job that is still running.
+    if (!jobId || sessionStorage.getItem(jobKey) === jobId) sessionStorage.removeItem(jobKey);
+    if (!replay) {
+      sessionStorage.removeItem(requestKey);
+      requestIdRef.current = null;
+    }
+    setActiveJobId(null);
+    setJobLive(false);
+    setJobProgress(null);
+    setImportResult(data);
+
+    if (replay) {
+      if (data.errors.length > 0) setShowResultsDialog(true);
+      return;
+    }
+    const written = data.created + data.updated;
+    if (written > 0) {
+      toast.success(t("success", { bookings: written, shifts: data.shifts }));
+      invalidateFor({ type: "bookings.imported" });
+      if (data.errors.length === 0 && !initialJobId) {
+        resetImportState();
+        onClose();
+      }
+    }
+    if (data.errors.length > 0) {
+      setShowResultsDialog(true);
+      if (written === 0) toast.error(tDialog("failedWithDetails"));
+    }
+  }, [t, tDialog, invalidateFor, resetImportState, onClose, initialJobId, jobKey, requestKey]);
+
+  // Volatile callbacks live in refs so the poll effect depends only on the
+  // job id: a parent re-render (e.g. each socket progress event) must not
+  // tear the poll down and fire an extra status GET.
+  const applyResultRef = useRef(applyResult);
+  const tDialogRef = useRef(tDialog);
+  const onJobFinishedRef = useRef(onJobFinished);
+  useEffect(() => {
+    applyResultRef.current = applyResult;
+    tDialogRef.current = tDialog;
+    onJobFinishedRef.current = onJobFinished;
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const saved = initialJobId ?? initialRunningJobIdRef.current ?? sessionStorage.getItem(jobKey);
+    if (saved) {
+      jobSourceRef.current = initialJobId ? "initial" : "resume";
+      watchedLiveRef.current = false;
+      queueMicrotask(() => {
+        if (!cancelled) setActiveJobId(saved);
+      });
+      return () => { cancelled = true; };
+    }
+    const pendingRequest = sessionStorage.getItem(requestKey);
+    if (!pendingRequest) return;
+    void fetch(`/api/bookings/import?requestId=${pendingRequest}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (res.status === 404) {
+          sessionStorage.removeItem(requestKey);
+          return;
+        }
+        const body = await res.json();
+        if (!cancelled && res.ok && body?.job?.jobId) activateJob(body.job.jobId);
+      })
+      .catch(() => {
+        // Keep the request ID for the next open when the connection returns.
+      });
+    return () => { cancelled = true; };
+  }, [open, activateJob, initialJobId, jobKey, requestKey]);
+
+  useEffect(() => {
+    if (!activeJobId) return;
+    const onProgress = (event: Event) => {
+      const progress = (event as CustomEvent<BookingImportProgress>).detail;
+      if (progress.jobId === activeJobId) {
+        setJobProgress({ done: progress.doneGroups, total: progress.totalGroups });
+      }
+    };
+    window.addEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/bookings/import?jobId=${encodeURIComponent(activeJobId)}`, {
+          cache: "no-store",
+        });
+        const body = await res.json().catch(() => null);
+        if (stopped) return;
+        if (!res.ok || !body?.job) {
+          if (res.status === 404) {
+            if (sessionStorage.getItem(jobKey) === activeJobId) sessionStorage.removeItem(jobKey);
+            requestIdRef.current = null;
+            setActiveJobId(null);
+            setJobLive(false);
+            // Job docs expire after 30 days while their notification stays, and
+            // a resumed id can belong to another session: neither is a failure.
+            if (jobSourceRef.current === "initial") toast.message(tDialogRef.current("resultUnavailable"));
+            else if (jobSourceRef.current === "started") toast.error(tDialogRef.current("failedRetry"));
+            return;
+          }
+        } else {
+          const job = body.job as {
+            status: string;
+            doneGroups: number;
+            totalGroups: number;
+            result?: ImportResult;
+          };
+          setJobProgress({ done: job.doneGroups, total: job.totalGroups });
+          if (job.status === "queued" || job.status === "running") {
+            watchedLiveRef.current = true;
+            setJobLive(true);
+          }
+          const replay = !watchedLiveRef.current;
+          if (job.status === "completed" && job.result) {
+            applyResultRef.current(job.result, activeJobId, replay);
+            if (!replay) onJobFinishedRef.current?.(activeJobId);
+            return;
+          }
+          if (job.status === "failed") {
+            if (sessionStorage.getItem(jobKey) === activeJobId) sessionStorage.removeItem(jobKey);
+            if (!replay) requestIdRef.current = null;
+            setActiveJobId(null);
+            setJobLive(false);
+            setJobFailed(true);
+            if (!replay) {
+              toast.error(tDialogRef.current("failedRetry"));
+              onJobFinishedRef.current?.(activeJobId);
+            }
+            return;
+          }
+        }
+      } catch {
+        // A temporary disconnect must not cancel a job running on the server.
+      }
+      if (!stopped) timer = setTimeout(poll, 5000);
+    };
+    void poll();
+    return () => {
+      stopped = true;
+      window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
+      if (timer) clearTimeout(timer);
+    };
+  }, [activeJobId, jobKey]);
+
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
     useCallback(async (confirmDuplicates = false) => {
       if (validRows.length === 0) return;
 
       setImportResult(null);
+      setJobFailed(false);
       const payload = validRows.map((r) => ({
         ...r.raw,
         amountTotal: r.raw.amountTotal || undefined,
@@ -343,16 +634,41 @@ export function ImportSheet({
         clientEmail: r.raw.clientEmail || null,
         currency: r.raw.currency || defaultCurrency,
       }));
+      const requestId = requestIdRef.current ?? crypto.randomUUID();
+      requestIdRef.current = requestId;
+      sessionStorage.setItem(requestKey, requestId);
 
-      const res = await fetch("/api/bookings/import", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          rows: payload,
-          ...(teamId ? { teamId } : {}),
-          ...(confirmDuplicates ? { confirmDuplicates: true } : {}),
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch("/api/bookings/import", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            rows: payload,
+            background: true,
+            requestId,
+            ...(teamId ? { teamId } : {}),
+            ...(confirmDuplicates ? { confirmDuplicates: true } : {}),
+          }),
+        });
+      } catch {
+        // The start response may have been lost after the job was saved.
+        // Recover by the stable request ID before showing an uncertain result.
+        try {
+          const lookup = await fetch(`/api/bookings/import?requestId=${requestId}`, {
+            cache: "no-store",
+          });
+          const found = await lookup.json();
+          if (lookup.ok && found?.job?.jobId) {
+            activateJob(found.job.jobId);
+            return;
+          }
+        } catch {
+          // Still offline; the same request ID is reused if the owner retries.
+        }
+        toast.error(tDialog("failedConnection"));
+        return;
+      }
       const body = await res.json().catch(() => null);
 
       // Looks already imported. Nothing was written; ask before proceeding.
@@ -361,36 +677,32 @@ export function ImportSheet({
         return;
       }
 
+      if (body?.error === "import_active" && body?.jobId) {
+        toast.message(tDialog("anotherActive"));
+        requestIdRef.current = null;
+        activateJob(body.jobId);
+        return;
+      }
+      if (res.status === 202 && body?.jobId) {
+        activateJob(body.jobId);
+        return;
+      }
+
       // A rejected request (429, 403, 400) answers with {error}, not a result.
       // Committing that to state and reading .errors off it throws during the
       // next render and takes the page down with it.
       if (!res.ok || !body || !Array.isArray(body.errors)) {
-        toast.error(errMsg(body?.error));
+        toast.error(
+          body?.error === "too_many_rows"
+            ? t("intake.tooManyRows", { count: body.count ?? 0, max: body.max ?? MAX_IMPORT_ROWS })
+            : errMsg(body?.error, { seconds: body?.seconds ?? 60 })
+        );
         return;
       }
 
       const data: ImportResult = body;
-      setImportResult(data);
-
-      const written = data.created + data.updated;
-      if (written > 0) {
-        toast.success(t("success", { bookings: written, shifts: data.shifts }));
-        invalidateFor({ type: "bookings.imported" });
-        // A clean import is complete. Leave a partial import open so its
-        // actionable errors stay available; otherwise return the owner to the
-        // refreshed booking view rather than making them dismiss this sheet.
-        if (data.errors.length === 0) {
-          resetImportState();
-          onClose();
-        }
-      }
-      if (data.errors.length > 0) {
-        setShowResultsDialog(true);
-        if (written === 0) {
-          toast.error(tDialog("failedWithDetails"));
-        }
-      }
-    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, invalidateFor, resetImportState, onClose]),
+      applyResult(data);
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, applyResult, activateJob, requestKey]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -400,7 +712,7 @@ export function ImportSheet({
 
   // The sheet stays locked while the import request is in flight. The table
   // behind it refreshes via the data-event invalidation, not a blocking refresh.
-  const busy = importing;
+  const busy = importing || (activeJobId !== null && jobLive);
 
   // ── file intake ────────────────────────────────────────────────────────────
 
@@ -421,15 +733,61 @@ export function ImportSheet({
     []
   );
 
+  // Size/row-count/emptiness gates shared by the CSV and XLSX paths. Sets the
+  // upload-step error and returns false when the file should be refused.
+  const checkIntake = useCallback(
+    (h: string[], r: Record<string, string>[]) => {
+      if (!h.some((x) => x.trim())) {
+        setParseError(t("intake.empty"));
+        return false;
+      }
+      if (r.length === 0) {
+        setParseError(t("intake.noRows"));
+        return false;
+      }
+      if (r.length > MAX_IMPORT_ROWS) {
+        setParseError(t("intake.tooManyRows", { count: r.length, max: MAX_IMPORT_ROWS }));
+        return false;
+      }
+      return true;
+    },
+    [t]
+  );
+
+  // Maps the preview endpoint's error body to specific copy.
+  const intakeErrorCopy = useCallback(
+    (data: { error?: string; count?: number; max?: number; seconds?: number } | null) => {
+      switch (data?.error) {
+        case "import_too_large":
+          return t("intake.tooLarge");
+        case "too_many_rows":
+          return t("intake.tooManyRows", {
+            count: data.count ?? MAX_IMPORT_ROWS + 1,
+            max: data.max ?? MAX_IMPORT_ROWS,
+          });
+        case "rate_limited":
+          return errMsg("rate_limited", { seconds: data.seconds ?? 60 });
+        default:
+          return t("parseError");
+      }
+    },
+    [t, errMsg]
+  );
+
   const processFile = useCallback(
     (file: File) => {
       const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
       const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
       if (!isXlsx && !isCsv) {
-        setParseError(t("parseError"));
+        setParseError(file.name.toLowerCase().endsWith(".xls") ? t("intake.oldExcel") : t("parseError"));
+        return;
+      }
+      if (file.size > MAX_IMPORT_BYTES) {
+        setParseError(t("intake.tooLarge"));
         return;
       }
       setFileName(file.name);
+      requestIdRef.current = crypto.randomUUID();
       setHeaders([]);
       setSourceRows([]);
       setImportResult(null);
@@ -449,17 +807,20 @@ export function ImportSheet({
           .then(async (res) => {
             const data = await res.json().catch(() => null);
             if (!res.ok || !data?.rows) {
-              setParseError(t("parseError"));
+              setParseError(intakeErrorCopy(data));
               setStep("upload");
               return;
             }
-            receive(
-              (data.headers as string[]) ?? [],
-              data.rows as Record<string, string>[]
-            );
+            const h = (data.headers as string[]) ?? [];
+            const r = data.rows as Record<string, string>[];
+            if (!checkIntake(h, r)) {
+              setStep("upload");
+              return;
+            }
+            receive(h, r);
           })
           .catch(() => {
-            setParseError(t("parseError"));
+            setParseError(t("intake.offline"));
             setStep("upload");
           })
           .finally(() => setParsing(false));
@@ -468,17 +829,22 @@ export function ImportSheet({
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const text = e.target?.result as string;
         try {
-          const parsed = parseCsv(text);
+          const bytes = new Uint8Array(e.target?.result as ArrayBuffer);
+          if (!isProbablyText(bytes)) {
+            setParseError(t("intake.notText"));
+            return;
+          }
+          const parsed = parseCsv(decodeCsvBytes(bytes));
+          if (!checkIntake(parsed.headers, parsed.rows)) return;
           receive(parsed.headers, parsed.rows);
         } catch {
           setParseError(t("parseError"));
         }
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     },
-    [t, receive]
+    [t, receive, checkIntake, intakeErrorCopy]
   );
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -498,7 +864,11 @@ export function ImportSheet({
   );
 
   function handleClose() {
-    if (busy) return;
+    if (importing) return;
+    if (activeJobId) {
+      onClose();
+      return;
+    }
     resetImportState();
     onClose();
   }
@@ -515,8 +885,12 @@ export function ImportSheet({
           // The default right-side sheet is w-3/4 capped at sm, which leaves
           // the mapping grid a single cramped column. Full width on a phone,
           // wide enough for two columns from sm up.
-          className="flex w-full! flex-col gap-0 p-0 sm:max-w-2xl"
+          // `!` required: SheetContent base has data-[side=right]:w-3/4 and
+          // sm:max-w-sm; attribute selectors out-specify plain utilities.
+          {...resize.sheetProps}
+          className="flex w-full! flex-col gap-0 p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
         >
+          <SheetResizeHandle resize={resize} />
           <div className="border-b border-border px-4 py-3">
             <SheetTitle>{t("title")}</SheetTitle>
             <StepRail
@@ -528,7 +902,17 @@ export function ImportSheet({
           </div>
 
           <div className="@container relative min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <div
+            {initialJobId && importResult ? (
+              <div role="status" className="mb-4 border border-border bg-muted/30 p-3 text-sm">
+                {t("success", { bookings: importResult.created + importResult.updated, shifts: importResult.shifts })}
+              </div>
+            ) : null}
+            {jobFailed ? (
+              <div role="alert" className="mb-4 border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {tDialog("failedRetry")}
+              </div>
+            ) : null}
+            {!busy ? <div
               key={step}
               data-direction={direction}
               className={cn(
@@ -567,6 +951,7 @@ export function ImportSheet({
                   onChange={setMapping}
                   dateOrder={dateOrder}
                   onDateOrderChange={setDateOrder}
+                  timeZone={timeZone}
                   ambiguousDateExample={ambiguousDateExample}
                   loading={parsing}
                 />
@@ -584,20 +969,23 @@ export function ImportSheet({
               {step === "preview" ? (
                 <PreviewStep
                   rows={rows}
-                  validCount={validRows.length}
+                  notedCount={notedCount}
                   invalidCount={invalidRows.length}
                   invalidIndexes={invalidIndexes}
+                  formatStart={(iso, source) => formatImportInstant(iso, locale, timeZone, source)}
                   fileName={fileName}
                   autoMapped={autoMapped}
                   onReviewMapping={() => goTo("map", "back")}
                   onShowErrors={() => setShowPreviewErrors(true)}
+                  onShowNotes={() => setShowPreviewNotes(true)}
                   writableTeams={writableTeams}
                   teamId={teamId}
                   setTeamId={setTeamId}
                   disabled={busy}
                   labels={{
                     preview: t("preview", { total: rows.length }),
-                    valid: t("validCount", { count: validRows.length }),
+                    total: t("totalCount", { count: rows.length }),
+                    notes: t("notesCount", { count: notedCount }),
                     invalid: t("invalidCount", { count: invalidRows.length }),
                     reviewMapping: tNav("reviewMapping"),
                     reviewMappingAction: tNav("reviewMappingAction"),
@@ -609,7 +997,7 @@ export function ImportSheet({
                   }}
                 />
               ) : null}
-            </div>
+            </div> : null}
 
             {busy ? (
               <div
@@ -617,10 +1005,32 @@ export function ImportSheet({
                 aria-live="polite"
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-xs"
               >
-                <Loader2Icon className="size-6 animate-spin text-brand" />
+                {activeJobId && jobProgress ? (
+                  <div
+                    role="progressbar"
+                    aria-label={tNav("committing")}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={importProgressPercent(jobProgress.done, jobProgress.total)}
+                    className="relative flex size-14 items-center justify-center text-brand"
+                  >
+                    <ImportProgressRing done={jobProgress.done} total={jobProgress.total} className="size-14" />
+                    <span aria-hidden="true" className="absolute text-xs font-medium tabular-nums">
+                      {importProgressPercent(jobProgress.done, jobProgress.total)}%
+                    </span>
+                  </div>
+                ) : <Loader2Icon className="size-6 animate-spin text-brand" />}
                 <p className="text-sm text-muted-foreground">
                   {tNav("committing")}
                 </p>
+                {activeJobId && jobProgress ? (
+                  <div className="w-56 space-y-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {tNav("progress", { done: jobProgress.done, total: jobProgress.total })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{tNav("background")}</p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -630,10 +1040,10 @@ export function ImportSheet({
               type="button"
               variant="outline"
               size="sm"
-              onClick={stepIndex > 0 && !done ? goBack : handleClose}
-              disabled={busy}
+              onClick={!activeJobId && stepIndex > 0 && !done ? goBack : handleClose}
+              disabled={importing}
             >
-              {stepIndex > 0 && !done ? tNav("back") : done ? tDialog("close") : tDialog("cancel")}
+              {activeJobId ? tDialog("close") : stepIndex > 0 && !done ? tNav("back") : done ? tDialog("close") : tDialog("cancel")}
             </Button>
 
             {step !== "preview" && step !== "upload" ? (
@@ -754,6 +1164,15 @@ export function ImportSheet({
           open={showPreviewErrors}
           onClose={() => setShowPreviewErrors(false)}
           errors={previewErrors}
+        />
+      ) : null}
+
+      {previewNotes.length > 0 ? (
+        <ImportResultsDialog
+          open={showPreviewNotes}
+          onClose={() => setShowPreviewNotes(false)}
+          errors={previewNotes}
+          tone="note"
         />
       ) : null}
     </>
@@ -887,13 +1306,15 @@ function UploadStep({
 
 function PreviewStep({
   rows,
-  validCount,
+  notedCount,
   invalidCount,
   invalidIndexes,
+  formatStart,
   fileName,
   autoMapped,
   onReviewMapping,
   onShowErrors,
+  onShowNotes,
   writableTeams,
   teamId,
   setTeamId,
@@ -901,20 +1322,23 @@ function PreviewStep({
   labels,
 }: {
   rows: ParsedRow[];
-  validCount: number;
+  notedCount: number;
   invalidCount: number;
   invalidIndexes: Set<number>;
+  formatStart: (iso: string, source: string) => string;
   fileName: string | null;
   autoMapped: boolean;
   onReviewMapping: () => void;
   onShowErrors: () => void;
+  onShowNotes: () => void;
   writableTeams: BookingTeamOption[];
   teamId: string;
   setTeamId: (next: string) => void;
   disabled: boolean;
   labels: {
     preview: string;
-    valid: string;
+    total: string;
+    notes: string;
     invalid: string;
     reviewMapping: string;
     reviewMappingAction: string;
@@ -925,6 +1349,32 @@ function PreviewStep({
     col: (k: "row" | "title" | "client" | "start" | "error") => string;
   };
 }) {
+  // One reason per row, tappable (the title attr alone is hover-only). Rendered
+  // in the Notes column from sm up and under the title below it.
+  const reason = (row: ParsedRow, bad: boolean, noted: boolean) => (
+    <>
+      {noted ? (
+        <button
+          type="button"
+          onClick={onShowNotes}
+          className="block max-w-full truncate text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {row.notes[0]}
+        </button>
+      ) : null}
+      {bad ? (
+        // The cell truncates a long message; the dialog shows it whole
+        // alongside the raw row.
+        <button
+          type="button"
+          onClick={onShowErrors}
+          className="text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {row.error ?? labels.groupBlocked}
+        </button>
+      ) : null}
+    </>
+  );
   return (
     <div className="flex flex-col gap-3">
       {/* A file whose COLUMNS we matched without asking still says so, and
@@ -970,20 +1420,58 @@ function PreviewStep({
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="font-medium">{labels.preview}</span>
-        {validCount > 0 ? <span className="text-xs text-foreground">{labels.valid}</span> : null}
+        <span className="text-xs text-foreground">{labels.total}</span>
+        {notedCount > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            <span aria-hidden="true">· </span>
+            <button
+              type="button"
+              onClick={onShowNotes}
+              className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {labels.notes}
+            </button>
+          </span>
+        ) : null}
         {invalidCount > 0 ? (
-          <button
-            type="button"
-            onClick={onShowErrors}
-            className="text-xs text-destructive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            {labels.invalid}
-          </button>
+          <span className="text-xs text-muted-foreground">
+            <span aria-hidden="true">· </span>
+            <button
+              type="button"
+              onClick={onShowErrors}
+              className="text-destructive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {labels.invalid}
+            </button>
+          </span>
         ) : null}
         <span className="ms-auto text-xs text-muted-foreground">{fileName}</span>
       </div>
 
-      <div className="overflow-auto border border-border">
+      <div className="border border-border sm:hidden">
+        {rows.slice(0, PREVIEW_ROW_CAP).map((row) => {
+          const bad = invalidIndexes.has(row.index);
+          const noted = !bad && row.notes.length > 0;
+          return (
+            <div key={row.index} className={cn("min-w-0 border-b border-border px-3 py-2 last:border-0", bad && "bg-destructive/5")}>
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="shrink-0 tabular-nums text-muted-foreground">{row.index + 1}</span>
+                {bad ? <XCircleIcon className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : noted ? <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" /> : <CheckCircleIcon className="mt-0.5 size-3.5 shrink-0 text-foreground" />}
+                <div className="min-w-0 flex-1">
+                  <p className="break-words font-medium">{row.title || "—"}</p>
+                  <p className="break-words text-muted-foreground">{row.clientName || "—"}</p>
+                  {bad || noted ? <div className={cn("mt-1 break-words", bad ? "text-destructive" : "text-muted-foreground")}>{reason(row, bad, noted)}</div> : null}
+                </div>
+              </div>
+              <p className="mt-1 whitespace-nowrap ps-9 tabular-nums text-muted-foreground">
+                {labels.col("start")}: {row.startAt ? formatStart(row.startAt, row.startSource) : "—"}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-auto border border-border sm:block">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-muted text-muted-foreground">
             <tr>
@@ -1000,7 +1488,7 @@ function PreviewStep({
               <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                 {labels.col("start")}
               </th>
-              <th className="border-b border-border px-2 py-1.5 text-start font-medium text-destructive">
+              <th className="hidden border-b border-border px-2 py-1.5 text-start font-medium sm:table-cell">
                 {labels.col("error")}
               </th>
             </tr>
@@ -1011,6 +1499,7 @@ function PreviewStep({
               // importable. Showing them with a green tick contradicted the
               // counts right above the table.
               const bad = invalidIndexes.has(row.index);
+              const noted = !bad && row.notes.length > 0;
               return (
                 <tr
                   key={row.index}
@@ -1025,25 +1514,39 @@ function PreviewStep({
                   <td className="px-1 py-1.5">
                     {bad ? (
                       <XCircleIcon className="size-3.5 text-destructive" />
+                    ) : noted ? (
+                      <InfoIcon className="size-3.5 text-muted-foreground" />
                     ) : (
                       <CheckCircleIcon className="size-3.5 text-foreground" />
                     )}
                   </td>
-                  <td className="max-w-32 truncate px-2 py-1.5">{row.title || "—"}</td>
-                  <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
-                  <td className="px-2 py-1.5 tabular-nums">{row.startAt || "—"}</td>
-                  <td className="px-2 py-1.5 text-destructive">
-                    {bad ? (
-                      // The cell truncates a long message; the dialog shows it
-                      // whole alongside the raw row.
-                      <button
-                        type="button"
-                        onClick={onShowErrors}
-                        className="text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  <td className="max-w-32 truncate px-2 py-1.5">
+                    {row.title || "—"}
+                    {/* Below sm the reason column is hidden (it scrolls off-screen),
+                        so the same reason sits under the title instead. */}
+                    {noted || bad ? (
+                      <div
+                        className={cn(
+                          "sm:hidden",
+                          bad ? "text-destructive" : "truncate text-muted-foreground"
+                        )}
                       >
-                        {row.error ?? labels.groupBlocked}
-                      </button>
+                        {reason(row, bad, noted)}
+                      </div>
                     ) : null}
+                  </td>
+                  <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
+                  <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">
+                    {row.startAt ? formatStart(row.startAt, row.startSource) : "—"}
+                  </td>
+                  <td
+                    className={cn(
+                      "hidden max-w-40 px-2 py-1.5 sm:table-cell",
+                      bad ? "text-destructive" : "truncate text-muted-foreground"
+                    )}
+                    title={noted ? row.notes.join("\n") : undefined}
+                  >
+                    {reason(row, bad, noted)}
                   </td>
                 </tr>
               );

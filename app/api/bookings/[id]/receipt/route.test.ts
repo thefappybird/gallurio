@@ -23,6 +23,7 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
 
+const wsOverrides = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
@@ -33,6 +34,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
       logoUrl: "",
       contact: { email: "owner@studio.test", address: "123 Main St" },
       invoiceTheme: { preset: "classic", main: "#1A1A1A", accent: "#FFFFFF" },
+      ...wsOverrides.value,
     },
   }),
 }));
@@ -46,6 +48,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   receiptDocumentMock.mockClear();
+  wsOverrides.value = {};
 });
 
 async function load() {
@@ -149,5 +152,29 @@ describe("GET /api/bookings/[id]/receipt", () => {
     expect(data.amount.payments).toEqual([
       expect.objectContaining({ title: "Final payment", price: 50_000 }),
     ]);
+  });
+
+  describe("theme resolution", () => {
+    const kit = { primaryColor: "#0F1B33", accentColor: "#C9A24B", foregroundColor: "#f4f4f4", backgroundColor: "#101010" };
+    const portfolio = { preset: "portfolio", main: "#123456", accent: "#abcdef", text: "#ffffff" };
+
+    async function themeFor() {
+      const c = await seedClient(workspaceId);
+      const b = await seedBooking(workspaceId, c._id);
+      const { GET } = await load();
+      await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+      const { data } = receiptDocumentMock.mock.calls[0][0] as { data: { business: { theme: unknown } } };
+      return data.business.theme;
+    }
+
+    it("uses the live brand kit for the portfolio theme once published", async () => {
+      wsOverrides.value = { invoiceTheme: portfolio, publicPage: { brandKit: kit, publishedAt: new Date() } };
+      expect(await themeFor()).toEqual({ main: "#0F1B33", accent: "#C9A24B", text: "#f4f4f4" });
+    });
+
+    it("falls back to the stored snapshot when the portfolio is not published", async () => {
+      wsOverrides.value = { invoiceTheme: portfolio, publicPage: { brandKit: kit, publishedAt: null } };
+      expect(await themeFor()).toEqual({ main: "#123456", accent: "#abcdef", text: "#ffffff" });
+    });
   });
 });

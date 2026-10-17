@@ -277,6 +277,17 @@ describe('sendNotification', () => {
   })
 
   describe('email non-blocking', () => {
+    it('persists and emits an in-app-only completion without email', async () => {
+      await sendNotification(makeOpts({
+        recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+        triggeredByWorkosUserId: 'system:booking-import',
+        inAppOnly: true,
+      }))
+      expect(Notification.insertMany).toHaveBeenCalledOnce()
+      expect(mockEmit).toHaveBeenCalledWith('notification:new', expect.any(Object))
+      expect(sendNotificationEmail).not.toHaveBeenCalled()
+    })
+
     it('does not throw when email fails', async () => {
       sendNotificationEmail.mockRejectedValue(new Error('mail server down'))
 

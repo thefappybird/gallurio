@@ -1071,14 +1071,27 @@
         "templateCsv": "Download CSV template",
         "templateXlsx": "Download XLSX template",
         "preview": "{total} row(s) found",
-        "validCount": "{count} valid",
-        "invalidCount": "{count} with errors",
+        "totalCount": "{count} total",
+        "notesCount": "{count} with notes",
+        "invalidCount": "{count} skipped",
+        "titleWithType": "{client} – {type}",
+        "titleWithDate": "{client} – {date}",
         "importButton": "Import {count} %booking%(s)",
         "importing": "Importing…",
         "noValidRows": "No valid rows to import. Fix the errors above.",
         "success": "{bookings, plural, one {# %booking%} other {# %bookings%}} and {shifts, plural, one {# shift} other {# shifts}} imported successfully.",
         "partialSuccess": "Imported {count} %booking%(s). {failed} row(s) could not be imported.",
         "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
+        "missingClientName": "%Client% name is missing. Add a name before importing this row.",
+        "intake": {
+          "oldExcel": "This is an older Excel file. Save it as .xlsx and try again.",
+          "notText": "This doesn't look like a CSV file. Choose a .csv or .xlsx spreadsheet.",
+          "tooLarge": "This file is larger than the 2 MB limit. Split it into smaller files.",
+          "tooManyRows": "This file has {count} rows. Import up to {max} at a time — split it into smaller files.",
+          "empty": "This file is empty.",
+          "noRows": "We found column headers but no rows under them.",
+          "offline": "Couldn't upload the file. Check your connection and try again."
+        },
         "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
         "previewMore": "{count} more rows not shown",
         "groupBlocked": "Another row sharing this booking_id has an error, so the whole %booking% is held back.",
@@ -1087,9 +1100,12 @@
           "title": "Title",
           "client": "%Client%",
           "start": "Start",
-          "error": "Error"
+          "error": "Notes"
         },
         "results": {
+          "bookingNotFound": "This %booking% ID does not match a %booking% in this workspace.",
+          "clientNotFound": "This %client% ID does not match a %client% in this workspace.",
+          "completedNotPaid": "A completed %booking% must be fully paid. The deposit and paid payments must equal the total.",
           "title": "Import errors",
           "kindValidation": "Validation",
           "kindLookup": "Lookup",
@@ -1100,7 +1116,9 @@
           "untitled": "Untitled %booking%",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them.",
-          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
+          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again.",
+          "notesTitle": "Import notes",
+          "notesHint": "These rows will import, with the changes listed here."
         },
         "dialog": {
           "required": "required",
@@ -1114,68 +1132,44 @@
           "duplicateNoTeam": "%Team% unknown",
           "duplicateContinue": "Import anyway",
           "failedRetry": "Import failed. Please try again.",
+          "resultUnavailable": "This import result is no longer available.",
+          "failedConnection": "Couldn't confirm whether the import started. Check your connection and reopen Import to resume before trying again.",
+          "anotherActive": "Another import is already running. Showing its progress; this file has not started.",
           "close": "Close",
           "cancel": "Cancel",
-          "viewErrors": "View {n} error(s)",
-          "spec": {
-            "clientName": {
-              "note": "Full name of the %client%"
-            },
-            "clientEmail": {
-              "note": "Used to deduplicate existing %clients%"
-            },
-            "startAt": {
-              "note": "ISO 8601 — e.g. 2026-06-15T09:00"
-            },
-            "endAt": {
-              "note": "Defaults to startAt if omitted"
-            },
-            "title": {
-              "note": "%Booking% title"
-            },
-            "eventType": {
-              "note": "wedding, corporate, portrait, etc."
-            },
-            "status": {
-              "note": "booked, completed, cancelled"
-            },
-            "amountTotal": {
-              "note": "Total %booking% amount"
-            },
-            "amountDeposit": {
-              "note": "Deposit amount"
-            },
-            "currency": {
-              "note": "Defaults to workspace currency"
-            },
-            "locationAddress": {
-              "note": "Venue or location text"
-            },
-            "notes": {
-              "note": "Internal notes"
-            },
-            "booking_id": {
-              "note": "From an export. Keep it to update that %booking% instead of creating a copy"
-            },
-            "session_index": {
-              "note": "Orders sessions when rows share one booking_id"
-            },
-            "clientId": {
-              "note": "From an export. Matched before clientEmail"
-            },
-            "clientPhone": {
-              "note": "Saved on a new %client%; fills a blank one, never overwrites"
-            },
-            "locationLat": {
-              "note": "Map latitude, e.g. 14.5995"
-            },
-            "locationLng": {
-              "note": "Map longitude, e.g. 120.9842"
-            },
-            "payments": {
-              "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
-            }
-          }
+          "viewErrors": "View {n} error(s)"
+        },
+        "fields": {
+          "clientName": { "label": "%Client% name", "hint": "Full name. Use + to join first and last name columns." },
+          "clientEmail": { "label": "%Client% email", "hint": "Used to match %clients% you already have." },
+          "startAt": { "label": "Start date & time", "hint": "Any date format works — we'll convert it." },
+          "endAt": { "label": "End date & time", "hint": "Leave it out and the start time is used." },
+          "title": { "label": "%Booking% title", "hint": "Optional — we'll make one from the %client% and event type." },
+          "eventType": { "label": "Event type", "hint": "Wedding, corporate, portrait and so on." },
+          "status": { "label": "Status", "hint": "Booked, completed or cancelled." },
+          "amountTotal": { "label": "Total price", "hint": "The full %booking% amount." },
+          "amountDeposit": { "label": "Deposit", "hint": "How much was paid up front." },
+          "currency": { "label": "Currency", "hint": "Your workspace currency is used if left out." },
+          "locationAddress": { "label": "Venue or address", "hint": "Where the %booking% takes place." },
+          "notes": { "label": "Notes", "hint": "Private, for your team only." },
+          "bookingId": { "label": "%Booking% ID", "hint": "From a Gallurio export. Keep it to update that %booking% instead of creating a copy." },
+          "sessionIndex": { "label": "Session order", "hint": "Puts days in order when rows share one %booking% ID." },
+          "clientId": { "label": "%Client% ID", "hint": "From a Gallurio export. Checked before the email." },
+          "clientPhone": { "label": "%Client% phone", "hint": "Saved on new %clients%; fills a blank one but never overwrites." },
+          "locationLat": { "label": "Map latitude", "hint": "For the map pin, e.g. 14.5995." },
+          "locationLng": { "label": "Map longitude", "hint": "For the map pin, e.g. 120.9842." },
+          "payments": { "label": "Payment history", "hint": "Payment history from a Gallurio export." }
+        },
+        "notes": {
+          "amount_dropped": "{field}: \"{value}\" isn't an amount, so it was left blank.",
+          "currency_dropped": "{field}: \"{value}\" isn't a currency we can use, so your workspace currency applies.",
+          "email_dropped": "{field}: \"{value}\" isn't an email address, so it was left blank.",
+          "end_date_dropped": "{field}: \"{value}\" couldn't be read, so the start time is used.",
+          "event_type_blank": "{field}: \"{value}\" didn't match, so it was left blank.",
+          "status_inferred": "{field}: \"{value}\" didn't match, so it was worked out from the date.",
+          "truncated": "{field}: was too long and was shortened.",
+          "phone_dropped": "{field}: \"{value}\" is too long for a phone number, so it was left blank.",
+          "deposit_dropped": "{field}: \"{value}\" needs a total that covers it, so it was left blank."
         },
         "steps": {
           "upload": "Upload",
@@ -1191,7 +1185,7 @@
           "rowsFound": "{count, plural, one {# row} other {# rows}}",
           "sectionRequired": "Required",
           "sectionCommon": "%Booking% details",
-          "sectionAdvanced": "Advanced and round-trip columns",
+          "sectionAdvanced": "Re-importing a Gallurio export",
           "advancedHint": "Only needed when re-importing a file you exported from Gallurio.",
           "selectColumn": "Select a column from your file",
           "notImported": "Not imported",
@@ -1203,18 +1197,14 @@
           "sample": "First row: {value}",
           "sampleEmpty": "First row is empty",
           "unassignedRequired": "Needs a column",
-          "dateOrderLabel": "Day and month order",
-          "dateOrderMDY": "MM/DD/YYYY",
-          "dateOrderDMY": "DD/MM/YYYY",
-          "dateOrderHint": "{example} could be read two ways. Pick the order your file uses.",
+          "sampleDate": "First row: {value} → {formatted}",
+          "swapDayMonth": "Swap day and month",
+          "swapDayMonthHint": "{example} could be read day-first or month-first.",
+          "combineColumns": "Combine with another column",
+          "removeColumn": "Remove this column",
+          "columnSlot": "{field}, column {n}",
           "continueBlocked": "Match the {count, plural, one {# required field} other {# required fields}} to continue.",
-          "loading": "Reading your file",
-          "kindText": "Text",
-          "kindDate": "Date",
-          "kindMoney": "Money",
-          "kindNumber": "Number",
-          "kindEnum": "Choice",
-          "kindJson": "Data"
+          "loading": "Reading your file"
         },
         "values": {
           "title": "Match your values to ours",
@@ -1223,21 +1213,27 @@
           "rowCount": "{count, plural, one {# row} other {# rows}}",
           "choose": "Choose a match",
           "leaveBlank": "Leave blank",
-          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will be skipped.} other {# values are unmatched. Rows using them will be skipped.}}"
+          "unmatchedWarning": "{count, plural, one {# value is unmatched. Rows using it will import with that field blank.} other {# values are unmatched. Rows using them will import with that field blank.}}",
+          "unmatchedWarningStatus": "{count, plural, one {# value is unmatched. Rows using it will have the status worked out from the date.} other {# values are unmatched. Rows using them will have the status worked out from the date.}}"
         },
         "coerce": {
           "not_a_number": "{field}: we could not read \"{value}\" as an amount.",
           "negative_amount": "{field}: \"{value}\" is negative, and amounts have to be zero or more.",
           "not_a_date": "{field}: we could not read \"{value}\" as a date.",
-          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use.",
-          "unrecognized_value": "{field}: \"{value}\" was left unmatched."
+          "unsupported_currency": "{field}: \"{value}\" is not a currency this workspace can use."
         },
         "nav": {
           "back": "Back",
           "continue": "Continue",
           "reviewMapping": "Columns matched automatically",
           "reviewMappingAction": "Review",
-          "committing": "Importing your %bookings%"
+          "committing": "Importing your %bookings%",
+          "progress": "Processed {done} of {total}",
+
+          "resultsReady": "{count, plural, one {# import result ready} other {# import results ready}}",
+          "completed": "Import finished",
+          "failed": "Import failed",
+          "background": "You can close this panel. The import will continue."
         }
       },
       "export": {
@@ -1301,12 +1297,12 @@
         "invoice": "Invoice",
         "receipt": "Receipt",
         "presets": {
-          "classic": "Classic",
-          "slate": "Slate",
-          "navyGold": "Navy Gold",
-          "forest": "Forest",
           "custom": "Custom"
         },
+        "matchPortfolio": "Match my portfolio",
+        "publishFirst": "Publish your portfolio first",
+        "savedThemes": "Saved themes",
+        "expandPreview": "Expand preview",
         "mainColor": "Main color",
         "accentColor": "Accent color",
         "saveAndApply": "Save and apply",
@@ -3555,6 +3551,18 @@
           "status_changed": {
             "title": "{newStatus, select, cancelled {%Booking% cancelled} completed {%Booking% completed} booked {%Booking% confirmed} other {%Booking% status updated}}",
             "body": "{newStatus, select, cancelled {{actorName} cancelled %a_booking%.} completed {{actorName} marked %a_booking% completed.} booked {{actorName} confirmed %a_booking%.} other {{actorName} changed %a_booking% status to {newStatus}.}}"
+          },
+          "import_completed": {
+            "title": "%Booking% import completed",
+            "body": "The import for your %team% finished. {importViewer, select, team {Open bookings to see the imported records.} other {Open it to review the result.}}"
+          },
+          "import_partial": {
+            "title": "%Booking% import needs review",
+            "body": "The import for your %team% finished with skipped rows. {importViewer, select, team {Open bookings to see the imported records.} other {Open it to review the skipped rows.}}"
+          },
+          "import_failed": {
+            "title": "%Booking% import failed",
+            "body": "The import for your %team% stopped before it finished. {importViewer, select, team {Ask the workspace owner to review the import.} other {Open it to review the status.}}"
           }
         },
         "team": {
@@ -3695,6 +3703,7 @@
     "clearFilters": "Clear filters",
     "loading": "Loading…",
     "close": "Close",
+    "resizePanel": "Resize panel",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "close": "Close promo code",

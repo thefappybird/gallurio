@@ -89,7 +89,7 @@ test.describe("Scenario A - foreign file, desktop 1280", () => {
     expect(await sampleLines.count()).toBeGreaterThan(0);
 
     // Advanced section collapsed; expand -> the 6 round-trip fields appear
-    const advancedToggle = page.getByRole("button", { name: /Advanced and round-trip columns/i });
+    const advancedToggle = page.getByRole("button", { name: /Re-importing a Gallurio export/i });
     await expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     const advancedFields = [
       "bookingId",
@@ -135,12 +135,12 @@ test.describe("Scenario A - foreign file, desktop 1280", () => {
     await expect(page.getByText("3 row(s) found")).toBeVisible();
     // all 3 rows valid = money (PHP 85,000.00 / ₱45,000 / 28,500.00) and dates
     // (06/15/2027 etc.) all normalized without a coercion error
-    await expect(page.getByText("3 valid")).toBeVisible();
-    await expect(page.getByText(/with errors$/)).toHaveCount(0);
+    await expect(page.getByText("3 total")).toBeVisible();
+    await expect(page.getByText(/skipped$/)).toHaveCount(0);
     const firstRow = page.locator(`${SHEET} table tbody tr`).first();
     await expect(firstRow).toContainText("2027");
 
-    const importButton = page.getByRole("button", { name: /Import 3 booking/i });
+    const importButton = page.getByRole("button", { name: /^Import 3 / });
     await expect(importButton).toBeVisible();
     await expect(importButton).toBeEnabled();
     // DO NOT CLICK IT.

@@ -51,3 +51,5 @@ export {
 export { BetaProgram, type BetaProgramDoc } from "./BetaProgram";
 export { FxRateTable, type FxRateTableDoc } from "./FxRateTable";
 export { Notification, type INotification } from "./Notification";
+export { BookingImportJob, type BookingImportJobDoc } from "./BookingImportJob";
+export { BookingImportJobItem } from "./BookingImportJobItem";
