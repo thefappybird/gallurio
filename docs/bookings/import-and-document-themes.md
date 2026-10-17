@@ -15,7 +15,7 @@ The bookings importer worked but was hard to use: step-2 dropdowns clipped at th
   - Uniqueness: unique `workspaceId`/`requestId` (a lost start response reuses the same ID, no second job) and a unique partial index allowing one active job per workspace.
   - Worker: lease + heartbeat, `MAX_IMPORT_ATTEMPTS` = 3 with exponential retry backoff. Job rows are removed when a job reaches a terminal state; job docs also TTL after 30 days.
   - Recovery: the custom server calls the sweep at startup and every minute via `GET /api/cron/import-recovery`, authenticated with a per-process bearer token (`GALLURIO_IMPORT_RECOVERY_TOKEN`, generated in `server.ts`, never configured). The import route itself stays behind AuthKit. The owner status request also reclaims an expired lease.
-  - Access: import is owner-only (team leads can create bookings but not import). The owner's Import button shows socket progress while the panel is closed (status polling as fallback) and a numbered unread-outcome chip. Completion, partial completion, and terminal failure send in-app bell notifications to the owner and the assigned team's current members; the owner's entry reopens the result, team members open bookings. A pending-delivery marker retries missed notifications. No import email.
+  - Access: import is owner-only (team leads can create bookings but not import). The owner's Import button shows a determinate 0–100% ring from completed/total groups, with a pulsing primary-color dot while active and a success or warning dot at the terminal outcome. The sheet shows one percentage ring and loads directly into that state when an active job is reopened. Socket events update progress; workspace-scoped status polling restores it after missed events. Unread completion, partial completion, and terminal failure also send in-app bell notifications to the owner and assigned team's current members; the owner's entry reopens the result, team members open bookings. A pending-delivery marker retries missed notifications. No import email.
   - Validation: a session must end on the same workspace day; overnight rows are skipped.
 
 ## Key files
@@ -40,3 +40,8 @@ The bookings importer worked but was hard to use: step-2 dropdowns clipped at th
 - [ ] Verify Socket.IO progress/notification delivery there.
 - [ ] Exercise a real mid-import process restart (local QA only simulated an expired lease).
 - [ ] Review the new job, item, and notification indexes before rollout (no reindex script was run).
+
+## Local verification (2026-10-17)
+
+- A seeded-owner Playwright run completed a five-row background import and replay checks; a separate 50-row QA import delivered monotonic Socket.IO counts through 50/50 and showed one progress ring immediately after closing and reopening the sheet. These runs do not replace the deployed-stack or process-restart gates above.
+- The six marketing import images were recaptured from the 375 px mobile sheet at 2x pixel density in light and dark themes. The local `qa/bookings-import/` kit is ignored by Git; the CI smoke test carries its own small CSV fixture under `e2e/fixtures/`.

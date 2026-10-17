@@ -1,4 +1,0 @@
-booking_id,title,clientName,startAt,status,amountTotal,amountDeposit
-aaaaaaaaaaaaaaaaaaaaaaaa,QA-IMP Ghost,QA Ghost,2031-11-01 10:00,booked,,
-,QA-IMP Completed Unpaid,QA Unpaid,2031-11-02 10:00,completed,1000,0
-,QA-IMP Server Good,QA Server Good,2031-11-03 10:00,booked,,

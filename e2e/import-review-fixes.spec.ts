@@ -1,16 +1,17 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { test, expect, request as pwRequest, type Page } from "@playwright/test";
 
 /**
  * Batched verification for the import review fixes. One signed-in session
  * walks the import lifecycle; the only write is one 5-row background import
- * of QA-IMP fixtures (remove with qa/bookings-import/cleanup-import-qa.js).
+ * of QA-IMP fixtures (remove with the local QA cleanup procedure).
  */
 
 const SHEET = '[data-slot="sheet-content"]';
 const SHOTS = path.join(__dirname, ".artifacts", "import-review-fixes");
 const MESSY_CSV = path.join(__dirname, "fixtures", "bookings-messy.csv");
-const HAPPY_CSV = path.join(__dirname, "..", "qa", "bookings-import", "files", "01-happy-template.csv");
+const HAPPY_CSV = path.join(__dirname, "fixtures", "bookings-import-happy.csv");
 const BOGUS_JOB = "0123456789abcdef01234567";
 
 const toasts = (page: Page) => page.locator("[data-sonner-toast]");
@@ -83,7 +84,11 @@ test("import lifecycle: mapping a11y, background job, unread, reopen, replay, st
 
   // Background import of 5 QA rows; watch the poll rate while it runs.
   await importButton.click();
-  await sheet.locator('input[type="file"]').setInputFiles(HAPPY_CSV);
+  // A fresh title keeps this repeatable without modifying earlier QA imports.
+  const happy = readFileSync(HAPPY_CSV, "utf8").replaceAll("QA-IMP Happy", `QA-IMP E2E ${Date.now()} Happy`);
+  await sheet.locator('input[type="file"]').setInputFiles({
+    name: "01-happy-template.csv", mimeType: "text/csv", buffer: Buffer.from(happy),
+  });
   await walkToPreview(page);
   const commit = sheet.getByRole("button", { name: /^Import \d+/ });
   await expect(commit).toBeVisible();

@@ -49,6 +49,7 @@ import { ImportColumnMapping } from "./import-column-mapping";
 import { ImportValueMapping } from "./import-value-mapping";
 import { cn } from "@/lib/utils";
 import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
+import { ImportProgressRing, importProgressPercent } from "./import-progress-ring";
 
 type Step = "upload" | "map" | "values" | "preview";
 
@@ -79,6 +80,8 @@ type Props = {
   onClose: () => void;
   defaultCurrency: string;
   initialJobId?: string;
+  /** Latest owner-scoped status, so reopening an active job has no upload flash. */
+  runningJobProgress?: BookingImportProgress | null;
   /** Scopes the sessionStorage resume keys so a workspace switch never reads another workspace's job. */
   workspaceId: string;
   /** Fired once when a job THIS sheet watched run reaches a terminal state. */
@@ -100,6 +103,7 @@ export function ImportSheet({
   onClose,
   defaultCurrency,
   initialJobId,
+  runningJobProgress,
   workspaceId,
   onJobFinished,
   workspaceTimezone,
@@ -133,6 +137,7 @@ export function ImportSheet({
   // invalidation, no auto-close.
   const jobSourceRef = useRef<"started" | "resume" | "initial">("started");
   const watchedLiveRef = useRef(false);
+  const initialRunningJobIdRef = useRef(runningJobProgress?.jobId);
 
   const [step, setStep] = useState<Step>("upload");
   // Drives which way a step animates in. Purely presentational.
@@ -158,12 +163,15 @@ export function ImportSheet({
   );
   const [teamId, setTeamId] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(() =>
+    initialJobId ? null : runningJobProgress?.jobId ?? sessionStorage.getItem(jobKey));
+  const [jobProgress, setJobProgress] = useState<{ done: number; total: number } | null>(() =>
+    !initialJobId && runningJobProgress
+      ? { done: runningJobProgress.doneGroups, total: runningJobProgress.totalGroups } : null);
   const [jobFailed, setJobFailed] = useState(false);
   // True only once the job is known queued/running; a resumed id is not busy
   // until the first status response says so.
-  const [jobLive, setJobLive] = useState(false);
+  const [jobLive, setJobLive] = useState(() => activeJobId !== null);
 
   const resetImportState = useCallback(() => {
     sessionStorage.removeItem(jobKey);
@@ -513,7 +521,7 @@ export function ImportSheet({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    const saved = initialJobId ?? sessionStorage.getItem(jobKey);
+    const saved = initialJobId ?? initialRunningJobIdRef.current ?? sessionStorage.getItem(jobKey);
     if (saved) {
       jobSourceRef.current = initialJobId ? "initial" : "resume";
       watchedLiveRef.current = false;
@@ -628,7 +636,7 @@ export function ImportSheet({
       }));
       const requestId = requestIdRef.current ?? crypto.randomUUID();
       requestIdRef.current = requestId;
-      sessionStorage.setItem("gw:booking-import-request", requestId);
+      sessionStorage.setItem(requestKey, requestId);
 
       let res: Response;
       try {
@@ -694,7 +702,7 @@ export function ImportSheet({
 
       const data: ImportResult = body;
       applyResult(data);
-    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, applyResult, activateJob]),
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, applyResult, activateJob, requestKey]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -904,7 +912,7 @@ export function ImportSheet({
                 {tDialog("failedRetry")}
               </div>
             ) : null}
-            <div
+            {!busy ? <div
               key={step}
               data-direction={direction}
               className={cn(
@@ -989,7 +997,7 @@ export function ImportSheet({
                   }}
                 />
               ) : null}
-            </div>
+            </div> : null}
 
             {busy ? (
               <div
@@ -997,7 +1005,21 @@ export function ImportSheet({
                 aria-live="polite"
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-xs"
               >
-                <Loader2Icon className="size-6 animate-spin text-brand" />
+                {activeJobId && jobProgress ? (
+                  <div
+                    role="progressbar"
+                    aria-label={tNav("committing")}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={importProgressPercent(jobProgress.done, jobProgress.total)}
+                    className="relative flex size-14 items-center justify-center text-brand"
+                  >
+                    <ImportProgressRing done={jobProgress.done} total={jobProgress.total} className="size-14" />
+                    <span aria-hidden="true" className="absolute text-xs font-medium tabular-nums">
+                      {importProgressPercent(jobProgress.done, jobProgress.total)}%
+                    </span>
+                  </div>
+                ) : <Loader2Icon className="size-6 animate-spin text-brand" />}
                 <p className="text-sm text-muted-foreground">
                   {tNav("committing")}
                 </p>
@@ -1006,19 +1028,6 @@ export function ImportSheet({
                     <p className="text-xs text-muted-foreground">
                       {tNav("progress", { done: jobProgress.done, total: jobProgress.total })}
                     </p>
-                    <div
-                      role="progressbar"
-                      aria-label={tNav("committing")}
-                      aria-valuemin={0}
-                      aria-valuemax={jobProgress.total}
-                      aria-valuenow={jobProgress.done}
-                      className="h-2 overflow-hidden rounded-full bg-muted"
-                    >
-                      <div
-                        className="h-full bg-brand transition-[width]"
-                        style={{ width: `${jobProgress.total ? (jobProgress.done / jobProgress.total) * 100 : 0}%` }}
-                      />
-                    </div>
                     <p className="text-xs text-muted-foreground">{tNav("background")}</p>
                   </div>
                 ) : null}

@@ -28,6 +28,7 @@ import {
 } from "./bookings-toolbar-dynamic";
 import { TeamPicker } from "./team-picker";
 import { BOOKING_IMPORT_PROGRESS_EVENT, type BookingImportProgress } from "@/lib/bookings/import-progress";
+import { ImportProgressRing, importProgressPercent } from "./import-progress-ring";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -106,6 +107,7 @@ export function BookingsToolbar({
   const [importOpen, setImportOpen] = useState(false);
   const [selectedImportJobId, setSelectedImportJobId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<BookingImportProgress | null>(null);
+  const [finishedImportStatus, setFinishedImportStatus] = useState<"completed" | "failed" | null>(null);
   const importEventVersion = useRef(0);
   // Jobs the owner watched finish in the sheet. Their result notification is
   // already "seen", but may arrive after the sheet closed, so it is marked read
@@ -145,8 +147,15 @@ export function BookingsToolbar({
     };
     const onProgress = (event: Event) => {
       const progress = (event as CustomEvent<BookingImportProgress>).detail;
+      if (workspaceId && progress.workspaceId !== workspaceId) return;
       importEventVersion.current += 1;
-      setImportProgress(progress.status === "completed" || progress.status === "failed" ? null : progress);
+      if (progress.status === "completed" || progress.status === "failed") {
+        setFinishedImportStatus(progress.status);
+        setImportProgress(null);
+      } else {
+        setFinishedImportStatus(null);
+        setImportProgress(progress);
+      }
     };
     void refresh();
     const timer = setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30_000);
@@ -158,7 +167,12 @@ export function BookingsToolbar({
       window.removeEventListener("focus", refresh);
       window.removeEventListener(BOOKING_IMPORT_PROGRESS_EVENT, onProgress);
     };
-  }, [isOwner, canCreate]);
+  }, [isOwner, canCreate, workspaceId]);
+
+  const importChipStatus = importProgress ? "running"
+    : unreadImportOutcomes[0]?.type === "booking.import_failed" || unreadImportOutcomes[0]?.type === "booking.import_partial"
+      ? "failed"
+      : unreadImportCount > 0 ? "completed" : finishedImportStatus;
 
   useEffect(() => {
     if (isOwner && canCreate && searchParams.get("importJob")) {
@@ -339,36 +353,34 @@ export function BookingsToolbar({
             variant="outline"
             size="sm"
             data-import-unread={unreadImportCount > 0 || undefined}
-            className="relative min-h-11 flex-1 overflow-visible data-[import-unread=true]:border-brand data-[import-unread=true]:bg-brand/10 data-[import-unread=true]:text-brand data-[import-unread=true]:hover:bg-brand/15 sm:flex-none sm:min-h-0"
+            data-import-status={importChipStatus ?? undefined}
+            className="relative min-h-11 flex-1 overflow-visible sm:flex-none sm:min-h-0"
             onPointerEnter={preloadImportSheet}
             onFocus={preloadImportSheet}
             onClick={() => {
               const outcome = importProgress ? undefined : unreadImportOutcomes[0];
               setSelectedImportJobId(outcome?.entityId ?? null);
               if (outcome) markRead(outcome._id);
+              if (!importProgress) setFinishedImportStatus(null);
               setImportOpen(true);
             }}
             aria-label={importProgress || unreadImportLabel
               ? `${t("import")}: ${[
-                  importProgress ? tBookings("import.nav.progress", {
+                  importProgress ? `${tBookings("import.nav.progress", {
                     done: importProgress.doneGroups, total: importProgress.totalGroups,
-                  }) : null,
+                  })} (${importProgressPercent(importProgress.doneGroups, importProgress.totalGroups)}%)` : null,
                   unreadImportLabel,
                 ].filter(Boolean).join("; ")}`
-              : undefined}
+              : finishedImportStatus ? tBookings(`import.nav.${finishedImportStatus}`) : undefined}
           >
-            {unreadImportCount > 0 ? (
-              <span aria-hidden="true" className="absolute -top-2 -end-2 z-10 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] leading-none font-medium text-brand-foreground ring-2 ring-background">
-                {unreadImportCount}
-              </span>
+            {importChipStatus ? (
+              <span aria-hidden="true" className={`absolute -top-1.5 -end-1.5 z-10 size-3 rounded-full ring-2 ring-background ${
+                importChipStatus === "running" ? "bg-brand motion-safe:animate-pulse"
+                  : importChipStatus === "completed" ? "bg-[var(--success-border)]" : "bg-[var(--warning-border)]"
+              }`} />
             ) : null}
             {importProgress ? (
-              <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 text-brand motion-safe:animate-spin">
-                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
-                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeDasharray="44" strokeDashoffset={44 * (1 - Math.max(0.08, importProgress.totalGroups
-                    ? importProgress.doneGroups / importProgress.totalGroups : 0))} strokeLinecap="round" />
-              </svg>
+              <ImportProgressRing done={importProgress.doneGroups} total={importProgress.totalGroups} className="size-4 text-brand" />
             ) : <UploadIcon className="size-4" />}
             {t("import")}
           </Button>
@@ -414,6 +426,7 @@ export function BookingsToolbar({
             onJobFinished={onImportJobFinished}
             workspaceId={workspaceId ?? ""}
             initialJobId={searchParams.get("importJob") ?? selectedImportJobId ?? undefined}
+            runningJobProgress={importProgress}
             defaultCurrency={defaultCurrency}
             workspaceTimezone={workspaceTimezone}
             teams={teams}

@@ -34,13 +34,22 @@ describe("BookingsToolbar import progress", () => {
       workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "running",
       doneGroups: 2, totalGroups: 4,
     } }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /Import: Processed 2 of 4/ })).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /Import: Processed 2 of 4/ }).querySelector("svg circle")).toBeTruthy();
+    const running = await screen.findByRole("button", { name: /Import: Processed 2 of 4 \(50%\)/ });
+    expect(running).toHaveAttribute("data-import-status", "running");
+    expect(running.querySelector("span[aria-hidden='true']")).toHaveClass("bg-brand", "motion-safe:animate-pulse");
+    expect(running.querySelector("svg circle:last-child")).toHaveAttribute("stroke-dashoffset", String(7 * Math.PI));
     window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
       workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "completed",
       doneGroups: 4, totalGroups: 4,
     } }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /^Import$/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /Import finished/i })).toHaveAttribute("data-import-status", "completed"));
+    expect(screen.getByRole("button", { name: /Import finished/i }).querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--success-border)]");
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "bbbbbbbbbbbbbbbbbbbbbbbb", status: "failed",
+      doneGroups: 3, totalGroups: 4,
+    } }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Import failed/i })).toHaveAttribute("data-import-status", "failed"));
+    expect(screen.getByRole("button", { name: /Import failed/i }).querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--warning-border)]");
   });
 
   it("highlights unread import outcomes and opens the newest result", () => {
@@ -52,7 +61,8 @@ describe("BookingsToolbar import progress", () => {
     const { rerender } = render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
     const button = screen.getByRole("button", { name: /Import: 2 import results ready/i });
     expect(button).toHaveAttribute("data-import-unread", "true");
-    expect(button.querySelector("span[aria-hidden='true']")).toHaveTextContent("2");
+    expect(button.querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--success-border)]");
+    expect(button.querySelector("span[aria-hidden='true']")).toBeEmptyDOMElement();
 
     fireEvent.click(button);
     expect(notificationMock.markRead).toHaveBeenCalledWith("import-new");
@@ -64,15 +74,14 @@ describe("BookingsToolbar import progress", () => {
     expect(screen.getByRole("button", { name: /^Import$/i })).not.toHaveAttribute("data-import-unread");
   });
 
-  it("styles the unread import badge with the brand accent, not error red", () => {
+  it("styles an unread partial import with the warning color", () => {
     notificationMock.items = [
-      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_partial", read: false, silent: false },
     ];
     render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
     const badge = screen.getByRole("button", { name: /Import: 1 import result ready/i }).querySelector("span[aria-hidden='true']");
-    expect(badge).toHaveClass("bg-brand", "text-brand-foreground");
-    expect(badge).not.toHaveClass("bg-destructive");
-    expect(badge).not.toHaveClass("text-white");
+    expect(badge).toHaveClass("bg-[var(--warning-border)]");
+    expect(badge).not.toHaveClass("motion-safe:animate-pulse");
   });
 
   it("passes the workspace id to the importer", () => {

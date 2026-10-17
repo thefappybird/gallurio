@@ -29,6 +29,17 @@ describe.each(Object.keys(CATALOGS))("import copy (%s)", (locale) => {
     expect(t("resultsReady", { count: 1 })).toBeTruthy();
   });
 
+  it("announces terminal import states for the status dot", () => {
+    const t = createTranslator({
+      locale,
+      messages: CATALOGS[locale],
+      namespace: "app.bookings.import.nav",
+    });
+    expect(t("completed")).toBeTruthy();
+    expect(t("failed")).toBeTruthy();
+    expect(t("completed")).not.toBe(t("failed"));
+  });
+
   it("uses term placeholders, not hardcoded client/booking/team words", () => {
     const m = importNs(CATALOGS[locale]);
     const raw: string[] = [

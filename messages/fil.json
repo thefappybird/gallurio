@@ -1231,6 +1231,8 @@
           "progress": "Naproseso ang {done} sa {total}",
 
           "resultsReady": "{count, plural, one {# resulta ng pag-import na handa nang tingnan} other {# resulta ng pag-import na handa nang tingnan}}",
+          "completed": "Tapos na ang pag-import",
+          "failed": "Nabigo ang pag-import",
           "background": "Maaari mong isara ang panel na ito. Magpapatuloy ang import."
         }
       },

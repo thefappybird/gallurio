@@ -1231,6 +1231,8 @@
           "progress": "Diproses {done} dari {total}",
 
           "resultsReady": "{count, plural, other {# hasil impor siap ditinjau}}",
+          "completed": "Impor selesai",
+          "failed": "Impor gagal",
           "background": "Anda dapat menutup panel ini. Impor akan tetap berjalan."
         }
       },

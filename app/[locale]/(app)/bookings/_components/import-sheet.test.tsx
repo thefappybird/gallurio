@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { StrictMode } from "react";
 import { ImportSheet } from "./import-sheet";
 import { toast } from "sonner";
 
@@ -900,6 +901,8 @@ describe("ImportSheet steps", () => {
         )
       );
       expect(screen.getByRole("button", { name: /import 1 booking/i })).toBeEnabled();
+      expect(sessionStorage.getItem("gw:booking-import-request:ws1")).toBeTruthy();
+      expect(sessionStorage.getItem("gw:booking-import-request")).toBeNull();
 
       fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
       await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
@@ -1019,7 +1022,7 @@ describe("ImportSheet steps", () => {
       fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
 
       expect(await screen.findByText("Processed 1 of 3")).toBeInTheDocument();
-      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "33");
       expect(screen.getByText(/import will continue/i)).toBeInTheDocument();
       fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
       expect(onClose).toHaveBeenCalledOnce();
@@ -1179,6 +1182,30 @@ describe("ImportSheet steps", () => {
       expect(await screen.findByRole("progressbar", { name: "Importing your bookings" })).toBeInTheDocument();
     });
 
+    it("opens a running job on one progress view without showing the dropzone", async () => {
+      mockFetch.mockReturnValue(new Promise(() => {}));
+      sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
+      renderDialog({ runningJobProgress: {
+        workspaceId: "ws1", jobId, status: "running", doneGroups: 125, totalGroups: 500,
+      } });
+
+      expect(screen.getByRole("progressbar", { name: "Importing your bookings" })).toHaveAttribute("aria-valuenow", "25");
+      expect(screen.getByText("25%")).toBeVisible();
+      expect(screen.getByText("Processed 125 of 500")).toBeVisible();
+      expect(screen.queryByText(/Drop a CSV or XLSX file/)).not.toBeInTheDocument();
+      expect(document.querySelectorAll("[role='progressbar']")).toHaveLength(1);
+      expect(document.querySelectorAll("svg.animate-spin")).toHaveLength(0);
+    });
+
+    it("shows a single loading view immediately while checking a saved job", () => {
+      mockFetch.mockReturnValue(new Promise(() => {}));
+      sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
+      renderDialog();
+      expect(screen.getByText("Importing your bookings")).toBeVisible();
+      expect(screen.queryByText(/Drop a CSV or XLSX file/)).not.toBeInTheDocument();
+      expect(document.querySelectorAll("svg.animate-spin")).toHaveLength(1);
+    });
+
     it("replays a finished job from storage without toast, invalidation, or auto-close", async () => {
       sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
       mockFetch.mockResolvedValue(jobResponse({ status: "completed", result: done }));
@@ -1205,6 +1232,15 @@ describe("ImportSheet steps", () => {
       expect(invalidateSpy).not.toHaveBeenCalled();
     });
 
+    it("restores a deep-linked result in development Strict Mode", async () => {
+      mockFetch.mockResolvedValue(jobResponse({ status: "completed", result: done }));
+      renderWithProviders(<StrictMode><ImportSheet open onClose={vi.fn()} defaultCurrency="PHP"
+        workspaceId="ws1" initialJobId={jobId} /></StrictMode>);
+      expect((await screen.findAllByText(/imported successfully/i)).length).toBeGreaterThan(0);
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining(`jobId=${jobId}`), expect.anything());
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
     it("still announces and closes for a job it watched run", async () => {
       sessionStorage.setItem("gw:booking-import-job:ws1", jobId);
       mockFetch
@@ -1223,6 +1259,33 @@ describe("ImportSheet steps", () => {
         expect(onJobFinished).toHaveBeenCalledWith(jobId);
       } finally {
         vi.useRealTimers();
+      }
+    });
+
+    it("keeps a newly started job live when the toolbar receives its first progress event", async () => {
+      const onClose = vi.fn();
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => ({ jobId }) })
+        .mockResolvedValueOnce(jobResponse({ status: "running" }))
+        .mockResolvedValue(jobResponse({ status: "completed", result: done }));
+      const restore = mockFileReader(VALID_CSV);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const view = renderDialog({ onClose });
+        await uploadCsv(VALID_CSV);
+        fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+        await screen.findByText("Processed 1 of 1");
+
+        view.rerender(<ImportSheet open onClose={onClose} defaultCurrency="PHP" workspaceId="ws1"
+          runningJobProgress={{ workspaceId: "ws1", jobId, status: "running", doneGroups: 1, totalGroups: 1 }} />);
+
+        await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+        expect(mockFetch).toHaveBeenCalledTimes(3);
+        expect(toast.success).toHaveBeenCalled();
+        await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+      } finally {
+        vi.useRealTimers();
+        restore();
       }
     });
 

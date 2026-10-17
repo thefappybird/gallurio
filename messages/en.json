@@ -1231,6 +1231,8 @@
           "progress": "Processed {done} of {total}",
 
           "resultsReady": "{count, plural, one {# import result ready} other {# import results ready}}",
+          "completed": "Import finished",
+          "failed": "Import failed",
           "background": "You can close this panel. The import will continue."
         }
       },
