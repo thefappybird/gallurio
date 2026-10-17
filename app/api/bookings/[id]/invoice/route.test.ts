@@ -15,6 +15,8 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
 
+const workspaceOverride = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
@@ -24,8 +26,12 @@ vi.mock("@/lib/auth/requireOrg", () => ({
       name: "Test Studio",
       logoUrl: "",
       contact: { email: "owner@studio.test", address: "123 Main St" },
-      publicPage: { brandKit: { accentColor: "#2f5d56" } },
-      invoiceTheme: { preset: "navyGold", main: "#0F1B33", accent: "#C9A24B" },
+      publicPage: {
+        publishedAt: new Date("2026-01-01T00:00:00Z"),
+        brandKit: { primaryColor: "#0F1B33", accentColor: "#C9A24B", foregroundColor: "#f4f4f4", backgroundColor: "#101010" },
+      },
+      invoiceTheme: { preset: "portfolio", main: "#000000", accent: "#000000" },
+      ...workspaceOverride.value,
     },
   }),
 }));
@@ -176,8 +182,32 @@ describe("GET /api/bookings/[id]/invoice", () => {
     await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
     expect(invoiceDocumentSpy).toHaveBeenCalledTimes(1);
     const passedData = invoiceDocumentSpy.mock.calls[0][0] as { data: { business: { theme?: unknown; accentColor?: unknown } } };
-    expect(passedData.data.business.theme).toEqual({ main: "#0F1B33", accent: "#C9A24B" });
+    expect(passedData.data.business.theme).toEqual({ main: "#0F1B33", accent: "#C9A24B", text: "#f4f4f4" });
     expect(passedData.data.business.accentColor).toBeUndefined();
+  });
+
+  it("renders a saved theme from its current colors, and from the snapshot once deleted", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { GET } = await load();
+    const publicPage = {
+      publishedAt: new Date("2026-01-01T00:00:00Z"),
+      savedThemes: [{ id: "s1", name: "Mine", brandKit: { primaryColor: "#102030", accentColor: "#405060", foregroundColor: "#ffffff", backgroundColor: "#000000" } }],
+    };
+    const invoiceTheme = { preset: "saved", savedThemeId: "s1", main: "#123456", accent: "#abcdef", text: "#111111" };
+    const themeOf = async () => {
+      invoiceDocumentSpy.mockClear();
+      await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+      return (invoiceDocumentSpy.mock.calls[0][0] as { data: { business: { theme: unknown } } }).data.business.theme;
+    };
+    try {
+      workspaceOverride.value = { invoiceTheme, publicPage };
+      expect(await themeOf()).toEqual({ main: "#102030", accent: "#405060", text: "#ffffff" });
+      workspaceOverride.value = { invoiceTheme, publicPage: { ...publicPage, savedThemes: [] } };
+      expect(await themeOf()).toEqual({ main: "#123456", accent: "#abcdef", text: "#111111" });
+    } finally {
+      workspaceOverride.value = {};
+    }
   });
 
   it("falls back to booking.clientName when the client doc is missing (hard-deleted)", async () => {

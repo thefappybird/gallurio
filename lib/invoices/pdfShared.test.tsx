@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { View, Image } from "@react-pdf/renderer";
-import { DocumentFooter, DocumentHeader, buildInvoiceStyles } from "./pdfShared";
+import { DocumentFooter, DocumentHeader, buildInvoiceStyles, hexToRgba } from "./pdfShared";
 
 function collectElements(node: unknown, out: Array<{ type: unknown; props: Record<string, unknown> }> = []) {
   if (node == null || typeof node === "boolean") return out;
@@ -16,7 +16,18 @@ function collectElements(node: unknown, out: Array<{ type: unknown; props: Recor
   return out;
 }
 
-const styles = buildInvoiceStyles({ main: "#0F1B33", accent: "#C9A24B" });
+const styles = buildInvoiceStyles({ main: "#0F1B33", accent: "#C9A24B", text: "#112233" });
+
+describe("buildInvoiceStyles", () => {
+  it("colors band text from theme.text, with 75% rgba variants for meta lines", () => {
+    expect(styles.businessName).toMatchObject({ color: "#112233" });
+    expect(styles.kindLabel).toMatchObject({ color: "#112233" });
+    expect(styles.docNumber).toMatchObject({ color: "#112233" });
+    expect(styles.thankYou).toMatchObject({ color: "#112233" });
+    expect(styles.businessMeta).toMatchObject({ color: "rgba(17,34,51,0.75)" });
+    expect(styles.docDate).toMatchObject({ color: "rgba(17,34,51,0.75)" });
+  });
+});
 const business = { name: "Studio Aperture", logoUrl: "https://cdn.test/logo.png", address: "123 Main St" };
 
 describe("DocumentHeader", () => {
@@ -56,5 +67,19 @@ describe("DocumentHeader", () => {
     expect(styles.footerLeft).toMatchObject({ flexGrow: 1, flexBasis: 0, flexShrink: 1 });
     expect(styles.headerRight).toMatchObject({ flexShrink: 0 });
     expect(footerRight).toBeDefined();
+  });
+});
+
+describe("hexToRgba", () => {
+  it("converts a valid hex", () => {
+    expect(hexToRgba("#112233", 0.75)).toBe("rgba(17,34,51,0.75)");
+  });
+
+  it("returns an invalid color unchanged, never NaN", () => {
+    for (const bad of ["", "red", "#12"]) {
+      const out = hexToRgba(bad, 0.75);
+      expect(out).toBe(bad);
+      expect(out).not.toContain("NaN");
+    }
   });
 });

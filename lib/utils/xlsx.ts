@@ -12,12 +12,18 @@ import { dedupeHeaders, type CsvRow, type ParsedCsv } from "./csv-parse";
  * bundled for the browser (see `serverExternalPackages` in next.config.ts).
  */
 
-/** Only the first worksheet is read — the importer has no notion of tabs. */
+/** Name of the sheet written by the exporter / template. */
 const SHEET_NAME = "Bookings";
 
 function cellToString(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) {
+    // exceljs keeps a cell's wall-clock in the UTC fields. Emit it as zoneless
+    // text so the importer applies the workspace timezone instead of treating
+    // the cell as an instant.
+    const iso = value.toISOString();
+    return iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
+  }
   if (typeof value === "object") {
     // Formula cells carry their computed result; rich text carries runs.
     if ("result" in value) return value.result == null ? "" : String(value.result);
@@ -28,26 +34,102 @@ function cellToString(value: ExcelJS.CellValue): string {
   return String(value);
 }
 
-export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<ParsedCsv> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer as ArrayBuffer);
+/** How far down a sheet to look for the header row (banners, titles). */
+const HEADER_SCAN_ROWS = 10;
 
-  const sheet = workbook.worksheets[0];
-  if (!sheet) return { headers: [], rows: [] };
-
-  const headerRow = sheet.getRow(1);
+function rowStrings(row: ExcelJS.Row): string[] {
   const raw: string[] = [];
-  headerRow.eachCell({ includeEmpty: true }, (cell, col) => {
+  row.eachCell({ includeEmpty: true }, (cell, col) => {
     raw[col - 1] = cellToString(cell.value).trim();
   });
   // eachCell skips trailing empties; normalize holes so indexes stay aligned.
   for (let i = 0; i < raw.length; i++) raw[i] ??= "";
+  return raw;
+}
+
+/** Header = first of the top rows with at least two non-empty cells. */
+function findHeader(sheet: ExcelJS.Worksheet): { rowNumber: number; raw: string[] } | null {
+  const last = Math.min(sheet.rowCount, HEADER_SCAN_ROWS);
+  for (let r = 1; r <= last; r++) {
+    const raw = rowStrings(sheet.getRow(r));
+    if (raw.filter(Boolean).length >= 2) return { rowNumber: r, raw };
+  }
+  return null;
+}
+
+/** Declared (uncompressed) size ceiling; the upload cap only bounds the compressed bytes. */
+const MAX_UNCOMPRESSED_BYTES = 50_000_000;
+const MAX_ZIP_ENTRIES = 2000;
+
+/** Thrown when the zip directory declares more than we are willing to inflate. */
+export class XlsxTooLargeError extends Error {
+  constructor() {
+    super("xlsx_too_large");
+    this.name = "XlsxTooLargeError";
+  }
+}
+
+/**
+ * Reads the zip end-of-central-directory + central directory (no inflation) and
+ * rejects bombs before exceljs/JSZip decompress anything. ZIP64 is refused: a
+ * legitimate <2 MB workbook never needs it. Malformed directories throw a plain
+ * Error (callers map it to "unreadable file").
+ */
+export function assertXlsxWithinLimits(input: ArrayBuffer | Uint8Array | Buffer): void {
+  const buf = input instanceof ArrayBuffer ? Buffer.from(input) : Buffer.from(input.buffer, input.byteOffset, input.byteLength);
+  const minEocd = 22;
+  let eocd = -1;
+  for (let i = buf.length - minEocd; i >= Math.max(0, buf.length - minEocd - 0xffff); i--) {
+    if (buf.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("zip_eocd_not_found");
+  if (eocd >= 20 && buf.readUInt32LE(eocd - 20) === 0x07064b50) throw new XlsxTooLargeError();
+  const entries = buf.readUInt16LE(eocd + 10);
+  const cdSize = buf.readUInt32LE(eocd + 12);
+  const cdOffset = buf.readUInt32LE(eocd + 16);
+  if (entries === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) throw new XlsxTooLargeError();
+  if (entries > MAX_ZIP_ENTRIES) throw new XlsxTooLargeError();
+  if (cdOffset + cdSize > eocd) throw new Error("zip_directory_out_of_bounds");
+
+  let pos = cdOffset;
+  let total = 0;
+  for (let n = 0; n < entries; n++) {
+    if (pos + 46 > buf.length || buf.readUInt32LE(pos) !== 0x02014b50) throw new Error("zip_directory_malformed");
+    const size = buf.readUInt32LE(pos + 24);
+    if (size === 0xffffffff) throw new XlsxTooLargeError();
+    total += size;
+    if (total > MAX_UNCOMPRESSED_BYTES) throw new XlsxTooLargeError();
+    pos += 46 + buf.readUInt16LE(pos + 28) + buf.readUInt16LE(pos + 30) + buf.readUInt16LE(pos + 32);
+  }
+}
+
+export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<ParsedCsv> {
+  assertXlsxWithinLimits(buffer);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as ArrayBuffer);
+
+  // First tab that actually has a header, so an "Instructions" tab is skipped.
+  let sheet: ExcelJS.Worksheet | undefined;
+  let found: { rowNumber: number; raw: string[] } | null = null;
+  for (const ws of workbook.worksheets) {
+    found = findHeader(ws);
+    if (found) {
+      sheet = ws;
+      break;
+    }
+  }
+  if (!sheet || !found) return { headers: [], rows: [] };
+
+  const headerRowNumber = found.rowNumber;
   // Header text is kept verbatim — the mapping step shows it back to the user.
-  const headers = dedupeHeaders(raw);
+  const headers = dedupeHeaders(found.raw);
 
   const rows: CsvRow[] = [];
   sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber === 1) return;
+    if (rowNumber <= headerRowNumber) return;
     const record: CsvRow = {};
     let hasValue = false;
     headers.forEach((header, idx) => {

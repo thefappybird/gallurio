@@ -92,6 +92,18 @@ describe("proxy", () => {
     );
   });
 
+  it("keeps the bookings import API behind AuthKit (its recovery sweep lives under /api/cron)", async () => {
+    await import("./proxy");
+
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.not.arrayContaining(["/api/bookings/import"]),
+        }),
+      }),
+    );
+  });
+
   it("configures /api/auth/landing as unauthenticated so it can localize an expired session itself", async () => {
     await import("./proxy");
 

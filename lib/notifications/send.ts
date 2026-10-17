@@ -80,7 +80,7 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
     }
 
     // Email only for non-actors.
-    if (!isActor) {
+    if (!isActor && !opts.inAppOnly) {
       void sendNotificationEmail({
         recipient,
         title: doc.title,

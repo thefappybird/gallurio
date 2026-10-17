@@ -36,7 +36,7 @@ vi.mock("./booking-wizard-modal", () => ({
   ),
 }));
 
-const INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+const INVOICE_THEME = { preset: "minimal" as const, main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" };
 
 function renderManager() {
   return renderWithProviders(

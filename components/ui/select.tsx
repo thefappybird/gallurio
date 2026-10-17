@@ -54,9 +54,8 @@ function SelectContent({
         side={side}
         sideOffset={sideOffset}
         align={align}
-        collisionBoundary={
-          typeof document === "undefined" ? undefined : document.body
-        }
+        alignItemWithTrigger={false}
+        collisionPadding={8}
       >
         <SelectPrimitive.Popup
           data-slot="select-content"

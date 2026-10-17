@@ -16,6 +16,12 @@ function buildHref(
     case 'booking.team_assigned':
     case 'booking.status_changed':
       return `/${locale}/bookings?detail=${entityId}`
+    case 'booking.import_completed':
+    case 'booking.import_partial':
+    case 'booking.import_failed':
+      return vars.importViewer === 'team'
+        ? `/${locale}/bookings`
+        : `/${locale}/bookings?importJob=${entityId}`
     case 'team.invitation':
     case 'team.removed':
     case 'team.deleted':

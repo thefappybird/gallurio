@@ -17,29 +17,47 @@ import {
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, Maximize2Icon, XIcon } from "lucide-react";
 import {
   INVOICE_THEME_PRESETS,
+  invoiceColorsFromBrandKit,
+  readableTextOn,
+  type InvoiceColors,
+  type InvoiceTheme,
   type InvoiceThemePreviewBusiness,
   type InvoiceThemePresetId,
 } from "@/lib/invoices/theme";
+import { BRAND_KIT_THEME_PRESETS } from "@/lib/page-builder/types";
+import { DocumentPreviewDialog } from "@/components/app/document-preview-dialog";
+import { SheetResizeHandle, useSheetResize } from "@/components/ui/sheet-resize";
 import { updateInvoiceThemeAction } from "../_actions";
 import { cn } from "@/lib/utils";
 
-type ThemeValue = {
-  preset: InvoiceThemePresetId | "custom";
-  main: string;
-  accent: string;
+export type InvoiceThemeValue = InvoiceTheme;
+export type InvoicePortfolioBrandKit = {
+  primaryColor: string;
+  accentColor: string;
+  foregroundColor: string;
+  backgroundColor: string;
 };
+export type InvoiceSavedTheme = { id: string; name: string } & InvoiceColors;
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  initialTheme: ThemeValue;
+  initialTheme: InvoiceThemeValue;
+  /** Published portfolio colors; null until a portfolio is published. */
+  portfolioBrandKit?: InvoicePortfolioBrandKit | null;
+  savedThemes?: InvoiceSavedTheme[];
   business?: InvoiceThemePreviewBusiness;
 };
 
-const PRESET_IDS: InvoiceThemePresetId[] = ["classic", "slate", "navyGold", "forest"];
+type Selection =
+  | { kind: "portfolio" }
+  | { kind: "preset"; id: InvoiceThemePresetId }
+  | { kind: "saved"; id: string }
+  | { kind: "custom" };
+
 const FALLBACK_BUSINESS: InvoiceThemePreviewBusiness = {
   name: "Your business",
   logoUrl: "",
@@ -63,7 +81,7 @@ function DocumentPreview({
 }: {
   kind: "invoice" | "receipt";
   business: InvoiceThemePreviewBusiness;
-  theme: { main: string; accent: string };
+  theme: InvoiceColors;
 }) {
   const isReceipt = kind === "receipt";
   const rows = isReceipt
@@ -83,7 +101,7 @@ function DocumentPreview({
       aria-label={`${isReceipt ? "Receipt" : "Invoice"} preview`}
       className="flex aspect-[210/297] w-full max-w-[18rem] flex-col overflow-hidden border border-border bg-background text-[7px] leading-tight text-foreground"
     >
-      <header className="px-4 py-3 text-white" style={{ backgroundColor: theme.main }}>
+      <header className="px-4 py-3" style={{ backgroundColor: theme.main, color: theme.text }}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-1.5">
@@ -95,12 +113,12 @@ function DocumentPreview({
               ) : null}
               <span className="truncate text-[11px] font-bold">{business.name}</span>
             </div>
-            <p className="line-clamp-2 text-white/75">{business.address}</p>
+            <p className="line-clamp-2 opacity-75">{business.address}</p>
           </div>
           <div className="shrink-0 text-end">
-            <p className="text-[6px] tracking-[0.18em] text-white/80">{isReceipt ? "RECEIPT" : "INVOICE"}</p>
+            <p className="text-[6px] tracking-[0.18em] opacity-80">{isReceipt ? "RECEIPT" : "INVOICE"}</p>
             <p className="mt-1 text-[10px] font-bold">{isReceipt ? "RCT-000042" : "INV-000042"}</p>
-            <p className="mt-0.5 text-white/75">Aug 2, 2026</p>
+            <p className="mt-0.5 opacity-75">Aug 2, 2026</p>
           </div>
         </div>
       </header>
@@ -143,8 +161,8 @@ function DocumentPreview({
           <p className="mt-3 text-[6px] text-muted-foreground">Paid in full for Summer wedding.</p>
         ) : null}
       </div>
-      <footer className="flex items-end justify-between gap-3 px-4 py-3 text-white" style={{ backgroundColor: theme.main }}>
-        <div className="min-w-0 text-[6px] text-white/75">
+      <footer className="flex items-end justify-between gap-3 px-4 py-3" style={{ backgroundColor: theme.main, color: theme.text }}>
+        <div className="min-w-0 text-[6px] opacity-75">
           <p className="truncate">{business.address}</p>
           <p className="truncate">{business.email}</p>
         </div>
@@ -155,24 +173,116 @@ function DocumentPreview({
   );
 }
 
-export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FALLBACK_BUSINESS }: Props) {
+function ThemeTile({
+  label,
+  colors,
+  selected,
+  disabled,
+  hint,
+  className,
+  onSelect,
+}: {
+  label: string;
+  colors?: Pick<InvoiceColors, "main" | "accent">;
+  selected: boolean;
+  disabled?: boolean;
+  hint?: string;
+  className?: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={cn(
+        "flex min-h-11 items-center gap-2 border border-border bg-background p-2 text-start text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring active:bg-muted disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background",
+        selected && "border-brand",
+        className
+      )}
+    >
+      {colors ? (
+        <span className="flex shrink-0">
+          <span className="size-5" style={{ background: colors.main }} aria-hidden />
+          <span className="size-5" style={{ background: colors.accent }} aria-hidden />
+        </span>
+      ) : null}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{label}</span>
+        {hint ? <span className="block text-xs text-muted-foreground">{hint}</span> : null}
+      </span>
+      {selected ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
+    </button>
+  );
+}
+
+function initialSelection(
+  theme: InvoiceThemeValue,
+  hasPortfolio: boolean,
+  savedThemes: InvoiceSavedTheme[]
+): Selection {
+  if (theme.preset === "portfolio" && hasPortfolio) return { kind: "portfolio" };
+  if (theme.preset === "saved" && savedThemes.some((s) => s.id === theme.savedThemeId)) {
+    return { kind: "saved", id: theme.savedThemeId as string };
+  }
+  if ((BRAND_KIT_THEME_PRESETS as readonly string[]).includes(theme.preset)) {
+    return { kind: "preset", id: theme.preset as InvoiceThemePresetId };
+  }
+  // Custom, or a stored portfolio/saved reference whose source is gone: keep the stored colors.
+  return { kind: "custom" };
+}
+
+export function InvoiceThemeDialog({
+  open,
+  onClose,
+  initialTheme,
+  portfolioBrandKit = null,
+  savedThemes = [],
+  business = FALLBACK_BUSINESS,
+}: Props) {
   const t = useTranslations("app.bookings.invoiceThemeDialog");
+  const tPreset = useTranslations("app.pageBuilder.brandKit.presets");
+  const tCommon = useTranslations("common");
   const invalidateFor = useInvalidateFor();
   const errMsg = useActionError();
-  const [preset, setPreset] = useState<InvoiceThemePresetId | "custom">(initialTheme.preset);
+  // min 320 (< the shared 360 default): this is the narrowest of the three sheets.
+  const resize = useSheetResize({ storageKey: "gw:sheet-w:invoice-theme", defaultWidth: 352, min: 320 });
+  const [selection, setSelection] = useState<Selection>(() =>
+    initialSelection(initialTheme, Boolean(portfolioBrandKit), savedThemes)
+  );
   const [customMain, setCustomMain] = useState(initialTheme.main);
   const [customAccent, setCustomAccent] = useState(initialTheme.accent);
+  // Seeded from the stored text so a Custom/stale-fallback preview matches the
+  // PDF; only recomputed when the user actually picks a new main color.
+  const [customText, setCustomText] = useState(initialTheme.text ?? readableTextOn(initialTheme.main));
+  const changeCustomMain = (hex: string) => {
+    setCustomMain(hex);
+    setCustomText(readableTextOn(hex));
+  };
+  const [tab, setTab] = useState<"invoice" | "receipt">("invoice");
+  const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const colors = preset === "custom"
-    ? { main: customMain, accent: customAccent }
-    : INVOICE_THEME_PRESETS[preset];
+
+  const portfolioColors = portfolioBrandKit ? invoiceColorsFromBrandKit(portfolioBrandKit) : null;
+  const savedTheme = selection.kind === "saved" ? savedThemes.find((s) => s.id === selection.id) : undefined;
+  const colors: InvoiceColors =
+    selection.kind === "portfolio" && portfolioColors
+      ? portfolioColors
+      : selection.kind === "preset"
+        ? INVOICE_THEME_PRESETS[selection.id]
+        : savedTheme
+          ? { main: savedTheme.main, accent: savedTheme.accent, text: savedTheme.text }
+          : { main: customMain, accent: customAccent, text: customText };
 
   async function handleSave() {
     setSaving(true);
-    const colors = preset === "custom"
-      ? { main: customMain, accent: customAccent }
-      : INVOICE_THEME_PRESETS[preset];
-    const result = await updateInvoiceThemeAction({ preset, ...colors });
+    const preset = selection.kind === "preset" ? selection.id : selection.kind;
+    const result = await updateInvoiceThemeAction({
+      preset,
+      ...(selection.kind === "saved" ? { savedThemeId: selection.id } : {}),
+      ...colors,
+    });
     setSaving(false);
     if ("error" in result) {
       toast.error(errMsg(result.error));
@@ -187,8 +297,10 @@ export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FAL
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="h-full w-[min(22rem,calc(100vw-1rem))] max-w-none gap-0 overflow-hidden p-0 sm:max-w-none"
+        {...resize.sheetProps}
+        className="h-full w-full! gap-0 overflow-hidden p-0 data-resizing:transition-none sm:w-(--sheet-w)! sm:max-w-none!"
       >
+        <SheetResizeHandle resize={resize} />
         <SheetHeader className="relative border-b border-border pe-12">
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetClose
@@ -201,75 +313,93 @@ export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FAL
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
           <div className="grid grid-cols-2 gap-2">
-          {PRESET_IDS.map((id) => {
-            const presetColors = INVOICE_THEME_PRESETS[id];
-            return (
-              <button
+            <ThemeTile
+              className="col-span-2"
+              label={t("matchPortfolio")}
+              colors={portfolioColors ?? undefined}
+              selected={selection.kind === "portfolio"}
+              disabled={!portfolioBrandKit}
+              hint={portfolioBrandKit ? undefined : t("publishFirst")}
+              onSelect={() => setSelection({ kind: "portfolio" })}
+            />
+            {BRAND_KIT_THEME_PRESETS.map((id) => (
+              <ThemeTile
                 key={id}
-                type="button"
-                aria-pressed={preset === id}
-                onClick={() => setPreset(id)}
-                className={cn(
-                  "flex items-center gap-2 border border-border p-2 text-start text-sm",
-                  preset === id && "border-brand"
-                )}
-              >
-                <span className="flex">
-                  <span className="size-5" style={{ background: presetColors.main }} aria-hidden />
-                  <span className="size-5" style={{ background: presetColors.accent }} aria-hidden />
-                </span>
-                <span className="flex-1">{t(`presets.${id}`)}</span>
-                {preset === id ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
-            </button>
-          );
-          })}
-          <button
-            type="button"
-            aria-pressed={preset === "custom"}
-            onClick={() => setPreset("custom")}
-            className={cn(
-              "flex items-center gap-2 border border-border p-2 text-start text-sm",
-              preset === "custom" && "border-brand"
-            )}
-          >
-            <span className="flex-1">{t("presets.custom")}</span>
-            {preset === "custom" ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
-          </button>
+                label={tPreset(id)}
+                colors={INVOICE_THEME_PRESETS[id]}
+                selected={selection.kind === "preset" && selection.id === id}
+                onSelect={() => setSelection({ kind: "preset", id })}
+              />
+            ))}
+            {savedThemes.length > 0 ? (
+              <>
+                <p className="col-span-2 mt-1 text-xs font-medium text-muted-foreground">{t("savedThemes")}</p>
+                {savedThemes.map((saved) => (
+                  <ThemeTile
+                    key={saved.id}
+                    label={saved.name}
+                    colors={saved}
+                    selected={selection.kind === "saved" && selection.id === saved.id}
+                    onSelect={() => setSelection({ kind: "saved", id: saved.id })}
+                  />
+                ))}
+              </>
+            ) : null}
+            <ThemeTile
+              className="col-span-2"
+              label={t("presets.custom")}
+              selected={selection.kind === "custom"}
+              onSelect={() => setSelection({ kind: "custom" })}
+            />
           </div>
-        {preset === "custom" ? (
-          <div className="grid grid-cols-2 gap-2">
-            <Popover>
-              <PopoverTrigger className="flex min-h-11 items-center gap-2 border border-border px-2 py-1.5 text-start text-sm">
-                <span className="size-5 shrink-0 border border-border" style={{ background: customMain }} aria-hidden />
-                {t("mainColor")}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto" align="start">
-                <ColorPicker value={customMain} onChange={setCustomMain} hexLabel={t("mainColor")} />
-              </PopoverContent>
-            </Popover>
-            <Popover>
-              <PopoverTrigger className="flex min-h-11 items-center gap-2 border border-border px-2 py-1.5 text-start text-sm">
-                <span className="size-5 shrink-0 border border-border" style={{ background: customAccent }} aria-hidden />
-                {t("accentColor")}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto" align="start">
-                <ColorPicker value={customAccent} onChange={setCustomAccent} hexLabel={t("accentColor")} />
-              </PopoverContent>
-            </Popover>
-          </div>
-        ) : null}
+          {selection.kind === "custom" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Popover>
+                <PopoverTrigger className="flex min-h-11 items-center gap-2 border border-border px-2 py-1.5 text-start text-sm">
+                  <span className="size-5 shrink-0 border border-border" style={{ background: customMain }} aria-hidden />
+                  {t("mainColor")}
+                </PopoverTrigger>
+                <PopoverContent className="w-auto" align="start">
+                  <ColorPicker value={customMain} onChange={changeCustomMain} hexLabel={t("mainColor")} />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger className="flex min-h-11 items-center gap-2 border border-border px-2 py-1.5 text-start text-sm">
+                  <span className="size-5 shrink-0 border border-border" style={{ background: customAccent }} aria-hidden />
+                  {t("accentColor")}
+                </PopoverTrigger>
+                <PopoverContent className="w-auto" align="start">
+                  <ColorPicker value={customAccent} onChange={setCustomAccent} hexLabel={t("accentColor")} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          ) : null}
 
-          <Tabs defaultValue="invoice" className="min-h-0 flex-1 gap-2">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as "invoice" | "receipt")} className="min-h-0 flex-1 gap-2">
             <TabsList>
               <TabsTab value="invoice" className="flex-1">{t("invoice")}</TabsTab>
               <TabsTab value="receipt" className="flex-1">{t("receipt")}</TabsTab>
             </TabsList>
-            <TabsPanel value="invoice" className="items-center gap-0">
-              <DocumentPreview kind="invoice" business={business} theme={colors} />
-            </TabsPanel>
-            <TabsPanel value="receipt" className="items-center gap-0">
-              <DocumentPreview kind="receipt" business={business} theme={colors} />
-            </TabsPanel>
+            {(["invoice", "receipt"] as const).map((kind) => (
+              <TabsPanel key={kind} value={kind} className="items-center gap-0">
+                {/* Own row above the document: on the page it sat over the
+                    colored band and vanished on dark presets. */}
+                <div className="flex w-full justify-end pb-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setExpanded(true)}
+                  >
+                    <Maximize2Icon />
+                    <span className="sr-only">{t("expandPreview")}</span>
+                  </Button>
+                </div>
+                <div className="flex w-full justify-center">
+                  <DocumentPreview kind={kind} business={business} theme={colors} />
+                </div>
+              </TabsPanel>
+            ))}
           </Tabs>
         </div>
 
@@ -281,6 +411,15 @@ export function InvoiceThemeDialog({ open, onClose, initialTheme, business = FAL
             {t("saveAndApply")}
           </Button>
         </SheetFooter>
+
+        <DocumentPreviewDialog
+          open={expanded}
+          onOpenChange={setExpanded}
+          title={t(tab)}
+          closeLabel={tCommon("close")}
+        >
+          <DocumentPreview kind={tab} business={business} theme={colors} />
+        </DocumentPreviewDialog>
       </SheetContent>
     </Sheet>
   );

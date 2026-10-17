@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Page not found | Gallurio" };
 
 /**
  * Testable content, split from the default export because this file must

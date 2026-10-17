@@ -7,13 +7,15 @@ import { CalendarView } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
-import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
+import type { InvoicePortfolioBrandKit, InvoiceSavedTheme, InvoiceThemeValue } from "./invoice-theme-dialog";
 
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   defaultCurrency: SupportedCurrency;
   locale: string;
+  workspaceId?: string;
   workspaceTimezone?: string;
   messages: React.ComponentProps<typeof CalendarView>["messages"];
   /** Whether the current user may create bookings (owner-only in Phase 4). */
@@ -33,7 +35,9 @@ type Props = {
   /** Map of team id → hex color for candle coloring. */
   teamColorMap: Record<string, string>;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
-  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  initialInvoiceTheme?: InvoiceThemeValue;
+  invoicePortfolioBrandKit?: InvoicePortfolioBrandKit | null;
+  invoiceSavedThemes?: InvoiceSavedTheme[];
   invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
   /** ISO bounds of the candle window the server loaded around `?date`. */
   window: { start: string; end: string };
@@ -49,6 +53,7 @@ export function CalendarBookingManager({
   defaultDate,
   defaultCurrency,
   locale,
+  workspaceId,
   workspaceTimezone,
   messages,
   canCreate,
@@ -60,6 +65,8 @@ export function CalendarBookingManager({
   colorMode,
   teamColorMap,
   initialInvoiceTheme,
+  invoicePortfolioBrandKit,
+  invoiceSavedThemes,
   invoiceThemeBusiness,
   window,
 }: Props) {
@@ -89,6 +96,7 @@ export function CalendarBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceId={workspaceId}
         workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         view="calendar"
@@ -97,6 +105,8 @@ export function CalendarBookingManager({
         selectedTeams={selectedTeams}
         isOwner={isOwner}
         initialInvoiceTheme={initialInvoiceTheme}
+        invoicePortfolioBrandKit={invoicePortfolioBrandKit}
+        invoiceSavedThemes={invoiceSavedThemes}
         invoiceThemeBusiness={invoiceThemeBusiness}
         onPendingChange={onPendingChange}
       />

@@ -32,7 +32,7 @@ const baseData: InvoiceData = {
     logoUrl: "",
     address: "123 Main St",
     email: "owner@studio.test",
-    theme: { main: "#0F1B33", accent: "#C9A24B" },
+    theme: { main: "#0F1B33", accent: "#C9A24B", text: "#FFFFFF" },
   },
   client: { name: "Emma Carter", email: "emma@example.com", phone: null },
   booking: {

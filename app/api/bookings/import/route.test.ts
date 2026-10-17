@@ -5,13 +5,21 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, Transaction, Team, ActivityLog } from "@/lib/db/models";
+import { Booking, Client, Transaction, Team, ActivityLog, User, TeamMembership } from "@/lib/db/models";
+import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
+import { BookingImportJobItem } from "@/lib/db/models/BookingImportJobItem";
 import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import * as clientTransactions from "@/lib/db/clientTransactions";
 
 const WS_ID = new Types.ObjectId();
 const WS_A = new Types.ObjectId();
 const WS_B = new Types.ObjectId();
+
+const afterCallbacks = vi.hoisted(() => [] as Array<() => Promise<void>>);
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return { ...actual, after: (callback: () => Promise<void>) => afterCallbacks.push(callback) };
+});
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
@@ -41,6 +49,10 @@ const fx = vi.hoisted(() => ({
 }));
 const emit = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/sockets/emitDataChanged", () => ({ emitDataChanged: emit }));
+const progressEmit = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/sockets/emitImportProgress", () => ({ emitImportProgress: progressEmit }));
+const notificationSend = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/notifications/send", () => ({ sendNotification: notificationSend }));
 vi.mock("@/lib/pricing/fxRates", () => ({
   resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
 }));
@@ -52,12 +64,15 @@ afterAll(async () => {
   await stopInMemoryMongo();
 });
 beforeEach(async () => {
+  afterCallbacks.length = 0;
   await clearCollections();
   // The limiter is a module-level Map shared by every case in this file, so
   // without this the suite exhausts its own window part-way through.
   const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
   __resetRateLimitForTests();
   emit.mockClear();
+  progressEmit.mockClear();
+  notificationSend.mockClear();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   fx.resolveFxFreeze.mockReset();
@@ -89,6 +104,20 @@ async function callImport(rows: unknown[], teamId?: string, confirmDuplicates?: 
   return POST(req);
 }
 
+async function callBackground(rows: unknown[], requestId: string, confirmDuplicates = true) {
+  const { POST } = await import("./route");
+  return POST(new Request("http://localhost/api/bookings/import", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ rows, requestId, background: true, confirmDuplicates }),
+  }));
+}
+
+async function getJob(jobId: string) {
+  const { GET } = await import("./route");
+  return GET(new Request(`http://localhost/api/bookings/import?jobId=${jobId}`));
+}
+
 const VALID_ROW = {
   title: "Smith Wedding",
   clientName: "Jane Smith",
@@ -100,6 +129,276 @@ const VALID_ROW = {
   amountDeposit: 10000,
   currency: "PHP",
 };
+
+describe("background booking import jobs", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+
+  it("returns promptly, records progress, and completes after the response", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    expect(start.status).toBe(202);
+    const { jobId } = await start.json();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await BookingImportJobItem.countDocuments({ workspaceId: WS_ID, jobId })).toBe(1);
+    expect((await (await getJob(jobId)).json()).job.doneGroups).toBe(0);
+
+    const run = afterCallbacks.shift();
+    expect(run).toBeDefined();
+    await run!();
+
+    const status = await (await getJob(jobId)).json();
+    expect(status.job.status).toBe("completed");
+    expect(status.job.doneGroups).toBe(1);
+    expect(status.job.result.created).toBe(1);
+    expect(status.job.result.errors).toEqual([]);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(progressEmit).toHaveBeenCalledWith("user_test", expect.objectContaining({
+      jobId, status: "completed", doneGroups: 1, totalGroups: 1,
+    }));
+  });
+
+  it("returns the same job for a repeated request ID without writing twice", async () => {
+    const first = await callBackground([VALID_ROW], requestId);
+    const second = await callBackground([VALID_ROW], requestId);
+    expect((await second.json()).jobId).toBe((await first.json()).jobId);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(afterCallbacks).toHaveLength(1);
+    await afterCallbacks.shift()!();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("allows only one active job per workspace and blocks a synchronous import beside it", async () => {
+    const first = await callBackground([VALID_ROW], requestId);
+    expect(first.status).toBe(202);
+    const { jobId } = await first.json();
+    const second = await callBackground(
+      [{ ...VALID_ROW, title: "Another event", clientEmail: "another@example.test" }],
+      "00000000-0000-4000-8000-000000000002"
+    );
+    expect(second.status).toBe(409);
+    expect((await second.json()).jobId).toBe(jobId);
+    const direct = await callImport([VALID_ROW]);
+    expect(direct.status).toBe(409);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
+  it("stores per-group validation errors and successful writes in one final result", async () => {
+    const start = await callBackground(
+      [VALID_ROW, { ...VALID_ROW, title: "Bad", clientName: "", clientEmail: "bad@example.test" }],
+      requestId
+    );
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    const status = await (await getJob(jobId)).json();
+    expect(status.job.result.created).toBe(1);
+    expect(status.job.result.skipped).toBe(1);
+    expect(status.job.result.errors).toHaveLength(1);
+    expect(status.job.result.errors[0].index).toBe(1);
+    expect(await BookingImportJobItem.countDocuments({ workspaceId: WS_ID, jobId, status: "done" })).toBe(2);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("does not enqueue a duplicate file before the owner confirms", async () => {
+    await callImport([VALID_ROW]);
+    const response = await callBackground([VALID_ROW], requestId, false);
+    expect((await response.json()).needsConfirmation).toBe(true);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
+  it("resumes a completed group without duplicating its booking", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    await BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: WS_ID },
+      { $set: { status: "running", active: true, result: null, leaseUntil: new Date(0), rows: [VALID_ROW] } }
+    );
+
+    const status = await getJob(jobId);
+    expect(status.status).toBe(200);
+    expect(afterCallbacks).toHaveLength(1);
+    await afterCallbacks.shift()!();
+    const recovered = await (await getJob(jobId)).json();
+    expect(recovered.job.status).toBe("completed");
+    expect(recovered.job.result.created).toBe(1);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(await ActivityLog.countDocuments({ workspaceId: WS_ID, entity: "booking" })).toBe(1);
+  });
+
+  it("keeps another workspace from reading a job", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const response = await getJob(jobId);
+    expect(response.status).toBe(404);
+  });
+
+  it("schedules an expired job through the protected recovery endpoint", async () => {
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    afterCallbacks.length = 0; // Simulate losing the original after() callback on restart.
+    const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      const denied = await GET(new Request("http://localhost/api/cron/import-recovery"));
+      expect(denied.status).toBe(401);
+      const wrong = await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer wrong-token" },
+      }));
+      expect(wrong.status).toBe(401);
+      const recovered = await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+      expect(recovered.status).toBe(200);
+      expect((await recovered.json()).scheduled).toBe(1);
+      expect(afterCallbacks).toHaveLength(1);
+      await afterCallbacks.shift()!();
+      expect((await (await getJob(jobId)).json()).job.status).toBe("completed");
+      expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    } finally {
+      if (previous === undefined) delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+      else process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = previous;
+    }
+  });
+
+  it("notifies the initiating owner and assigned team members in-app on completion", async () => {
+    const team = await Team.findOne({ workspaceId: WS_ID, isDefault: true }).lean();
+    await User.create([
+      { workosUserId: "user_test", email: "owner@example.test", memberships: [{ workspaceId: WS_ID, role: "owner" }] },
+      { workosUserId: "member_test", email: "member@example.test", memberships: [{ workspaceId: WS_ID, role: "staff" }] },
+    ]);
+    await TeamMembership.create({ workspaceId: WS_ID, teamId: team!._id, workosUserId: "member_test", role: "member" });
+    const start = await callBackground([VALID_ROW], requestId);
+    await afterCallbacks.shift()!();
+    const { jobId } = await start.json();
+    expect(notificationSend).toHaveBeenCalledTimes(2);
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: "booking.import_completed", entityId: jobId, inAppOnly: true,
+      recipients: [expect.objectContaining({ workosUserId: "user_test" })],
+      vars: { importViewer: "owner" },
+    }));
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: "booking.import_completed", entityId: jobId, inAppOnly: true,
+      recipients: [expect.objectContaining({ workosUserId: "member_test" })],
+      vars: { importViewer: "team" },
+    }));
+  });
+
+  it("retries a missed completion notification on the recovery sweep", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    notificationSend.mockRejectedValueOnce(new Error("notification database unavailable"));
+    const start = await callBackground([VALID_ROW], requestId);
+    const { jobId } = await start.json();
+    await afterCallbacks.shift()!();
+    expect((await (await getJob(jobId)).json()).job.status).toBe("completed");
+    expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(true);
+
+    const previous = process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      const response = await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+      expect((await response.json()).notifications).toBe(1);
+      await afterCallbacks.shift()!();
+      expect(notificationSend).toHaveBeenCalledTimes(2);
+      expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+      else process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = previous;
+    }
+  });
+
+  it("distinguishes row failures from a terminal worker failure in notifications", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const partial = await callBackground([
+      VALID_ROW,
+      { ...VALID_ROW, title: "Missing client", clientName: "", clientEmail: "bad@example.test" },
+    ], requestId);
+    await afterCallbacks.shift()!();
+    expect((await partial.json()).jobId).toBeTruthy();
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_partial" }));
+
+    notificationSend.mockClear();
+    const start = await callBackground([{ ...VALID_ROW, title: "Second", clientEmail: "second@example.test" }],
+      "00000000-0000-4000-8000-000000000002");
+    const { jobId } = await start.json();
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID }, { $set: { attempts: 2 } });
+    await Team.deleteMany({ workspaceId: WS_ID });
+    await afterCallbacks.shift()!();
+    expect((await (await getJob(jobId)).json()).job.status).toBe("failed");
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_failed" }));
+  });
+});
+
+describe("background import: attempts cap and data freshness", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+  const SECOND_ROW = { ...VALID_ROW, title: "Second Event", startAt: "2026-07-15T09:00:00.000Z" };
+
+  async function sweep() {
+    process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"] = "test-recovery-token";
+    try {
+      const { GET } = await import("@/app/api/cron/import-recovery/route");
+      return await GET(new Request("http://localhost/api/cron/import-recovery", {
+        headers: { authorization: "Bearer test-recovery-token" },
+      }));
+    } finally {
+      delete process.env["GALLURIO_IMPORT_RECOVERY_TOKEN"];
+    }
+  }
+
+  it("never re-claims an exhausted expired job; the sweep fails and notifies it", async () => {
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    const run = afterCallbacks.shift()!;
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID },
+      { $set: { status: "running", attempts: 3, leaseUntil: new Date(0) } });
+    await run();
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect((await BookingImportJob.findById(jobId).lean())?.attempts).toBe(3);
+
+    const res = await sweep();
+    expect(res.status).toBe(200);
+    const job = await BookingImportJob.findById(jobId).lean();
+    expect(job).toMatchObject({ status: "failed", active: false, lastError: "background_failed", leaseUntil: null });
+    expect(afterCallbacks).toHaveLength(0);
+    expect(progressEmit).toHaveBeenCalledWith("user_test", expect.objectContaining({ jobId, status: "failed" }));
+    expect(notificationSend).toHaveBeenCalledWith(expect.objectContaining({ type: "booking.import_failed" }));
+    expect((await BookingImportJob.findById(jobId).lean())?.notificationPending).toBe(false);
+  });
+
+  it("emits bookings.imported during a run, throttled to once per window", async () => {
+    // Same client forces two sequential batches; only the first may emit mid-run.
+    const { jobId } = await (await callBackground([VALID_ROW, SECOND_ROW], requestId)).json();
+    await afterCallbacks.shift()!();
+    expect((await BookingImportJob.findById(jobId).lean())?.status).toBe("completed");
+    // 1 mid-run (batch 1) + 1 terminal; batch 2 is inside the 5s window.
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenCalledWith(WS_ID.toString(), { type: "bookings.imported" });
+  });
+
+  it("emits bookings.imported when a job that already wrote then fails", async () => {
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    const original = BookingImportJobItem.find.bind(BookingImportJobItem);
+    const spy = vi.spyOn(BookingImportJobItem, "find").mockImplementation(((filter: Record<string, unknown>) => {
+      if (!("status" in filter)) throw new Error("boom");
+      return original(filter);
+    }) as never);
+    try {
+      await afterCallbacks.shift()!();
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect((await BookingImportJob.findById(jobId).lean())?.status).toBe("queued");
+    // 1 mid-run flush + 1 from the requeue path (no completion emit happened).
+    expect(emit).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("POST /api/bookings/import — file preview", () => {
   async function callPreview(file: Blob, filename: string) {
@@ -140,6 +439,53 @@ describe("POST /api/bookings/import — file preview", () => {
     const csv = header + row.repeat(600);
     const res = await callPreview(new Blob([csv]), "big.csv");
     expect(res.status).toBe(400);
+  });
+
+  it("reports too_many_rows with count and max", async () => {
+    const csv = "title,clientName,startAt\n" + "T,C,2026-06-15T01:00:00.000Z\n".repeat(501);
+    const res = await callPreview(new Blob([csv]), "big.csv");
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "too_many_rows", count: 501, max: 500 });
+  });
+
+  it("commit reports too_many_rows with count and max", async () => {
+    const res = await callImport(Array.from({ length: 501 }, () => VALID_ROW));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "too_many_rows", count: 501, max: 500 });
+  });
+
+  it("decodes a latin1 CSV instead of mangling accents", async () => {
+    const head = new TextEncoder().encode("title,clientName\nX,Jos");
+    const bytes = new Uint8Array([...head, 0xe9, 0x20, 0x50, 0x65, 0xf1, 0x61]);
+    const res = await callPreview(new Blob([bytes]), "latin.csv");
+    expect((await res.json()).rows[0].clientName).toBe("José Peña");
+  });
+
+  it("rejects a non-text, non-xlsx upload as unreadable_file", async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]);
+    const res = await callPreview(new Blob([png]), "x.csv");
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("unreadable_file");
+  });
+
+  it("previews do not consume the commit rate-limit budget", async () => {
+    const csv = "title,clientName\nT,C\n";
+    for (let i = 0; i < 10; i++) {
+      expect((await callPreview(new Blob([csv]), "a.csv")).status).toBe(200);
+    }
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).not.toBe(429);
+  });
+
+  it("429 carries a seconds retry hint", async () => {
+    const csv = "title,clientName\nT,C\n";
+    let res!: Response;
+    for (let i = 0; i < 31; i++) res = await callPreview(new Blob([csv]), "a.csv");
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error).toBe("rate_limited");
+    expect(body.seconds).toBeGreaterThanOrEqual(1);
+    expect(body.seconds).toBeLessThanOrEqual(300);
   });
 
   it("rejects an oversized upload before parsing it", async () => {
@@ -664,7 +1010,7 @@ describe("POST /api/bookings/import", () => {
     const body = await res.json();
 
     expect(body.created).toBe(0);
-    expect(body.errors[0].message).toMatch(/paid|payment/i);
+    expect(body.errors[0].message).toBe("completed_booking_not_paid");
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
 
@@ -676,7 +1022,13 @@ describe("POST /api/bookings/import", () => {
       source: "manual",
     });
 
-    await callImport([VALID_ROW]);
+    const exists = vi.spyOn(Client, "exists");
+    try {
+      await callImport([VALID_ROW]);
+      expect(exists).toHaveBeenCalledOnce();
+    } finally {
+      exists.mockRestore();
+    }
 
     const clients = await Client.find({ workspaceId: WS_ID });
     expect(clients).toHaveLength(1);
@@ -694,6 +1046,42 @@ describe("POST /api/bookings/import", () => {
     expect(bookings).toHaveLength(2);
   });
 
+  it("writes independent client batches while preserving shared-client totals", async () => {
+    const rows = Array.from({ length: 16 }, (_, index) => ({
+      ...VALID_ROW,
+      title: `Batch booking ${index}`,
+      clientName: index === 0 || index === 8 ? "Shared client" : `Client ${index}`,
+      clientEmail: index === 0 || index === 8 ? "shared@example.test" : `client${index}@example.test`,
+    }));
+    const response = await callImport(rows);
+    const body = await response.json();
+    expect(body.created).toBe(16);
+    expect(body.errors).toEqual([]);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(16);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(15);
+    const shared = await Client.findOne({ workspaceId: WS_ID, email: "shared@example.test" }).lean();
+    expect(shared?.bookingsCount).toBe(2);
+    expect(shared?.transactions).toHaveLength(2);
+  });
+
+  it("serializes rows that identify the same client by ID and email", async () => {
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "Existing client",
+      email: "existing@example.test",
+      source: "manual",
+    });
+    const response = await callImport([
+      { ...VALID_ROW, title: "First", clientId: client._id.toString(), clientEmail: "existing@example.test" },
+      { ...VALID_ROW, title: "Second", clientEmail: "existing@example.test" },
+    ]);
+    const body = await response.json();
+    expect(body.created).toBe(2);
+    expect(body.errors).toEqual([]);
+    const stored = await Client.findById(client._id).lean();
+    expect(stored?.bookingsCount).toBe(2);
+  });
+
   it("creates booking without client email", async () => {
     const rowWithoutEmail = { ...VALID_ROW, clientEmail: undefined };
     const res = await callImport([rowWithoutEmail]);
@@ -703,6 +1091,23 @@ describe("POST /api/bookings/import", () => {
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBeNull();
     expect(client?.source).toBe("import");
+  });
+
+  it("skips a redundant existence read for clients created in the import transaction", async () => {
+    const exists = vi.spyOn(Client, "exists");
+    try {
+      const res = await callImport([
+        { ...VALID_ROW, title: "New client with email", clientEmail: "new@example.test" },
+        { ...VALID_ROW, title: "New client without email", clientEmail: undefined },
+      ]);
+      const body = await res.json();
+      expect(body.created).toBe(2);
+      expect(body.errors).toEqual([]);
+      expect(exists).not.toHaveBeenCalled();
+      expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(2);
+    } finally {
+      exists.mockRestore();
+    }
   });
 
   it("returns error for row missing required title", async () => {
@@ -1034,5 +1439,186 @@ describe("GET /api/bookings/import — template", () => {
     expect(body.shifts).toBe(2);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
     expect(booking?.sessions).toHaveLength(2);
+  });
+});
+
+describe("import review fixes", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+
+  it("rejects an oversized commit on content-length without reading the body", async () => {
+    const { POST } = await import("./route");
+    // Request strips content-length, so hand the route a minimal request-shaped object.
+    const text = vi.fn(async () => JSON.stringify({ rows: [VALID_ROW] }));
+    const req = {
+      headers: new Headers({ "content-type": "application/json", "content-length": "8000001" }),
+      text,
+    } as unknown as Request;
+    const res = await POST(req);
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it("answers 413 for an xlsx whose zip directory declares a bomb-sized payload", async () => {
+    const name = Buffer.from("a");
+    const h = Buffer.alloc(46);
+    h.writeUInt32LE(0x02014b50, 0);
+    h.writeUInt32LE(60_000_000, 24);
+    h.writeUInt16LE(name.length, 28);
+    const eocd = Buffer.alloc(22);
+    eocd.writeUInt32LE(0x06054b50, 0);
+    eocd.writeUInt16LE(1, 8);
+    eocd.writeUInt16LE(1, 10);
+    eocd.writeUInt32LE(46 + name.length, 12);
+    eocd.writeUInt32LE(4, 16); // directory starts right after the 4-byte local signature
+    const zip = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), h, name, eocd]);
+    const { POST } = await import("./route");
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array(zip)]), "bomb.xlsx");
+    const res = await POST(new Request("http://localhost/api/bookings/import", { method: "POST", body: form }));
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+  });
+
+  it("drops the source rows once a job completes", async () => {
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    await afterCallbacks.shift()!();
+    const raw = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(jobId) });
+    expect(raw?.status).toBe("completed");
+    expect(raw).not.toHaveProperty("rows");
+  });
+
+  it("drops the source rows when a job fails terminally, in both the worker and the sweep", async () => {
+    const { processImportJob, runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID }, { $set: { attempts: 2 } });
+    await Team.deleteMany({ workspaceId: WS_ID });
+    await processImportJob(new Types.ObjectId(jobId));
+    const failed = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(jobId) });
+    expect(failed?.status).toBe("failed");
+    expect(failed).not.toHaveProperty("rows");
+
+    await Team.create({ workspaceId: WS_ID, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true,
+      isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" });
+    const second = await (await callBackground([VALID_ROW], "00000000-0000-4000-8000-000000000002")).json();
+    await BookingImportJob.updateOne({ _id: second.jobId, workspaceId: WS_ID },
+      { $set: { status: "running", attempts: 3, leaseUntil: new Date(0) } });
+    await runImportRecoverySweep();
+    const swept = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(second.jobId) });
+    expect(swept?.status).toBe("failed");
+    expect(swept).not.toHaveProperty("rows");
+  });
+
+  it("backs a failed job off exponentially and respects it in claim, poll and sweep", async () => {
+    const { processImportJob, runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    afterCallbacks.length = 0;
+    await Team.deleteMany({ workspaceId: WS_ID }); // processImportRows answers 500 -> job incomplete
+    const id = new Types.ObjectId(jobId);
+    const before = Date.now();
+    await processImportJob(id);
+    let job = await BookingImportJob.findById(id).lean();
+    expect(job).toMatchObject({ status: "queued", attempts: 1 });
+    expect(job!.nextAttemptAt!.getTime()).toBeGreaterThanOrEqual(before + 30_000);
+    expect(job!.nextAttemptAt!.getTime()).toBeLessThan(before + 40_000);
+
+    await processImportJob(id); // gated: not claimed
+    expect((await BookingImportJob.findById(id).lean())?.attempts).toBe(1);
+    await getJob(jobId);
+    expect(afterCallbacks).toHaveLength(0);
+    expect((await runImportRecoverySweep()).scheduled).toBe(0);
+
+    await BookingImportJob.updateOne({ _id: id }, { $set: { nextAttemptAt: new Date(Date.now() - 1) } });
+    expect((await runImportRecoverySweep()).scheduled).toBe(1);
+    await processImportJob(id);
+    job = await BookingImportJob.findById(id).lean();
+    expect(job!.attempts).toBe(2);
+    expect(job!.nextAttemptAt!.getTime()).toBeGreaterThanOrEqual(before + 60_000);
+  });
+
+  it("schedules up to 10 stuck jobs and 10 pending notifications per sweep", async () => {
+    const { runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const base = { actorUserId: "user_test", rows: [], currency: "PHP", timezone: "UTC",
+      totalGroups: 0, expiresAt: new Date(Date.now() + 86_400_000) };
+    await BookingImportJob.create(Array.from({ length: 12 }, (_, i) => ({
+      ...base, workspaceId: new Types.ObjectId(), requestId: `q-${i}`, status: "queued", active: true,
+    })));
+    await BookingImportJob.create(Array.from({ length: 12 }, (_, i) => ({
+      ...base, workspaceId: WS_ID, requestId: `n-${i}`, status: "completed", active: false, notificationPending: true,
+    })));
+    const res = await runImportRecoverySweep();
+    expect(res).toMatchObject({ scheduled: 10, notifications: 10 });
+    expect(afterCallbacks).toHaveLength(20);
+  });
+
+  it("rotates a notification that keeps failing behind others", async () => {
+    const { deliverPendingImportNotification } = await import("@/lib/bookings/import-jobs");
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const base = { actorUserId: "user_test", rows: [], currency: "PHP", timezone: "UTC", totalGroups: 0,
+      status: "completed", active: false, notificationPending: true, expiresAt: new Date(Date.now() + 86_400_000) };
+    const [poison, healthy] = await BookingImportJob.create([
+      { ...base, workspaceId: WS_ID, requestId: "p" },
+      { ...base, workspaceId: WS_ID, requestId: "h" },
+    ]);
+    await BookingImportJob.updateOne({ _id: poison._id }, { $set: { updatedAt: new Date("2020-01-01") } }, { timestamps: false });
+    await BookingImportJob.updateOne({ _id: healthy._id }, { $set: { updatedAt: new Date("2021-01-01") } }, { timestamps: false });
+    notificationSend.mockRejectedValueOnce(new Error("boom"));
+    await expect(deliverPendingImportNotification(poison._id)).rejects.toThrow("boom");
+    const [first] = await BookingImportJob.find({ notificationPending: true }).sort({ updatedAt: 1 }).lean();
+    expect(first._id.toString()).toBe(healthy._id.toString());
+    expect((await BookingImportJob.findById(poison._id).lean())?.notificationAttempts).toBe(1);
+  });
+
+  it("holds the workspace active-job slot during a direct import and releases it after", async () => {
+    let raced: Response | undefined;
+    fx.resolveFxFreeze.mockImplementationOnce(async (base: string, target: string) => {
+      expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID, active: true })).toBe(1);
+      raced = await callBackground([VALID_ROW], requestId);
+      return base === target ? { rate: 1, target } : null;
+    });
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).toBe(200);
+    expect(raced?.status).toBe(409);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    // Slot is free again.
+    expect((await callBackground([{ ...VALID_ROW, title: "Next" }], requestId)).status).toBe(202);
+  });
+
+  it("does not expose another workspace job by requestId or as the latest job", async () => {
+    await callBackground([VALID_ROW], requestId);
+    const { GET } = await import("./route");
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const byRequest = await GET(new Request(`http://localhost/api/bookings/import?requestId=${requestId}`));
+    expect(byRequest.status).toBe(404);
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const latest = await GET(new Request("http://localhost/api/bookings/import?latest=1"));
+    expect((await latest.json()).job).toBeNull();
+  });
+
+  it("rolls back and stops a stale worker whose lease was taken over", async () => {
+    const { processImportJob } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    afterCallbacks.length = 0;
+    fx.resolveFxFreeze.mockImplementationOnce(async (base: string, target: string) => {
+      await BookingImportJob.updateOne({ _id: jobId }, { $set: { leaseToken: "taken-over" } });
+      await BookingImportJobItem.updateMany({ jobId }, { $set: { leaseToken: "taken-over" } });
+      return base === target ? { rate: 1, target } : null;
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      await processImportJob(new Types.ObjectId(jobId));
+      expect(errorSpy).toHaveBeenCalledWith(
+        "[bookings.import] background job failed",
+        expect.objectContaining({ message: "import_job_claim_lost" })
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await ActivityLog.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await BookingImportJob.findById(jobId).lean()).toMatchObject({ status: "running", leaseToken: "taken-over" });
   });
 });

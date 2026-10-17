@@ -39,10 +39,20 @@ type Props = {
  */
 export function ImportValueMapping({ unmapped, valueMap, onChange, sourceColumns }: Props) {
   const t = useTranslations("app.bookings.import.values");
+  const tStatus = useTranslations("app.bookings.statusValues");
+  const tEventType = useTranslations("app.bookings.eventTypes");
 
   const answered = (entry: UnmappedEnumValue) =>
     valueMap[entry.field]?.[entry.value] !== undefined;
-  const outstanding = unmapped.filter((entry) => !answered(entry)).length;
+  const pending = unmapped.filter((entry) => !answered(entry));
+  const outstanding = pending.length;
+  // An unmatched status is worked out from the date rather than left blank.
+  const onlyStatus = pending.every((entry) => entry.field === "status");
+  const label = (field: string, member: string) => {
+    if (field === "status") return tStatus(member);
+    if (field === "eventType") return tEventType(member);
+    return member;
+  };
 
   const setValue = (field: string, from: string, to: string) => {
     onChange({
@@ -80,6 +90,13 @@ export function ImportValueMapping({ unmapped, valueMap, onChange, sourceColumns
               <Select
                 value={selected}
                 onValueChange={(v) => setValue(entry.field, entry.value, v ?? BLANK)}
+                items={[
+                  ...(MEMBERS[entry.field] ?? []).map((m) => ({
+                    value: m,
+                    label: label(entry.field, m),
+                  })),
+                  { value: BLANK, label: t("leaveBlank") },
+                ]}
               >
                 <SelectTrigger aria-label={entry.value} className="@sm:w-48">
                   <SelectValue placeholder={t("choose")} />
@@ -87,7 +104,7 @@ export function ImportValueMapping({ unmapped, valueMap, onChange, sourceColumns
                 <SelectContent>
                   {(MEMBERS[entry.field] ?? []).map((member) => (
                     <SelectItem key={member} value={member}>
-                      {member}
+                      {label(entry.field, member)}
                     </SelectItem>
                   ))}
                   <SelectItem value={BLANK}>{t("leaveBlank")}</SelectItem>
@@ -101,7 +118,7 @@ export function ImportValueMapping({ unmapped, valueMap, onChange, sourceColumns
       {outstanding > 0 ? (
         <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
           <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
-          {t("unmatchedWarning", { count: outstanding })}
+          {t(onlyStatus ? "unmatchedWarningStatus" : "unmatchedWarning", { count: outstanding })}
         </p>
       ) : null}
     </div>

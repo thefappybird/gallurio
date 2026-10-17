@@ -65,6 +65,7 @@ e2e/__screenshots__
 # run-gallurio driver screenshots (may capture seeded data)
 /.driver-shots/
 /e2e/.artifacts/
+/qa/bookings-import/
 # Review galleries written by scripts/screenshot-currency.spec.ts — regenerate
 # them on demand rather than carrying tens of megabytes of JPEGs in the repo.
 /e2e/__screenshots__/currency/

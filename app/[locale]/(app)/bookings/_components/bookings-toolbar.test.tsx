@@ -2,11 +2,20 @@
  * Tests for BookingsToolbar: "New Booking" button behavior and
  * mobile/desktop week-view visibility (Bug 1 + Bug 2 fixes).
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { enMessages } from "@/test-utils/messages";
 import { BookingsToolbar } from "./bookings-toolbar";
+import { BOOKING_IMPORT_PROGRESS_EVENT } from "@/lib/bookings/import-progress";
+
+const notificationMock = vi.hoisted(() => ({
+  items: [] as Array<{ _id: string; entityId: string; entityType: string; type: string; read: boolean; silent: boolean }>,
+  markRead: vi.fn(),
+}));
+vi.mock("@/lib/hooks/useNotifications", () => ({
+  useNotifications: () => ({ notifications: notificationMock.items, markRead: notificationMock.markRead }),
+}));
 
 describe("BookingsToolbar compact filter layout", () => {
   it("wraps filters only when needed instead of forcing each control into its own row", () => {
@@ -15,6 +24,95 @@ describe("BookingsToolbar compact filter layout", () => {
 
     expect(filters).toHaveClass("flex-wrap");
     expect(filters).not.toHaveClass("flex-col");
+  });
+});
+
+describe("BookingsToolbar import progress", () => {
+  it("replaces the import icon with live progress and restores it on completion", async () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "running",
+      doneGroups: 2, totalGroups: 4,
+    } }));
+    const running = await screen.findByRole("button", { name: /Import: Processed 2 of 4 \(50%\)/ });
+    expect(running).toHaveAttribute("data-import-status", "running");
+    expect(running.querySelector("span[aria-hidden='true']")).toHaveClass("bg-brand", "motion-safe:animate-pulse");
+    expect(running.querySelector("svg circle:last-child")).toHaveAttribute("stroke-dashoffset", String(7 * Math.PI));
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "aaaaaaaaaaaaaaaaaaaaaaaa", status: "completed",
+      doneGroups: 4, totalGroups: 4,
+    } }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Import finished/i })).toHaveAttribute("data-import-status", "completed"));
+    expect(screen.getByRole("button", { name: /Import finished/i }).querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--success-border)]");
+    window.dispatchEvent(new CustomEvent(BOOKING_IMPORT_PROGRESS_EVENT, { detail: {
+      workspaceId: "test", jobId: "bbbbbbbbbbbbbbbbbbbbbbbb", status: "failed",
+      doneGroups: 3, totalGroups: 4,
+    } }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Import failed/i })).toHaveAttribute("data-import-status", "failed"));
+    expect(screen.getByRole("button", { name: /Import failed/i }).querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--warning-border)]");
+  });
+
+  it("highlights unread import outcomes and opens the newest result", () => {
+    notificationMock.items = [
+      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+      { _id: "booking-other", entityId: "bbbbbbbbbbbbbbbbbbbbbbbb", entityType: "booking", type: "booking.status_changed", read: false, silent: false },
+      { _id: "import-older", entityId: "cccccccccccccccccccccccc", entityType: "booking_import", type: "booking.import_partial", read: false, silent: false },
+    ];
+    const { rerender } = render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    const button = screen.getByRole("button", { name: /Import: 2 import results ready/i });
+    expect(button).toHaveAttribute("data-import-unread", "true");
+    expect(button.querySelector("span[aria-hidden='true']")).toHaveClass("bg-[var(--success-border)]");
+    expect(button.querySelector("span[aria-hidden='true']")).toBeEmptyDOMElement();
+
+    fireEvent.click(button);
+    expect(notificationMock.markRead).toHaveBeenCalledWith("import-new");
+    expect(sheetMounts.importJobId).toHaveBeenLastCalledWith("aaaaaaaaaaaaaaaaaaaaaaaa");
+
+    notificationMock.items = notificationMock.items.map((item) =>
+      item.entityType === "booking_import" ? { ...item, read: true } : item);
+    rerender(<BookingsToolbar defaultCurrency="PHP" isOwner />);
+    expect(screen.getByRole("button", { name: /^Import$/i })).not.toHaveAttribute("data-import-unread");
+  });
+
+  it("styles an unread partial import with the warning color", () => {
+    notificationMock.items = [
+      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_partial", read: false, silent: false },
+    ];
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    const badge = screen.getByRole("button", { name: /Import: 1 import result ready/i }).querySelector("span[aria-hidden='true']");
+    expect(badge).toHaveClass("bg-[var(--warning-border)]");
+    expect(badge).not.toHaveClass("motion-safe:animate-pulse");
+  });
+
+  it("passes the workspace id to the importer", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate workspaceId="ws-9" />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: /^Import$/i }));
+    expect(sheetMounts.workspaceId).toHaveBeenLastCalledWith("ws-9");
+  });
+
+  it("marks the result notification of a watched job read when it arrives after the job finished", () => {
+    const jobId = "aaaaaaaaaaaaaaaaaaaaaaaa";
+    const { rerender } = render(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: /^Import$/i }));
+    act(() => sheetMounts.finished.current?.(jobId));
+    expect(notificationMock.markRead).not.toHaveBeenCalled();
+
+    notificationMock.items = [
+      { _id: "late", entityId: jobId, entityType: "booking_import", type: "booking.import_completed", read: false, silent: true },
+      { _id: "other", entityId: "bbbbbbbbbbbbbbbbbbbbbbbb", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+    ];
+    rerender(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate />);
+    expect(notificationMock.markRead).toHaveBeenCalledWith("late");
+    expect(notificationMock.markRead).not.toHaveBeenCalledWith("other");
+  });
+
+  it("keeps team members on their bell notification rather than showing an owner-only import result", () => {
+    notificationMock.items = [
+      { _id: "team-import", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+    ];
+    render(<BookingsToolbar defaultCurrency="PHP" canCreate />, { wrapper });
+    expect(screen.queryByRole("button", { name: /^Import$/i })).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });
 
@@ -40,15 +138,23 @@ const preloadSpy = vi.hoisted(() => vi.fn());
 vi.mock("./booking-wizard-dynamic", () => ({ preloadBookingWizard: preloadSpy }));
 
 // ── Lazy sheets: stubs record mounts; export keeps the real dialog ────────────
-const sheetMounts = vi.hoisted(() => ({ import: vi.fn(), theme: vi.fn() }));
+const sheetMounts = vi.hoisted(() => ({
+  import: vi.fn(), importJobId: vi.fn(), theme: vi.fn(), workspaceId: vi.fn(),
+  finished: { current: undefined as ((jobId: string) => void) | undefined },
+}));
 const sheetPreloads = vi.hoisted(() => ({ import: vi.fn(), export: vi.fn(), theme: vi.fn() }));
 vi.mock("./bookings-toolbar-dynamic", async () => {
   const real = await vi.importActual<typeof import("./bookings-export-dialog")>(
     "./bookings-export-dialog"
   );
   return {
-    ImportSheetLazy: () => {
+    ImportSheetLazy: ({ initialJobId, workspaceId, onJobFinished }: {
+      initialJobId?: string; workspaceId?: string; onJobFinished?: (jobId: string) => void;
+    }) => {
       sheetMounts.import();
+      sheetMounts.importJobId(initialJobId);
+      sheetMounts.workspaceId(workspaceId);
+      sheetMounts.finished.current = onJobFinished;
       return null;
     },
     InvoiceThemeDialogLazy: () => {
@@ -81,7 +187,7 @@ describe("BookingsToolbar sheet code split", () => {
   });
 });
 
-const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+const DEFAULT_INVOICE_THEME = { preset: "minimal" as const, main: "#1A1A1A", accent: "#FFFFFF", text: "#FFFFFF" };
 
 describe("BookingsToolbar wizard warm-up", () => {
   it("preloads the wizard chunk on pointer-enter and focus of New booking", () => {
@@ -120,7 +226,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  notificationMock.items = [];
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ job: null }) }));
 });
+afterEach(() => vi.unstubAllGlobals());
 
 describe("BookingsToolbar — New Booking button", () => {
   it("renders the 'New Booking' (add) button", () => {

@@ -37,7 +37,11 @@ describe("ImportValueMapping", () => {
 
   it("warns about how many values are still unmatched", () => {
     render();
-    expect(screen.getByText("2 values are unmatched. Rows using them will be skipped.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "2 values are unmatched. Rows using them will have the status worked out from the date."
+      )
+    ).toBeInTheDocument();
   });
 
   it("stops warning once every value has been answered", () => {
