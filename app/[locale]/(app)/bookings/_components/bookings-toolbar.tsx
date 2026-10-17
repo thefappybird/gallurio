@@ -358,7 +358,7 @@ export function BookingsToolbar({
               : undefined}
           >
             {unreadImportCount > 0 ? (
-              <span aria-hidden="true" className="absolute -top-2 -end-2 z-10 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] leading-none font-medium text-white ring-2 ring-background">
+              <span aria-hidden="true" className="absolute -top-2 -end-2 z-10 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] leading-none font-medium text-brand-foreground ring-2 ring-background">
                 {unreadImportCount}
               </span>
             ) : null}

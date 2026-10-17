@@ -64,6 +64,17 @@ describe("BookingsToolbar import progress", () => {
     expect(screen.getByRole("button", { name: /^Import$/i })).not.toHaveAttribute("data-import-unread");
   });
 
+  it("styles the unread import badge with the brand accent, not error red", () => {
+    notificationMock.items = [
+      { _id: "import-new", entityId: "aaaaaaaaaaaaaaaaaaaaaaaa", entityType: "booking_import", type: "booking.import_completed", read: false, silent: false },
+    ];
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    const badge = screen.getByRole("button", { name: /Import: 1 import result ready/i }).querySelector("span[aria-hidden='true']");
+    expect(badge).toHaveClass("bg-brand", "text-brand-foreground");
+    expect(badge).not.toHaveClass("bg-destructive");
+    expect(badge).not.toHaveClass("text-white");
+  });
+
   it("passes the workspace id to the importer", () => {
     render(<BookingsToolbar defaultCurrency="PHP" isOwner canCreate workspaceId="ws-9" />, { wrapper });
     fireEvent.click(screen.getByRole("button", { name: /^Import$/i }));

@@ -1230,7 +1230,7 @@
           "committing": "Mengimpor %booking% Anda",
           "progress": "Diproses {done} dari {total}",
 
-          "resultsReady": "{count} hasil impor siap ditinjau",
+          "resultsReady": "{count, plural, other {# hasil impor siap ditinjau}}",
           "background": "Anda dapat menutup panel ini. Impor akan tetap berjalan."
         }
       },

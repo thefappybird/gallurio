@@ -293,7 +293,13 @@ function FieldCard({
     onAssign(field.key, assignSlot(sources, index, value));
   };
 
+  // The removed slot's controls unmount with it, so hand focus to the slot
+  // above (slot 0 is the card's main picker) instead of dropping it on <body>.
+  // The target stays mounted (only the removed row unmounts), so focus now.
   const removeSlot = (index: number) => {
+    document
+      .getElementById(index - 1 === 0 ? `map-${field.key}` : `map-${field.key}-slot-${index - 1}`)
+      ?.focus();
     if (index >= sources.length) return setPendingSlot(false);
     commit(sources.filter((_, i) => i !== index));
   };
@@ -371,14 +377,17 @@ function FieldCard({
       {slots.slice(1).map((slot, i) => {
         const index = i + 1;
         return (
-          <div key={`${index}:${slot}`} className="flex items-center gap-1">
+          <div key={index} className="flex items-center gap-1">
             <div className="min-w-0 flex-1">
               <Select
                 value={slot || null}
                 onValueChange={(v) => onSlotSelect(index, v)}
                 items={headers.map((h) => ({ value: h, label: h }))}
               >
-                <SelectTrigger aria-label={t("columnSlot", { field: label, n: index + 1 })}>
+                <SelectTrigger
+                  id={`map-${field.key}-slot-${index}`}
+                  aria-label={t("columnSlot", { field: label, n: index + 1 })}
+                >
                   <SelectValue placeholder={t("selectColumn")} />
                 </SelectTrigger>
                 <SelectContent>{columnOptions(slot)}</SelectContent>
@@ -447,14 +456,20 @@ function FieldCard({
           setting. A plain text action: most files are read right the first
           time, so this stays quiet until the sample above looks wrong. */}
       {field.kind === "date" && sources.length > 0 && ambiguousDateExample ? (
-        <button
-          type="button"
-          title={t("swapDayMonthHint", { example: ambiguousDateExample })}
-          onClick={() => onDateOrderChange(dateOrder === "MDY" ? "DMY" : "MDY")}
-          className="self-start rounded-(--radius) text-xs font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {t("swapDayMonth")}
-        </button>
+        <>
+          <p id={`map-${field.key}-order-hint`} className="text-xs text-muted-foreground">
+            {t("swapDayMonthHint", { example: ambiguousDateExample })}
+          </p>
+          <button
+            type="button"
+            aria-pressed={dateOrder === "DMY"}
+            aria-describedby={`map-${field.key}-order-hint`}
+            onClick={() => onDateOrderChange(dateOrder === "MDY" ? "DMY" : "MDY")}
+            className="self-start rounded-(--radius) text-xs font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t("swapDayMonth")}
+          </button>
+        </>
       ) : null}
     </div>
   );

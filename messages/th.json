@@ -1230,7 +1230,7 @@
           "committing": "กำลังนำเข้า%booking%ของคุณ",
           "progress": "ดำเนินการแล้ว {done} จาก {total}",
 
-          "resultsReady": "มีผลการนำเข้า {count} รายการพร้อมตรวจสอบ",
+          "resultsReady": "{count, plural, other {มีผลการนำเข้า # รายการพร้อมตรวจสอบ}}",
           "background": "คุณปิดแผงนี้ได้ การนำเข้าจะดำเนินต่อไป"
         }
       },

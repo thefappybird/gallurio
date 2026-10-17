@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { NotFoundContent } from "./global-not-found";
+import { NotFoundContent, metadata } from "./global-not-found";
+
+describe("global-not-found metadata", () => {
+  it("sets a tab title instead of the bare URL", () => {
+    expect(metadata.title).toBe("Page not found | Gallurio");
+  });
+});
 
 describe("NotFoundContent", () => {
   it("renders a home link", () => {
