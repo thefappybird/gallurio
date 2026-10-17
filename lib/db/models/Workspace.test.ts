@@ -9,6 +9,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models";
+import { resolveInvoiceTheme } from "@/lib/invoices/theme";
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
@@ -201,17 +202,18 @@ describe("Workspace.publicPage.collectionsPopup popupLayout / imageModalLayout d
 });
 
 describe("Workspace.invoiceTheme defaults", () => {
-  it("new workspace has invoiceTheme defaulting to the minimal preset", async () => {
+  it("new workspace stores no invoiceTheme, so it resolves to the same classic default as legacy workspaces", async () => {
     const ws = await Workspace.create({
       slug: "invoice-theme-studio",
       name: "Invoice Theme Studio",
       ownerUserId: "user_invoice_1",
     });
-    expect(ws.invoiceTheme?.preset).toBe("minimal");
-    expect(ws.invoiceTheme?.main).toBe("#ece5d8");
-    expect(ws.invoiceTheme?.accent).toBe("#ddd0ba");
-    expect(ws.invoiceTheme?.text).toBe("#1f1c16");
-    expect(ws.invoiceTheme?.savedThemeId).toBeNull();
+    // Hydrated (non-lean) docs must not materialize a truthy {} either.
+    expect(ws.invoiceTheme).toBeUndefined();
+    expect((await Workspace.findById(ws._id))?.invoiceTheme).toBeUndefined();
+    const stored = await Workspace.findById(ws._id).lean();
+    expect(stored?.invoiceTheme?.preset).toBeUndefined();
+    expect(resolveInvoiceTheme(undefined).main).toBe("#1A1A1A");
   });
 });
 

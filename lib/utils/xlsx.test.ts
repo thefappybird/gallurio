@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { parseXlsxToRows, rowsToXlsxBuffer } from "./xlsx";
+import { parseXlsxToRows, rowsToXlsxBuffer, XlsxTooLargeError } from "./xlsx";
 
 describe("xlsx round-trip", () => {
   it("writes a workbook that parses back to the same headers and cells", async () => {
@@ -89,5 +89,51 @@ describe("xlsx header detection", () => {
     const parsed = await parseXlsxToRows(buf);
     expect(parsed.headers).toEqual(["Name", "Date"]);
     expect(parsed.rows).toEqual([{ Name: "Bea", Date: "2031-07-01" }]);
+  });
+});
+
+// Minimal zip with a single stored entry whose central directory declares `declared` bytes.
+function craftZip(declared: number, entries = 1): Buffer {
+  const name = Buffer.from("a");
+  const cd: Buffer[] = [];
+  for (let i = 0; i < entries; i++) {
+    const h = Buffer.alloc(46);
+    h.writeUInt32LE(0x02014b50, 0);
+    h.writeUInt32LE(declared, 24);
+    h.writeUInt16LE(name.length, 28);
+    cd.push(h, name);
+  }
+  const dir = Buffer.concat(cd);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(entries, 8);
+  eocd.writeUInt16LE(entries, 10);
+  eocd.writeUInt32LE(dir.length, 12);
+  eocd.writeUInt32LE(0, 16);
+  return Buffer.concat([dir, eocd]);
+}
+
+describe("xlsx zip-bomb guard", () => {
+  it("rejects a zip declaring a huge uncompressed size before exceljs inflates anything", async () => {
+    await expect(parseXlsxToRows(craftZip(60_000_000))).rejects.toBeInstanceOf(XlsxTooLargeError);
+  });
+
+  it("rejects a directory with too many entries", async () => {
+    await expect(parseXlsxToRows(craftZip(1, 2001))).rejects.toBeInstanceOf(XlsxTooLargeError);
+  });
+
+  it("rejects ZIP64 markers", async () => {
+    await expect(parseXlsxToRows(craftZip(0xffffffff))).rejects.toBeInstanceOf(XlsxTooLargeError);
+  });
+
+  it("treats a missing or malformed directory as unreadable, not too large", async () => {
+    const err = await parseXlsxToRows(Buffer.from([0x50, 0x4b, 0x03, 0x04, 0, 0])).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(XlsxTooLargeError);
+  });
+
+  it("still parses a normal workbook", async () => {
+    const buf = await rowsToXlsxBuffer(["Name", "Date"], [["Ana", "2031-06-11"]]);
+    expect((await parseXlsxToRows(buf)).rows).toHaveLength(1);
   });
 });

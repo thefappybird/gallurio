@@ -1,6 +1,7 @@
 import { emitImportProgress } from "@/lib/sockets/emitImportProgress";
 import { after, NextResponse } from "next/server";
 import mongoose from "mongoose";
+import { randomUUID } from "node:crypto";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { BookingImportJob } from "@/lib/db/models/BookingImportJob";
@@ -10,13 +11,14 @@ import { FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { parseCsv, decodeCsvBytes, isProbablyText } from "@/lib/utils/csv-parse";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
-import { parseXlsxToRows, looksLikeXlsx, rowsToXlsxBuffer } from "@/lib/utils/xlsx";
+import { parseXlsxToRows, looksLikeXlsx, rowsToXlsxBuffer, XlsxTooLargeError } from "@/lib/utils/xlsx";
 import {
   IMPORT_TEMPLATE_HEADERS,
   buildImportTemplateRows,
 } from "@/lib/bookings/import-template";
 import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
 import {
+  JOB_LEASE_MS,
   processImportJob,
   processImportRows,
   type ImportContext,
@@ -154,7 +156,10 @@ export async function POST(req: Request) {
         // Image/PDF/etc. renamed .csv: refuse rather than preview garbage.
         return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof XlsxTooLargeError) {
+        return NextResponse.json({ error: "import_too_large" }, { status: 413 });
+      }
       // A crafted or truncated upload is the caller's problem, not a 500.
       return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
     }
@@ -173,6 +178,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unsupported_media_type" }, { status: 415 });
   }
 
+  // Refuse on the declared length before buffering; the post-read check is the backstop.
+  const declaredLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_COMMIT_BYTES) {
+    return NextResponse.json({ error: "import_too_large" }, { status: 413 });
+  }
   const rawBody = await req.text().catch(() => "");
   if (Buffer.byteLength(rawBody) > MAX_COMMIT_BYTES) {
     return NextResponse.json({ error: "import_too_large" }, { status: 413 });
@@ -197,17 +207,54 @@ export async function POST(req: Request) {
   }
 
   if (json.background) return startImportJob(ctx, json);
+  return runDirectImport(ctx, json);
+}
+
+/**
+ * Synchronous (non-background) commit. It occupies the workspace's single
+ * active-job slot for its duration so it cannot race a background import of
+ * the same file. The placeholder job holds no rows; if the process dies
+ * mid-run the recovery sweep reclaims it after the lease and frees the slot.
+ */
+async function runDirectImport(ctx: ImportContext, json: ImportPayload) {
   await connectDB();
-  const activeJob = await BookingImportJob.findOne({ workspaceId: ctx.workspace._id, active: true })
-    .select({ _id: 1 })
-    .lean();
-  if (activeJob) {
-    return NextResponse.json(
-      { error: "import_active", jobId: activeJob._id.toString() },
-      { status: 409 }
-    );
+  await BookingImportJob.init();
+  const workspaceId = ctx.workspace._id;
+  const jobId = new mongoose.Types.ObjectId();
+  const now = Date.now();
+  try {
+    await BookingImportJob.create({
+      _id: jobId,
+      workspaceId,
+      requestId: randomUUID(),
+      actorUserId: ctx.userId,
+      rows: [],
+      currency: ctx.workspace.currency ?? "PHP",
+      timezone: ctx.workspace.timezone ?? FALLBACK_TZ,
+      totalGroups: 0,
+      status: "running",
+      active: true,
+      leaseToken: randomUUID(),
+      leaseUntil: new Date(now + JOB_LEASE_MS),
+      expiresAt: new Date(now + 24 * 60 * 60 * 1000),
+    });
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000) {
+      const running = await BookingImportJob.findOne({ workspaceId, active: true })
+        .select({ _id: 1 })
+        .lean();
+      return NextResponse.json(
+        { error: "import_active", jobId: running?._id.toString() },
+        { status: 409 }
+      );
+    }
+    throw error;
   }
-  return processImportRows(ctx, json);
+  try {
+    return await processImportRows(ctx, json);
+  } finally {
+    await BookingImportJob.deleteOne({ _id: jobId, workspaceId });
+  }
 }
 
 async function startImportJob(
@@ -327,7 +374,9 @@ async function getImportJobStatus(ctx: ImportContext, params: URLSearchParams) {
     jobId: job._id,
     status: "done",
   });
-  if (job.active && (job.status === "queued" || !job.leaseUntil || job.leaseUntil < new Date())) {
+  const now = new Date();
+  const backingOff = Boolean(job.nextAttemptAt && job.nextAttemptAt > now);
+  if (job.active && !backingOff && (job.status === "queued" || !job.leaseUntil || job.leaseUntil < now)) {
     after(() => processImportJob(job._id));
   }
   return NextResponse.json(

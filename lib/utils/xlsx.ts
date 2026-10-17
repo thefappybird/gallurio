@@ -57,7 +57,57 @@ function findHeader(sheet: ExcelJS.Worksheet): { rowNumber: number; raw: string[
   return null;
 }
 
+/** Declared (uncompressed) size ceiling; the upload cap only bounds the compressed bytes. */
+const MAX_UNCOMPRESSED_BYTES = 50_000_000;
+const MAX_ZIP_ENTRIES = 2000;
+
+/** Thrown when the zip directory declares more than we are willing to inflate. */
+export class XlsxTooLargeError extends Error {
+  constructor() {
+    super("xlsx_too_large");
+    this.name = "XlsxTooLargeError";
+  }
+}
+
+/**
+ * Reads the zip end-of-central-directory + central directory (no inflation) and
+ * rejects bombs before exceljs/JSZip decompress anything. ZIP64 is refused: a
+ * legitimate <2 MB workbook never needs it. Malformed directories throw a plain
+ * Error (callers map it to "unreadable file").
+ */
+export function assertXlsxWithinLimits(input: ArrayBuffer | Uint8Array | Buffer): void {
+  const buf = input instanceof ArrayBuffer ? Buffer.from(input) : Buffer.from(input.buffer, input.byteOffset, input.byteLength);
+  const minEocd = 22;
+  let eocd = -1;
+  for (let i = buf.length - minEocd; i >= Math.max(0, buf.length - minEocd - 0xffff); i--) {
+    if (buf.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("zip_eocd_not_found");
+  if (eocd >= 20 && buf.readUInt32LE(eocd - 20) === 0x07064b50) throw new XlsxTooLargeError();
+  const entries = buf.readUInt16LE(eocd + 10);
+  const cdSize = buf.readUInt32LE(eocd + 12);
+  const cdOffset = buf.readUInt32LE(eocd + 16);
+  if (entries === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) throw new XlsxTooLargeError();
+  if (entries > MAX_ZIP_ENTRIES) throw new XlsxTooLargeError();
+  if (cdOffset + cdSize > eocd) throw new Error("zip_directory_out_of_bounds");
+
+  let pos = cdOffset;
+  let total = 0;
+  for (let n = 0; n < entries; n++) {
+    if (pos + 46 > buf.length || buf.readUInt32LE(pos) !== 0x02014b50) throw new Error("zip_directory_malformed");
+    const size = buf.readUInt32LE(pos + 24);
+    if (size === 0xffffffff) throw new XlsxTooLargeError();
+    total += size;
+    if (total > MAX_UNCOMPRESSED_BYTES) throw new XlsxTooLargeError();
+    pos += 46 + buf.readUInt16LE(pos + 28) + buf.readUInt16LE(pos + 30) + buf.readUInt16LE(pos + 32);
+  }
+}
+
 export async function parseXlsxToRows(buffer: ArrayBuffer | Buffer): Promise<ParsedCsv> {
+  assertXlsxWithinLimits(buffer);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as ArrayBuffer);
 

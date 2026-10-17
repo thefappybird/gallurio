@@ -97,6 +97,13 @@ type JobRun = {
 export const JOB_LEASE_MS = 180_000;
 const DATA_EMIT_INTERVAL_MS = 5_000;
 export const MAX_IMPORT_ATTEMPTS = 3;
+const RETRY_BASE_MS = 30_000;
+const SWEEP_BATCH = 10;
+
+/** Not claimable while a backoff gate is still in the future. */
+const retryReady = (now: Date) => ({
+  $or: [{ nextAttemptAt: null }, { nextAttemptAt: { $lte: now } }],
+});
 
 export async function processImportRows(
   ctx: ImportContext,
@@ -809,7 +816,16 @@ export async function deliverPendingImportNotification(jobId: mongoose.Types.Obj
     ? "booking.import_failed"
     : (job.result as ImportResult | null)?.errors?.length
       ? "booking.import_partial" : "booking.import_completed";
-  await notifyImportOutcome(job, type);
+  try {
+    await notifyImportOutcome(job, type);
+  } catch (error) {
+    // Touch the job (timestamps bump updatedAt) so the sweep gives other jobs a turn.
+    await BookingImportJob.updateOne(
+      { _id: jobId, workspaceId: job.workspaceId },
+      { $inc: { notificationAttempts: 1 } }
+    ).catch((bumpError) => console.error("[bookings.import] notification attempt bump failed", bumpError));
+    throw error;
+  }
   await BookingImportJob.updateOne(
     { _id: jobId, workspaceId: job.workspaceId, notificationPending: true },
     { $set: { notificationPending: false } }
@@ -825,9 +841,9 @@ export async function processImportJob(jobId: mongoose.Types.ObjectId) {
       _id: jobId,
       active: true,
       attempts: { $lt: MAX_IMPORT_ATTEMPTS },
-      $or: [
-        { status: "queued" },
-        { status: "running", leaseUntil: { $lte: now } },
+      $and: [
+        { $or: [{ status: "queued" }, { status: "running", leaseUntil: { $lte: now } }] },
+        retryReady(now),
       ],
     },
     {
@@ -836,6 +852,7 @@ export async function processImportJob(jobId: mongoose.Types.ObjectId) {
         leaseToken: token,
         leaseUntil: new Date(now.getTime() + JOB_LEASE_MS),
         lastError: null,
+        nextAttemptAt: null,
       },
       $inc: { attempts: 1 },
     },
@@ -918,6 +935,8 @@ export async function processImportJob(jobId: mongoose.Types.ObjectId) {
           completedAt: new Date(),
           leaseUntil: null,
         },
+        // Source rows (client PII, up to 8 MB) are not needed once terminal.
+        $unset: { rows: "" },
       }
     );
     if (completed.matchedCount === 1) {
@@ -945,7 +964,11 @@ export async function processImportJob(jobId: mongoose.Types.ObjectId) {
           active: !failed,
           lastError: "background_failed",
           leaseUntil: null,
+          nextAttemptAt: failed
+            ? null
+            : new Date(Date.now() + RETRY_BASE_MS * 2 ** (claimed.attempts - 1)),
         },
+        ...(failed ? { $unset: { rows: "" } } : {}),
       }
     );
     if (transitioned.matchedCount === 1) {
@@ -987,18 +1010,26 @@ export async function runImportRecoverySweep() {
   for (const job of exhausted) {
     const failed = await BookingImportJob.updateOne(
       { _id: job._id, workspaceId: job.workspaceId, ...stuck, attempts: { $gte: MAX_IMPORT_ATTEMPTS } },
-      { $set: { status: "failed", active: false, lastError: "background_failed", leaseUntil: null } }
+      {
+        $set: { status: "failed", active: false, lastError: "background_failed", leaseUntil: null },
+        $unset: { rows: "" },
+      }
     );
     if (failed.matchedCount === 1) {
       await announceNonCompletion(job, "failed")
         .catch((error) => console.error("[bookings.import] exhausted job announce failed", error));
     }
   }
-  const jobs = await BookingImportJob.find({ ...stuck, attempts: { $lt: MAX_IMPORT_ATTEMPTS } })
-    .select({ _id: 1 }).sort({ createdAt: 1 }).limit(1).lean();
+  // One active job per workspace (unique partial index), so this spans up to SWEEP_BATCH tenants.
+  const jobs = await BookingImportJob.find({
+    active: true, attempts: { $lt: MAX_IMPORT_ATTEMPTS }, $and: [{ $or: stuck.$or }, retryReady(now)],
+  }).select({ _id: 1 }).sort({ createdAt: 1 }).limit(SWEEP_BATCH).lean();
   for (const job of jobs) after(() => processImportJob(job._id));
-  const pending = await BookingImportJob.findOne({ notificationPending: true, active: false })
-    .select({ _id: 1 }).sort({ updatedAt: 1 }).lean();
-  if (pending) after(() => deliverPendingImportNotification(pending._id));
-  return { scheduled: jobs.length, notifications: pending ? 1 : 0, failed: exhausted.length };
+  // Oldest updatedAt first; a delivery failure bumps updatedAt so a poison job rotates to the back.
+  const pending = await BookingImportJob.find({ notificationPending: true, active: false })
+    .select({ _id: 1 }).sort({ updatedAt: 1 }).limit(SWEEP_BATCH).lean();
+  for (const job of pending) {
+    after(() => deliverPendingImportNotification(job._id));
+  }
+  return { scheduled: jobs.length, notifications: pending.length, failed: exhausted.length };
 }

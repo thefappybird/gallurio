@@ -1,7 +1,7 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { INVOICE_THEME_PRESET_IDS } from "@/lib/validators/invoiceTheme";
-import { INVOICE_THEME_DEFAULT_PRESET, INVOICE_THEME_PRESETS, LEGACY_INVOICE_PRESET_IDS } from "@/lib/invoices/theme";
+import { LEGACY_INVOICE_PRESET_IDS } from "@/lib/invoices/theme";
 import {
   BRAND_KIT_THEME_PRESETS,
   BRAND_KIT_FONT_PAIRS,
@@ -77,6 +77,22 @@ const publicPageSettingsDraftSchema = new Schema(
       galleryDescription: { type: String, default: "" },
       noindex: { type: Boolean, default: false },
     },
+  },
+  { _id: false }
+);
+
+const invoiceThemeSchema = new Schema(
+  {
+    // Legacy ids stay valid here so hydrated saves of old docs don't fail; writes are gated by the Zod validator.
+    preset: {
+      type: String,
+      enum: [...INVOICE_THEME_PRESET_IDS, ...LEGACY_INVOICE_PRESET_IDS],
+      required: true,
+    },
+    savedThemeId: { type: String, default: null },
+    main: { type: String, required: true },
+    accent: { type: String, required: true },
+    text: { type: String },
   },
   { _id: false }
 );
@@ -300,18 +316,11 @@ const workspaceSchema = new Schema(
         keywords: { type: [String], default: [] },
       },
     },
-    invoiceTheme: {
-      // Legacy ids stay valid here so hydrated saves of old docs don't fail; writes are gated by the Zod validator.
-      preset: {
-        type: String,
-        enum: [...INVOICE_THEME_PRESET_IDS, ...LEGACY_INVOICE_PRESET_IDS],
-        default: INVOICE_THEME_DEFAULT_PRESET,
-      },
-      savedThemeId: { type: String, default: null },
-      main: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].main },
-      accent: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].accent },
-      text: { type: String, default: INVOICE_THEME_PRESETS[INVOICE_THEME_DEFAULT_PRESET].text },
-    },
+    // No schema defaults: an unthemed workspace (new or legacy) stores nothing and
+    // resolves to LEGACY_DEFAULT_INVOICE_THEME (classic) everywhere.
+    // Single subdocument with default: undefined so an unthemed workspace is
+    // undefined on lean AND hydrated docs (a nested path would hydrate to {}).
+    invoiceTheme: { type: invoiceThemeSchema, default: undefined },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
     // Records the route the owner chose during onboarding independently from
     // the entitlement tier. For example, a complimentary Pro month must not

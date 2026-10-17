@@ -18,6 +18,9 @@ const bookingImportJobSchema = new Schema(
     result: { type: Schema.Types.Mixed, default: null },
     lastError: { type: String, default: null },
     attempts: { type: Number, default: 0 },
+    // Backoff gate: a requeued job is not claimable before this instant.
+    nextAttemptAt: { type: Date, default: null },
+    notificationAttempts: { type: Number, default: 0 },
     notificationPending: { type: Boolean, default: false },
     expiresAt: { type: Date, required: true },
   },

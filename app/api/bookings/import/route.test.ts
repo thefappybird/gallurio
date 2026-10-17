@@ -210,7 +210,7 @@ describe("background booking import jobs", () => {
     await afterCallbacks.shift()!();
     await BookingImportJob.updateOne(
       { _id: jobId, workspaceId: WS_ID },
-      { $set: { status: "running", active: true, result: null, leaseUntil: new Date(0) } }
+      { $set: { status: "running", active: true, result: null, leaseUntil: new Date(0), rows: [VALID_ROW] } }
     );
 
     const status = await getJob(jobId);
@@ -1439,5 +1439,186 @@ describe("GET /api/bookings/import — template", () => {
     expect(body.shifts).toBe(2);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
     expect(booking?.sessions).toHaveLength(2);
+  });
+});
+
+describe("import review fixes", () => {
+  const requestId = "00000000-0000-4000-8000-000000000001";
+
+  it("rejects an oversized commit on content-length without reading the body", async () => {
+    const { POST } = await import("./route");
+    // Request strips content-length, so hand the route a minimal request-shaped object.
+    const text = vi.fn(async () => JSON.stringify({ rows: [VALID_ROW] }));
+    const req = {
+      headers: new Headers({ "content-type": "application/json", "content-length": "8000001" }),
+      text,
+    } as unknown as Request;
+    const res = await POST(req);
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it("answers 413 for an xlsx whose zip directory declares a bomb-sized payload", async () => {
+    const name = Buffer.from("a");
+    const h = Buffer.alloc(46);
+    h.writeUInt32LE(0x02014b50, 0);
+    h.writeUInt32LE(60_000_000, 24);
+    h.writeUInt16LE(name.length, 28);
+    const eocd = Buffer.alloc(22);
+    eocd.writeUInt32LE(0x06054b50, 0);
+    eocd.writeUInt16LE(1, 8);
+    eocd.writeUInt16LE(1, 10);
+    eocd.writeUInt32LE(46 + name.length, 12);
+    eocd.writeUInt32LE(4, 16); // directory starts right after the 4-byte local signature
+    const zip = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), h, name, eocd]);
+    const { POST } = await import("./route");
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array(zip)]), "bomb.xlsx");
+    const res = await POST(new Request("http://localhost/api/bookings/import", { method: "POST", body: form }));
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+  });
+
+  it("drops the source rows once a job completes", async () => {
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    await afterCallbacks.shift()!();
+    const raw = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(jobId) });
+    expect(raw?.status).toBe("completed");
+    expect(raw).not.toHaveProperty("rows");
+  });
+
+  it("drops the source rows when a job fails terminally, in both the worker and the sweep", async () => {
+    const { processImportJob, runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    await BookingImportJob.updateOne({ _id: jobId, workspaceId: WS_ID }, { $set: { attempts: 2 } });
+    await Team.deleteMany({ workspaceId: WS_ID });
+    await processImportJob(new Types.ObjectId(jobId));
+    const failed = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(jobId) });
+    expect(failed?.status).toBe("failed");
+    expect(failed).not.toHaveProperty("rows");
+
+    await Team.create({ workspaceId: WS_ID, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true,
+      isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" });
+    const second = await (await callBackground([VALID_ROW], "00000000-0000-4000-8000-000000000002")).json();
+    await BookingImportJob.updateOne({ _id: second.jobId, workspaceId: WS_ID },
+      { $set: { status: "running", attempts: 3, leaseUntil: new Date(0) } });
+    await runImportRecoverySweep();
+    const swept = await BookingImportJob.collection.findOne({ _id: new Types.ObjectId(second.jobId) });
+    expect(swept?.status).toBe("failed");
+    expect(swept).not.toHaveProperty("rows");
+  });
+
+  it("backs a failed job off exponentially and respects it in claim, poll and sweep", async () => {
+    const { processImportJob, runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    afterCallbacks.length = 0;
+    await Team.deleteMany({ workspaceId: WS_ID }); // processImportRows answers 500 -> job incomplete
+    const id = new Types.ObjectId(jobId);
+    const before = Date.now();
+    await processImportJob(id);
+    let job = await BookingImportJob.findById(id).lean();
+    expect(job).toMatchObject({ status: "queued", attempts: 1 });
+    expect(job!.nextAttemptAt!.getTime()).toBeGreaterThanOrEqual(before + 30_000);
+    expect(job!.nextAttemptAt!.getTime()).toBeLessThan(before + 40_000);
+
+    await processImportJob(id); // gated: not claimed
+    expect((await BookingImportJob.findById(id).lean())?.attempts).toBe(1);
+    await getJob(jobId);
+    expect(afterCallbacks).toHaveLength(0);
+    expect((await runImportRecoverySweep()).scheduled).toBe(0);
+
+    await BookingImportJob.updateOne({ _id: id }, { $set: { nextAttemptAt: new Date(Date.now() - 1) } });
+    expect((await runImportRecoverySweep()).scheduled).toBe(1);
+    await processImportJob(id);
+    job = await BookingImportJob.findById(id).lean();
+    expect(job!.attempts).toBe(2);
+    expect(job!.nextAttemptAt!.getTime()).toBeGreaterThanOrEqual(before + 60_000);
+  });
+
+  it("schedules up to 10 stuck jobs and 10 pending notifications per sweep", async () => {
+    const { runImportRecoverySweep } = await import("@/lib/bookings/import-jobs");
+    const base = { actorUserId: "user_test", rows: [], currency: "PHP", timezone: "UTC",
+      totalGroups: 0, expiresAt: new Date(Date.now() + 86_400_000) };
+    await BookingImportJob.create(Array.from({ length: 12 }, (_, i) => ({
+      ...base, workspaceId: new Types.ObjectId(), requestId: `q-${i}`, status: "queued", active: true,
+    })));
+    await BookingImportJob.create(Array.from({ length: 12 }, (_, i) => ({
+      ...base, workspaceId: WS_ID, requestId: `n-${i}`, status: "completed", active: false, notificationPending: true,
+    })));
+    const res = await runImportRecoverySweep();
+    expect(res).toMatchObject({ scheduled: 10, notifications: 10 });
+    expect(afterCallbacks).toHaveLength(20);
+  });
+
+  it("rotates a notification that keeps failing behind others", async () => {
+    const { deliverPendingImportNotification } = await import("@/lib/bookings/import-jobs");
+    await User.create({ workosUserId: "user_test", email: "owner@example.test",
+      memberships: [{ workspaceId: WS_ID, role: "owner" }] });
+    const base = { actorUserId: "user_test", rows: [], currency: "PHP", timezone: "UTC", totalGroups: 0,
+      status: "completed", active: false, notificationPending: true, expiresAt: new Date(Date.now() + 86_400_000) };
+    const [poison, healthy] = await BookingImportJob.create([
+      { ...base, workspaceId: WS_ID, requestId: "p" },
+      { ...base, workspaceId: WS_ID, requestId: "h" },
+    ]);
+    await BookingImportJob.updateOne({ _id: poison._id }, { $set: { updatedAt: new Date("2020-01-01") } }, { timestamps: false });
+    await BookingImportJob.updateOne({ _id: healthy._id }, { $set: { updatedAt: new Date("2021-01-01") } }, { timestamps: false });
+    notificationSend.mockRejectedValueOnce(new Error("boom"));
+    await expect(deliverPendingImportNotification(poison._id)).rejects.toThrow("boom");
+    const [first] = await BookingImportJob.find({ notificationPending: true }).sort({ updatedAt: 1 }).lean();
+    expect(first._id.toString()).toBe(healthy._id.toString());
+    expect((await BookingImportJob.findById(poison._id).lean())?.notificationAttempts).toBe(1);
+  });
+
+  it("holds the workspace active-job slot during a direct import and releases it after", async () => {
+    let raced: Response | undefined;
+    fx.resolveFxFreeze.mockImplementationOnce(async (base: string, target: string) => {
+      expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID, active: true })).toBe(1);
+      raced = await callBackground([VALID_ROW], requestId);
+      return base === target ? { rate: 1, target } : null;
+    });
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).toBe(200);
+    expect(raced?.status).toBe(409);
+    expect(await BookingImportJob.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    // Slot is free again.
+    expect((await callBackground([{ ...VALID_ROW, title: "Next" }], requestId)).status).toBe(202);
+  });
+
+  it("does not expose another workspace job by requestId or as the latest job", async () => {
+    await callBackground([VALID_ROW], requestId);
+    const { GET } = await import("./route");
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const byRequest = await GET(new Request(`http://localhost/api/bookings/import?requestId=${requestId}`));
+    expect(byRequest.status).toBe(404);
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+    const latest = await GET(new Request("http://localhost/api/bookings/import?latest=1"));
+    expect((await latest.json()).job).toBeNull();
+  });
+
+  it("rolls back and stops a stale worker whose lease was taken over", async () => {
+    const { processImportJob } = await import("@/lib/bookings/import-jobs");
+    const { jobId } = await (await callBackground([VALID_ROW], requestId)).json();
+    afterCallbacks.length = 0;
+    fx.resolveFxFreeze.mockImplementationOnce(async (base: string, target: string) => {
+      await BookingImportJob.updateOne({ _id: jobId }, { $set: { leaseToken: "taken-over" } });
+      await BookingImportJobItem.updateMany({ jobId }, { $set: { leaseToken: "taken-over" } });
+      return base === target ? { rate: 1, target } : null;
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      await processImportJob(new Types.ObjectId(jobId));
+      expect(errorSpy).toHaveBeenCalledWith(
+        "[bookings.import] background job failed",
+        expect.objectContaining({ message: "import_job_claim_lost" })
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await ActivityLog.countDocuments({ workspaceId: WS_ID })).toBe(0);
+    expect(await BookingImportJob.findById(jobId).lean()).toMatchObject({ status: "running", leaseToken: "taken-over" });
   });
 });
