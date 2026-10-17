@@ -1,6 +1,6 @@
 # Bookings import: manual test guide
 
-Branch: `fix/import-bookings-feature` (QA baseline `04867504`; later fixes are recorded in `FINDINGS-2026-10-17.md`).
+Branch: `fix/import-bookings-feature` (QA baseline `04867504`). Durable behavior and open release gates: `docs/bookings/import-and-document-themes.md`.
 Test files: `qa/bookings-import/files/`. This folder is committed for manual testing only; remove it before the PR merges.
 
 All test data is tagged: titles start with `QA-IMP` and client names start with `QA `. That way cleanup only removes test rows (see the end of this guide).
@@ -48,8 +48,8 @@ All test data is tagged: titles start with `QA-IMP` and client names start with 
 | `08-png-renamed.csv` | "This doesn't look like a CSV file. Choose a .csv or .xlsx spreadsheet." |
 | `14-rows-600.csv` | "This file has 600 rows. Import up to 500 at a time — split it into smaller files." |
 | `15-rows-600.xlsx` | The same 600-row message. |
-| `16-big-3mb.xlsx` | "This file is larger than the 2 MB limit. Split it into smaller files." |
-| `17-big-8mb.csv` | The same 2 MB message, shown right away. The tab should not freeze. |
+| `16-big-3mb.xlsx` (generated, not committed) | "This file is larger than the 2 MB limit. Split it into smaller files." |
+| `17-big-8mb.csv` (generated, not committed) | The same 2 MB message, shown right away. The tab should not freeze. |
 | `09-old-excel.xls` | "This is an older Excel file. Save it as .xlsx and try again." |
 | `10-corrupt.xlsx` | The generic "Could not read this file…". |
 
@@ -90,10 +90,12 @@ Run this from the repo root after testing:
 ```
 node qa/bookings-import/cleanup-import-qa.js . --show     # list what would be deleted
 node qa/bookings-import/cleanup-import-qa.js . --apply    # delete it
+# Finished import jobs no longer keep their rows; add --since=<ISO run start>
+# to include them (and their notifications) by creation time.
 ```
 It removes bookings titled `QA-IMP…` or with a client named `QA …`, plus their transactions, activity logs, imported clients, and terminal QA import jobs/items. The four encoding-fixture names are allowed only when their clients came from import. It refuses to run if a matched booking points at another client, a client is also linked to a non-QA booking, or a QA job is active or contains non-QA rows.
 
 To regenerate fresh files (new unique emails), run:
-`node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. The committed files are ready for manual testing; inspect the cleanup dry run before deleting development data.
+`node qa/bookings-import/gen-import-qa.js . qa/bookings-import/files`. Run it first to get `16-big-3mb.xlsx` and `17-big-8mb.csv`, which are not committed. The other committed files are ready for manual testing; inspect the cleanup dry run before deleting development data.
 
 The cleanup also removes in-app import notifications linked to the matched terminal QA jobs.

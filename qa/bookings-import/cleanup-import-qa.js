@@ -23,14 +23,23 @@ const mongoose = require(path.join(repo, "node_modules", "mongoose"));
   const nonQaLinks = await db.collection("bookings").countDocuments({ clientId: { $in: clientIds }, _id: { $nin: bookingIds } });
   const tx = await db.collection("transactions").countDocuments({ bookingId: { $in: bookingIds } });
   const logs = await db.collection("activitylogs").countDocuments({ entityId: { $in: bookingIds } });
+  // Finished jobs drop their rows, so they can only be matched by time: pass
+  // --since=<ISO> (the QA run's start) to include finished jobs created after it
+  // in the workspaces that hold the QA bookings.
+  const sinceArg = process.argv.find((a) => a.startsWith("--since="));
+  const since = sinceArg ? new Date(sinceArg.slice("--since=".length)) : null;
+  if (since && Number.isNaN(since.getTime())) throw new Error("--since must be an ISO date");
+  const qaWorkspaceIds = [...new Set(bookings.map((b) => String(b.workspaceId)))].map((id) => new mongoose.Types.ObjectId(id));
   const jobs = await db.collection("bookingimportjobs").find(
-    { "rows.title": /^QA-IMP/ },
+    { $or: [
+      { "rows.title": /^QA-IMP/ },
+      ...(since ? [{ workspaceId: { $in: qaWorkspaceIds }, rows: { $exists: false }, createdAt: { $gte: since } }] : []),
+    ] },
     { projection: { _id: 1, rows: 1, active: 1, status: 1 } }
   ).toArray();
   const unsafeJobs = jobs.filter((job) =>
     job.active || !["completed", "failed"].includes(job.status) ||
-    !Array.isArray(job.rows) || !job.rows.length ||
-    job.rows.some((row) => typeof row?.title !== "string" || !row.title.startsWith("QA-IMP"))
+    (Array.isArray(job.rows) && job.rows.some((row) => typeof row?.title !== "string" || !row.title.startsWith("QA-IMP")))
   );
   const jobIds = jobs.map((job) => job._id);
   const jobItems = await db.collection("bookingimportjobitems").countDocuments({ jobId: { $in: jobIds } });
