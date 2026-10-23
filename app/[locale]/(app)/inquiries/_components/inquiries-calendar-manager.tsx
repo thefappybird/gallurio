@@ -17,9 +17,8 @@ import {
   dateToTzWallClock,
   wallDateAsLocal,
 } from "../../bookings/_components/_helpers/calendar-helpers";
-import { rescheduleInquirySessionAction } from "../_actions";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
-import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
 import { INQUIRIES_CALENDAR_FALLBACK } from "@/components/app/calendar-skeleton";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { useCalendarWindowNav } from "../../bookings/_components/_helpers/use-calendar-window-nav";
@@ -130,8 +129,11 @@ export function InquiriesCalendarManager({
   const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, CalendarEvent>>(
     () => new Map()
   );
-  // Prevents concurrent drops on the same inquiry session.
-  const inFlightRef = useRef<Set<string>>(new Set());
+  // The latest request owns each session's optimistic position. Re-dropping
+  // aborts the previous fetch and replaces its controller.
+  const inFlightRef = useRef<Map<string, AbortController>>(new Map());
+  const toastIdsRef = useRef<Map<string, string | number>>(new Map());
+  const externalDragRef = useRef<CalendarEvent | null>(null);
 
   // Where each dropped candle started, to tell a stale server copy (still the old
   // position) from an authoritative one when events refresh.
@@ -211,46 +213,33 @@ export function InquiriesCalendarManager({
 
   /**
    * Shared handler for onEventDrop and onEventResize on New inquiry candles.
-   * Optimistically moves the candle, calls the server action, reverts on error.
+   * Optimistically moves the candle, sends an abortable request, reverts on error.
    */
   const handleInquiryDrop = useCallback(
-    async ({ event: anyEvent, start, end }: EventInteractionArgs<AnyCalendarEvent>) => {
+    async ({ event: anyEvent, start, end, isAllDay }: EventInteractionArgs<AnyCalendarEvent>) => {
       // Overflow sentinel events are never draggable but guard defensively.
       if ("type" in anyEvent && (anyEvent as { type: string }).type === "overflow") return;
       const ev = anyEvent as CalendarEvent;
       if (ev.kind !== "inquiry" || !ev.inquiryId) return;
 
-      // Prevent concurrent drops on the same session.
       const sessionKey = ev.id;
-      if (inFlightRef.current.has(sessionKey)) return;
-      inFlightRef.current.add(sessionKey);
-
-      try {
         const tz = workspaceTz ?? FALLBACK_TZ;
         const newStart = new Date(start);
         const newEnd = new Date(end);
 
         // Month-view drags: rbc sets start to midnight of the target day.
         // Preserve the session shift times and shift date only.
-        const newStartIsMidnight = newStart.getHours() === 0 && newStart.getMinutes() === 0;
-        const eventHasTime = ev.start.getHours() !== 0 || ev.start.getMinutes() !== 0;
-        const isDateOnlyDrag = newStartIsMidnight && eventHasTime;
+        const isDateOnlyDrag = isAllDay ?? false;
 
         let candleStart: Date;
         let candleEnd: Date;
 
         if (isDateOnlyDrag) {
-          const eventDayStart = new Date(ev.start);
-          eventDayStart.setHours(0, 0, 0, 0);
-          const newDayStart = new Date(newStart);
-          newDayStart.setHours(0, 0, 0, 0);
-          const dayDiff = Math.round(
-            (newDayStart.getTime() - eventDayStart.getTime()) / 86_400_000
-          );
-          candleStart = new Date(ev.start);
-          candleStart.setDate(candleStart.getDate() + dayDiff);
-          candleEnd = new Date(ev.end);
-          candleEnd.setDate(candleEnd.getDate() + dayDiff);
+          const targetDay = dateToTzWallClock(newStart, tz).date;
+          const [startHour, startMinute] = dateToTzWallClock(ev.start, tz).time.split(":").map(Number);
+          const [endHour, endMinute] = dateToTzWallClock(ev.end, tz).time.split(":").map(Number);
+          candleStart = dayBoundInTz(targetDay, tz, startHour, startMinute, 0, 0);
+          candleEnd = dayBoundInTz(targetDay, tz, endHour, endMinute, 0, 0);
         } else {
           candleStart = newStart;
           candleEnd = newEnd;
@@ -269,7 +258,6 @@ export function InquiriesCalendarManager({
         const { time: endTime } = dateToTzWallClock(candleEnd, tz);
 
         // Optimistically move the candle.
-        const prevEvent = ev;
         const optimisticEvent: CalendarEvent = {
           ...ev,
           start: candleStart,
@@ -277,42 +265,76 @@ export function InquiriesCalendarManager({
           sessionStartAt: candleStart,
           sessionEndAt: candleEnd,
         };
-        originRef.current.set(ev.id, { start: ev.start.getTime(), end: ev.end.getTime(), at: Date.now() });
+        if (!originRef.current.has(ev.id) || !inFlightRef.current.has(ev.id)) {
+          originRef.current.set(ev.id, { start: ev.start.getTime(), end: ev.end.getTime(), at: Date.now() });
+        }
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
-
-        // Own the promise: toast.promise's return value isn't awaitable, and the
-        // in-flight guard must outlive the whole round-trip.
-        const request = (async () => {
-          const result = await rescheduleInquirySessionAction({
-            inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
-            sessionIndex: ev.sessionIndex,
-            startDate,
-            startTime,
-            endTime,
+        inFlightRef.current.get(sessionKey)?.abort();
+        const previousToastId = toastIdsRef.current.get(sessionKey);
+        if (previousToastId !== undefined) toast.dismiss(previousToastId);
+        const controller = new AbortController();
+        inFlightRef.current.set(sessionKey, controller);
+        const toastId = toast.loading(t("updating"));
+        toastIdsRef.current.set(sessionKey, toastId);
+        try {
+          let expectedUpdatedAt = ev.updatedAt;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const response = await fetch("/api/app/inquiries/reschedule", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ inquiryId: ev.inquiryId, sessionIndex: ev.sessionIndex, startDate, startTime, endTime, expectedUpdatedAt }),
+              signal: controller.signal,
+            });
+            const result = await response.json() as { draftBookingId?: string | null; error?: string; updatedAt?: string };
+            if (controller.signal.aborted) return;
+            if (result.error === "stale" && result.updatedAt && attempt < 2) {
+              expectedUpdatedAt = result.updatedAt;
+              continue;
+            }
+            if (!response.ok || result.error) throw result.error ?? "reschedule_failed";
+            invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId, bookingId: result.draftBookingId ?? null });
+            toast.success(t("updated"), { id: toastId });
+            return;
+          }
+        } catch (err) {
+          if (controller.signal.aborted) {
+            toast.dismiss(toastId);
+            return;
+          }
+          // The server copy is the safe rollback target. It may have changed
+          // while the request was pending, so never restore a stale drag event.
+          setOptimisticOverrides((prev) => {
+            const next = new Map(prev);
+            next.delete(ev.id);
+            return next;
           });
-          if ("error" in result) throw result.error;
-          // Success -- the action's revalidatePath is locale-less, so refresh via
-          // invalidateFor. The useEffect on `events` clears the optimistic override
-          // only once the authoritative position arrives, preventing any snap-back.
-          invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId!, bookingId: result.draftBookingId ?? null });
-        })();
-        toast.promise(request, {
-          loading: t("updating"),
-          success: t("updated"),
-          error: (err: unknown) => {
-            setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
-            return typeof err === "string" && err === "conflict"
-              ? t("rescheduleConflict")
-              : t("rescheduleFailed");
-          },
-        });
-        await request.catch(() => undefined);
-      } finally {
-        inFlightRef.current.delete(sessionKey);
-      }
+          toast.error(err === "conflict" ? t("rescheduleConflict") : t("rescheduleFailed"), { id: toastId });
+        } finally {
+          if (inFlightRef.current.get(sessionKey) === controller) {
+            inFlightRef.current.delete(sessionKey);
+            toastIdsRef.current.delete(sessionKey);
+          }
+        }
     },
     [workspaceTz, t, invalidateFor]
   );
+
+  const handleExternalDragStart = useCallback((ev: CalendarEvent) => {
+    externalDragRef.current = isInquiryCandleDraggable(ev) ? ev : null;
+  }, []);
+  const handleExternalDragEnd = useCallback(() => {
+    externalDragRef.current = null;
+  }, []);
+  const dragFromOutsideItem = useCallback(() => externalDragRef.current, []);
+  const handleDropFromOutside = useCallback(async ({ start }: { start: string | Date }) => {
+    const ev = externalDragRef.current;
+    externalDragRef.current = null;
+    if (!ev) return;
+    const tz = workspaceTz ?? FALLBACK_TZ;
+    const targetDay = dateToTzWallClock(new Date(start), tz).date;
+    const targetMidnight = dayBoundInTz(targetDay, tz, 0, 0, 0, 0);
+    await handleInquiryDrop({ event: ev, start: targetMidnight, end: targetMidnight, isAllDay: true } as EventInteractionArgs<AnyCalendarEvent>);
+  }, [handleInquiryDrop, workspaceTz]);
 
   const chipClass = (active: boolean) =>
     cn(
@@ -409,6 +431,10 @@ export function InquiriesCalendarManager({
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
+      onExternalDragStart={handleExternalDragStart}
+      onExternalDragEnd={handleExternalDragEnd}
+      dragFromOutsideItem={dragFromOutsideItem}
+      onDropFromOutside={handleDropFromOutside}
       showPast={true}
       draggableAccessor={isDraggableEvent}
       toolbarTrailing={toolbarTrailing}

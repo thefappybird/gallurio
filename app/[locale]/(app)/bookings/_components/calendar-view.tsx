@@ -23,6 +23,7 @@ import {
   type ShiftHit,
   isoDate,
   isoDateInTz,
+  dateToTzWallClock,
   wallDateAsLocal,
   reconstructSessions,
   detectConflictIds,
@@ -487,14 +488,11 @@ export function CalendarView({
         let newCandleEnd: Date;
 
         if (isDateOnlyDrag) {
-          const dayDiff = Math.round(
-            (startOfDay(newRbcStart).getTime() - startOfDay(event.start).getTime()) /
-              86_400_000
-          );
-          newCandleStart = new Date(event.start);
-          newCandleStart.setDate(newCandleStart.getDate() + dayDiff);
-          newCandleEnd = new Date(event.end);
-          newCandleEnd.setDate(newCandleEnd.getDate() + dayDiff);
+          const targetDay = isoDateInTz(newRbcStart, tz);
+          const [startHour, startMinute] = dateToTzWallClock(event.start, tz).time.split(":").map(Number);
+          const [endHour, endMinute] = dateToTzWallClock(event.end, tz).time.split(":").map(Number);
+          newCandleStart = dayBoundInTz(targetDay, tz, startHour, startMinute, 0, 0);
+          newCandleEnd = dayBoundInTz(targetDay, tz, endHour, endMinute, 0, 0);
         } else {
           newCandleStart = newRbcStart;
           newCandleEnd = newRbcEnd;
@@ -554,7 +552,7 @@ export function CalendarView({
   // ─── Drop handler ─────────────────────────────────────────────────────────
 
   const handleEventDrop = useCallback(
-    async ({ event: anyEvent, start, end }: EventInteractionArgs<AnyCalendarEvent>) => {
+    async ({ event: anyEvent, start, end, isAllDay }: EventInteractionArgs<AnyCalendarEvent>) => {
       if ("type" in anyEvent && anyEvent.type === "overflow") return;
       const event = anyEvent as CalendarEvent;
       const newStart = new Date(start);
@@ -562,11 +560,7 @@ export function CalendarView({
 
       // Month-view drags: rbc sets start to midnight of the target day.
       // In that case preserve the session's shift times and shift dates only.
-      const newStartIsMidnight =
-        newStart.getHours() === 0 && newStart.getMinutes() === 0;
-      const eventHasTime =
-        event.start.getHours() !== 0 || event.start.getMinutes() !== 0;
-      const isDateOnlyDrag = newStartIsMidnight && eventHasTime;
+      const isDateOnlyDrag = isAllDay ?? false;
 
       await handleAnyDrop(
         event,
@@ -610,11 +604,8 @@ export function CalendarView({
     externalDragRef.current = null;
   }, []);
 
-  // Always return null. We rely on the HTML5 drag image (a candle, built in
-  // OverflowPopoverRow.onDragStart) for visual feedback at the cursor — rbc's
-  // in-cell preview is more trouble than it's worth here.
   const dragFromOutsideItem = useCallback((): AnyCalendarEvent | null => {
-    return null;
+    return externalDragRef.current;
   }, []);
 
   /**

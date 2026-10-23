@@ -115,6 +115,30 @@ async function seedConflictingBooking(
 }
 
 describe("rescheduleInquirySessionAction", () => {
+  it("rejects a stale calendar write and returns the current version", async () => {
+    const { inquiry } = await seedInquiry(workspaceId);
+    const result = await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-15", startTime: "10:00", endTime: "18:00",
+      expectedUpdatedAt: "2000-01-01T00:00:00.000Z",
+    });
+    expect(result).toEqual({ error: "stale", updatedAt: inquiry.updatedAt.toISOString() });
+    expect((await Inquiry.findById(inquiry._id).lean())?.sessions[0]?.startDate).toBe("2035-03-10");
+  });
+
+  it("does not write an aborted reschedule", async () => {
+    const { inquiry } = await seedInquiry(workspaceId);
+    const controller = new AbortController();
+    controller.abort();
+    const result = await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-15", startTime: "10:00", endTime: "18:00",
+    }, controller.signal);
+    expect(result).toEqual({ error: "aborted" });
+    expect((await Inquiry.findById(inquiry._id).lean())?.sessions[0]?.startDate).toBe("2035-03-10");
+    expect(emitMock).not.toHaveBeenCalled();
+  });
+
   // (a) Happy path
   it("updates the session and returns { ok: true, draftBookingId }", async () => {
     const { inquiry, booking } = await seedInquiry(workspaceId);

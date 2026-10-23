@@ -33,6 +33,14 @@ describe("buildInquiryCalendarEvents", () => {
     expect(result).toHaveLength(1);
   });
 
+  it("carries the server version needed for reschedule conflict checks", () => {
+    const inq = makeInquiry("abc123", [
+      { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
+    ], { updatedAt: "2027-09-14T01:00:00.000Z" });
+    const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
+    expect(event.updatedAt).toBe(inq.updatedAt);
+  });
+
   it("sets kind to 'inquiry', inquiryId, and colorOverride to var(--event-inquiry) for active inquiries", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },

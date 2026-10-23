@@ -24,15 +24,21 @@ vi.mock("@/hooks/use-data-events", () => ({ useInvalidateFor: () => mockInvalida
 vi.mock("../../bookings/_components/_helpers/use-calendar-window-nav", () => ({
   useCalendarWindowNav: () => ({ onVisibleChange: mockVisible, isPending: mockPending }),
 }));
-vi.mock("../_actions", () => ({ rescheduleInquirySessionAction: (...a: unknown[]) => mockReschedule(...a) }));
 vi.mock("sonner", () => ({
   toast: {
-    promise: vi.fn((p: Promise<unknown>, msgs: { error?: (e: unknown) => string }) => {
-      p.catch((e) => msgs.error?.(e));
-      return p;
-    }),
+    loading: vi.fn(() => "loading"),
+    success: vi.fn(),
+    error: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
+const mockFetch = vi.fn((_url: string, options: RequestInit) =>
+  mockReschedule(JSON.parse(options.body as string), options.signal).then((result: { error?: string }) => ({
+    ok: !result.error,
+    json: async () => result,
+  }))
+);
+vi.stubGlobal("fetch", mockFetch);
 vi.mock("../../bookings/_components/team-filter-control", () => ({ TeamFilterControl: () => null }));
 
 type CalProps = {
@@ -45,6 +51,10 @@ type CalProps = {
   emptyMessage?: string;
   defaultDate?: Date;
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
+  onExternalDragStart: (event: CalendarEvent) => void;
+  onExternalDragEnd: () => void;
+  dragFromOutsideItem: () => CalendarEvent | null;
+  onDropFromOutside: (a: { start: Date; end: Date; allDay: boolean }) => Promise<void>;
 };
 let cal: CalProps;
 vi.mock("../../bookings/_components/booking-calendar-dynamic", () => ({
@@ -88,6 +98,7 @@ function ui(events: CalendarEvent[]) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockPending = false;
+  mockReschedule.mockResolvedValue({ ok: true });
 });
 
 describe("InquiriesCalendarManager window navigation", () => {
@@ -226,6 +237,80 @@ describe("InquiriesCalendarManager reschedule", () => {
     });
     expect(mockInvalidateFor).not.toHaveBeenCalled();
     expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("a second drop aborts the first request and keeps the latest optimistic position", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    mockReschedule
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce({ ok: true });
+    render(ui([inquiryEvent()]));
+    let first!: Promise<void>;
+    await act(async () => {
+      first = cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    const firstSignal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+    const secondStart = new Date("2027-09-18T02:00:00Z");
+    const secondEnd = new Date("2027-09-18T04:00:00Z");
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent({ start: droppedStart, end: droppedEnd }), start: secondStart, end: secondEnd });
+    });
+    expect(firstSignal.aborted).toBe(true);
+    expect(screen.getByText(`Cruz@${secondStart.toISOString()}`)).toBeInTheDocument();
+    await act(async () => { resolveFirst({ ok: true }); await first; });
+    expect(screen.getByText(`Cruz@${secondStart.toISOString()}`)).toBeInTheDocument();
+    expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
+  });
+
+  it("reverts to the server position when the replacement drop fails", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    mockReschedule
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce({ error: "conflict" });
+    render(ui([inquiryEvent()]));
+    let first!: Promise<void>;
+    await act(async () => {
+      first = cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+    });
+    await act(async () => {
+      await cal.onEventDrop({
+        event: inquiryEvent({ start: droppedStart, end: droppedEnd }),
+        start: new Date("2027-09-18T02:00:00Z"),
+        end: new Date("2027-09-18T04:00:00Z"),
+      });
+    });
+    expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
+    await act(async () => { resolveFirst({ ok: true }); await first; });
+    expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("retries the active drop with the server version after a stale write", async () => {
+    mockReschedule
+      .mockResolvedValueOnce({ error: "stale", updatedAt: "2027-09-15T01:00:00.000Z" })
+      .mockResolvedValueOnce({ ok: true });
+    render(ui([inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" })]));
+    await act(async () => {
+      await cal.onEventDrop({ event: inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" }), start: droppedStart, end: droppedEnd });
+    });
+    expect(mockReschedule).toHaveBeenCalledTimes(2);
+    expect(mockReschedule.mock.calls[0][0].expectedUpdatedAt).toBe("2027-09-14T01:00:00.000Z");
+    expect(mockReschedule.mock.calls[1][0].expectedUpdatedAt).toBe("2027-09-15T01:00:00.000Z");
+    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+  });
+
+  it("drops a popup inquiry onto the target workspace day with its shift time intact", async () => {
+    render(ui([inquiryEvent()]));
+    act(() => cal.onExternalDragStart(inquiryEvent()));
+    expect(cal.dragFromOutsideItem()).toMatchObject({ inquiryId: "inq1" });
+    await act(async () => {
+      await cal.onDropFromOutside({
+        start: new Date("2027-09-18T16:00:00Z"),
+        end: new Date("2027-09-18T16:00:00Z"),
+        allDay: false,
+      });
+    });
+    expect(mockReschedule).toHaveBeenCalledWith(expect.objectContaining({ startDate: "2027-09-19", startTime: "10:00", endTime: "12:00" }), expect.any(AbortSignal));
+    expect(screen.getByText("Cruz@2027-09-19T02:00:00.000Z")).toBeInTheDocument();
   });
 });
 

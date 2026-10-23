@@ -65,6 +65,35 @@ beforeEach(() => {
 });
 
 describe("BookingDraftCard", () => {
+  it("shows the selected crew name in the closed picker", () => {
+    const teams = [
+      { id: "crew_a", name: "North Crew", color: "#123456", isActive: true, isLead: true },
+      { id: "crew_b", name: "South Crew", color: "#654321", isActive: true, isLead: true },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} teams={teams} initialTeamId="crew_b" />);
+    const picker = screen.getByRole("combobox", { name: /team/i });
+    expect(picker).toHaveTextContent("South Crew");
+    expect(picker).not.toHaveTextContent("crew_b");
+  });
+
+  it("updates the closed picker to the crew name after selection", async () => {
+    const teams = [
+      { id: "crew_a", name: "North Crew", color: "#123456", isActive: true, isLead: true },
+      { id: "crew_b", name: "South Crew", color: "#654321", isActive: true, isLead: true },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} teams={teams} />);
+    const picker = screen.getByRole("combobox", { name: /team/i });
+    fireEvent.click(picker);
+    const option = await screen.findByRole("option", { name: "South Crew" });
+    fireEvent.pointerMove(option);
+    fireEvent.mouseOver(option);
+    fireEvent.mouseMove(option);
+    fireEvent.pointerDown(option);
+    fireEvent.click(option);
+    expect(picker).toHaveTextContent("South Crew");
+    expect(picker).not.toHaveTextContent("crew_b");
+  });
+
   it("renders editable fields and approves with current edits", async () => {
     renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={1000} />);
 

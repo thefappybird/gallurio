@@ -231,12 +231,14 @@ const OverflowPopoverRow = memo(function OverflowPopoverRow({
   onSelectEvent,
   onExternalDragStart,
   onExternalDragEnd,
+  canDrag = true,
   onClose,
 }: {
   event: CalendarEvent;
   onSelectEvent?: (ev: CalendarEvent) => void;
   onExternalDragStart?: (ev: CalendarEvent) => void;
   onExternalDragEnd?: () => void;
+  canDrag?: boolean;
   onClose: () => void;
 }) {
   const ctx = useContext(CalendarToolbarCtx);
@@ -249,7 +251,7 @@ const OverflowPopoverRow = memo(function OverflowPopoverRow({
     <button
       key={e.id}
       type="button"
-      draggable
+      draggable={canDrag}
       onDragStart={(evt) => {
         const ghost = buildDragGhost({
           title: e.title,
@@ -276,7 +278,7 @@ const OverflowPopoverRow = memo(function OverflowPopoverRow({
         onClose();
         onSelectEvent?.(e);
       }}
-      className="flex flex-col items-start w-full px-2 py-1.5 text-start hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+      className={`flex flex-col items-start w-full px-2 py-1.5 text-start hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors ${canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
       style={{ borderInlineStart: `3px solid ${bg}` }}
     >
       <span className="truncate text-xs font-semibold text-foreground w-full">
@@ -355,10 +357,12 @@ export const MonthBookingEvent = memo(function MonthBookingEvent({
   onSelectEvent,
   onExternalDragStart,
   onExternalDragEnd,
+  canDrag,
 }: EventProps<AnyCalendarEvent> & {
   onSelectEvent?: (ev: CalendarEvent) => void;
   onExternalDragStart?: (ev: CalendarEvent) => void;
   onExternalDragEnd?: () => void;
+  canDrag?: (event: AnyCalendarEvent) => boolean;
 }) {
   const ev = event;
   const [open, setOpen] = useState(false);
@@ -394,6 +398,7 @@ export const MonthBookingEvent = memo(function MonthBookingEvent({
                 onSelectEvent={onSelectEvent}
                 onExternalDragStart={onExternalDragStart}
                 onExternalDragEnd={onExternalDragEnd}
+                canDrag={canDrag?.(e) ?? true}
                 onClose={closePopover}
               />
             ))}
@@ -1007,8 +1012,7 @@ export function BookingCalendar({
     }
   }, [containerRef]);
 
-  // Switching to week/day always snaps back to the current week/day so the
-  // user doesn't end up stranded in a past or future period after browsing.
+  // Keep the date being viewed when changing the calendar granularity.
   const dateRef = useRef(date);
   useEffect(() => {
     dateRef.current = date;
@@ -1016,14 +1020,9 @@ export function BookingCalendar({
   const handleViewChange = useCallback(
     (newView: View) => {
       setView(newView);
-      let nextDate = dateRef.current;
-      if (newView === Views.WEEK || newView === Views.DAY) {
-        nextDate = getNow();
-        setDate(nextDate);
-      }
-      onVisibleChange?.({ date: nextDate, view: newView });
+      onVisibleChange?.({ date: dateRef.current, view: newView });
     },
-    [setView, setDate, onVisibleChange, getNow]
+    [setView, onVisibleChange]
   );
   const handleNavigate = useCallback(
     (d: Date) => {
@@ -1111,13 +1110,14 @@ export function BookingCalendar({
             onSelectEvent={onSelectEvent}
             onExternalDragStart={onExternalDragStart}
             onExternalDragEnd={onExternalDragEnd}
+            canDrag={draggableAccessor}
           />
         ),
       },
       week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
       day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
     }),
-    [onSelectEvent, onExternalDragStart, onExternalDragEnd]
+    [onSelectEvent, onExternalDragStart, onExternalDragEnd, draggableAccessor]
   );
 
   const gridStartAccessor = useCallback(
@@ -1151,11 +1151,12 @@ export function BookingCalendar({
       const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
       onEventDrop({
         ...args,
+        isAllDay: effectiveView === Views.MONTH,
         start: fromCalendarGridDate(new Date(args.start), tz),
         end: fromCalendarGridDate(new Date(args.end), tz),
       });
     },
-    [onEventDrop, workspaceTimezone]
+    [onEventDrop, workspaceTimezone, effectiveView]
   );
   const handleGridEventResize = useCallback(
     (args: EventInteractionArgs<AnyCalendarEvent>) => {
@@ -1164,11 +1165,12 @@ export function BookingCalendar({
       const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
       onEventResize({
         ...args,
+        isAllDay: effectiveView === Views.MONTH,
         start: fromCalendarGridDate(new Date(args.start), tz),
         end: fromCalendarGridDate(new Date(args.end), tz),
       });
     },
-    [onEventResize, workspaceTimezone]
+    [onEventResize, workspaceTimezone, effectiveView]
   );
   // The externally-dragged event (from the overflow popover) isn't available
   // here — all candles in one workspace share the same workspace timezone, so

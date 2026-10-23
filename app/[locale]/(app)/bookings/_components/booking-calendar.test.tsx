@@ -664,6 +664,19 @@ describe("OverflowEvent discriminated union: narrowing correctness", () => {
       )
     ).not.toThrow();
   });
+
+  it("does not offer a popup drag for a candle the calendar marks read-only", async () => {
+    const ev = makeEvent({ id: "readonly_s0" });
+    const overflow = makeOverflowEvent([ev]);
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent event={overflow} canDrag={() => false} {...({} as MonthProps)} />
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show 1 more event" }));
+    const row = (await screen.findByText(ev.title)).closest("button");
+    expect(row).toHaveAttribute("draggable", "false");
+  });
 });
 
 describe("BookingCalendar grid positioning (timezone-correct startAccessor/endAccessor)", () => {
@@ -813,7 +826,7 @@ describe("BookingCalendar workspace-tz today", () => {
     }
   });
 
-  it("week/day view snap targets the workspace date", () => {
+  it("week view keeps the date selected in the viewed month", () => {
     capturedDnDProps = null;
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-30T20:00:00Z"));
@@ -825,6 +838,7 @@ describe("BookingCalendar workspace-tz today", () => {
             events={[]}
             messages={calendarMessages}
             workspaceTimezone="Asia/Manila"
+            defaultDate={new Date(2026, 7, 18, 12)}
             onVisibleChange={onVisibleChange}
           />
         </NextIntlClientProvider>
@@ -832,7 +846,8 @@ describe("BookingCalendar workspace-tz today", () => {
       onVisibleChange.mockClear();
       (capturedDnDProps!.onView as (v: string) => void)("week");
       const { date } = onVisibleChange.mock.calls[0][0] as { date: Date };
-      expect([date.getMonth(), date.getDate()]).toEqual([9, 1]);
+      expect([date.getMonth(), date.getDate()]).toEqual([7, 18]);
+      expect((capturedDnDProps!.date as Date).getMonth()).toBe(7);
     } finally {
       vi.useRealTimers();
     }

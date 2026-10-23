@@ -59,6 +59,13 @@ async function seedBooking(
 }
 
 describe("loadInquiriesCalendarData", () => {
+  it("includes the inquiry version on calendar candles", async () => {
+    const inquiry = await seedInquiry("versioned", "2026-09-20");
+    const events = await loadInquiriesCalendarData({ workspaceId, tz: TZ, date: DATE });
+    expect(events.find((event) => event.inquiryId === String(inquiry._id))?.updatedAt)
+      .toBe(inquiry.updatedAt.toISOString());
+  });
+
   it("issues 1 inquiry + 1 booking query; returns only in-window, own-workspace, open-inquiry + active-booking candles", async () => {
     await seedInquiry("in-window", "2026-09-20");
     await seedInquiry("far", "2027-03-01");

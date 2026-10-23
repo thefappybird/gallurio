@@ -1008,6 +1008,7 @@ const rescheduleSessionSchema = z
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid_date"),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
     endTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
+    expectedUpdatedAt: z.string().datetime().optional(),
   })
   .refine(
     (v) => {
@@ -1026,8 +1027,9 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
  * Idempotent: applying the same payload twice leaves state unchanged.
  */
 export async function rescheduleInquirySessionAction(
-  input: RescheduleSessionInput
-): Promise<{ ok: true; draftBookingId: string | null } | { error: string }> {
+  input: RescheduleSessionInput,
+  signal?: AbortSignal,
+): Promise<{ ok: true; draftBookingId: string | null } | { error: string; updatedAt?: string }> {
   const ctx = await requireOrg();
 
   const parsed = rescheduleSessionSchema.safeParse(input);
@@ -1037,7 +1039,7 @@ export async function rescheduleInquirySessionAction(
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
-  const { inquiryId, sessionIndex, startDate, startTime, endTime } = parsed.data;
+  const { inquiryId, sessionIndex, startDate, startTime, endTime, expectedUpdatedAt } = parsed.data;
 
   // Tenant isolation: workspaceId always from session, never from client input.
   const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId }).lean();
@@ -1067,6 +1069,7 @@ export async function rescheduleInquirySessionAction(
     return { error: "conflict_check_failed" };
   }
   if (conflicts) return { error: "conflict" };
+  if (signal?.aborted) return { error: "aborted" };
 
   // Build updated sessions list for draft-booking sync (replace only the target index).
   const updatedSessions = inquiry.sessions.map(
@@ -1081,8 +1084,9 @@ export async function rescheduleInquirySessionAction(
   const mongoSession = await mongoose.startSession();
   try {
     await mongoSession.withTransaction(async () => {
-      await Inquiry.updateOne(
-        { _id: inquiryId, workspaceId },
+      if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
+      const write = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId, ...(expectedUpdatedAt ? { updatedAt: new Date(expectedUpdatedAt) } : {}) },
         {
           $set: {
             [`sessions.${sessionIndex}.startDate`]: startDate,
@@ -1094,16 +1098,24 @@ export async function rescheduleInquirySessionAction(
         },
         { session: mongoSession }
       );
+      if (expectedUpdatedAt && write.matchedCount === 0) throw new Error("stale_reschedule");
 
       if (inquiry.draftBookingId) {
+        if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
         await Booking.updateOne(
           { _id: inquiry.draftBookingId, workspaceId },
           { $set: { sessions: utcSessions, firstSessionStart, lastSessionEnd } },
           { session: mongoSession }
         );
       }
+      if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
     });
   } catch (err) {
+    if (signal?.aborted) return { error: "aborted" };
+    if (err instanceof Error && err.message === "stale_reschedule") {
+      const current = await Inquiry.findOne({ _id: inquiryId, workspaceId }).select({ updatedAt: 1 }).lean();
+      return { error: "stale", updatedAt: current?.updatedAt?.toISOString() };
+    }
     console.error("[inquiry] reschedule transaction failed:", err);
     return { error: "reschedule_failed" };
   } finally {

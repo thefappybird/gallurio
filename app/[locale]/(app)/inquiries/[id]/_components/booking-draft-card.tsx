@@ -398,7 +398,9 @@ export function BookingDraftCard({
             <Label htmlFor="draft-team">{t("team")}</Label>
             <Select<string> value={teamId ?? ""} disabled={fieldsLocked} onValueChange={(v) => setTeamId(v || null)}>
               <SelectTrigger id="draft-team">
-                <SelectValue placeholder={tTeam("allTeams")} />
+                <SelectValue placeholder={tTeam("allTeams")}>
+                  {teams.find((team) => team.id === teamId)?.name ?? tTeam("allTeams")}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {teams.map((team) => (
