@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppWorkspaceId } from "@/components/app/app-query-provider";
 import { useInvalidateFor } from "@/hooks/use-data-events";
 import { queryKeys } from "@/lib/query/keys";
@@ -93,6 +93,7 @@ export function BookingDraftCard({
   const tTeam = useTranslations("app.bookings.teamPicker");
   const ws = useAppWorkspaceId();
   const invalidateFor = useInvalidateFor();
+  const queryClient = useQueryClient();
   const timeMode = useTimeFormat();
   const errMsg = useActionError();
 
@@ -316,7 +317,9 @@ export function BookingDraftCard({
       setApproved(true);
       onConverted?.();
       toast.success(ta("approvedToast"));
-      // Also drops the cached inquiry detail so reopening shows the booked state.
+      // Drops (not refetches) the cached detail + client matches: the modal is closing, so a
+      // refetch is a wasted server-action round trip; reopening fetches the booked state.
+      queryClient.removeQueries({ queryKey: queryKeys(ws).inquiry(inquiryId) });
       const convertedBookingId = res.bookingId ?? bookingId ?? undefined;
       // approveInquiryBookingAction revalidates /inquiries, /bookings and /dashboard.
       invalidateFor(
@@ -325,7 +328,7 @@ export function BookingDraftCard({
       );
       if (convertedBookingId) {
         invalidateFor(
-          { type: "booking.updated", bookingId: convertedBookingId, clientId, inquiryId },
+          { type: "booking.updated", bookingId: convertedBookingId, clientId: res.clientId ?? clientId, inquiryId },
           { refresh: false }
         );
       }

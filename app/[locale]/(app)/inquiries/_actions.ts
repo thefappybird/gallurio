@@ -514,7 +514,7 @@ export async function approveInquiryBookingAction(
     revalidateInquiry(inquiryId);
     revalidatePath("/bookings");
     revalidatePath("/dashboard");
-    return { ok: true, bookingId: booking._id.toString() };
+    return { ok: true, bookingId: booking._id.toString(), clientId: booking.clientId ? String(booking.clientId) : undefined };
   }
 
   // --- Post-commit side-effects (best-effort, never throw, never roll back) ---
@@ -601,7 +601,7 @@ export async function approveInquiryBookingAction(
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
   revalidatePath("/dashboard");
-  return { ok: true, bookingId: booking._id.toString() };
+  return { ok: true, bookingId: booking._id.toString(), clientId: booking.clientId ? String(booking.clientId) : undefined };
 }
 
 /** Persist owner-only edits to the draft booking without approving it yet. */
