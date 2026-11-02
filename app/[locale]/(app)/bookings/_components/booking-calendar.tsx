@@ -390,7 +390,14 @@ export const MonthBookingEvent = memo(function MonthBookingEvent({
           </span>
         </PopoverTrigger>
         <PopoverContent side="bottom" align="start" className="w-56 p-2">
-          <div className="flex flex-col gap-1">
+          {/* React bubbles portalled events to this pill's rbc EventWrapper, whose
+              mousedown/touchstart would make the pill the dragged event (preview
+              shows "+N more", drop leaves a stray pill). Stop them here. */}
+          <div
+            className="flex flex-col gap-1"
+            onMouseDown={(evt) => evt.stopPropagation()}
+            onTouchStart={(evt) => evt.stopPropagation()}
+          >
             {ev.overflowEvents.map((e) => (
               <OverflowPopoverRow
                 key={e.id}

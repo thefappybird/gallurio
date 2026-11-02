@@ -1015,3 +1015,29 @@ describe("BookingCalendar fallbackClassName", () => {
     );
   });
 });
+
+describe("MonthBookingEvent overflow popover", () => {
+  it("keeps mousedown inside the popover from reaching the calendar event wrapper", async () => {
+    // rbc's EventWrapper starts a 'move' action on mousedown. React bubbles
+    // portalled popover events to the pill's wrapper, which would make the
+    // dragged event the "+N more" pill instead of the row being dragged.
+    const wrapperMouseDown = vi.fn();
+    const hidden = makeEvent({ id: "hidden_1", title: "Hidden candle" });
+    const props = {
+      event: makeOverflowEvent([hidden]),
+      continuesPrior: false,
+      continuesAfter: false,
+    } as MonthProps;
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <div onMouseDown={wrapperMouseDown}>
+          <MonthBookingEvent {...props} />
+        </div>
+      </NextIntlClientProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Show 1 more event/ }));
+    const row = await screen.findByText("Hidden candle");
+    fireEvent.mouseDown(row);
+    expect(wrapperMouseDown).not.toHaveBeenCalled();
+  });
+});
