@@ -63,7 +63,7 @@ describe("buildArticleLd", () => {
   it("falls back to publishedAt for dateModified when updatedAt is absent", () => {
     const result = buildArticleLd({
       title: "Announcing Gallurio",
-      description: "A CRM for event businesses.",
+      description: "A CRM for creative businesses.",
       url: "http://localhost:3000/blog/announcing",
       publishedAt: "2026-01-01T00:00:00.000Z",
     });
@@ -72,7 +72,7 @@ describe("buildArticleLd", () => {
       "@context": "https://schema.org",
       "@type": "Article",
       headline: "Announcing Gallurio",
-      description: "A CRM for event businesses.",
+      description: "A CRM for creative businesses.",
       url: "http://localhost:3000/blog/announcing",
       datePublished: "2026-01-01T00:00:00.000Z",
       dateModified: "2026-01-01T00:00:00.000Z",
@@ -156,7 +156,7 @@ describe("buildCollectionPageLd", () => {
     const result = buildCollectionPageLd({
       url: "http://localhost:3000/compare",
       name: "Comparisons",
-      description: "Gallurio vs the tools event businesses actually use.",
+      description: "Gallurio vs the tools creative businesses actually use.",
       items: [
         { name: "HoneyBook Alternatives 2026", url: "http://localhost:3000/compare/gallurio-vs-honeybook" },
         { name: "Dubsado Alternatives 2026", url: "http://localhost:3000/compare/gallurio-vs-dubsado" },
@@ -167,7 +167,7 @@ describe("buildCollectionPageLd", () => {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: "Comparisons",
-      description: "Gallurio vs the tools event businesses actually use.",
+      description: "Gallurio vs the tools creative businesses actually use.",
       url: "http://localhost:3000/compare",
       mainEntity: {
         "@type": "ItemList",

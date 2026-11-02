@@ -7,8 +7,8 @@ import { EditorialIndex } from "../_components/editorial-index";
 export function generateMetadata(): Metadata {
   return editorialMetadata({
     path: "/blog",
-    title: "Event Business Guides: Pricing, Bookings and Clients (2026)",
-    description: "Practical guides for event creatives on pricing photography packages, taking deposits, client onboarding, portfolio SEO, and booking operations.",
+    title: "Creative Business Guides: Pricing, Bookings and Clients (2026)",
+    description: "Practical guides for creatives on pricing photography packages, taking deposits, client onboarding, portfolio SEO, and booking operations.",
   });
 }
 

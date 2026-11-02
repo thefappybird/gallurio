@@ -11,13 +11,13 @@ An editable filming script for a 9–12 minute Gallurio walkthrough. This video 
 
 ## Story used throughout
 
-`[Studio name]` receives an inquiry from `[Client name]` for a `[event type]` on `[event date]`. The goal is to show how Gallurio helps an event business move from that first request to a scheduled, paid job without losing the client context.
+`[Studio name]` receives an inquiry from `[Client name]` for a `[event type]` on `[event date]`. The goal is to show how Gallurio helps a creative business move from that first request to a scheduled, paid job without losing the client context.
 
 ## Run of show
 
 | Time | Show on screen | Say (adapt freely) |
 | --- | --- | --- |
-| 0:00–0:30 | Dashboard, then a quick glimpse of the sidebar | “This is Gallurio: a workspace for event businesses to manage incoming leads, bookings, clients, teams, and the work behind them. I’ll follow one inquiry through the system, then show how the rest of the workspace stays connected.” |
+| 0:00–0:30 | Dashboard, then a quick glimpse of the sidebar | “This is Gallurio: a workspace for creative businesses to manage incoming leads, bookings, clients, teams, and the work behind them. I’ll follow one inquiry through the system, then show how the rest of the workspace stays connected.” |
 | 0:30–1:35 | Dashboard: range control, booking/portfolio tabs, overview cards, charts, calendar, upcoming work, activity | “The dashboard gives the owner a current view of the business. I can look at performance for a date range, see what is happening today and this week, track booking and collection signals, and use quick actions when I need to move straight into the work.” |
 | 1:35–3:00 | Inquiries: list/calendar view, open the chosen inquiry, show client/event details and the booking draft; accept or convert only if your fixture supports it | “This is the inquiry inbox. A new request is more than a message: it carries the client details, event requirements, requested dates, and a linked booking draft. That keeps the original context close while I decide how to respond. From here I can review the request, update its status, and turn a qualified lead into work the team can schedule.” |
 | 3:00–4:45 | Bookings: table filters, calendar, open the linked booking, sessions/location, team assignment, pricing/payment area, invoice or receipt preview | “Bookings are the operating record. I can switch between a filterable list and the calendar, then open a job to manage its sessions, location, team, price, deposit, and payment status. The record brings the practical details together, while invoice and receipt documents give the business a professional way to follow up.” |
@@ -51,7 +51,7 @@ Use only the inserts that are prepared in your demo workspace; do not manufactur
 
 **Description:**
 
-> Take a guided tour of Gallurio’s event-business workspace. See how an inquiry becomes a client and booking, how teams and schedules stay organized, and how the dashboard helps owners see the work ahead. For the public-site builder, watch the separate Portfolio Maker demo: `[INSERT PORTFOLIO VIDEO LINK]`.
+> Take a guided tour of Gallurio’s creative-business workspace. See how an inquiry becomes a client and booking, how teams and schedules stay organized, and how the dashboard helps owners see the work ahead. For the public-site builder, watch the separate Portfolio Maker demo: `[INSERT PORTFOLIO VIDEO LINK]`.
 
 **Pinned comment / CTA:**
 

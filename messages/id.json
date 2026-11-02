@@ -25,13 +25,13 @@
       "writing": "Tulisan"
     },
     "metadata": {
-      "title": "Pembuat Portofolio & CRM Pemesanan untuk Acara | Gallurio",
-      "description": "Buat situs portofolio tanpa kode, dapatkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace untuk bisnis acara Anda."
+      "title": "Pembuat Portofolio & CRM Pemesanan untuk Kreator | Gallurio",
+      "description": "Buat situs portofolio tanpa kode, dapatkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace untuk bisnis kreatif Anda."
     },
     "hero": {
       "eyebrow": "Satu workspace, dua tugas",
       "headlineShow": "Gallurio: perangkat lunak portfolio dan booking",
-      "headlineRun": "untuk kreator acara.",
+      "headlineRun": "untuk kreator.",
       "body": "Gallurio terbagi rapi jadi dua: portfolio yang dirancang untuk mendatangkan booking, dan workspace yang menjaga semuanya tetap berjalan setelah permintaan masuk.",
       "ctaStart": "Mulai bulan gratis saya",
       "ctaSecondary": "Jadwalkan demo",
@@ -584,11 +584,11 @@
       "navigationLabel": "Tentang",
       "metadata": {
         "title": "Tentang Gallurio",
-        "description": "Gallurio adalah perangkat lunak portofolio dan pemesanan untuk kreator acara dan bisnis kreatif."
+        "description": "Gallurio adalah perangkat lunak portofolio dan pemesanan untuk kreator dan bisnis kreatif."
       },
       "eyebrow": "Tentang Gallurio",
-      "headline": "Gallurio: perangkat lunak portofolio dan pemesanan untuk kreator acara.",
-      "intro": "Gallurio adalah platform perangkat lunak untuk kreator acara independen dan bisnis kreatif. Gallurio menyatukan portofolio publik, pertanyaan pemesanan, klien, pemesanan, galeri, dan kolaborasi ruang kerja di satu tempat.",
+      "headline": "Gallurio: perangkat lunak portofolio dan pemesanan untuk kreator.",
+      "intro": "Gallurio adalah platform perangkat lunak untuk kreator independen dan bisnis kreatif. Gallurio menyatukan portofolio publik, pertanyaan pemesanan, klien, pemesanan, galeri, dan kolaborasi ruang kerja di satu tempat.",
       "purpose": {
         "title": "Apa yang dilakukan Gallurio",
         "body": "Gallurio membantu bisnis kreatif menerbitkan portofolio publik yang profesional, menerima pertanyaan pemesanan, serta mengelola klien, pemesanan, dan pekerjaan setelah setiap pertanyaan."
@@ -632,7 +632,7 @@
     },
     "compare": {
       "metadata": {
-        "title": "Perbandingan Gallurio dengan alat yang digunakan bisnis acara",
+        "title": "Perbandingan Gallurio dengan alat yang digunakan bisnis kreatif",
         "description": "Bagaimana Gallurio dibandingkan dengan HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, dan Studio Ninja — harga, fitur, dan cocok untuk siapa masing-masing alat."
       },
       "breadcrumb": {
@@ -642,7 +642,7 @@
       "index": {
         "eyebrow": "Perbandingan",
         "headline": "Gallurio dibandingkan alat yang Anda gunakan sekarang",
-        "intro1": "Sebagian besar bisnis acara beralih ke Gallurio setelah mereka melampaui spreadsheet, CRM umum yang dibuat untuk industri lain, atau alat galeri yang sejak awal tidak menangani pemesanan. Perbandingan ini memaparkan trade-off yang jujur — harga, apa yang dicakup masing-masing alat, dan apa yang tidak — terhadap alat spesifik yang biasa ditinggalkan orang.",
+        "intro1": "Sebagian besar bisnis kreatif beralih ke Gallurio setelah mereka melampaui spreadsheet, CRM umum yang dibuat untuk industri lain, atau alat galeri yang sejak awal tidak menangani pemesanan. Perbandingan ini memaparkan trade-off yang jujur — harga, apa yang dicakup masing-masing alat, dan apa yang tidak — terhadap alat spesifik yang biasa ditinggalkan orang.",
         "intro2": "Tidak satu pun dari perbandingan ini berpura-pura Gallurio menang di semua hal. Jika alat lain melakukan sesuatu yang tidak dilakukan Gallurio, itu dinyatakan dengan jelas, agar Anda bisa memilih berdasarkan kebutuhan bisnis Anda yang sebenarnya."
       },
       "categories": {
@@ -657,7 +657,7 @@
     "blog": {
       "metadata": {
         "title": "Tulisan — Gallurio",
-        "description": "Catatan praktis tentang harga, pemesanan, dan menjalankan bisnis acara — dari tim di balik Gallurio."
+        "description": "Catatan praktis tentang harga, pemesanan, dan menjalankan bisnis kreatif — dari tim di balik Gallurio."
       },
       "breadcrumb": {
         "home": "Beranda",
@@ -665,8 +665,8 @@
       },
       "index": {
         "eyebrow": "Tulisan",
-        "headline": "Catatan seputar menjalankan bisnis acara",
-        "intro": "Tulisan singkat dan praktis tentang harga, intake klien, dan sisi operasional fotografi, perencanaan, dan pekerjaan acara lainnya — hal-hal yang tidak muat dalam daftar fitur."
+        "headline": "Catatan seputar menjalankan bisnis kreatif",
+        "intro": "Tulisan singkat dan praktis tentang harga, intake klien, dan sisi operasional fotografi, perencanaan, dan pekerjaan kreatif lainnya — hal-hal yang tidak muat dalam daftar fitur."
       },
       "readMore": "Baca selengkapnya"
     }
@@ -2485,6 +2485,7 @@
         },
         "rescheduleConflict": "Waktu ini bertentangan dengan %booking% yang ada — pemindahan dibatalkan",
         "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
+        "rescheduleStale": "Inquiry ini diubah oleh orang lain. Pemindahan Anda tidak tersimpan — tinjau versi terbaru lalu coba lagi.",
         "updating": "Menjadwalkan ulang…",
         "updated": "Sesi dijadwalkan ulang",
         "emptyPeriod": "Tidak ada %inquiry% pada periode ini"
@@ -3835,7 +3836,7 @@
     "pro": {
       "name": "Pro",
       "description": "Kelola pemesanan, klien, tim, faktur, dan halaman publik Anda.",
-      "tagline": "Ruang kerja lengkap untuk bisnis acara yang berkembang.",
+      "tagline": "Ruang kerja lengkap untuk bisnis kreatif yang berkembang.",
       "features": {
         "unlimitedBookings": "Pemesanan tanpa batas",
         "publicPageControls": "Kontrol penuh halaman publik",

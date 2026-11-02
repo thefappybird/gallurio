@@ -8,11 +8,11 @@ web
 
 ## Users
 
-Owners and small teams at event businesses (photographers, planners, coordinators) — not enterprise-software people. They run their whole client-facing operation through the app: tracking bookings, managing client records, scheduling on the calendar, curating a gallery, and publishing a public portfolio that captures inquiries. Usage is fragmented across a real workday — triaging on a phone between shoots, then working from a desktop at the studio — so mobile and desktop both carry real workflows, not a stripped-down mobile afterthought.
+Owners and small teams at creative businesses (photographers, planners, coordinators) — not enterprise-software people. They run their whole client-facing operation through the app: tracking bookings, managing client records, scheduling on the calendar, curating a gallery, and publishing a public portfolio that captures inquiries. Usage is fragmented across a real workday — triaging on a phone between shoots, then working from a desktop at the studio — so mobile and desktop both carry real workflows, not a stripped-down mobile afterthought.
 
 ## Product Purpose
 
-Gallurio is a multi-tenant CRM SaaS that gives event businesses one polished, reliable tool to run bookings, clients, calendar, gallery, and their public-facing portfolio — replacing a patchwork of spreadsheets, DMs, and generic scheduling tools. Success looks like an owner trusting the tool enough to run their whole client pipeline through it, from first inquiry to booked event.
+Gallurio is a multi-tenant CRM SaaS that gives creative businesses one polished, reliable tool to run bookings, clients, calendar, gallery, and their public-facing portfolio — replacing a patchwork of spreadsheets, DMs, and generic scheduling tools. Success looks like an owner trusting the tool enough to run their whole client pipeline through it, from first inquiry to booked event.
 
 ## Positioning
 
@@ -67,7 +67,7 @@ Polished, premium, refined. The app should feel like a serious, well-made tool w
 
 - Name and voice: "Gallurio", used in full. The marketing voice is plain, concrete, and non-hyped - it states trade-offs openly ("None of these pretend Gallurio wins on every point") and avoids growth-marketing superlatives. Keep that register.
 - Logo assets exist and are binding: `public/brand/gallurio-rect.svg`, `gallurio-sq.svg`, plus white and PNG variants. Do not invent a new mark.
-- Product line: "portfolio and booking software for event creatives." The audience is named concretely - photographers, videographers, wedding and event planners, makeup artists, stylists, caterers, entertainers/DJs, creative studios.
+- Product line: "portfolio and booking software for creatives." The audience is named concretely - photographers, videographers, wedding and event planners, makeup artists, stylists, caterers, entertainers/DJs, creative studios.
 - Transparency is a brand commitment, not decoration: free month with no card, one plan with terms shown before checkout, Lemon Squeezy named as merchant of record, and an explicit "software, not services" statement. These claims appear on the marketing surface and must stay accurate.
 - Design authority: `DESIGN.md` ("The Studio Ledger") owns the visual world. This file does not.
 
@@ -86,7 +86,7 @@ The product itself is the proof. Persuasion comes from showing the real interfac
 
 ## Design Principles
 
-- **Craft signals trust.** Event businesses charge premium prices to their own clients; the tool running their business should look and feel like it, not like a generic dashboard template.
+- **Craft signals trust.** Creative businesses charge premium prices to their own clients; the tool running their business should look and feel like it, not like a generic dashboard template.
 - **Calm efficiency over decoration.** Every screen serves a real workflow (bookings, calendar, clients). Polish comes from restraint and precision, not ornament.
 - **One accent, used deliberately.** Brand teal marks action and status; the rest of the interface stays quiet so the accent still means something.
 - **Consistent across a fragmented day.** Owners move between phone and desktop mid-workflow — parity in density and capability matters, not just a scaled-down mobile view.

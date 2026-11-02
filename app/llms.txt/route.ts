@@ -31,7 +31,7 @@ export async function GET() {
   const body = [
     "# Gallurio",
     "",
-    "> Gallurio is a CRM for event businesses — photographers, planners, caterers,",
+    "> Gallurio is a CRM for creative businesses — photographers, planners, caterers,",
     "> venues and DJs. One workspace holds bookings, clients, a calendar, invoice",
     "> PDFs, and a public portfolio page whose contact form turns an enquiry into a",
     "> client and a booking in a single transaction.",
