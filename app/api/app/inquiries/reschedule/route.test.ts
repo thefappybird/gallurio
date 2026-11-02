@@ -32,6 +32,34 @@ describe("PATCH inquiry reschedule", () => {
     expect(reschedule).toHaveBeenCalledWith(input, expect.any(AbortSignal));
   });
 
+  it.each([
+    ["not_found", 404],
+    ["stale", 409],
+    ["conflict", 409],
+    ["conflict_check_failed", 500],
+    ["reschedule_failed", 500],
+    ["not_reschedulable", 400],
+    ["session_index_out_of_range", 400],
+    ["aborted", 400],
+    ["Invalid date", 400],
+  ])("maps action error %s to HTTP %i", async (error, status) => {
+    reschedule.mockResolvedValue({ error });
+    const response = await PATCH(new Request("http://localhost/api/app/inquiries/reschedule", {
+      method: "PATCH", body: JSON.stringify({ inquiryId: "inquiry_1" }),
+    }));
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual({ error });
+  });
+
+  it("returns 400 invalid_input for malformed JSON without invoking the mutation", async () => {
+    const response = await PATCH(new Request("http://localhost/api/app/inquiries/reschedule", {
+      method: "PATCH", body: "{not json",
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_input" });
+    expect(reschedule).not.toHaveBeenCalled();
+  });
+
   it("returns a conflict response with the current version for a stale drop", async () => {
     reschedule.mockResolvedValue({ error: "stale", updatedAt: "2027-09-15T01:00:00.000Z" });
     const response = await PATCH(new Request("http://localhost/api/app/inquiries/reschedule", {

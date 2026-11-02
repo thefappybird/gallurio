@@ -126,6 +126,20 @@ describe("rescheduleInquirySessionAction", () => {
     expect((await Inquiry.findById(inquiry._id).lean())?.sessions[0]?.startDate).toBe("2035-03-10");
   });
 
+  it("writes on matching expectedUpdatedAt and returns the bumped updatedAt", async () => {
+    const { inquiry } = await seedInquiry(workspaceId);
+    await new Promise((r) => setTimeout(r, 15));
+    const result = await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-15", startTime: "10:00", endTime: "18:00",
+      expectedUpdatedAt: inquiry.updatedAt.toISOString(),
+    });
+    const fresh = await Inquiry.findById(inquiry._id).lean();
+    expect(fresh?.sessions[0]?.startDate).toBe("2035-03-15");
+    expect(result).toMatchObject({ ok: true, updatedAt: fresh?.updatedAt.toISOString() });
+    expect(fresh!.updatedAt.getTime()).toBeGreaterThan(inquiry.updatedAt.getTime());
+  });
+
   it("does not write an aborted reschedule", async () => {
     const { inquiry } = await seedInquiry(workspaceId);
     const controller = new AbortController();
@@ -139,6 +153,24 @@ describe("rescheduleInquirySessionAction", () => {
     expect(emitMock).not.toHaveBeenCalled();
   });
 
+  it("rolls back inquiry and draft booking writes when abort lands mid-transaction", async () => {
+    const { inquiry, booking } = await seedInquiry(workspaceId);
+    // aborted flips true on the last in-transaction check, after both writes.
+    let reads = 0;
+    const signal = { get aborted() { return ++reads >= 4; } } as unknown as AbortSignal;
+    const result = await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id), sessionIndex: 0,
+      startDate: "2035-03-15", startTime: "10:00", endTime: "18:00",
+    }, signal);
+    expect(result).toEqual({ error: "aborted" });
+    expect(reads).toBeGreaterThanOrEqual(4);
+    const fresh = await Inquiry.findById(inquiry._id).lean();
+    expect(fresh?.sessions[0]?.startDate).toBe("2035-03-10");
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.firstSessionStart?.toISOString()).toBe("2035-03-10T01:00:00.000Z");
+    expect(emitMock).not.toHaveBeenCalled();
+  });
+
   // (a) Happy path
   it("updates the session and returns { ok: true, draftBookingId }", async () => {
     const { inquiry, booking } = await seedInquiry(workspaceId);
@@ -149,9 +181,13 @@ describe("rescheduleInquirySessionAction", () => {
       startTime: "10:00",
       endTime: "18:00",
     });
-    expect(res).toEqual({ ok: true, draftBookingId: String(booking._id) });
-
     const fresh = await Inquiry.findById(inquiry._id).lean();
+    expect(res).toEqual({
+      ok: true,
+      draftBookingId: String(booking._id),
+      updatedAt: fresh?.updatedAt.toISOString(),
+    });
+
     expect(fresh?.sessions?.[0]?.startDate).toBe("2035-03-15");
     expect(fresh?.sessions?.[0]?.startTime).toBe("10:00");
     expect(fresh?.sessions?.[0]?.endTime).toBe("18:00");

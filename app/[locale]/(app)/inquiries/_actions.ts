@@ -1024,12 +1024,22 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
 /**
  * Reschedule a single session on an "inquiry" status inquiry.
  * Blocked if the new slot conflicts with an existing real booking.
- * Idempotent: applying the same payload twice leaves state unchanged.
+ * Idempotent: applying the same payload twice leaves session state unchanged
+ * (updatedAt still bumps on each write).
+ * Optional `expectedUpdatedAt` is an optimistic-concurrency guard: a mismatch
+ * returns { error: "stale", updatedAt: <current> } and writes nothing.
+ * Success returns the post-write `updatedAt` (ISO) so callers can chain the
+ * next reschedule on the fresh version. No server-side retry.
+ * Error codes: not_found, not_reschedulable, session_index_out_of_range,
+ * conflict, conflict_check_failed, reschedule_failed, stale, aborted, or a
+ * validation message.
  */
 export async function rescheduleInquirySessionAction(
   input: RescheduleSessionInput,
   signal?: AbortSignal,
-): Promise<{ ok: true; draftBookingId: string | null } | { error: string; updatedAt?: string }> {
+): Promise<
+  { ok: true; draftBookingId: string | null; updatedAt?: string } | { error: string; updatedAt?: string }
+> {
   const ctx = await requireOrg();
 
   const parsed = rescheduleSessionSchema.safeParse(input);
@@ -1082,6 +1092,7 @@ export async function rescheduleInquirySessionAction(
 
   // Idempotent positional $set inside a transaction; also syncs the draft booking.
   const mongoSession = await mongoose.startSession();
+  let newUpdatedAt: string | undefined;
   try {
     await mongoSession.withTransaction(async () => {
       if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
@@ -1099,6 +1110,12 @@ export async function rescheduleInquirySessionAction(
         { session: mongoSession }
       );
       if (expectedUpdatedAt && write.matchedCount === 0) throw new Error("stale_reschedule");
+      // Read the bumped version in the same transaction so the client can chain the next write.
+      const written = await Inquiry.findOne({ _id: inquiryId, workspaceId })
+        .select({ updatedAt: 1 })
+        .session(mongoSession)
+        .lean();
+      newUpdatedAt = written?.updatedAt?.toISOString();
 
       if (inquiry.draftBookingId) {
         if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
@@ -1127,5 +1144,6 @@ export async function rescheduleInquirySessionAction(
   return {
     ok: true,
     draftBookingId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
+    updatedAt: newUpdatedAt,
   };
 }
