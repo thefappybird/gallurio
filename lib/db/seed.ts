@@ -871,7 +871,17 @@ async function createBookingsAndTransactions(
     });
   }).flat();
 
-  const allSpecs = [...featured, ...generated];
+  // Keep the heatmap history dense, but thin the window around today to what a
+  // small studio actually books (a few jobs a week) so the calendar views read
+  // as uncluttered in screenshots.
+  const SPARSE_WINDOW_START = -35;
+  const SPARSE_WINDOW_END = 60;
+  const generatedForSeed = generated.filter((spec, index) => {
+    const dayDelta = Math.round((spec.sessions[0]!.startAt.getTime() - Date.now()) / 86_400_000);
+    return dayDelta < SPARSE_WINDOW_START || dayDelta > SPARSE_WINDOW_END || index % 7 === 0;
+  });
+
+  const allSpecs = [...featured, ...generatedForSeed];
 
   const bookings = await Booking.insertMany(
     allSpecs.map((spec, index) => {
