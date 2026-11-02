@@ -1,6 +1,6 @@
 # Gallurio
 
-Multi-tenant CRM SaaS for event businesses. Each workspace has bookings, clients, calendar, gallery, public pages, and inquiry forms.
+Multi-tenant CRM SaaS for creative businesses. Each workspace has bookings, clients, calendar, gallery, public pages, and inquiry forms.
 
 ## Stack
 Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · next-intl · pnpm · RTK (token-efficient CLI). Lemon Squeezy is the current implemented billing integration; Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application are the live-payment candidates.

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { getTranslations } from "next-intl/server";
 
-export const alt = "Gallurio — Your event business, beautifully managed.";
+export const alt = "Gallurio — Your creative business, beautifully managed.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -30,7 +30,7 @@ export default async function OpenGraphImage({ params }: Props) {
   const useLocalTagline = LATIN_TAGLINE_LOCALES.has(locale);
   const tagline = useLocalTagline
     ? `${t("hero.headlineShow")} ${t("hero.headlineRun")}`
-    : "Your event business, beautifully managed.";
+    : "Your creative business, beautifully managed.";
   const logo = await readFile(join(process.cwd(), "public", "brand", "gallurio-rect-white.png"));
   const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
 

@@ -1,6 +1,6 @@
 # Gallurio — Release-stage project instructions
 
-Gallurio is a multi-tenant CRM SaaS for event businesses. A workspace owns its
+Gallurio is a multi-tenant CRM SaaS for creative businesses. A workspace owns its
 bookings, clients, teams, gallery, public portfolio, inquiry form, and billing
 state. We are preparing the first production release: prefer small, verified,
 release-safe changes over speculative refactors.

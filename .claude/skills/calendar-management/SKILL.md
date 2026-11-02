@@ -103,9 +103,12 @@ consumer runs it in an `eventsWithConflicts` useMemo over its visible events and
 3. **Reschedule action.** Bookings: `patchBookingSessions` → ONE `PATCH /api/bookings/:id` with
    `rejectOnConflict: true` plus `expectedUpdatedAt` (server checks overlaps and answers 409
    `conflict` with no write, or 409 `stale` + current booking if it changed underneath; there is
-   no client pre-flight). Inquiries: `rescheduleInquirySessionAction` (inquiries/_actions.ts)
-   — does a **server-side** conflict check and atomically syncs the Inquiry + its draft Booking
-   in a transaction; it also sets `Inquiry.eventDate` (earliest session start in the workspace tz).
+   no client pre-flight). Inquiries: `PATCH /api/app/inquiries/reschedule`
+   (body `{inquiryId, sessionIndex, startDate, startTime, endTime, expectedUpdatedAt?}`) — does a
+   **server-side** conflict check and atomically syncs the Inquiry + its draft Booking in a
+   transaction; it also sets `Inquiry.eventDate` (earliest session start in the workspace tz).
+   200 returns the new `updatedAt`; the client queues drops per inquiry and chains on it.
+   409 `stale` → no retry: rollback + `invalidateFor(inquiry.updated)` + stale toast.
 
 The optimistic state handling around those actions is the part that's easy to get wrong —
 see **optimistic-rendering** (the inquiries calendar had a snap-back bug from clearing the

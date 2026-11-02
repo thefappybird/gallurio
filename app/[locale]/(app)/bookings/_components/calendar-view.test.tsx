@@ -54,6 +54,10 @@ type CalProps = {
   events: CalendarEvent[];
   onVisibleChange: (v: { date: Date; view: string }) => void;
   onEventDrop: (a: { event: CalendarEvent; start: Date; end: Date }) => Promise<void>;
+  onExternalDragStart: (event: CalendarEvent) => void;
+  onExternalDragEnd: () => void;
+  dragFromOutsideItem: () => CalendarEvent | null;
+  onDropFromOutside: (a: { start: Date; end: Date; allDay: boolean }) => Promise<void>;
   pendingIds: Set<string>;
   date: Date;
   toolbarTrailing: unknown;
@@ -188,6 +192,25 @@ const shift = (bookingId: string, title: string) => ({
 const jsonRes = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body });
 
 describe("CalendarView drag-to-reschedule (single PATCH)", () => {
+  it("moves an overflow popup candle to the target workspace date", async () => {
+    mockFetch.mockResolvedValue(jsonRes(500, {}));
+    renderView({ events: [futureEvent()] });
+    act(() => cal.onExternalDragStart(futureEvent()));
+    expect(cal.dragFromOutsideItem()).toMatchObject({ bookingId: "b1" });
+    await act(async () => {
+      await cal.onDropFromOutside({
+        start: new Date("2090-01-11T16:00:00Z"),
+        end: new Date("2090-01-11T16:00:00Z"),
+        allDay: false,
+      });
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.sessions).toEqual([{
+      startAt: "2090-01-12T03:30:00.000Z",
+      endAt: "2090-01-12T05:30:00.000Z",
+    }]);
+  });
+
   it("409 conflict: one PATCH with rejectOnConflict, reverts the move, toasts the first title + count of the rest", async () => {
     mockFetch.mockResolvedValue(
       jsonRes(409, { error: "conflict", conflicts: [shift("o1", "Other"), shift("o1", "Other"), shift("o2", "Third")] })

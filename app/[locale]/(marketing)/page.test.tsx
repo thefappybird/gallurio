@@ -101,7 +101,7 @@ describe("Marketing Home page", () => {
   });
 
   it("uses a category-led English title and useful search description", () => {
-    expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Event Creatives | Gallurio");
+    expect(enMessages.marketing.metadata.title).toBe("Portfolio Builder and Booking CRM for Creatives | Gallurio");
     expect(enMessages.marketing.metadata.description).toContain("no-code portfolio website");
   });
 

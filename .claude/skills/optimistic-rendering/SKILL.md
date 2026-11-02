@@ -52,7 +52,12 @@ refresh via socket). **409/error:** roll back only the dragged booking's candles
 array. Uses `pendingIds` + an `inFlightRef` to dim in-flight
 candles and block concurrent drags. `inquiries-calendar-manager.tsx` does the `Map<id,override>`
 flavor of the same idea (override + merge useMemo + clear-on-events-change) — pick array vs map
-by whether you patch a few items or replace the set.
+by whether you patch a few items or replace the set. Inquiry flow: `fetch` `PATCH
+/api/app/inquiries/reschedule`, requests **queued per inquiryId** (sessions share one
+`updatedAt`; later drop sends `expectedUpdatedAt` = previous response's `updatedAt`, never aborts
+the in-flight one; abort only on unmount). `stale` → NO retry (would overwrite a teammate): drop
+override, `invalidateFor(inquiry.updated)`, `app.inquiries.calendar.rescheduleStale` toast. Every
+other failure also drops the override + invalidates (fail open to server truth).
 
 **B. Patch-map + auto-prune — table field edits via modal.**
 `inquiries/_components/inquiries-page-client.tsx` + `lib/inquiries/optimistic-patch.ts`

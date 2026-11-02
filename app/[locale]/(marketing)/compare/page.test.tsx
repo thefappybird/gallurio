@@ -58,7 +58,7 @@ describe("Compare index page", () => {
     const page = CompareIndexPage();
     render(page);
 
-    expect(screen.getByRole("heading", { name: "CRM and website builder alternatives for event creatives" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CRM and website builder alternatives for creatives" })).toBeInTheDocument();
     expect(screen.getByText(/Direct comparisons of price/)).toBeInTheDocument();
   });
 
