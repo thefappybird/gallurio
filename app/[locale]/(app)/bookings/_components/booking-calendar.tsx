@@ -1040,7 +1040,7 @@ export function BookingCalendar({
     viewRef.current = view;
   });
 
-  // Force Day view (and snap to today) whenever the viewport crosses into
+  // Force Day view whenever the viewport crosses into
   // compact width. Folded into the same matchMedia subscribe-callback shape
   // as the compact-flag sync itself (fired once on mount, then on every
   // breakpoint crossing) rather than a separate effect reacting to derived

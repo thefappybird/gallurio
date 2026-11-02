@@ -95,8 +95,9 @@ function isDraggableEvent(ev: AnyCalendarEvent): boolean {
 
 /**
  * Calendar view for the inquiries page. New inquiry candles are draggable;
- * booking candles are not. On drop, persists via rescheduleInquirySessionAction
- * with optimistic update and revert on conflict/error.
+ * booking candles are not. On drop, persists via PATCH /api/app/inquiries/reschedule
+ * (serialized per inquiry) with optimistic update; any failure drops the override
+ * and invalidates to server truth. A stale write is never retried.
  */
 export function InquiriesCalendarManager({
   events,
@@ -129,9 +130,20 @@ export function InquiriesCalendarManager({
   const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, CalendarEvent>>(
     () => new Map()
   );
-  // The latest request owns each session's optimistic position. Re-dropping
-  // aborts the previous fetch and replaces its controller.
-  const inFlightRef = useRef<Map<string, AbortController>>(new Map());
+  // Pending request count per session; the newest drop owns its optimistic position.
+  // Requests serialize per inquiry (chainRef) and chain on the version the previous
+  // one returned (versionRef). Only unmount aborts.
+  const inFlightRef = useRef<Map<string, number>>(new Map());
+  const dropTokenRef = useRef<Map<string, symbol>>(new Map());
+  const chainRef = useRef<Map<string, Promise<void>>>(new Map());
+  const versionRef = useRef<Map<string, string>>(new Map());
+  const unmountAbortRef = useRef(new AbortController());
+  useEffect(() => {
+    // StrictMode re-mounts after cleanup: replace a controller aborted by the first pass.
+    if (unmountAbortRef.current.signal.aborted) unmountAbortRef.current = new AbortController();
+    const ctrl = unmountAbortRef.current;
+    return () => ctrl.abort();
+  }, []);
   const toastIdsRef = useRef<Map<string, string | number>>(new Map());
   const externalDragRef = useRef<CalendarEvent | null>(null);
 
@@ -265,56 +277,80 @@ export function InquiriesCalendarManager({
           sessionStartAt: candleStart,
           sessionEndAt: candleEnd,
         };
-        if (!originRef.current.has(ev.id) || !inFlightRef.current.has(ev.id)) {
+        const inquiryId = ev.inquiryId;
+        if ((inFlightRef.current.get(sessionKey) ?? 0) === 0) {
           originRef.current.set(ev.id, { start: ev.start.getTime(), end: ev.end.getTime(), at: Date.now() });
         }
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
-        inFlightRef.current.get(sessionKey)?.abort();
+        inFlightRef.current.set(sessionKey, (inFlightRef.current.get(sessionKey) ?? 0) + 1);
         const previousToastId = toastIdsRef.current.get(sessionKey);
         if (previousToastId !== undefined) toast.dismiss(previousToastId);
-        const controller = new AbortController();
-        inFlightRef.current.set(sessionKey, controller);
         const toastId = toast.loading(t("updating"));
         toastIdsRef.current.set(sessionKey, toastId);
-        try {
-          let expectedUpdatedAt = ev.updatedAt;
-          for (let attempt = 0; attempt < 3; attempt++) {
+        // Only the newest drop of a session owns its override + toast.
+        const token = Symbol();
+        dropTokenRef.current.set(sessionKey, token);
+        const isLatest = () => dropTokenRef.current.get(sessionKey) === token;
+        const signal = unmountAbortRef.current.signal;
+
+        const send = async () => {
+          try {
+            // Chain on the version the previous request returned; never older than the event's.
+            const known = versionRef.current.get(inquiryId);
+            const expectedUpdatedAt =
+              known && (!ev.updatedAt || Date.parse(known) > Date.parse(ev.updatedAt)) ? known : ev.updatedAt;
             const response = await fetch("/api/app/inquiries/reschedule", {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ inquiryId: ev.inquiryId, sessionIndex: ev.sessionIndex, startDate, startTime, endTime, expectedUpdatedAt }),
-              signal: controller.signal,
+              body: JSON.stringify({ inquiryId, sessionIndex: ev.sessionIndex, startDate, startTime, endTime, expectedUpdatedAt }),
+              signal,
             });
             const result = await response.json() as { draftBookingId?: string | null; error?: string; updatedAt?: string };
-            if (controller.signal.aborted) return;
-            if (result.error === "stale" && result.updatedAt && attempt < 2) {
-              expectedUpdatedAt = result.updatedAt;
-              continue;
+            if (signal.aborted) {
+              toast.dismiss(toastId);
+              return;
             }
             if (!response.ok || result.error) throw result.error ?? "reschedule_failed";
-            invalidateFor({ type: "inquiry.updated", inquiryId: ev.inquiryId, bookingId: result.draftBookingId ?? null });
-            toast.success(t("updated"), { id: toastId });
-            return;
+            if (result.updatedAt) versionRef.current.set(inquiryId, result.updatedAt);
+            invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: result.draftBookingId ?? null });
+            if (isLatest()) toast.success(t("updated"), { id: toastId });
+            else toast.dismiss(toastId);
+          } catch (err) {
+            if (signal.aborted) {
+              toast.dismiss(toastId);
+              return;
+            }
+            // Fail open to server truth: drop the optimistic position (never restore a
+            // stale drag event) and refresh. A stale write is NOT retried -- that would
+            // overwrite a teammate's edit.
+            if (isLatest()) {
+              setOptimisticOverrides((prev) => {
+                const next = new Map(prev);
+                next.delete(ev.id);
+                return next;
+              });
+            }
+            invalidateFor({ type: "inquiry.updated", inquiryId, bookingId: null });
+            toast.error(
+              err === "stale" ? t("rescheduleStale") : err === "conflict" ? t("rescheduleConflict") : t("rescheduleFailed"),
+              { id: toastId },
+            );
+          } finally {
+            const left = (inFlightRef.current.get(sessionKey) ?? 1) - 1;
+            if (left <= 0) {
+              inFlightRef.current.delete(sessionKey);
+              toastIdsRef.current.delete(sessionKey);
+            } else {
+              inFlightRef.current.set(sessionKey, left);
+            }
           }
-        } catch (err) {
-          if (controller.signal.aborted) {
-            toast.dismiss(toastId);
-            return;
-          }
-          // The server copy is the safe rollback target. It may have changed
-          // while the request was pending, so never restore a stale drag event.
-          setOptimisticOverrides((prev) => {
-            const next = new Map(prev);
-            next.delete(ev.id);
-            return next;
-          });
-          toast.error(err === "conflict" ? t("rescheduleConflict") : t("rescheduleFailed"), { id: toastId });
-        } finally {
-          if (inFlightRef.current.get(sessionKey) === controller) {
-            inFlightRef.current.delete(sessionKey);
-            toastIdsRef.current.delete(sessionKey);
-          }
-        }
+        };
+
+        // Serialize per inquiry (sessions share one updatedAt): never abort a sibling request.
+        const run = (chainRef.current.get(inquiryId) ?? Promise.resolve()).then(send);
+        chainRef.current.set(inquiryId, run);
+        await run;
+        if (chainRef.current.get(inquiryId) === run) chainRef.current.delete(inquiryId);
     },
     [workspaceTz, t, invalidateFor]
   );

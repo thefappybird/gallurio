@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { enMessages } from "@/test-utils/messages";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import { toast } from "sonner";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 
 const mockPush = vi.fn();
@@ -235,67 +236,72 @@ describe("InquiriesCalendarManager reschedule", () => {
     await act(async () => {
       await cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
     });
-    expect(mockInvalidateFor).not.toHaveBeenCalled();
+    expect(mockInvalidateFor).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq1", bookingId: null });
     expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
   });
 
-  it("a second drop aborts the first request and keeps the latest optimistic position", async () => {
+  it("two quick drops of one inquiry send sequentially; the second carries the first's returned updatedAt", async () => {
     let resolveFirst!: (value: unknown) => void;
     mockReschedule
       .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
-      .mockResolvedValueOnce({ ok: true });
-    render(ui([inquiryEvent()]));
+      .mockResolvedValueOnce({ ok: true, updatedAt: "2027-09-16T00:00:00.000Z" });
+    render(ui([inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" })]));
     let first!: Promise<void>;
+    let second!: Promise<void>;
     await act(async () => {
-      first = cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
+      first = cal.onEventDrop({ event: inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" }), start: droppedStart, end: droppedEnd });
     });
     const firstSignal = mockFetch.mock.calls[0][1].signal as AbortSignal;
     const secondStart = new Date("2027-09-18T02:00:00Z");
-    const secondEnd = new Date("2027-09-18T04:00:00Z");
     await act(async () => {
-      await cal.onEventDrop({ event: inquiryEvent({ start: droppedStart, end: droppedEnd }), start: secondStart, end: secondEnd });
+      second = cal.onEventDrop({
+        event: inquiryEvent({ start: droppedStart, end: droppedEnd, updatedAt: "2027-09-14T01:00:00.000Z" }),
+        start: secondStart,
+        end: new Date("2027-09-18T04:00:00Z"),
+      });
     });
-    expect(firstSignal.aborted).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(screen.getByText(`Cruz@${secondStart.toISOString()}`)).toBeInTheDocument();
-    await act(async () => { resolveFirst({ ok: true }); await first; });
+    await act(async () => { resolveFirst({ ok: true, updatedAt: "2027-09-15T01:00:00.000Z" }); await first; await second; });
+    expect(firstSignal.aborted).toBe(false);
+    expect(mockReschedule).toHaveBeenCalledTimes(2);
+    expect(mockReschedule.mock.calls[1][0].expectedUpdatedAt).toBe("2027-09-15T01:00:00.000Z");
     expect(screen.getByText(`Cruz@${secondStart.toISOString()}`)).toBeInTheDocument();
-    expect(mockInvalidateFor).toHaveBeenCalledTimes(1);
   });
 
-  it("reverts to the server position when the replacement drop fails", async () => {
+  it("reverts to the server position and invalidates when the queued second drop fails", async () => {
     let resolveFirst!: (value: unknown) => void;
     mockReschedule
       .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
       .mockResolvedValueOnce({ error: "conflict" });
     render(ui([inquiryEvent()]));
     let first!: Promise<void>;
+    let second!: Promise<void>;
     await act(async () => {
       first = cal.onEventDrop({ event: inquiryEvent(), start: droppedStart, end: droppedEnd });
     });
     await act(async () => {
-      await cal.onEventDrop({
+      second = cal.onEventDrop({
         event: inquiryEvent({ start: droppedStart, end: droppedEnd }),
         start: new Date("2027-09-18T02:00:00Z"),
         end: new Date("2027-09-18T04:00:00Z"),
       });
     });
-    expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
-    await act(async () => { resolveFirst({ ok: true }); await first; });
+    await act(async () => { resolveFirst({ ok: true }); await first; await second; });
+    expect(mockInvalidateFor).toHaveBeenLastCalledWith({ type: "inquiry.updated", inquiryId: "inq1", bookingId: null });
     expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
   });
 
-  it("retries the active drop with the server version after a stale write", async () => {
-    mockReschedule
-      .mockResolvedValueOnce({ error: "stale", updatedAt: "2027-09-15T01:00:00.000Z" })
-      .mockResolvedValueOnce({ ok: true });
+  it("stale write: no retry, rolls back, invalidates, shows the stale toast", async () => {
+    mockReschedule.mockResolvedValueOnce({ error: "stale", updatedAt: "2027-09-15T01:00:00.000Z" });
     render(ui([inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" })]));
     await act(async () => {
       await cal.onEventDrop({ event: inquiryEvent({ updatedAt: "2027-09-14T01:00:00.000Z" }), start: droppedStart, end: droppedEnd });
     });
-    expect(mockReschedule).toHaveBeenCalledTimes(2);
-    expect(mockReschedule.mock.calls[0][0].expectedUpdatedAt).toBe("2027-09-14T01:00:00.000Z");
-    expect(mockReschedule.mock.calls[1][0].expectedUpdatedAt).toBe("2027-09-15T01:00:00.000Z");
-    expect(screen.getByText(`Cruz@${droppedStart.toISOString()}`)).toBeInTheDocument();
+    expect(mockReschedule).toHaveBeenCalledTimes(1);
+    expect(mockInvalidateFor).toHaveBeenCalledWith({ type: "inquiry.updated", inquiryId: "inq1", bookingId: null });
+    expect(toast.error).toHaveBeenCalledWith(enMessages.app.inquiries.calendar.rescheduleStale, expect.anything());
+    expect(screen.getByText(`Cruz@${inquiryEvent().start.toISOString()}`)).toBeInTheDocument();
   });
 
   it("drops a popup inquiry onto the target workspace day with its shift time intact", async () => {
