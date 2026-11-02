@@ -11,8 +11,8 @@ type EditorialIndexProps = {
 const COPY = {
   all: {
     eyebrow: "Resources",
-    headline: "Practical resources for running an event business",
-    intro: "Guides for the operational decisions behind the work, alongside honest comparisons of the tools event businesses use to manage them.",
+    headline: "Practical resources for running a creative business",
+    intro: "Guides for the operational decisions behind the work, alongside honest comparisons of the tools creative businesses use to manage them.",
   },
   blog: {
     eyebrow: "Guides",
@@ -21,7 +21,7 @@ const COPY = {
   },
   compare: {
     eyebrow: "Comparisons",
-    headline: "CRM and website builder alternatives for event creatives",
+    headline: "CRM and website builder alternatives for creatives",
     intro: "Direct comparisons of price, workflow, strengths, and material gaps—so you can choose the tool that fits the way your business actually runs.",
   },
 } as const;

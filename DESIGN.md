@@ -1,6 +1,6 @@
 ---
 name: Gallurio
-description: Multi-tenant CRM for event businesses - bookings, calendar, clients, gallery, and public portfolios.
+description: Multi-tenant CRM for creative businesses - bookings, calendar, clients, gallery, and public portfolios.
 colors:
   background: "oklch(0.972 0.004 235)"
   foreground: "oklch(0.26 0.008 255)"
@@ -149,7 +149,7 @@ components:
 
 **Creative North Star: "The Studio Ledger"**
 
-Gallurio sits where creative work meets exact bookkeeping. An event business's calendar is full of shoots, weddings, and launches - messy, human, deadline-driven - but the tool that runs the business underneath has to be as precise as a ledger: every booking accounted for, every client record trustworthy, nothing left ambiguous. The interface reflects that split. It is quiet and neutral-cool at rest (an almost-white "dirty white" ground, never stark black/white), so the work itself - photos, client names, dates - carries the visual weight. One deliberate accent, a deep teal, marks what's actionable: primary buttons, the active nav item, today's date, a booked event. Everything else stays disciplined and gets out of the way.
+Gallurio sits where creative work meets exact bookkeeping. A creative business's calendar is full of shoots, weddings, and launches - messy, human, deadline-driven - but the tool that runs the business underneath has to be as precise as a ledger: every booking accounted for, every client record trustworthy, nothing left ambiguous. The interface reflects that split. It is quiet and neutral-cool at rest (an almost-white "dirty white" ground, never stark black/white), so the work itself - photos, client names, dates - carries the visual weight. One deliberate accent, a deep teal, marks what's actionable: primary buttons, the active nav item, today's date, a booked event. Everything else stays disciplined and gets out of the way.
 
 The system runs at high density. The default control height is 32px, body copy is 14px, and card padding is 16px - a working instrument, not a showcase. Surfaces are flat and structural frames are sharp-cornered; depth in the resting UI comes from a one-notch tonal shift plus a hairline ring, never a shadow. Shadows exist, but only on things that genuinely float above the page and need to read as detached from it.
 

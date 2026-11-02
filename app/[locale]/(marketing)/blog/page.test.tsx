@@ -48,7 +48,7 @@ describe("Blog index page", () => {
 
   it("publishes the blog index title and description", async () => {
     const metadata = generateMetadata();
-    expect(metadata.title).toEqual({ absolute: "Event Business Guides: Pricing, Bookings and Clients (2026)" });
+    expect(metadata.title).toEqual({ absolute: "Creative Business Guides: Pricing, Bookings and Clients (2026)" });
     expect(metadata.description).toContain("portfolio SEO");
     expect(metadata.alternates?.canonical).toBe("http://localhost:3000/blog");
     expect(metadata.alternates?.languages).not.toHaveProperty("fil");

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { renderWithProviders } from "@/test-utils/render";
 import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
 import type { TimeMode } from "@/lib/utils/time-format";
@@ -65,6 +67,35 @@ beforeEach(() => {
 });
 
 describe("BookingDraftCard", () => {
+  it("shows the selected crew name in the closed picker", () => {
+    const teams = [
+      { id: "crew_a", name: "North Crew", color: "#123456", isActive: true, isLead: true },
+      { id: "crew_b", name: "South Crew", color: "#654321", isActive: true, isLead: true },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} teams={teams} initialTeamId="crew_b" />);
+    const picker = screen.getByRole("combobox", { name: /team/i });
+    expect(picker).toHaveTextContent("South Crew");
+    expect(picker).not.toHaveTextContent("crew_b");
+  });
+
+  it("updates the closed picker to the crew name after selection", async () => {
+    const teams = [
+      { id: "crew_a", name: "North Crew", color: "#123456", isActive: true, isLead: true },
+      { id: "crew_b", name: "South Crew", color: "#654321", isActive: true, isLead: true },
+    ];
+    renderWithProviders(<BookingDraftCard {...baseProps} teams={teams} />);
+    const picker = screen.getByRole("combobox", { name: /team/i });
+    fireEvent.click(picker);
+    const option = await screen.findByRole("option", { name: "South Crew" });
+    fireEvent.pointerMove(option);
+    fireEvent.mouseOver(option);
+    fireEvent.mouseMove(option);
+    fireEvent.pointerDown(option);
+    fireEvent.click(option);
+    expect(picker).toHaveTextContent("South Crew");
+    expect(picker).not.toHaveTextContent("crew_b");
+  });
+
   it("renders editable fields and approves with current edits", async () => {
     renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={1000} />);
 
@@ -361,5 +392,47 @@ it("calls onInquiryChanged with the updated eventDate after a successful session
       screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
     ).toBeInTheDocument();
     _timeMode = "24h";
+  });
+});
+
+describe("BookingDraftCard approve cache hygiene", () => {
+  it("drops the converted inquiry's cached detail instead of refetching it", async () => {
+    // The modal closes on conversion; refetching the detail/client-match queries
+    // would only queue wasted server-action round trips.
+    let client: QueryClient | undefined;
+    const Probe = () => {
+      client = useQueryClient();
+      return null;
+    };
+    renderWithProviders(
+      <>
+        <Probe />
+        <BookingDraftCard {...baseProps} />
+      </>
+    );
+    client!.setQueryData(queryKeys("ws-test").inquiry("abc"), { inquiryId: "abc" });
+
+    fireEvent.click(screen.getByRole("button", { name: /Convert to booking/i }));
+    await waitFor(() => expect(approveInquiryBookingAction).toHaveBeenCalledOnce());
+    await screen.findByText("This inquiry has been approved.");
+
+    expect(client!.getQueryData(queryKeys("ws-test").inquiry("abc"))).toBeUndefined();
+  });
+});
+
+describe("BookingDraftCard approve echo fingerprint", () => {
+  it("announces booking.updated with the clientId the server resolved", async () => {
+    // The server's socket echo carries the resolved clientId; a mismatched client
+    // fingerprint would leave that echo unsuppressed and trigger an extra refresh.
+    approveInquiryBookingAction.mockResolvedValue({ ok: true, bookingId: "bk_1", clientId: "cl_9" });
+    renderWithProviders(<BookingDraftCard {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Convert to booking/i }));
+    await screen.findByText("This inquiry has been approved.");
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      { type: "booking.updated", bookingId: "bk_1", clientId: "cl_9", inquiryId: "abc" },
+      { refresh: false }
+    );
   });
 });

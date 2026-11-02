@@ -16,7 +16,7 @@ describe("Resources page", () => {
   it("presents guides and comparisons in one English editorial hub", async () => {
     render(await ResourcesPage());
 
-    expect(screen.getByRole("heading", { name: "Practical resources for running an event business" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Practical resources for running a creative business" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "A practical guide" })).toHaveAttribute("href", "/blog/guide");
     expect(screen.getByRole("link", { name: "Gallurio vs Example" })).toHaveAttribute("href", "/compare/gallurio-vs-example");
     expect(screen.getByRole("link", { name: "Guides" })).toHaveAttribute("href", "/blog");
@@ -25,7 +25,7 @@ describe("Resources page", () => {
 
   it("uses one English canonical", async () => {
     const metadata = await generateMetadata();
-    expect(metadata.title).toEqual({ absolute: "Event Business Software Guides and Alternatives (2026)" });
+    expect(metadata.title).toEqual({ absolute: "Creative Business Software Guides and Alternatives (2026)" });
     expect(metadata.description).toContain("website-builder alternatives");
     expect(metadata.alternates?.canonical).toBe("http://localhost:3000/resources");
     expect(metadata.alternates?.languages).not.toHaveProperty("fil");

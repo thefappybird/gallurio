@@ -5,6 +5,7 @@ import { CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 
 export type InquiryCalendarInput = {
   _id: string;
+  updatedAt?: string;
   status?: string | null;
   eventName?: string | null;
   sessions: Array<{
@@ -52,6 +53,7 @@ export function buildInquiryCalendarEvents(
         teamId: null,
         kind: "inquiry",
         inquiryId: inq._id,
+        updatedAt: inq.updatedAt,
         colorOverride: isBookedInquiryStatus(inq.status)
           ? undefined
           : inq.hasConflict

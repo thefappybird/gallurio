@@ -514,7 +514,7 @@ export async function approveInquiryBookingAction(
     revalidateInquiry(inquiryId);
     revalidatePath("/bookings");
     revalidatePath("/dashboard");
-    return { ok: true, bookingId: booking._id.toString() };
+    return { ok: true, bookingId: booking._id.toString(), clientId: booking.clientId ? String(booking.clientId) : undefined };
   }
 
   // --- Post-commit side-effects (best-effort, never throw, never roll back) ---
@@ -601,7 +601,7 @@ export async function approveInquiryBookingAction(
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
   revalidatePath("/dashboard");
-  return { ok: true, bookingId: booking._id.toString() };
+  return { ok: true, bookingId: booking._id.toString(), clientId: booking.clientId ? String(booking.clientId) : undefined };
 }
 
 /** Persist owner-only edits to the draft booking without approving it yet. */
@@ -1008,6 +1008,7 @@ const rescheduleSessionSchema = z
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid_date"),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
     endTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
+    expectedUpdatedAt: z.string().datetime().optional(),
   })
   .refine(
     (v) => {
@@ -1023,11 +1024,22 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
 /**
  * Reschedule a single session on an "inquiry" status inquiry.
  * Blocked if the new slot conflicts with an existing real booking.
- * Idempotent: applying the same payload twice leaves state unchanged.
+ * Idempotent: applying the same payload twice leaves session state unchanged
+ * (updatedAt still bumps on each write).
+ * Optional `expectedUpdatedAt` is an optimistic-concurrency guard: a mismatch
+ * returns { error: "stale", updatedAt: <current> } and writes nothing.
+ * Success returns the post-write `updatedAt` (ISO) so callers can chain the
+ * next reschedule on the fresh version. No server-side retry.
+ * Error codes: not_found, not_reschedulable, session_index_out_of_range,
+ * conflict, conflict_check_failed, reschedule_failed, stale, aborted, or a
+ * validation message.
  */
 export async function rescheduleInquirySessionAction(
-  input: RescheduleSessionInput
-): Promise<{ ok: true; draftBookingId: string | null } | { error: string }> {
+  input: RescheduleSessionInput,
+  signal?: AbortSignal,
+): Promise<
+  { ok: true; draftBookingId: string | null; updatedAt?: string } | { error: string; updatedAt?: string }
+> {
   const ctx = await requireOrg();
 
   const parsed = rescheduleSessionSchema.safeParse(input);
@@ -1037,7 +1049,7 @@ export async function rescheduleInquirySessionAction(
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
-  const { inquiryId, sessionIndex, startDate, startTime, endTime } = parsed.data;
+  const { inquiryId, sessionIndex, startDate, startTime, endTime, expectedUpdatedAt } = parsed.data;
 
   // Tenant isolation: workspaceId always from session, never from client input.
   const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId }).lean();
@@ -1067,6 +1079,7 @@ export async function rescheduleInquirySessionAction(
     return { error: "conflict_check_failed" };
   }
   if (conflicts) return { error: "conflict" };
+  if (signal?.aborted) return { error: "aborted" };
 
   // Build updated sessions list for draft-booking sync (replace only the target index).
   const updatedSessions = inquiry.sessions.map(
@@ -1079,10 +1092,12 @@ export async function rescheduleInquirySessionAction(
 
   // Idempotent positional $set inside a transaction; also syncs the draft booking.
   const mongoSession = await mongoose.startSession();
+  let newUpdatedAt: string | undefined;
   try {
     await mongoSession.withTransaction(async () => {
-      await Inquiry.updateOne(
-        { _id: inquiryId, workspaceId },
+      if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
+      const write = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId, ...(expectedUpdatedAt ? { updatedAt: new Date(expectedUpdatedAt) } : {}) },
         {
           $set: {
             [`sessions.${sessionIndex}.startDate`]: startDate,
@@ -1094,16 +1109,30 @@ export async function rescheduleInquirySessionAction(
         },
         { session: mongoSession }
       );
+      if (expectedUpdatedAt && write.matchedCount === 0) throw new Error("stale_reschedule");
+      // Read the bumped version in the same transaction so the client can chain the next write.
+      const written = await Inquiry.findOne({ _id: inquiryId, workspaceId })
+        .select({ updatedAt: 1 })
+        .session(mongoSession)
+        .lean();
+      newUpdatedAt = written?.updatedAt?.toISOString();
 
       if (inquiry.draftBookingId) {
+        if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
         await Booking.updateOne(
           { _id: inquiry.draftBookingId, workspaceId },
           { $set: { sessions: utcSessions, firstSessionStart, lastSessionEnd } },
           { session: mongoSession }
         );
       }
+      if (signal?.aborted) throw new DOMException("Request aborted", "AbortError");
     });
   } catch (err) {
+    if (signal?.aborted) return { error: "aborted" };
+    if (err instanceof Error && err.message === "stale_reschedule") {
+      const current = await Inquiry.findOne({ _id: inquiryId, workspaceId }).select({ updatedAt: 1 }).lean();
+      return { error: "stale", updatedAt: current?.updatedAt?.toISOString() };
+    }
     console.error("[inquiry] reschedule transaction failed:", err);
     return { error: "reschedule_failed" };
   } finally {
@@ -1115,5 +1144,6 @@ export async function rescheduleInquirySessionAction(
   return {
     ok: true,
     draftBookingId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
+    updatedAt: newUpdatedAt,
   };
 }

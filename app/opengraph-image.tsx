@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Gallurio — Your event business, beautifully managed.";
+export const alt = "Gallurio — Your creative business, beautifully managed.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -51,7 +51,7 @@ export default async function OpenGraphImage() {
             marginTop: "56px",
           }}
         >
-          Your event business, beautifully managed.
+          Your creative business, beautifully managed.
         </div>
       </div>
     ),
