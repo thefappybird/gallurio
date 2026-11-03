@@ -25,13 +25,13 @@
       "writing": "Writing"
     },
     "metadata": {
-      "title": "Portfolio Builder and Booking CRM for Event Creatives | Gallurio",
-      "description": "Build a no-code portfolio website, get booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace for your event business."
+      "title": "Portfolio Builder and Booking CRM for Creatives | Gallurio",
+      "description": "Build a no-code portfolio website, get booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace for your creative business."
     },
     "hero": {
       "eyebrow": "One workspace, two jobs",
       "headlineShow": "Gallurio: portfolio and booking software",
-      "headlineRun": "for event creatives.",
+      "headlineRun": "for creatives.",
       "body": "Gallurio splits clean down the middle: a portfolio built to book you, and the workspace that keeps everything after the inquiry moving.",
       "ctaStart": "Start your free month",
       "ctaSecondary": "Book a demo",
@@ -584,11 +584,11 @@
       "navigationLabel": "About",
       "metadata": {
         "title": "About Gallurio",
-        "description": "Gallurio is portfolio and booking software for event creatives and creative businesses."
+        "description": "Gallurio is portfolio and booking software for creatives and creative businesses."
       },
       "eyebrow": "About Gallurio",
-      "headline": "Gallurio: portfolio and booking software for event creatives.",
-      "intro": "Gallurio is a software platform for independent event creatives and creative businesses. It brings a public portfolio, booking inquiries, clients, bookings, galleries, and workspace collaboration into one place.",
+      "headline": "Gallurio: portfolio and booking software for creatives.",
+      "intro": "Gallurio is a software platform for independent creatives and creative businesses. It brings a public portfolio, booking inquiries, clients, bookings, galleries, and workspace collaboration into one place.",
       "purpose": {
         "title": "What Gallurio does",
         "body": "Gallurio helps creative businesses publish a professional public portfolio, collect booking inquiries, and manage the clients, bookings, and work that follow each inquiry."
@@ -632,7 +632,7 @@
     },
     "compare": {
       "metadata": {
-        "title": "Gallurio compared to the tools event businesses actually use",
+        "title": "Gallurio compared to the tools creative businesses actually use",
         "description": "How Gallurio stacks up against HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, and Studio Ninja — price, features, and who each tool actually fits."
       },
       "breadcrumb": {
@@ -642,7 +642,7 @@
       "index": {
         "eyebrow": "Comparisons",
         "headline": "How Gallurio compares to the tools you're using now",
-        "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
+        "intro1": "Most creative businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
         "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
       },
       "categories": {
@@ -657,7 +657,7 @@
     "blog": {
       "metadata": {
         "title": "Writing — Gallurio",
-        "description": "Practical notes on pricing, booking, and running an event business — from the team building Gallurio."
+        "description": "Practical notes on pricing, booking, and running a creative business — from the team building Gallurio."
       },
       "breadcrumb": {
         "home": "Home",
@@ -665,8 +665,8 @@
       },
       "index": {
         "eyebrow": "Writing",
-        "headline": "Notes on running an event business",
-        "intro": "Short, practical pieces on pricing, client intake, and the operational side of photography, planning, and other event work — the stuff that doesn't fit in a feature list."
+        "headline": "Notes on running a creative business",
+        "intro": "Short, practical pieces on pricing, client intake, and the operational side of photography, planning, and other creative work — the stuff that doesn't fit in a feature list."
       },
       "readMore": "Read more"
     }
@@ -2485,6 +2485,7 @@
         },
         "rescheduleConflict": "This time conflicts with an existing %booking%; the move was cancelled.",
         "rescheduleFailed": "Could not reschedule — please try again",
+        "rescheduleStale": "This inquiry was changed by someone else. Your move wasn't saved — review the latest version and try again.",
         "updating": "Rescheduling…",
         "updated": "Session rescheduled",
         "emptyPeriod": "No %inquiries% in this period"
@@ -3835,7 +3836,7 @@
     "pro": {
       "name": "Pro",
       "description": "Run bookings, clients, teams, invoices, and your public page.",
-      "tagline": "The full workspace for growing event businesses.",
+      "tagline": "The full workspace for growing creative businesses.",
       "features": {
         "unlimitedBookings": "Unlimited bookings",
         "publicPageControls": "Full public page controls",

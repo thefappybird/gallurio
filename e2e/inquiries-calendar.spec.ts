@@ -1,7 +1,7 @@
 /**
  * Verifies the inquiries-calendar overhaul:
- *  - Inquiry candles render an "Inquiry" status pill (not "Booked")
- *  - Filter chips: "Inquiry" (renamed from New), "Booked", "Conflicted"
+ *  - Inquiry candles render a "Request" status pill
+ *  - Filter chips: "Request", "Booked", "Conflicted"
  *  - A real booking renders a "Booked" candle
  *  - A past inquiry candle shows the "Past" pill and opens a READ-ONLY modal
  *    (no Archive/Decline/Convert actions)
@@ -26,13 +26,14 @@ const BREAKPOINTS = [
 ] as const;
 
 test.describe("Inquiries calendar", () => {
-  test("Inquiry pill, filters, Booked candle, past read-only; 3 breakpoints", async ({ page }) => {
+  test("Request pill, filters, Booked candle, past read-only; 3 breakpoints", async ({ page }) => {
+    test.setTimeout(120_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/inquiries?view=calendar");
 
     // Avoid networkidle (the notifications socket keeps the connection open).
     await page.locator(".rbc-calendar").waitFor({ timeout: 60_000 });
-    const inquiryChip = page.getByRole("button", { name: "Inquiry", exact: true });
+    const inquiryChip = page.getByRole("button", { name: "Request", exact: true });
     await inquiryChip.waitFor({ state: "visible", timeout: 30_000 });
 
     // 1. Filter chips renamed/present.
@@ -42,11 +43,11 @@ test.describe("Inquiries calendar", () => {
 
     // Candles mount a tick after the toolbar — wait for the first one (auto-retry)
     // before counting (`.count()` is a one-shot with no auto-wait).
-    const inquiryCandles = page.locator('[aria-label*="Inquiry"]');
+    const inquiryCandles = page.locator('[aria-label*="Request"]');
     await expect(inquiryCandles.first()).toBeVisible({ timeout: 30_000 });
 
-    // 2. >=1 inquiry candle shows the "Inquiry" pill (aria-label "<title> · Inquiry").
-    expect(await inquiryCandles.count(), "expected >=1 Inquiry candle").toBeGreaterThan(0);
+    // 2. >=1 inquiry candle shows the "Request" pill (aria-label "<title> · Request").
+    expect(await inquiryCandles.count(), "expected >=1 Request candle").toBeGreaterThan(0);
 
     // 3. A booking candle shows "Booked".
     const bookedCandles = page.locator('[aria-label*="Booked"]');
@@ -61,9 +62,9 @@ test.describe("Inquiries calendar", () => {
     await page.screenshot({ path: path.join(SHOT_DIR, "desktop-1280-calendar.png") });
 
     // 5. Click a PAST INQUIRY candle -> read-only modal (no actions). The candle
-    //    span carries aria-label "…· Inquiry" and contains the "Past" pill.
+    //    span carries aria-label "…· Request" and contains the "Past" pill.
     const pastInquiryEvent = page
-      .locator('[aria-label*="Inquiry"]')
+      .locator('[aria-label*="Request"]')
       .filter({ has: page.locator('[aria-label="Past"]') })
       .first();
     await pastInquiryEvent.click();
@@ -81,6 +82,19 @@ test.describe("Inquiries calendar", () => {
     await page.screenshot({ path: path.join(SHOT_DIR, "desktop-1280-readonly-modal.png") });
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden({ timeout: 10_000 });
+
+    // The week switch must stay in the month the owner was browsing.
+    const calendarLabel = page.locator(".rbc-calendar span.font-semibold.me-1").first();
+    await page.getByRole("tab", { name: "Month" }).click();
+    const currentMonthLabel = await calendarLabel.textContent();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(calendarLabel).not.toHaveText(currentMonthLabel!);
+    const nextMonthName = (await calendarLabel.textContent())?.trim().slice(0, 3);
+    expect(nextMonthName).toBeTruthy();
+    await page.getByRole("tab", { name: "Week" }).click();
+    await expect(calendarLabel).toContainText(nextMonthName!);
+    await page.getByRole("tab", { name: "Month" }).click();
+    await page.getByRole("button", { name: "Today" }).click();
 
     // 6. Breakpoint screenshots.
     for (const bp of BREAKPOINTS) {

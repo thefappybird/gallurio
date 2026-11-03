@@ -36,7 +36,7 @@ export async function loadInquiriesCalendarData(args: {
       status: "inquiry",
       sessions: { $elemMatch: { startDate: { $gte: window.startDate, $lte: window.endDate } } },
     })
-      .select({ status: 1, eventTitle: 1, name: 1, sessions: 1 })
+      .select({ status: 1, eventTitle: 1, name: 1, sessions: 1, updatedAt: 1 })
       .lean(),
     Booking.find({
       workspaceId,
@@ -50,6 +50,7 @@ export async function loadInquiriesCalendarData(args: {
 
   const inquiryInputs = inquiries.map((q) => ({
     _id: q._id.toString(),
+    updatedAt: q.updatedAt?.toISOString(),
     status: q.status,
     eventName: q.eventTitle ?? null,
     clientName: q.name ?? null,

@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.7.1] - 2026-11-02
+
+### Changed
+- Calendar view changes keep the date being viewed. Month-view moves preserve session times in the workspace timezone.
+- Marketing copy now describes Gallurio as software for creatives and creative businesses.
+
+### Fixed
+- Inquiry sessions can be dragged from the month calendar's overflow list. Booking and inquiry overflow drags now move the selected item rather than the "+N more" indicator.
+- Rescheduling an inquiry shows the move immediately, handles successive moves, and refreshes the latest data if a conflict, error, or another person's edit prevents a save.
+- The inquiry draft booking's team picker displays the selected team. Converting an inquiry avoids unnecessary detail refetches while keeping related data current.
+
 ## [1.7.0] - 2026-10-17
 
 Release PR #120 (booking import improvements and document themes).

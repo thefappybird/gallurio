@@ -75,7 +75,7 @@ export function editorialMetadata({
 }: EditorialMetadataInput): Metadata {
   const canonical = localeUrl(routing.defaultLocale, path);
   const socialImage = {
-    alt: "Gallurio — Your event business, beautifully managed.",
+    alt: "Gallurio — Your creative business, beautifully managed.",
     url: "/opengraph-image",
   };
   return {

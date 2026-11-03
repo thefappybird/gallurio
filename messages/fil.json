@@ -25,13 +25,13 @@
       "writing": "Mga Artikulo"
     },
     "metadata": {
-      "title": "Portfolio Builder at Booking CRM para sa Events | Gallurio",
-      "description": "Gumawa ng no-code portfolio website, tumanggap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace para sa iyong event business."
+      "title": "Portfolio Builder at Booking CRM para sa mga Creative | Gallurio",
+      "description": "Gumawa ng no-code portfolio website, tumanggap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace para sa iyong creative business."
     },
     "hero": {
       "eyebrow": "Isang workspace, dalawang trabaho",
       "headlineShow": "Gallurio: software para sa portfolio at booking",
-      "headlineRun": "para sa mga event creative.",
+      "headlineRun": "para sa mga creative.",
       "body": "Hinahati ng Gallurio nang pantay: isang portfolio na ginawa para mag-book sa iyo, at ang workspace na nagpapatuloy sa lahat pagkatapos ng inquiry.",
       "ctaStart": "Simulan ang libreng buwan ko",
       "ctaSecondary": "Mag-book ng demo",
@@ -584,11 +584,11 @@
       "navigationLabel": "Tungkol",
       "metadata": {
         "title": "Tungkol sa Gallurio",
-        "description": "Ang Gallurio ay portfolio at booking software para sa event creatives at creative businesses."
+        "description": "Ang Gallurio ay portfolio at booking software para sa mga creative at creative businesses."
       },
       "eyebrow": "Tungkol sa Gallurio",
-      "headline": "Gallurio: portfolio at booking software para sa event creatives.",
-      "intro": "Ang Gallurio ay software platform para sa mga independent event creative at creative business. Pinagsasama nito ang public portfolio, booking inquiry, client, booking, gallery, at workspace collaboration sa isang lugar.",
+      "headline": "Gallurio: portfolio at booking software para sa mga creative.",
+      "intro": "Ang Gallurio ay software platform para sa mga independent creative at creative business. Pinagsasama nito ang public portfolio, booking inquiry, client, booking, gallery, at workspace collaboration sa isang lugar.",
       "purpose": {
         "title": "Ano ang ginagawa ng Gallurio",
         "body": "Tinutulungan ng Gallurio ang mga creative business na maglathala ng propesyonal na public portfolio, tumanggap ng booking inquiry, at pamahalaan ang mga client, booking, at trabahong kasunod ng bawat inquiry."
@@ -632,7 +632,7 @@
     },
     "compare": {
       "metadata": {
-        "title": "Paghahambing ng Gallurio sa mga tool na ginagamit ng mga event business",
+        "title": "Paghahambing ng Gallurio sa mga tool na ginagamit ng mga creative business",
         "description": "Paano naihahambing ang Gallurio sa HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, at Studio Ninja — presyo, feature, at kung kanino talaga bagay ang bawat isa."
       },
       "breadcrumb": {
@@ -642,7 +642,7 @@
       "index": {
         "eyebrow": "Mga Paghahambing",
         "headline": "Gallurio kumpara sa mga ginagamit mong tool ngayon",
-        "intro1": "Karamihan sa mga event business ay napupunta sa Gallurio pagkatapos malagpasan ang spreadsheet, isang general CRM na para sa ibang industriya, o gallery tool na hindi talaga ginawa para sa booking. Inilalatag ng mga paghahambing na ito ang totoong trade-off — presyo, ano ang kaya ng bawat tool, at ano ang hindi — laban sa mga partikular na tool na madalas lipatan ng mga tao.",
+        "intro1": "Karamihan sa mga creative business ay napupunta sa Gallurio pagkatapos malagpasan ang spreadsheet, isang general CRM na para sa ibang industriya, o gallery tool na hindi talaga ginawa para sa booking. Inilalatag ng mga paghahambing na ito ang totoong trade-off — presyo, ano ang kaya ng bawat tool, at ano ang hindi — laban sa mga partikular na tool na madalas lipatan ng mga tao.",
         "intro2": "Wala sa mga ito ang nagkukunwaring panalo ang Gallurio sa lahat ng bagay. Kapag may nagagawa ang ibang tool na hindi kaya ng Gallurio, sinasabi iyon nang tapat, para makapili ka batay sa talagang kailangan ng negosyo mo."
       },
       "categories": {
@@ -657,7 +657,7 @@
     "blog": {
       "metadata": {
         "title": "Mga Sulatin — Gallurio",
-        "description": "Praktikal na tala tungkol sa pagpepresyo, booking, at pagpapatakbo ng event business — mula sa team sa likod ng Gallurio."
+        "description": "Praktikal na tala tungkol sa pagpepresyo, booking, at pagpapatakbo ng creative business — mula sa team sa likod ng Gallurio."
       },
       "breadcrumb": {
         "home": "Home",
@@ -665,8 +665,8 @@
       },
       "index": {
         "eyebrow": "Mga Artikulo",
-        "headline": "Mga tala sa pagpapatakbo ng event business",
-        "intro": "Maiikli at praktikal na sanaysay tungkol sa pagpepresyo, client intake, at ang operational side ng photography, planning, at iba pang event work — ang mga bagay na hindi kasya sa isang feature list."
+        "headline": "Mga tala sa pagpapatakbo ng creative business",
+        "intro": "Maiikli at praktikal na sanaysay tungkol sa pagpepresyo, client intake, at ang operational side ng photography, planning, at iba pang creative work — ang mga bagay na hindi kasya sa isang feature list."
       },
       "readMore": "Basahin pa"
     }
@@ -2485,6 +2485,7 @@
         },
         "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na %booking% — kinansela ang paglipat",
         "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli",
+        "rescheduleStale": "Binago ng iba ang inquiry na ito. Hindi na-save ang iyong paglipat — suriin ang pinakabagong bersyon at subukan muli.",
         "updating": "Nire-reschedule…",
         "updated": "Na-reschedule ang session",
         "emptyPeriod": "Walang %inquiry% sa panahong ito"
@@ -3835,7 +3836,7 @@
     "pro": {
       "name": "Pro",
       "description": "Pamahalaan ang bookings, clients, teams, invoices, at public page.",
-      "tagline": "Buong workspace para sa lumalaking event businesses.",
+      "tagline": "Buong workspace para sa lumalaking creative businesses.",
       "features": {
         "unlimitedBookings": "Walang limitasyon na booking",
         "publicPageControls": "Buong kontrol sa public page",

@@ -52,12 +52,12 @@ const MEDIA = {
     caption: "Brand colours, typography, and controls are managed as one reusable visual system.",
   },
   "public-page-desktop": {
-    alt: "A published Gallurio event-business portfolio displayed on desktop",
+    alt: "A published Gallurio creative-business portfolio displayed on desktop",
     label: "Gallurio public portfolio",
     caption: "The published portfolio gives prospective clients a focused path from the work to an enquiry.",
   },
   "public-page-mobile": {
-    alt: "A published Gallurio event-business portfolio displayed at mobile width",
+    alt: "A published Gallurio creative-business portfolio displayed at mobile width",
     label: "Gallurio mobile portfolio",
     caption: "The same public portfolio is designed to remain readable and actionable on a phone.",
   },

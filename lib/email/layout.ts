@@ -184,11 +184,11 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
     : "";
   if (isPlatform) {
     footerHtml = [
-      `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">Your event business, beautifully managed.</p>`,
+      `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">Your creative business, beautifully managed.</p>`,
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;"><a href="mailto:support@gallurio.com" style="color:#aaaaaa;">support@gallurio.com</a></p>`,
       `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${footerMark}&copy; ${year} Gallurio. All rights reserved.</p>`,
     ].join("\n");
-    footerText = `Your event business, beautifully managed.\nsupport@gallurio.com\n© ${year} Gallurio. All rights reserved.`;
+    footerText = `Your creative business, beautifully managed.\nsupport@gallurio.com\n© ${year} Gallurio. All rights reserved.`;
   } else {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${e(brand.name)}</p>`,
