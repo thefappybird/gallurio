@@ -232,3 +232,24 @@ describe("Workspace.invoiceTheme.preset", () => {
     expect(ws.validateSync()?.errors["invoiceTheme.preset"]).toBeDefined();
   });
 });
+
+describe("Workspace.discover", () => {
+  it("legacy doc saved via unrelated path does not gain discover.listed", async () => {
+    const { insertedId } = await Workspace.collection.insertOne({
+      slug: "legacy-discover",
+      name: "Legacy",
+      ownerUserId: "user_legacy_discover",
+      currency: "PHP",
+    });
+
+    const doc = await Workspace.findById(insertedId);
+    doc!.name = "Legacy Renamed";
+    await doc!.save();
+
+    const raw = (await Workspace.collection.findOne({ _id: insertedId })) as
+      | { name: string; discover?: { listed?: boolean } }
+      | null;
+    expect(raw?.name).toBe("Legacy Renamed");
+    expect(raw?.discover?.listed).toBeUndefined();
+  });
+});

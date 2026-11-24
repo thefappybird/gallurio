@@ -6,13 +6,13 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo } from "@/test-utils/mongo";
-import { Booking, Transaction } from "@/lib/db/models";
+import { Booking, Transaction, Workspace } from "@/lib/db/models";
 
 beforeAll(async () => {
   await startInMemoryMongo();
   // Model.init() resolves once autoIndex has finished building — without it,
   // collection.indexes() can race the background index build.
-  await Promise.all([Booking.init(), Transaction.init()]);
+  await Promise.all([Booking.init(), Transaction.init(), Workspace.init()]);
 }, 120_000);
 
 afterAll(async () => {
@@ -40,5 +40,14 @@ describe("currency roll-up indexes", () => {
   it("Booking has a {workspaceId, amount.currency} index", async () => {
     const indexes = await Booking.collection.indexes();
     expect(hasIndex(indexes, { workspaceId: 1, "amount.currency": 1 })).toBe(true);
+  });
+});
+
+describe("discover index", () => {
+  it("Workspace has a {discover.listed, discover.listedAt desc, _id desc} index", async () => {
+    const indexes = await Workspace.collection.indexes();
+    expect(
+      hasIndex(indexes, { "discover.listed": 1, "discover.listedAt": -1, _id: -1 })
+    ).toBe(true);
   });
 });

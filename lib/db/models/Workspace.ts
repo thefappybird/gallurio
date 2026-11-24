@@ -141,6 +141,19 @@ const workspaceSchema = new Schema(
         website: { type: String, default: "" },
       },
     },
+    // Public Discover directory listing. `listed` is deliberately NOT defaulted:
+    // true/false/unset are three distinct states (unset = never chosen, the UI
+    // treats it as opted-in), and a schema default would silently stamp legacy
+    // docs on any unrelated save(). The cover is a denormalized snapshot so the
+    // directory query never reads `publicPage.data`.
+    discover: {
+      listed: { type: Boolean },
+      listedAt: { type: Date, default: null },
+      coverUrl: { type: String, default: "" },
+      coverAssetId: { type: String, default: "" },
+      coverWidth: { type: Number, default: null },
+      coverHeight: { type: Number, default: null },
+    },
     publicPage: {
       templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "scratch" },
       data: {
@@ -398,6 +411,12 @@ const workspaceSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Discover directory keyset-pagination index. Documented cross-tenant
+// exception: the public /discover query scans listed workspaces across all
+// tenants, so this index intentionally does NOT start with workspaceId.
+// Every per-workspace follow-up read still filters by workspaceId.
+workspaceSchema.index({ "discover.listed": 1, "discover.listedAt": -1, _id: -1 });
 
 export type WorkspaceDoc = InferSchemaType<typeof workspaceSchema> & { _id: mongoose.Types.ObjectId };
 
