@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
 
 const route = vi.hoisted(() => ({ pathname: "/" }));
 
@@ -38,12 +37,11 @@ describe("MarketingHeader", () => {
     render(<MarketingHeader />);
 
     const expectedLinks = [
+      ["marketing.nav:discover", "/discover"],
       ["marketing.nav:portfolioMaker", "/portfolio-maker-demo"],
       ["marketing.appInfo:navigationLabel", "/about"],
       ["marketing.nav:pricing", "/pricing"],
       ["marketing.nav:bookDemo", "/book-demo"],
-      ["marketing.nav:resources", "/resources"],
-      ["marketing.nav:compare", "/compare"],
       ["marketing.nav:signIn", "/sign-in"],
       ["marketing.nav:getStarted", "/sign-up"],
     ] as const;
@@ -52,44 +50,52 @@ describe("MarketingHeader", () => {
       expect(screen.getAllByRole("link", { name: label }).some((link) => link.getAttribute("href") === href)).toBe(true);
     }
 
-    expect(within(screen.getAllByRole("navigation", { name: "Marketing" })[0]).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "/portfolio-maker-demo",
+    expect(screen.queryByRole("link", { name: "marketing.nav:resources" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "marketing.nav:compare" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "marketing.nav:contact" })).not.toBeInTheDocument();
+    for (const link of screen.getAllByRole("link", { name: "marketing.nav:bookDemo" })) {
+      expect(link.className).toContain("border-border");
+      expect(link.className).toContain("bg-background");
+    }
+  });
+
+  it("orders the desktop nav Discover, About, Pricing, Portfolio Builder", () => {
+    route.pathname = "/";
+    render(<MarketingHeader />);
+
+    const desktopLinks = within(screen.getAllByRole("navigation", { name: "Marketing" })[0]).getAllByRole("link");
+    expect(desktopLinks.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["marketing.nav:discover", "/discover"],
+      ["marketing.appInfo:navigationLabel", "/about"],
+      ["marketing.nav:pricing", "/pricing"],
+      ["marketing.nav:portfolioMaker", "/portfolio-maker-demo"],
+    ]);
+  });
+
+  it("orders the mobile sheet like the desktop nav, then Sign in and an outline Book a Demo", () => {
+    route.pathname = "/";
+    render(<MarketingHeader />);
+
+    const sheetNav = screen.getAllByRole("navigation", { name: "Marketing" })[1];
+    const sheetLinks = [...within(sheetNav.parentElement as HTMLElement).getAllByRole("link")];
+    expect(sheetLinks.map((link) => link.getAttribute("href"))).toEqual([
+      "/discover",
       "/about",
       "/pricing",
+      "/portfolio-maker-demo",
+      "/sign-in",
       "/book-demo",
-      "/resources",
-      "/compare",
     ]);
-
-    expect(screen.queryByRole("link", { name: "marketing.nav:contact" })).not.toBeInTheDocument();
+    expect(sheetLinks[5].className).toContain("border-border");
   });
 
   it("uses an English-only shell and hides the locale switcher on editorial routes", () => {
     route.pathname = "/blog/example";
     render(<MarketingHeader />);
 
-    expect(screen.getAllByRole("link", { name: "Resources" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Discover" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio Builder" }).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("locale-switcher")).not.toBeInTheDocument();
-  });
-
-  it("links the English-only Resources/Compare pages without a locale prefix under locale fil", () => {
-    route.pathname = "/fil";
-    render(
-      <NextIntlClientProvider locale="fil">
-        <MarketingHeader />
-      </NextIntlClientProvider>
-    );
-
-    // Resources/Compare use plain next/link (not the locale-aware intl Link),
-    // so their href is always the bare, unprefixed path -- these pages have
-    // no /fil catalog and a locale-prefixed URL would 308-redirect.
-    expect(
-      screen.getAllByRole("link", { name: "marketing.nav:resources" }).some((link) => link.getAttribute("href") === "/resources")
-    ).toBe(true);
-    expect(
-      screen.getAllByRole("link", { name: "marketing.nav:compare" }).some((link) => link.getAttribute("href") === "/compare")
-    ).toBe(true);
   });
 
   it("collapses the desktop nav into the hamburger below xl (1280px)", () => {

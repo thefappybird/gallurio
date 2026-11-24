@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { enMessages } from "@/test-utils/messages";
@@ -20,6 +20,13 @@ import Home, { revalidate } from "./page";
 describe("Marketing Home page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The home page mounts the Discover banner island, which fetches on mount;
+    // keep it off the network (a never-settling request leaves it hidden).
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("renders the landing page with the hero headline with no session/DB mocks", async () => {

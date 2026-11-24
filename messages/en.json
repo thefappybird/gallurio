@@ -47,9 +47,17 @@
         "title": "Have a Gallurio portfolio?",
         "body": "Turn on “List on Discover” in your portfolio settings to appear here. You choose the cover image and the one-line description. Turn it off any time.",
         "button": "Get started"
+      },
+      "banner": {
+        "title": "Portfolios built on Gallurio",
+        "body": "See how photographers, planners, stylists and studios present their work. Every portfolio here is listed by its owner.",
+        "cta": "Browse portfolios",
+        "pause": "Pause scrolling",
+        "resume": "Resume scrolling"
       }
     },
     "nav": {
+      "discover": "Discover",
       "pricing": "Pricing",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",

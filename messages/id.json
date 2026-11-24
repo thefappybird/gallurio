@@ -47,9 +47,17 @@
         "title": "Punya portofolio Gallurio?",
         "body": "Aktifkan “Tampilkan di Discover” di pengaturan portofolio Anda agar muncul di sini. Anda yang memilih gambar sampul dan deskripsi satu baris. Matikan kapan saja.",
         "button": "Mulai"
+      },
+      "banner": {
+        "title": "Portofolio yang dibuat di Gallurio",
+        "body": "Lihat bagaimana fotografer, perencana acara, penata gaya, dan studio menampilkan karya mereka. Setiap portofolio di sini didaftarkan oleh pemiliknya sendiri.",
+        "cta": "Jelajahi portofolio",
+        "pause": "Jeda pengguliran",
+        "resume": "Lanjutkan pengguliran"
       }
     },
     "nav": {
+      "discover": "Discover",
       "pricing": "Harga",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",

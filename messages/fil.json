@@ -47,9 +47,17 @@
         "title": "May Gallurio portfolio ka ba?",
         "body": "I-on ang “I-list sa Discover” sa mga setting ng iyong portfolio para lumabas dito. Ikaw ang pipili ng cover image at ng isang-linyang paglalarawan. I-off ito anumang oras.",
         "button": "Magsimula"
+      },
+      "banner": {
+        "title": "Mga portfolio na gawa sa Gallurio",
+        "body": "Tingnan kung paano ipinapakita ng mga photographer, planner, stylist at studio ang kanilang mga gawa. Bawat portfolio dito ay inilista mismo ng may-ari nito.",
+        "cta": "Mag-browse ng mga portfolio",
+        "pause": "I-pause ang pag-scroll",
+        "resume": "Ituloy ang pag-scroll"
       }
     },
     "nav": {
+      "discover": "Discover",
       "pricing": "Presyo",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",

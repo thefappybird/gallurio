@@ -957,6 +957,71 @@ html[data-radius="rounded"] {
   }
 }
 
+/* Home-page Discover banner (discover-banner.tsx). Each row's track holds two
+   identical sets; every set ends with padding equal to the gap, so a -50%
+   translate loops without a seam. Rows are forced dir="ltr" in markup so the
+   loop math is identical in RTL; only the mask fade and the rotation mirror. */
+@layer components {
+  .dsc-banner { --h: 72px; }
+  .dsc-strip {
+    position: relative;
+    min-width: 0;
+    height: 15rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14%);
+  }
+  .dsc-rot {
+    position: absolute;
+    inset-block: -16%;
+    inset-inline: -8%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    transform: rotate(-5deg);
+  }
+  .dsc-rot:dir(rtl) { transform: rotate(5deg); }
+  .dsc-row { overflow: hidden; direction: ltr; }
+  .dsc-track {
+    display: flex;
+    width: max-content;
+    animation: dsc-slide var(--dur, 70s) linear infinite;
+    will-change: transform;
+  }
+  .dsc-row[data-reverse] .dsc-track { animation-direction: reverse; }
+  .dsc-set { display: flex; flex: none; gap: 12px; padding-inline-end: 12px; }
+  .dsc-st { flex: none; height: var(--h); aspect-ratio: var(--ar); overflow: hidden; }
+  .dsc-banner:hover .dsc-track,
+  .dsc-banner[data-paused] .dsc-track { animation-play-state: paused; }
+  @media (min-width: 821px) {
+    .dsc-banner { --h: 104px; }
+    .dsc-strip {
+      height: auto;
+      min-height: 19rem;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18%);
+      mask-image: linear-gradient(to right, transparent 0, #000 18%);
+    }
+    .dsc-strip:dir(rtl) {
+      -webkit-mask-image: linear-gradient(to left, transparent 0, #000 18%);
+      mask-image: linear-gradient(to left, transparent 0, #000 18%);
+    }
+    .dsc-rot { inset-block: -14%; gap: 12px; }
+  }
+  /* No autoplay: the rows become swipeable, the duplicate set is dropped and
+     the (now meaningless) pause control goes away. */
+  @media (prefers-reduced-motion: reduce) {
+    .dsc-track { animation: none; }
+    .dsc-set + .dsc-set { display: none; }
+    .dsc-row { overflow-x: auto; scrollbar-width: none; }
+    .dsc-rot { position: static; transform: none; padding: 1rem; }
+    .dsc-strip { height: auto; }
+  }
+}
+@keyframes dsc-slide {
+  to { transform: translateX(-50%); }
+}
+
 /* Recharts anchors axis-tick text with SVG `text-anchor`, whose start/end
    resolve against the inherited direction — under `dir="rtl"` every tick flips
    to the wrong side of its axis and lands on top of the plot. RTL charts are

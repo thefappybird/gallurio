@@ -14,6 +14,7 @@ import { PricingTeaser } from "./_components/pricing-teaser";
 import { MarketingReveal } from "./_components/marketing-reveal";
 import { VocabularyShowcase } from "./_components/vocabulary-showcase";
 import { ThemedShot } from "./_components/themed-shot";
+import { DiscoverBanner } from "./_components/discover-banner";
 
 // Static page: no session/DB/headers reads, so Next can serve it from cache.
 // Prerendered at build time with the CI env (BETA_TESTER_ENABLED unset there),
@@ -345,6 +346,9 @@ export default async function Home({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {/* Discover — client island; renders nothing until >= 8 portfolios are listed. */}
+      <DiscoverBanner />
 
       {/* Manifesto — the mid-page brand-teal moment. */}
       <section className="border-t border-border bg-brand px-4 py-20 text-center text-brand-foreground sm:px-6 sm:py-28">

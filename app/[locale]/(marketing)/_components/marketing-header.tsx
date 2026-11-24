@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { MenuIcon } from "lucide-react";
-import NextLink from "next/link";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/theme-toggle";
@@ -13,12 +12,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { isEditorialRoute } from "./editorial-route";
 
 const ENGLISH_NAV = {
+  discover: "Discover",
   portfolioMaker: "Portfolio Builder",
   about: "About",
   pricing: "Pricing",
   bookDemo: "Book a Demo",
-  resources: "Resources",
-  compare: "Compare",
   signIn: "Sign in",
   getStarted: "Get started",
 } as const;
@@ -54,10 +52,10 @@ export function MarketingHeader() {
         <div className="hidden flex-1 items-center justify-end gap-x-4 gap-y-2 xl:flex">
           <nav aria-label="Marketing" className="flex items-center gap-4 text-sm font-medium">
             <Link
-              href="/portfolio-maker-demo"
+              href="/discover"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {label("portfolioMaker")}
+              {label("discover")}
             </Link>
             <Link
               href="/about"
@@ -72,28 +70,19 @@ export function MarketingHeader() {
               {label("pricing")}
             </Link>
             <Link
-              href="/book-demo"
+              href="/portfolio-maker-demo"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {label("bookDemo")}
+              {label("portfolioMaker")}
             </Link>
-            <NextLink
-              href="/resources"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {label("resources")}
-            </NextLink>
-            <NextLink
-              href="/compare"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {label("compare")}
-            </NextLink>
           </nav>
 
           <div className="flex items-center gap-1 gap-x-4">
             <Link href="/sign-in" className="flex items-center gap-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {label("signIn")}
+            </Link>
+            <Link href="/book-demo" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              {label("bookDemo")}
             </Link>
             <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "sm" })}>
               {label("getStarted")}
@@ -129,8 +118,8 @@ export function MarketingHeader() {
               </SheetHeader>
               <div className="flex flex-col gap-2 p-4">
                 <nav aria-label="Marketing" className="flex flex-col gap-1">
-                  <Link href="/portfolio-maker-demo" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("portfolioMaker")}
+                  <Link href="/discover" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {label("discover")}
                   </Link>
                   <Link href="/about" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("about")}
@@ -138,19 +127,16 @@ export function MarketingHeader() {
                   <Link href="/pricing" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("pricing")}
                   </Link>
-                  <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("bookDemo")}
+                  <Link href="/portfolio-maker-demo" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {label("portfolioMaker")}
                   </Link>
-                  <NextLink href="/resources" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("resources")}
-                  </NextLink>
-                  <NextLink href="/compare" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {label("compare")}
-                  </NextLink>
                   <Link href="/sign-in" className="px-3 py-2 text-sm font-medium text-foreground">
                     {label("signIn")}
                   </Link>
                 </nav>
+                <Link href="/book-demo" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                  {label("bookDemo")}
+                </Link>
                 <div className="flex items-center justify-between border-t border-border pt-3">
                   <ThemeToggle variant="standalone" />
                   {englishOnly ? null : (
