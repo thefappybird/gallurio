@@ -883,6 +883,42 @@ describe("togglePublicPagePublishedAction", () => {
     const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.publicPage?.publishedAt).toBeNull();
   });
+
+  it("republishing a listed workspace with a null listedAt stamps listedAt", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { discover: { listed: true, listedAt: null } } },
+    );
+
+    expect((await togglePublicPagePublishedAction(true)).ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.discover?.listedAt).toBeInstanceOf(Date);
+  });
+
+  it("republishing keeps an existing listedAt unchanged", async () => {
+    const listedAt = new Date("2026-01-02T00:00:00.000Z");
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { discover: { listed: true, listedAt } } },
+    );
+
+    await togglePublicPagePublishedAction(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.discover?.listedAt).toEqual(listedAt);
+  });
+
+  it("republishing an unlisted workspace leaves listedAt null", async () => {
+    await seedWorkspaceA();
+
+    await togglePublicPagePublishedAction(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.discover?.listedAt ?? null).toBeNull();
+  });
 });
 
 // ---- updateTimeFormatAction --------------------------------------------------

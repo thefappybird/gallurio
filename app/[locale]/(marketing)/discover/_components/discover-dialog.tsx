@@ -184,7 +184,7 @@ export function DiscoverDialog({ detail, open, onOpenChange }: Props) {
         if (event.target === event.currentTarget) onOpenChange(false);
       }}
       className={cn(
-        "m-auto h-[min(40rem,calc(100dvh-3rem))] w-[min(66rem,calc(100vw-3rem))] max-h-none max-w-none overflow-hidden border-0 bg-card p-0 text-foreground outline-1 outline-foreground/10",
+        "m-auto h-[min(40rem,calc(100dvh-3rem))] w-[min(66rem,calc(100vw-3rem))] max-h-none max-w-none overflow-hidden rounded-[var(--radius-surface)] border-0 bg-card p-0 text-foreground outline-1 outline-foreground/10",
         "opacity-0 transition-[opacity,translate] duration-300 open:opacity-100 starting:open:opacity-0 motion-reduce:transition-none",
         "translate-y-3 open:translate-y-0 starting:open:translate-y-3 backdrop:bg-foreground/60",
         "max-[720px]:mb-0 max-[720px]:h-auto max-[720px]:max-h-[92dvh] max-[720px]:w-screen",

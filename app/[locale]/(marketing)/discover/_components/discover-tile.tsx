@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { DiscoverCard } from "@/lib/db/queries/discover";
 import { categoryLine } from "@/lib/discover/labels";
 import { fontFamilyValue } from "@/lib/page-builder/fonts";
+import { cn } from "@/lib/utils";
 
 type Props = {
   card: DiscoverCard;
@@ -18,13 +19,17 @@ type Props = {
  * font), used when there is no cover or the cover fails to load. Sizes track the
  * tile width through container-query units so it reads at card and thumbnail size.
  */
-export function BrandTile({ card, line }: { card: DiscoverCard; line: string }) {
+export function BrandTile({ card, line, dimOnHover = false }: { card: DiscoverCard; line: string; dimOnHover?: boolean }) {
   const { bg, fg, accent, headingFont } = card.brand;
   const initial = Array.from(card.name.trim())[0]?.toUpperCase() ?? "";
   return (
     <span
       data-brand-tile=""
-      className="flex aspect-[4/5] w-full flex-col justify-between [container-type:inline-size]"
+      className={cn(
+        "flex aspect-[4/5] w-full flex-col justify-between [container-type:inline-size]",
+        dimOnHover &&
+          "transition-opacity duration-200 group-hover:opacity-35 group-focus-visible:opacity-35 motion-reduce:transition-none",
+      )}
       style={{
         backgroundColor: bg,
         color: fg,
@@ -113,14 +118,17 @@ export function DiscoverTile({ card, onOpen, decorative = false }: Props) {
             onError={() => setCoverFailed(true)}
             className="block h-auto w-full transition-opacity duration-200 group-hover:opacity-35 group-focus-visible:opacity-35 motion-reduce:transition-none"
           />
-          <span className="absolute inset-x-0 bottom-0 block p-3 text-start text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
-            <span className="block text-sm font-semibold leading-snug">{card.name}</span>
-            {line ? <span className="block text-xs leading-snug opacity-85">{line}</span> : null}
-          </span>
         </>
       ) : (
-        <BrandTile card={card} line={line} />
+        <BrandTile card={card} line={line} dimOnHover />
       )}
+      <span
+        data-tile-overlay=""
+        className="absolute inset-x-0 bottom-0 block p-3 text-start text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+      >
+        <span className="block text-sm font-semibold leading-snug">{card.name}</span>
+        {line ? <span className="block text-xs leading-snug opacity-85">{line}</span> : null}
+      </span>
     </a>
   );
 }

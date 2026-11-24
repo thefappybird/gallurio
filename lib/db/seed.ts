@@ -1255,9 +1255,9 @@ async function createPendingInvitations(
 }
 
 /**
- * Ten fictional, published, entitled (beta, no expiry) workspaces listed on
- * Discover, so the /discover grid and the marketing banner (8+ listings) have
- * data. Images reuse the picsum.photos hotlinks the rest of this seed uses: og
+ * Ten fictional, published, entitled (beta, no expiry) workspaces, nine listed
+ * on Discover and one opted out, so the /discover grid and the marketing banner
+ * (8+ listings) have data. Images reuse the picsum.photos hotlinks the rest of this seed uses: og
  * for some, `discover.coverUrl` for others, none (brand tile) for the rest.
  * They have no login user; only the dev seed ever creates them.
  */

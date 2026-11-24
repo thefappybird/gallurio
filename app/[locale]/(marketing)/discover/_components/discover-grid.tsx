@@ -74,6 +74,10 @@ export function DiscoverGrid({ initialItems, initialCursor, initialCategory, ini
   const [detailError, setDetailError] = useState(false);
   const detailRun = useRef(0);
 
+  const categoryRef = useRef(initialCategory);
+  const searchTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(searchTimer.current), []);
+
   function mirrorSlug(slug: string | null) {
     const url = new URL(window.location.href);
     if (slug) url.searchParams.set("p", slug);
@@ -82,6 +86,8 @@ export function DiscoverGrid({ initialItems, initialCursor, initialCategory, ini
   }
 
   async function openCard(slug: string) {
+    // A pending search navigation would rewrite the URL and drop the ?p= mirror.
+    window.clearTimeout(searchTimer.current);
     const run = ++detailRun.current;
     setDetailError(false);
     try {
@@ -123,9 +129,6 @@ export function DiscoverGrid({ initialItems, initialCursor, initialCategory, ini
       if (run === generation.current) setLoadingMore(false);
     }
   }
-  const categoryRef = useRef(initialCategory);
-  const searchTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(searchTimer.current), []);
 
   function navigate(nextCategory: BusinessType | null, nextQuery: string) {
     const params = new URLSearchParams();
@@ -196,7 +199,7 @@ export function DiscoverGrid({ initialItems, initialCursor, initialCategory, ini
 
       <div className="mt-5" aria-busy={pending}>
         {detailError ? (
-          <p role="alert" className="mb-4 border border-destructive/40 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="mb-4 rounded-[var(--radius-surface)] border border-destructive/40 px-3 py-2 text-sm text-destructive">
             {t("error.detail")}
           </p>
         ) : null}
@@ -212,7 +215,7 @@ export function DiscoverGrid({ initialItems, initialCursor, initialCategory, ini
             ))}
           </ul>
         ) : items.length === 0 ? (
-          <div className="grid justify-items-center gap-2 border border-dashed border-border px-4 py-16 text-center">
+          <div className="grid justify-items-center gap-2 rounded-[var(--radius-surface)] border border-dashed border-border px-4 py-16 text-center">
             <h2 className="text-xl font-bold tracking-tight">{filtered ? t("noResults.title") : t("empty.title")}</h2>
             <p className="max-w-[30rem] text-pretty text-muted-foreground">
               {filtered ? t("noResults.body") : t("empty.body")}

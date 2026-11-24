@@ -53,6 +53,25 @@ describe("DiscoverGrid", () => {
     }
   });
 
+  it("cancels a pending search debounce when a card opens, so the ?p= mirror is not wiped", async () => {
+    const detail = { ...card("a", "Alpha Studio"), images: [] };
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => detail })));
+    try {
+      renderWithProviders(<DiscoverGrid {...base} />);
+      fireEvent.change(screen.getByRole("searchbox", { name: "Search portfolios" }), { target: { value: "ale" } });
+      fireEvent.click(screen.getByRole("link", { name: /Alpha Studio/ }));
+      expect(await screen.findByRole("heading", { name: "Alpha Studio" })).toBeInTheDocument();
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      });
+
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("loads the next page from the API without empty params, appends it, then shows the end note", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,

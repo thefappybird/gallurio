@@ -155,17 +155,45 @@ describe("listDiscoverPortfolios name search", () => {
 });
 
 describe("listDiscoverPortfolios privacy", () => {
-  it("never exposes contact, owner, recipient email or seeded private strings", async () => {
-    await Workspace.create(
+  it("never exposes contact, owner, recipient email, page data or a hidden client name (list and detail)", async () => {
+    const ws = await Workspace.create(
       makeListed("priv", {
-        inquiryRecipientEmail: "leads@secret.test",
         contact: { email: "owner@secret.test", phone: "+63-917-555-0199", address: "1 Secret St" },
+        publicPage: {
+          publishedAt: new Date("2026-11-01T00:00:00.000Z"),
+          seoDescription: "A pitch",
+          inquiryRecipientEmail: "leads@secret.test",
+          data: {
+            home: {
+              root: {},
+              content: [
+                { type: "Text", props: { text: "SENTINEL-HOME-DATA" } },
+                gridOf(["priv-img"]),
+              ],
+            },
+            gallery: PAGE,
+          },
+        },
       })
     );
+    await GalleryItem.create(
+      item(ws._id, "priv-img", { width: 800, height: 600, client: "Secret Client", hideClient: true })
+    );
 
-    const json = JSON.stringify(await listDiscoverPortfolios({ now: NOW }));
+    const list = await listDiscoverPortfolios({ now: NOW });
+    const detail = await getDiscoverPortfolio("priv", NOW);
+    const forbidden =
+      /contact|ownerUserId|inquiryRecipientEmail|user_priv|secret\.test|555-0199|Secret St|SENTINEL-HOME-DATA|Secret Client|hideClient/;
 
-    expect(json).not.toMatch(/contact|ownerUserId|inquiryRecipientEmail|user_priv|secret\.test|555-0199|Secret St/);
+    expect({
+      listLeak: JSON.stringify(list).match(forbidden)?.[0] ?? null,
+      detailLeak: JSON.stringify(detail).match(forbidden)?.[0] ?? null,
+      imageStillReturned: detail?.images.map((i) => i.url),
+    }).toEqual({
+      listLeak: null,
+      detailLeak: null,
+      imageStillReturned: ["https://cdn.test/priv-img/w1600"],
+    });
   });
 });
 

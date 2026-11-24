@@ -44,6 +44,26 @@ describe("DiscoverTile", () => {
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("dims a brand tile and overlays the name and category line on hover and focus, like a cover tile", () => {
+    const { container } = renderWithProviders(<DiscoverTile card={{ ...card, cover: null }} onOpen={() => {}} />);
+
+    expect(container.querySelector("[data-brand-tile]")).toHaveClass(
+      "group-hover:opacity-35",
+      "group-focus-visible:opacity-35",
+    );
+    const overlay = container.querySelector("[data-tile-overlay]");
+    expect(overlay).toHaveClass("group-hover:opacity-100", "group-focus-visible:opacity-100");
+    expect(overlay).toHaveTextContent("Marlowe & Vale");
+    expect(overlay).toHaveTextContent("Photographer · Philippines");
+  });
+
+  it("has no hover dim or overlay on a decorative brand tile", () => {
+    const { container } = renderWithProviders(<DiscoverTile card={{ ...card, cover: null }} decorative />);
+
+    expect(container.querySelector("[data-brand-tile]")).not.toHaveClass("group-hover:opacity-35");
+    expect(container.querySelector("[data-tile-overlay]")).toBeNull();
+  });
+
   it("swaps a broken cover image for the brand tile", () => {
     const { container } = renderWithProviders(<DiscoverTile card={card} onOpen={() => {}} />);
     expect(container.querySelector("[data-brand-tile]")).toBeNull();

@@ -29,6 +29,8 @@ export type DiscoverSampleSeed = {
   pitch: string;
   /** Which tile kind this listing exercises: og image, Home-image cover, or brand tile (no image). */
   image: "og" | "cover" | "none";
+  /** Discover opt-in; defaults to true. `false` seeds an opted-out sample so true/false/unset all exist in dev. */
+  listed?: boolean;
   coverWidth: number;
   coverHeight: number;
   brand: { background: string; foreground: string; accent: string; headingFont: PortfolioFontKey };
@@ -45,7 +47,7 @@ export const DISCOVER_SAMPLE_SEEDS: DiscoverSampleSeed[] = [
   { slug: "sample-oru-beauty", name: "Oru Beauty", businessType: "stylist", image: "none", coverWidth: 0, coverHeight: 0, pitch: "Bridal and editorial makeup, with trials at the studio or at your venue.", brand: { background: "#f1dfd9", foreground: "#3a1f26", accent: "#9c3f2c", headingFont: "cormorant" } },
   { slug: "sample-kabisera-catering", name: "Kabisera Catering", businessType: "catering", image: "cover", coverWidth: 900, coverHeight: 900, pitch: "Filipino and modern-fusion menus for weddings and parties of 30 to 300.", brand: { background: "#f4ead8", foreground: "#4a2b1d", accent: "#d6573a", headingFont: "fraunces" } },
   { slug: "sample-lumen-djs", name: "Lumen DJs", businessType: "entertainer", image: "og", coverWidth: 0, coverHeight: 0, pitch: "Wedding and private-event DJs with sound, lights and an MC if you want one.", brand: { background: "#2a2344", foreground: "#f3eefc", accent: "#ff9ec7", headingFont: "montserrat" } },
-  { slug: "sample-sable-thread", name: "Sable & Thread", businessType: "stylist", image: "none", coverWidth: 0, coverHeight: 0, pitch: "Wardrobe and styling for shoots, brands and weddings.", brand: { background: "#121212", foreground: "#f3f1ec", accent: "#d2ae72", headingFont: "playfair" } },
+  { slug: "sample-sable-thread", name: "Sable & Thread", businessType: "stylist", image: "none", listed: false, coverWidth: 0, coverHeight: 0, pitch: "Wardrobe and styling for shoots, brands and weddings.", brand: { background: "#121212", foreground: "#f3f1ec", accent: "#d2ae72", headingFont: "playfair" } },
   { slug: "sample-pinewake-photo", name: "Pinewake Photo", businessType: "photographer", image: "cover", coverWidth: 810, coverHeight: 1080, pitch: "Elopements and portraits in the Cordillera, planned around light and weather.", brand: { background: "#c8d8e6", foreground: "#1c2b3a", accent: "#4d6a86", headingFont: "inter" } },
   { slug: "sample-bloom-assembly", name: "Bloom Assembly", businessType: "planner", image: "cover", coverWidth: 800, coverHeight: 1000, pitch: "Garden weddings and intimate events, with floral design done in-house.", brand: { background: "#e9efdc", foreground: "#24402c", accent: "#5f8a5a", headingFont: "playfair" } },
 ];
@@ -75,7 +77,7 @@ export function buildDiscoverSampleWorkspace(sample: DiscoverSampleSeed, index: 
     planGrantExpiresAt: null,
     onboardingCompletedAt: now,
     discover: {
-      listed: true,
+      listed: sample.listed ?? true,
       listedAt,
       ...(sample.image === "cover"
         ? {

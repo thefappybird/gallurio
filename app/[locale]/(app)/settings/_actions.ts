@@ -328,6 +328,19 @@ export async function togglePublicPagePublishedAction(
     { $set: { "publicPage.publishedAt": next ? new Date() : null } },
   );
 
+  // A page listed while unpublished has no listedAt yet; stamp it on going live
+  // so it sorts and paginates correctly (set once, never reset).
+  if (next) {
+    await Workspace.updateOne(
+      {
+        _id: ctx.workspace._id,
+        "discover.listed": true,
+        "discover.listedAt": null,
+      },
+      { $set: { "discover.listedAt": new Date() } },
+    );
+  }
+
   revalidatePath("/settings/public-page", "page");
   return { ok: true };
 }

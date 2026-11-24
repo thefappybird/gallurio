@@ -803,11 +803,26 @@ describe("PublicPageSettingsForm — Discover listing toggle", () => {
     expect(screen.queryByText("discoverNoindexNote")).not.toBeInTheDocument();
   });
 
-  it("does not raise the pending-changes banner when only the toggle changes", async () => {
+  it("does not raise the pending-changes banner after a confirmed save of only the toggle", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockClear();
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
     renderPublished({ listed: false, saved: false });
 
     fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole("button", { name: "discoverConfirm.confirm" }));
+    });
 
+    await waitFor(() =>
+      expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
+        expect.objectContaining({ discoverListed: true })
+      )
+    );
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
   });
 });

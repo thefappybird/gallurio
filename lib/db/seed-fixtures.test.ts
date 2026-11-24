@@ -89,6 +89,11 @@ describe("seed-fixtures", () => {
     expect(new Set(DISCOVER_SAMPLE_SEEDS.map((s) => s.slug)).size).toBe(10);
   });
 
+  it("opts exactly one Discover sample out and keeps at least 8 listed for the banner", () => {
+    expect(DISCOVER_SAMPLE_SEEDS.filter((s) => s.listed === false)).toHaveLength(1);
+    expect(DISCOVER_SAMPLE_SEEDS.filter((s) => s.listed !== false).length).toBeGreaterThanOrEqual(8);
+  });
+
   it("gives every Discover sample a name and a valid businessType", () => {
     for (const s of DISCOVER_SAMPLE_SEEDS) {
       expect(s.name.trim()).not.toBe("");
