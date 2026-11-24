@@ -3,7 +3,7 @@
  * write leaves the workspace published AND listed. It is never reset.
  */
 export function listingSet(
-  prev: { listed?: boolean; listedAt: Date | null },
+  prev: { listed?: boolean | null; listedAt: Date | null },
   next: { listed: boolean; published: boolean },
   now: Date,
 ): Record<string, unknown> {

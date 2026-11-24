@@ -9,7 +9,7 @@ import type { PuckData } from "@/lib/page-builder/types";
 import { entitledMatch } from "@/lib/discover/entitledMatch";
 import { renderableBlocksAggExpr } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
-import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
+import { resolveEffectiveFonts, type PortfolioFontSelection } from "@/lib/page-builder/fonts";
 import { DEFAULT_BRAND_KIT, type PortfolioBrandKit } from "@/lib/page-builder/types";
 import type { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
 
@@ -32,7 +32,7 @@ export type DiscoverCard = {
   country: string | null;
   pitch: string;
   cover: { url: string; width: number; height: number } | null;
-  brand: { bg: string; fg: string; accent: string; headingFont: string };
+  brand: { bg: string; fg: string; accent: string; headingFont: PortfolioFontSelection };
 };
 
 type BrandKitRow = Partial<

@@ -12,7 +12,7 @@ function card(n: number): DiscoverCard {
     country: null,
     pitch: "",
     cover: null,
-    brand: { bg: "#111111", fg: "#ffffff", accent: "#cc8844", headingFont: "Inter" },
+    brand: { bg: "#111111", fg: "#ffffff", accent: "#cc8844", headingFont: "inter" },
   };
 }
 
