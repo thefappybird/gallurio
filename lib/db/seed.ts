@@ -57,6 +57,8 @@ import {
   readExpiredSeedOwner,
   readSeedOwner,
   PROMO_CODE_SEEDS,
+  DISCOVER_SAMPLE_SEEDS,
+  buildDiscoverSampleWorkspace,
   type SeedIdentity,
 } from "./seed-fixtures";
 import { getTemplate, PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
@@ -387,6 +389,8 @@ async function createExpiredWorkspace(owner: SeedIdentity) {
     currency: EXPIRED_WORKSPACE.currency,
     timezone: EXPIRED_WORKSPACE.timezone,
     onboardingCompletedAt: now,
+    // Opted in but gated: proves Discover's entitlement filter hides it.
+    discover: { listed: true },
     ...billingState,
   });
 
@@ -1250,6 +1254,20 @@ async function createPendingInvitations(
   ]);
 }
 
+/**
+ * Ten fictional, published, entitled (beta, no expiry) workspaces listed on
+ * Discover, so the /discover grid and the marketing banner (8+ listings) have
+ * data. Images reuse the picsum.photos hotlinks the rest of this seed uses: og
+ * for some, `discover.coverUrl` for others, none (brand tile) for the rest.
+ * They have no login user; only the dev seed ever creates them.
+ */
+async function createDiscoverSamples() {
+  const now = new Date();
+  await Workspace.insertMany(
+    DISCOVER_SAMPLE_SEEDS.map((sample, index) => buildDiscoverSampleWorkspace(sample, index, now))
+  );
+}
+
 async function seedMainWorkspace(owner: SeedIdentity) {
   const workspace = await createMainWorkspace(owner);
   const teams = await createTeamsAndMembers(workspace._id, owner);
@@ -1300,6 +1318,9 @@ async function main() {
 
   console.log("-> Seeding expired subscription workspace");
   const expiredWorkspace = await createExpiredWorkspace(expiredOwner);
+
+  console.log("-> Seeding Discover sample listings");
+  await createDiscoverSamples();
 
   console.log("-> Seeding promo codes");
   await PromoCode.insertMany(PROMO_CODE_SEEDS);

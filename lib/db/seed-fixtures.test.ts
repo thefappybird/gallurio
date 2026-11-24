@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
+import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import {
   buildExpiredSubscriptionState,
   buildPortfolioPageviewFixtures,
   readExpiredSeedOwner,
   readSeedOwner,
   PROMO_CODE_SEEDS,
+  DISCOVER_SAMPLE_SEEDS,
 } from "./seed-fixtures";
 
 describe("seed-fixtures", () => {
@@ -79,5 +82,41 @@ describe("seed-fixtures", () => {
       type: "demo1mo",
       expiresAt: null,
     });
+  });
+
+  it("has 10 Discover sample workspaces with unique slugs", () => {
+    expect(DISCOVER_SAMPLE_SEEDS).toHaveLength(10);
+    expect(new Set(DISCOVER_SAMPLE_SEEDS.map((s) => s.slug)).size).toBe(10);
+  });
+
+  it("gives every Discover sample a name and a valid businessType", () => {
+    for (const s of DISCOVER_SAMPLE_SEEDS) {
+      expect(s.name.trim()).not.toBe("");
+      expect(BUSINESS_TYPE_VALUES).toContain(s.businessType);
+    }
+  });
+
+  it("keeps Discover sample slugs clear of the main and expired seed workspaces", () => {
+    // seed.ts runs main() on import, so its slugs cannot be imported here.
+    const existing = ["seed-owner-demo", "expired-sub-demo"];
+    for (const s of DISCOVER_SAMPLE_SEEDS) expect(existing).not.toContain(s.slug);
+  });
+
+  it("covers all three Discover tile kinds, with dimensions on every cover sample", () => {
+    const kinds = new Set(DISCOVER_SAMPLE_SEEDS.map((s) => s.image));
+    expect([...kinds].sort()).toEqual(["cover", "none", "og"]);
+    for (const s of DISCOVER_SAMPLE_SEEDS.filter((x) => x.image === "cover")) {
+      expect(s.coverWidth).toBeGreaterThan(0);
+      expect(s.coverHeight).toBeGreaterThan(0);
+    }
+  });
+
+  it("gives every Discover sample valid hex brand colors and a real heading font", () => {
+    for (const { brand } of DISCOVER_SAMPLE_SEEDS) {
+      for (const color of [brand.background, brand.foreground, brand.accent]) {
+        expect(color).toMatch(/^#[0-9a-f]{6}$/i);
+      }
+      expect(PORTFOLIO_FONT_KEYS).toContain(brand.headingFont);
+    }
   });
 });
