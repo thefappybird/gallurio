@@ -1,5 +1,54 @@
 {
   "marketing": {
+    "discover": {
+      "metadata": {
+        "title": "Browse portfolios made on Gallurio",
+        "description": "Discover portfolios from photographers, planners, venues and other creative businesses, all built on Gallurio."
+      },
+      "headline": "Browse portfolios",
+      "intro": "Portfolios made on Gallurio, listed by their owners. Open one for a closer look, then visit the full site.",
+      "searchLabel": "Search portfolios",
+      "searchPlaceholder": "Search by name",
+      "filterLabel": "Filter by category",
+      "all": "All",
+      "count": "{count, plural, one {# portfolio shown} other {# portfolios shown}}",
+      "loading": "Loading portfolios",
+      "empty": {
+        "title": "No portfolios are listed yet",
+        "body": "Owners choose whether to list their portfolio. Yours can appear here once you turn on “List on Discover” in your portfolio settings.",
+        "cta": "Get started"
+      },
+      "noResults": {
+        "title": "No portfolios match",
+        "body": "Try a different search, or clear the category.",
+        "clear": "Clear filters"
+      },
+      "loadMore": "Load more portfolios",
+      "loadingMore": "Loading…",
+      "end": "That is everything listed so far.",
+      "error": {
+        "list": "Portfolios could not be loaded.",
+        "retry": "Try again",
+        "detail": "This portfolio could not be opened."
+      },
+      "modal": {
+        "close": "Close",
+        "photos": "Portfolio images",
+        "previous": "Previous image",
+        "next": "Next image",
+        "counter": "{current} / {total}",
+        "thumb": "Show image {n} of {total}",
+        "visit": "Visit portfolio",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "report": "Report this listing"
+      },
+      "cta": {
+        "title": "Have a Gallurio portfolio?",
+        "body": "Turn on “List on Discover” in your portfolio settings to appear here. You choose the cover image and the one-line description. Turn it off any time.",
+        "button": "Get started"
+      }
+    },
     "nav": {
       "pricing": "Pricing",
       "portfolioMaker": "Portfolio Builder",

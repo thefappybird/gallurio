@@ -1,5 +1,54 @@
 {
   "marketing": {
+    "discover": {
+      "metadata": {
+        "title": "Jelajahi portofolio yang dibuat di Gallurio",
+        "description": "Temukan portofolio fotografer, perencana acara, tempat acara, dan bisnis kreatif lainnya, semuanya dibuat di Gallurio."
+      },
+      "headline": "Jelajahi portofolio",
+      "intro": "Portofolio yang dibuat di Gallurio dan ditampilkan oleh pemiliknya. Buka satu untuk melihat lebih dekat, lalu kunjungi situs lengkapnya.",
+      "searchLabel": "Cari portofolio",
+      "searchPlaceholder": "Cari berdasarkan nama",
+      "filterLabel": "Filter berdasarkan kategori",
+      "all": "Semua",
+      "count": "{count, plural, other {# portofolio ditampilkan}}",
+      "loading": "Memuat portofolio",
+      "empty": {
+        "title": "Belum ada portofolio yang ditampilkan",
+        "body": "Pemilik yang memilih apakah portofolionya ditampilkan. Portofolio Anda bisa muncul di sini setelah Anda mengaktifkan “Tampilkan di Discover” di pengaturan portofolio.",
+        "cta": "Mulai"
+      },
+      "noResults": {
+        "title": "Tidak ada portofolio yang cocok",
+        "body": "Coba pencarian lain, atau hapus kategori.",
+        "clear": "Hapus filter"
+      },
+      "loadMore": "Muat portofolio lainnya",
+      "loadingMore": "Memuat…",
+      "end": "Hanya itu yang ditampilkan sejauh ini.",
+      "error": {
+        "list": "Portofolio tidak dapat dimuat.",
+        "retry": "Coba lagi",
+        "detail": "Portofolio ini tidak dapat dibuka."
+      },
+      "modal": {
+        "close": "Tutup",
+        "photos": "Gambar portofolio",
+        "previous": "Gambar sebelumnya",
+        "next": "Gambar berikutnya",
+        "counter": "{current} / {total}",
+        "thumb": "Tampilkan gambar {n} dari {total}",
+        "visit": "Kunjungi portofolio",
+        "copy": "Salin tautan",
+        "copied": "Tautan disalin",
+        "report": "Laporkan daftar ini"
+      },
+      "cta": {
+        "title": "Punya portofolio Gallurio?",
+        "body": "Aktifkan “Tampilkan di Discover” di pengaturan portofolio Anda agar muncul di sini. Anda yang memilih gambar sampul dan deskripsi satu baris. Matikan kapan saja.",
+        "button": "Mulai"
+      }
+    },
     "nav": {
       "pricing": "Harga",
       "portfolioMaker": "Portfolio Builder",

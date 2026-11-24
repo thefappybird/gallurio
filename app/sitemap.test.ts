@@ -46,6 +46,12 @@ describe("sitemap()", () => {
     expect(urls).toContain("http://localhost:3000/compare/gallurio-vs-honeybook");
   });
 
+  it("lists the Discover directory page", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls).toContain("http://localhost:3000/discover");
+  });
+
   it("lists the blog content", async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
 

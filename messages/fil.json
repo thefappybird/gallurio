@@ -1,5 +1,54 @@
 {
   "marketing": {
+    "discover": {
+      "metadata": {
+        "title": "Mag-browse ng mga portfolio na gawa sa Gallurio",
+        "description": "Tuklasin ang mga portfolio ng mga photographer, planner, venue, at iba pang malikhaing negosyo, lahat ay gawa sa Gallurio."
+      },
+      "headline": "Mag-browse ng mga portfolio",
+      "intro": "Mga portfolio na gawa sa Gallurio at inilista ng kanilang mga may-ari. Buksan ang isa para sa mas malapitang tingin, saka bisitahin ang buong site.",
+      "searchLabel": "Maghanap ng mga portfolio",
+      "searchPlaceholder": "Maghanap ayon sa pangalan",
+      "filterLabel": "I-filter ayon sa kategorya",
+      "all": "Lahat",
+      "count": "{count, plural, one {# portfolio ang ipinapakita} other {# portfolio ang ipinapakita}}",
+      "loading": "Naglo-load ng mga portfolio",
+      "empty": {
+        "title": "Wala pang nakalistang portfolio",
+        "body": "Pinipili ng mga may-ari kung ililista ang kanilang portfolio. Lalabas ang sa iyo rito kapag in-on mo ang “I-list sa Discover” sa mga setting ng iyong portfolio.",
+        "cta": "Magsimula"
+      },
+      "noResults": {
+        "title": "Walang tumugmang portfolio",
+        "body": "Subukan ang ibang paghahanap, o i-clear ang kategorya.",
+        "clear": "I-clear ang mga filter"
+      },
+      "loadMore": "Magpakita pa ng mga portfolio",
+      "loadingMore": "Naglo-load…",
+      "end": "Iyan na ang lahat ng nakalista sa ngayon.",
+      "error": {
+        "list": "Hindi na-load ang mga portfolio.",
+        "retry": "Subukan muli",
+        "detail": "Hindi mabuksan ang portfolio na ito."
+      },
+      "modal": {
+        "close": "Isara",
+        "photos": "Mga larawan ng portfolio",
+        "previous": "Nakaraang larawan",
+        "next": "Susunod na larawan",
+        "counter": "{current} / {total}",
+        "thumb": "Ipakita ang larawan {n} sa {total}",
+        "visit": "Bisitahin ang portfolio",
+        "copy": "Kopyahin ang link",
+        "copied": "Nakopya ang link",
+        "report": "I-report ang listing na ito"
+      },
+      "cta": {
+        "title": "May Gallurio portfolio ka ba?",
+        "body": "I-on ang “I-list sa Discover” sa mga setting ng iyong portfolio para lumabas dito. Ikaw ang pipili ng cover image at ng isang-linyang paglalarawan. I-off ito anumang oras.",
+        "button": "Magsimula"
+      }
+    },
     "nav": {
       "pricing": "Presyo",
       "portfolioMaker": "Portfolio Builder",

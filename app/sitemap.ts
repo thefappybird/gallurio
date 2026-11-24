@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 const MARKETING_PATHS = [
   "/",
   "/pricing",
+  "/discover",
   "/about",
   "/contact",
   "/book-demo",

@@ -82,6 +82,8 @@ export const ROOT_CLIENT_MESSAGE_KEYS: readonly string[] = [];
 // to the client bundle.
 export const MARKETING_CLIENT_MESSAGE_KEYS: readonly string[] = [
   "marketing.nav",
+  "marketing.discover",
+  "publicPage.seoDefaults",
   "marketing.appInfo",
   "marketing.footer",
   "marketing.terms.title",

@@ -1,0 +1,56 @@
+import { describe, expect, it } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+import type { DiscoverCard } from "@/lib/db/queries/discover";
+import { DiscoverTile } from "./discover-tile";
+
+const card: DiscoverCard = {
+  slug: "marlowe-vale",
+  name: "Marlowe & Vale",
+  category: "photographer",
+  country: "PH",
+  pitch: "",
+  cover: { url: "https://img.test/a.jpg", width: 400, height: 500 },
+  brand: { bg: "#1f3a34", fg: "#f1efe6", accent: "#e0b873", headingFont: "fraunces" },
+};
+
+describe("DiscoverTile", () => {
+  it("is an image-only link to ?p=slug labelled with the name and category line, with overlay text", () => {
+    renderWithProviders(<DiscoverTile card={card} onOpen={() => {}} />);
+
+    const link = screen.getByRole("link", { name: "Marlowe & Vale, Photographer · Philippines" });
+    expect(link).toHaveAttribute("href", "?p=marlowe-vale");
+    expect(screen.getByText("Marlowe & Vale")).toBeInTheDocument();
+    expect(screen.getByText("Photographer · Philippines")).toBeInTheDocument();
+  });
+
+  it("leaves out the separator when there is no country or no category", () => {
+    const { container, rerender } = renderWithProviders(
+      <DiscoverTile card={{ ...card, country: null }} onOpen={() => {}} />,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("aria-label", "Marlowe & Vale, Photographer");
+    expect(container.textContent).not.toContain("·");
+
+    rerender(<DiscoverTile card={{ ...card, category: null }} onOpen={() => {}} />);
+    expect(screen.getByRole("link")).toHaveAttribute("aria-label", "Marlowe & Vale, Philippines");
+    expect(container.textContent).not.toContain("·");
+  });
+
+  it("renders no link and no overlay, and is hidden from assistive tech, when decorative", () => {
+    const { container } = renderWithProviders(<DiscoverTile card={card} decorative />);
+
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(container.textContent).toBe("");
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("swaps a broken cover image for the brand tile", () => {
+    const { container } = renderWithProviders(<DiscoverTile card={card} onOpen={() => {}} />);
+    expect(container.querySelector("[data-brand-tile]")).toBeNull();
+
+    fireEvent.error(container.querySelector("img")!);
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("[data-brand-tile]")).toHaveStyle({ backgroundColor: "#1f3a34" });
+  });
+});
