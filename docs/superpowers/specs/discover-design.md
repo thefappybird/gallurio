@@ -64,8 +64,7 @@ Every preview is built from something the owner already uploaded or configured.
   1. **Share image:** the owner's 1200×630 Open Graph image from Settings → Public page (`publicPage.seo.ogImageUrl`).
   2. **First image on the live page:** a real photo the owner uploaded and placed on their published Home page, usually the hero image. It is already hosted on Cloudflare Images. It is picked once at publish time and stored as `discover.coverUrl` (see Data model).
   3. **Brand tile:** a CSS-only card drawn from the published brand kit (background, text and accent colors, heading font) and the business name. No image is involved.
-- **Modal, Photos view (default):** a carousel of the share image plus up to 4 images the published page actually renders (see Read paths).
-- **Modal, Site view (on tap):** the real published page in a scaled-down, non-interactive iframe. The visitor's browser renders it, as the editor's Preview tab already does. It loads only when the tab is selected.
+- **Modal:** a photo carousel of the share image plus up to 4 images the published page actually renders (see Read paths). There is **no live site view** (owner decision). "Visit portfolio" opens the real page in a new tab. In production, portfolios live on their own subdomains, and embedding them would have required relaxing the framing headers.
 
 ## Decisions made with the owner
 
@@ -186,7 +185,7 @@ discover: {
   - The Puck `data` blob is never projected.
 - **Tile kind:** a **cover** tile using `ogImageUrl`, else `discover.coverUrl`. Otherwise a **brand** tile rendered from the brand kit colors and heading font with the workspace name.
   - The tile's aspect ratio comes from the image's dimensions. The og image is 1200×630. A brand tile uses a fixed 4:5.
-  - The mockup's "composite" (browser-frame) style is dropped. The modal's Site view replaces it.
+  - The mockup's "composite" (browser-frame) style is dropped.
 
 **`getDiscoverPortfolio(slug)`** feeds the modal.
 
@@ -214,18 +213,7 @@ discover: {
 - `DiscoverTile` (cover / brand kinds)
 - `DiscoverDialog` (native `<dialog>`, @starting-style entrance, Esc and backdrop close, arrow keys RTL-aware, focus return, Copy link, Report)
 
-**Modal Photos / Site views:**
-- The left pane has a two-option segmented control: **Photos** (default) and **Site**. Use the existing tab or segmented primitive from `REUSABLE_CODE.md`.
-- **Site** mounts an `<iframe src="/w/<slug>?embed=discover">` **only when selected**.
-  - It renders at 1280px wide and is scaled with CSS `transform: scale()` to the pane width. The container height is set from the scaled height.
-  - The frame is decorative: `sandbox="allow-scripts allow-same-origin"`, `pointer-events: none`, `tabindex="-1"`, `aria-hidden="true"`, `title` set.
-  - A skeleton shows until `load` fires. "Visit portfolio" stays the way in.
-  - On the bottom sheet (720px and below), the same frame scales to sheet width.
-- **`?embed=discover` on the public page:**
-  - Skips the pageview beacon, so Discover peeks never inflate the owner's analytics.
-  - Changes nothing else.
-  - The value is whitelisted. Any other value is ignored.
-- **Framing:** no `X-Frame-Options` or `frame-ancestors` exists in `next.config.ts`. The builder checks the Caddy config and keeps same-origin framing allowed for `/w/*`. The editor's Preview tab (`app/[locale]/portfolio-preview/page.tsx`) is the precedent for same-origin iframing.
+**Modal images:** the left pane is the photo carousel only. "Visit portfolio" opens `portfolioPublicUrl(slug)` (`lib/portfolio/publicUrl.ts`, the subdomain in production) in a new tab with `rel="noopener"`. There is no iframe, so no framing or beacon changes are needed.
 
 **Report:**
 - **Call:** a `mailto:` link to the support address, with the slug prefilled in the subject. There is no in-app moderation queue in v1.
@@ -289,9 +277,7 @@ Category chip labels reuse the existing business-type label keys where present. 
   - `PublishDialog`: no warning when never published; warning and relabel in both directions when published; the value passes through on confirm.
   - Settings: the confirm modal opens only when published and changed; Cancel keeps the form unsaved.
   - Header order.
-  - `DiscoverDialog`: the Site iframe is absent until the Site view is selected.
   - Card overlay: present on hover and focus-visible, `aria-label` always set.
-  - The public page with `?embed=discover` does not fire the pageview beacon.
 - **Routes:** validation, rate limit, 404 for an unlisted slug.
 - **Batched Playwright run:**
   - The banner, `/discover` grid and modal, and the header at 375/768/1280 × 5 locales × light/dark.
