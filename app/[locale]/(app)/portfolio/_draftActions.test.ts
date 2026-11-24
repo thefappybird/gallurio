@@ -469,6 +469,128 @@ describe("publishDraftAction", () => {
   });
 });
 
+describe("publishDraftAction discover listing", () => {
+  async function seedWorkspace(extra: Record<string, unknown> = {}) {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+      ...extra,
+    });
+  }
+  async function seedDraft(home: unknown = { content: [], root: {} }) {
+    return PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "D",
+      ...snapshot,
+      data: { home, gallery: { content: [], root: {} } },
+    });
+  }
+
+  it("publish with { listed: true } sets listed and listedAt together with publishedAt", async () => {
+    await seedWorkspace();
+    const draft = await seedDraft();
+
+    const res = await publishDraftAction(String(draft._id), { listed: true });
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.discover?.listed).toBe(true);
+    expect(ws!.discover?.listedAt).toBeInstanceOf(Date);
+    expect(ws!.discover?.listedAt).toEqual(ws!.publicPage?.publishedAt);
+  });
+
+  it("publish without opts leaves discover.listed untouched", async () => {
+    await seedWorkspace({ discover: { listed: false } });
+    const draft = await seedDraft();
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.discover?.listed).toBe(false);
+    expect(ws!.discover?.listedAt).toBeNull();
+  });
+
+  it("publish without opts sets listedAt when already listed but never dated", async () => {
+    await seedWorkspace({ discover: { listed: true } });
+    const draft = await seedDraft();
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.discover?.listed).toBe(true);
+    expect(ws!.discover?.listedAt).toEqual(ws!.publicPage?.publishedAt);
+  });
+
+  it("publish writes cover fields from the first Home image, dimensions from its GalleryItem", async () => {
+    await seedWorkspace();
+    await GalleryItem.create({
+      workspaceId: mockCtx.workspace._id,
+      assetId: "cover-1",
+      url: "https://imagedelivery.net/hash/cover-1/public",
+      width: 4000,
+      height: 3000,
+    });
+    // Same assetId under another workspace must not leak its dimensions.
+    await GalleryItem.create({
+      workspaceId: new Types.ObjectId(),
+      assetId: "cover-1",
+      url: "https://imagedelivery.net/hash/cover-1/public",
+      width: 1,
+      height: 1,
+    });
+    const draft = await seedDraft({
+      content: [{ type: "GalleryPreset", props: { id: "g", images: [{ publicId: "cover-1" }] } }],
+      root: {},
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.discover?.coverAssetId).toBe("cover-1");
+    expect(ws!.discover?.coverUrl).toBe("https://imagedelivery.net/hash/cover-1/public");
+    expect(ws!.discover?.coverWidth).toBe(4000);
+    expect(ws!.discover?.coverHeight).toBe(3000);
+  });
+
+  it("publish with no Home image clears the cover fields", async () => {
+    await seedWorkspace({
+      discover: {
+        coverUrl: "https://imagedelivery.net/hash/old/public",
+        coverAssetId: "old",
+        coverWidth: 800,
+        coverHeight: 600,
+      },
+    });
+    const draft = await seedDraft();
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.discover?.coverUrl).toBe("");
+    expect(ws!.discover?.coverAssetId).toBe("");
+    expect(ws!.discover?.coverWidth).toBeNull();
+    expect(ws!.discover?.coverHeight).toBeNull();
+  });
+
+  it("publish rejects malformed opts with invalid_input", async () => {
+    await seedWorkspace();
+    const draft = await seedDraft();
+
+    const res = await publishDraftAction(String(draft._id), { listed: "yes" });
+    expect(res).toEqual({ error: "invalid_input" });
+  });
+});
+
 describe("importDemoPortfolioAction", () => {
   // Demo sessions are crypto.randomUUID() (lib/page-builder/demoSession.ts).
   const DEMO_SESSION = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";

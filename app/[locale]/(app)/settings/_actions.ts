@@ -30,6 +30,7 @@ import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
 import { emitDataChanged } from "@/lib/sockets/emitDataChanged";
+import { listingSet } from "@/lib/discover/rules";
 
 // ---------------------------------------------------------------------------
 // Workspace business settings
@@ -229,6 +230,9 @@ export async function updatePublicPageSettingsAction(
       "publicPage.settingsDraft.siteIcon.assetId": 1,
       "publicPage.seo.ogImageAssetId": 1,
       "publicPage.siteIcon.assetId": 1,
+      "publicPage.publishedAt": 1,
+      "discover.listed": 1,
+      "discover.listedAt": 1,
     },
   ).lean();
   const oldOgAssetId =
@@ -250,11 +254,28 @@ export async function updatePublicPageSettingsAction(
     seoFields["publicPage.settingsDraft.seo.noindex"] = parsed.data.seo.noindex ?? false;
   }
 
+  // Discover listing is live-immediate and lives at a top-level path, never
+  // inside the settingsDraft buffer.
+  const listingFields =
+    parsed.data.discoverListed === undefined
+      ? {}
+      : listingSet(
+          {
+            listed: currentAssets?.discover?.listed,
+            listedAt: currentAssets?.discover?.listedAt ?? null,
+          },
+          {
+            listed: parsed.data.discoverListed,
+            published: currentAssets?.publicPage?.publishedAt != null,
+          },
+          new Date(),
+        );
+
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: {
-        // inquiryRecipientEmail is the only field that stays live-immediate.
+        // inquiryRecipientEmail and the Discover listing stay live-immediate.
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
         "publicPage.settingsDraft.seoTitle": parsed.data.seoTitle ?? "",
@@ -262,6 +283,7 @@ export async function updatePublicPageSettingsAction(
         "publicPage.settingsDraft.siteIcon.url": parsed.data.siteIconUrl ?? "",
         "publicPage.settingsDraft.siteIcon.assetId": newSiteIconAssetId ?? "",
         ...seoFields,
+        ...listingFields,
       },
     },
   );

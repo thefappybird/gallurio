@@ -217,6 +217,8 @@ export const publicPageSettingsSchema = z.object({
     .optional()
     .default(""),
   siteIconAssetId: z.string().trim().optional().default(""),
+  // Live-immediate Discover opt-in; undefined leaves the saved listing as is.
+  discoverListed: z.boolean().optional(),
   seo: z
     .object({
       keywords: z

@@ -20,6 +20,8 @@ import { ensureBlockIds } from "@/lib/page-builder/ensureBlockIds";
 import type { Data } from "@puckeditor/core";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
+import { listingSet } from "@/lib/discover/rules";
+import { firstHomeImage } from "@/lib/discover/firstHomeImage";
 import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
 
 /** Auto-name for a draft created from an imported Portfolio Maker demo. */
@@ -340,11 +342,15 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
   }
 }
 
-export async function publishDraftAction(id: unknown): Promise<DraftActionResult> {
+const publishOptsSchema = z.object({ listed: z.boolean().optional() });
+
+export async function publishDraftAction(id: unknown, opts?: unknown): Promise<DraftActionResult> {
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return { error: "owner_only" };
   const idParsed = z.string().min(1).max(64).safeParse(id);
   if (!idParsed.success) return { error: "invalid_id" };
+  const optsParsed = publishOptsSchema.safeParse(opts ?? {});
+  if (!optsParsed.success) return { error: "invalid_input" };
 
   const workspaceId = ctx.workspace._id;
   try {
@@ -356,6 +362,8 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
           "publicPage.settingsDraft": 1,
           "publicPage.seo.ogImageAssetId": 1,
           "publicPage.siteIcon.assetId": 1,
+          "discover.listed": 1,
+          "discover.listedAt": 1,
         })
         .lean(),
     ]);
@@ -445,6 +453,35 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
     const now = new Date();
     set["publicPage.publishedAt"] = now;
     set["publicPage.lastPublishedAt"] = now;
+    // Discover cover = first image of the FINAL published Home tree. Always
+    // written so a Home with no image clears a stale cover.
+    const cover = firstHomeImage(set["publicPage.data.home"] as PuckData | null);
+    const coverItem = cover
+      ? await GalleryItem.findOne({ workspaceId, assetId: cover.publicId })
+          .select({ width: 1, height: 1 })
+          .lean()
+      : null;
+    set["discover.coverAssetId"] = cover?.publicId ?? "";
+    set["discover.coverUrl"] = cover
+      ? imageDeliveryUrl(cover.publicId, { width: 1200, fit: "scale-down" })
+      : "";
+    set["discover.coverWidth"] = coverItem?.width ?? null;
+    set["discover.coverHeight"] = coverItem?.height ?? null;
+
+    const prevListing = {
+      listed: workspace?.discover?.listed,
+      listedAt: workspace?.discover?.listedAt ?? null,
+    };
+    if (optsParsed.data.listed !== undefined) {
+      Object.assign(
+        set,
+        listingSet(prevListing, { listed: optsParsed.data.listed, published: true }, now),
+      );
+    } else if (prevListing.listed === true) {
+      // Saved as listed but never dated (set while unpublished): date it now.
+      const listedAt = listingSet(prevListing, { listed: true, published: true }, now)["discover.listedAt"];
+      if (listedAt) set["discover.listedAt"] = listedAt;
+    }
 
     await Workspace.updateOne({ _id: workspaceId }, { $set: set });
 

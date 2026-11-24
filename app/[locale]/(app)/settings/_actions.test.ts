@@ -789,6 +789,79 @@ describe("updatePublicPageSettingsAction", () => {
 
 });
 
+// ---- updatePublicPageSettingsAction — discover listing ----------------------
+
+describe("updatePublicPageSettingsAction — discover listing", () => {
+  it("discoverListed: false writes discover.listed live and nothing under settingsDraft", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({ discoverListed: false });
+    expect(result.error).toBeUndefined();
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws!.discover?.listed).toBe(false);
+    const draft = ws!.publicPage?.settingsDraft as Record<string, unknown> | undefined;
+    expect(draft && "discover" in draft).toBeFalsy();
+    expect(draft && "discoverListed" in draft).toBeFalsy();
+  });
+
+  it("omitting discoverListed leaves the listing untouched", async () => {
+    const listedAt = new Date("2026-01-02T00:00:00.000Z");
+    await seedWorkspaceA();
+    await Workspace.updateOne({ _id: WS_A_ID }, { $set: { discover: { listed: true, listedAt } } });
+
+    const result = await updatePublicPageSettingsAction({ seoTitle: "Hello" });
+    expect(result.error).toBeUndefined();
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws!.discover?.listed).toBe(true);
+    expect(ws!.discover?.listedAt).toEqual(listedAt);
+  });
+
+  it("listing a published workspace stamps listedAt; an unpublished one does not", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { "publicPage.publishedAt": new Date("2026-01-01T00:00:00.000Z") } },
+    );
+    expect((await updatePublicPageSettingsAction({ discoverListed: true })).error).toBeUndefined();
+    const published = await Workspace.findById(WS_A_ID).lean();
+    expect(published!.discover?.listedAt).toBeInstanceOf(Date);
+
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { "publicPage.publishedAt": null, "discover.listedAt": null } },
+    );
+    expect((await updatePublicPageSettingsAction({ discoverListed: true })).error).toBeUndefined();
+    const unpublished = await Workspace.findById(WS_A_ID).lean();
+    expect(unpublished!.discover?.listedAt).toBeNull();
+  });
+
+  it("non-owner cannot change discover.listed", async () => {
+    await seedWorkspaceA();
+    await User.create({
+      workosUserId: "user_discover_staff",
+      email: "discoverstaff@test.com",
+      name: "Discover Staff",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [{ workspaceId: WS_A_ID, role: "staff" }],
+    });
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "user_discover_staff",
+      email: "discoverstaff@test.com",
+      name: "Discover Staff",
+      avatarUrl: null,
+    });
+
+    const result = await updatePublicPageSettingsAction({ discoverListed: false });
+    expect(result.error).toBe("owner_only");
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws!.discover?.listed).toBeUndefined();
+  });
+});
+
 // ---- togglePublicPagePublishedAction ----------------------------------------
 
 describe("togglePublicPagePublishedAction", () => {
