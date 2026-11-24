@@ -375,6 +375,7 @@ prefer reusing the existing module over a new one where flagged.
 | L-6 | Manual `useRef` debounce for search | `bookings/_components/booking-detail-modal.tsx` (ClientReassignPicker), `bookings/_components/bookings-toolbar.tsx`, `clients/_components/clients-toolbar.tsx` | `debounceRef` + `setTimeout`/`clearTimeout` in effect | New `lib/hooks/useDebounce.ts` (pairs with C-5 toolbar) | med |
 | L-7 | Local `PAGE_SIZE` constants | `bookings/_components/booking-history-dialog.tsx` (5), `bookings/_components/team-filter-control.tsx` (12) | Per-component page sizes while `PAGE_SIZE_OPTIONS` is centralized | Either accept as context-specific or name them in `lib/pagination.ts` | low |
 | L-8 | HMAC-SHA256-hex compute + `timingSafeEqual` verify | `lib/auth/oauthState.ts`, `lib/auth/activeWorkspace.ts`, `lib/lemonsqueezy/webhook.ts` | 3rd hand-written copy of `createHmac("sha256",...).digest("hex")` + length-check + `timingSafeEqual` (Lemon Squeezy's SDK ships no verify helper, unlike Paddle's `webhooks.unmarshal()`) | New `lib/server/hmac.ts` `verifyHmacHex(payload, secret, signatureHex)` — repoint all 3 call sites in one PR, not a byproduct of an unrelated change | med |
+| L-9 | Opaque keyset-cursor encode/decode (base64url of `<sort key>\|<_id>`) | `lib/db/queries/gallery.ts:226-236`, `lib/db/queries/notifications.ts:17-27`, `lib/db/queries/discover.ts` (`encodeCursor`/`decodeCursor`) | Three local copies of the same encode/decode + ObjectId validation; Discover also adds a nullable sort key | New `lib/db/cursor.ts` taking a key serializer | high |
 
 ---
 

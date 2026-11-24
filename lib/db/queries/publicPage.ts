@@ -140,7 +140,7 @@ export type PublishedWorkspaceSlug = {
  * publicPage.sitemap.test.ts; if this ever drifts, the sitemap silently
  * advertises URLs that render "Coming Soon".
  */
-function renderableBlocksAggExpr(fieldPath: string) {
+export function renderableBlocksAggExpr(fieldPath: string) {
   return {
     $let: {
       vars: {
