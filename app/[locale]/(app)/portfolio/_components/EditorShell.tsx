@@ -256,6 +256,8 @@ type Props = {
   initialInquiryRecipientEmail: string;
   /** Whether this workspace's public portfolio has been published at least once. */
   hasBeenPublished: boolean;
+  /** Persisted `discover.listed` (undefined = the owner has never decided). */
+  discoverListed?: boolean;
   /** Workspace business type, used to pick suggested vibe tags. */
   workspaceBusinessType: string;
   /** Owner's saved named themes (server-loaded). */
@@ -1030,6 +1032,7 @@ export function EditorShell({
   initialSeoKeywords,
   initialInquiryRecipientEmail,
   hasBeenPublished,
+  discoverListed,
   workspaceBusinessType,
   initialSavedThemes,
   initialDrafts = [],
@@ -1114,6 +1117,10 @@ export function EditorShell({
   }));
   // currentSlug tracks the live slug after in-dialog edits (optimistic update).
   const [currentSlug, setCurrentSlug] = useState(slug);
+  // Mirrors `discover.listed`; updated after a publish so a reopened dialog compares against what was just saved.
+  const [savedListed, setSavedListed] = useState(discoverListed);
+  // `hasBeenPublished` is a static server prop; this flips on the first in-session publish so the Discover warning gate sees a live page.
+  const [isLive, setIsLive] = useState(hasBeenPublished);
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -2294,7 +2301,7 @@ export function EditorShell({
   }
 
   // ---- Publish from draft ----
-  async function doPublish() {
+  async function doPublish(listed: boolean) {
     if (guideMode) return;
     if (demoMode) {
       // No real publish for an anonymous demo visitor — handlePublish already
@@ -2314,11 +2321,13 @@ export function EditorShell({
     }
     setSavingChanges(true);
     try {
-      const res = await publishDraftAction(activeDraftId);
+      const res = await publishDraftAction(activeDraftId, { listed });
       if ("error" in res) {
         toast.error(t("errorToast"));
         return;
       }
+      setSavedListed(listed);
+      setIsLive(true);
       setPublishOpen(false);
       if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
       toast.success(t("publishedToast"));
@@ -3377,6 +3386,9 @@ export function EditorShell({
         publicUrl={portfolioPublicUrl(currentSlug)}
         currentSlug={currentSlug}
         hasBeenPublished={hasBeenPublished}
+        isLive={isLive}
+        savedListed={savedListed === true}
+        initialListed={savedListed ?? true}
         onSlugSaved={setCurrentSlug}
         onUpdateSlug={updatePortfolioSlugAction}
       />

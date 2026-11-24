@@ -2610,7 +2610,14 @@
           "slugTaken": "ถูกใช้ไปแล้ว",
           "slugInvalid": "รูปแบบไม่ถูกต้อง",
           "qrCodeAlt": "คิวอาร์โค้ดลิงก์ไปยังพอร์ตโฟลิโอของคุณ",
-          "downloadQr": "ดาวน์โหลด QR"
+          "downloadQr": "ดาวน์โหลด QR",
+          "discoverLabel": "แสดงบน Discover",
+          "discoverWarnListTitle": "พอร์ตโฟลิโอของคุณจะแสดงบน Discover",
+          "discoverWarnListBody": "ทุกคนที่เรียกดูหน้า Discover ของ Gallurio จะสามารถค้นหาพอร์ตโฟลิโอของคุณได้",
+          "discoverWarnUnlistTitle": "พอร์ตโฟลิโอของคุณจะถูกนำออกจาก Discover",
+          "discoverWarnUnlistBody": "ยังคงออนไลน์ที่ลิงก์สาธารณะ แต่จะไม่แสดงในหน้า Discover อีกต่อไป",
+          "confirmAndList": "เผยแพร่และแสดงบน Discover",
+          "confirmAndUnlist": "เผยแพร่และนำออกจาก Discover"
         },
         "themeDialog": {
           "title": "ธีมและแบรนด์"

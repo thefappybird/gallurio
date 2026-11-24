@@ -930,8 +930,32 @@ describe("EditorShell", () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
+    // Published workspace with no saved Discover decision: the toggle defaults on, so the
+    // dialog relabels its confirm button.
+    fireEvent.click(await screen.findByRole("button", { name: "Publish and list on Discover" }));
+    await waitFor(() =>
+      expect(publishDraftAction).toHaveBeenCalledWith("d1", { listed: true }),
+    );
+  });
+
+  it("warns on a listing change after the first in-session publish without a reload", async () => {
+    await renderAndDismissEntry(<EditorShell {...basePro} hasBeenPublished={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
+    // First publish: nothing is live yet, so no warning and the plain label.
     fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
-    await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
+    await waitFor(() =>
+      expect(publishDraftAction).toHaveBeenCalledWith("d1", { listed: true }),
+    );
+    await waitFor(() => expect(screen.queryByText("Publish your portfolio?")).toBeNull());
+
+    // Reopen without reloading and untick: the live page would be unlisted.
+    fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
+    fireEvent.click(await screen.findByRole("switch", { name: "List on Discover" }));
+    expect(await screen.findByText("Your portfolio will be removed from Discover")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Publish and remove from Discover" }),
+    ).toBeInTheDocument();
   });
 
   it("shows the mobile banner notice", async () => {
@@ -2851,8 +2875,10 @@ describe("EditorShell", () => {
     expect(payload.data.home.content.some((b) => b.props?._chrome === "nav")).toBe(true);
 
     expect(await screen.findByText("Publish your portfolio?")).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
-    await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish and list on Discover" }));
+    await waitFor(() =>
+      expect(publishDraftAction).toHaveBeenCalledWith("d1", { listed: true }),
+    );
   });
 
   it("explore-self exit closes the guide synchronously — no flicker before the dismiss call settles", async () => {

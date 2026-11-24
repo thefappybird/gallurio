@@ -2610,7 +2610,14 @@
           "slugTaken": "مستخدَم بالفعل",
           "slugInvalid": "تنسيق غير صالح",
           "qrCodeAlt": "رمز استجابة سريعة يؤدي إلى معرض أعمالك",
-          "downloadQr": "تنزيل رمز QR"
+          "downloadQr": "تنزيل رمز QR",
+          "discoverLabel": "الإدراج في Discover",
+          "discoverWarnListTitle": "سيتم إدراج معرض أعمالك في Discover",
+          "discoverWarnListBody": "سيتمكن أي شخص يتصفح صفحة Discover في Gallurio من العثور عليه.",
+          "discoverWarnUnlistTitle": "ستتم إزالة معرض أعمالك من Discover",
+          "discoverWarnUnlistBody": "سيبقى متاحًا على رابطه العام، لكنه لن يظهر بعد الآن في صفحة Discover.",
+          "confirmAndList": "انشر وأدرج في Discover",
+          "confirmAndUnlist": "انشر وأزل من Discover"
         },
         "themeDialog": {
           "title": "السمة والعلامة التجارية"

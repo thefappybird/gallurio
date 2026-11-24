@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckIcon, CopyIcon, DownloadIcon, PencilIcon, RotateCcwIcon, SaveIcon } from "lucide-react";
+import { AlertCircleIcon, CheckIcon, CopyIcon, DownloadIcon, PencilIcon, RotateCcwIcon, SaveIcon } from "lucide-react";
 import QRCode from "qrcode";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
@@ -22,11 +23,17 @@ import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: (listed: boolean) => Promise<void>;
   publicUrl: string;
   currentSlug: string;
   /** A never-published workspace must verify its provisional URL before first publish. */
   hasBeenPublished: boolean;
+  /** Whether the page is live right now (flips true after an in-session publish); gates only the Discover warning. */
+  isLive: boolean;
+  /** Persisted Discover listing (`discover.listed === true`). */
+  savedListed: boolean;
+  /** Initial switch position each time the dialog opens (`discover.listed ?? true`). */
+  initialListed: boolean;
   onSlugSaved: (newSlug: string) => void;
   /** Injected so the component stays server-action-free for tests. */
   onUpdateSlug: (slug: string) => Promise<{ ok: true; savedAt?: string } | { error: string }>;
@@ -39,6 +46,9 @@ export function PublishDialog({
   publicUrl,
   currentSlug,
   hasBeenPublished,
+  isLive,
+  savedListed,
+  initialListed,
   onSlugSaved,
   onUpdateSlug,
 }: Props) {
@@ -51,6 +61,7 @@ export function PublishDialog({
   >("idle");
   const [slugSaveError, setSlugSaveError] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState(!hasBeenPublished);
+  const [listed, setListed] = useState(initialListed);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [debouncedSlugInput, setDebouncedSlugInput] = useState(currentSlug);
   const livePublicUrl =
@@ -81,8 +92,9 @@ export function PublishDialog({
       setSlugSaveState("idle");
       setSlugSaveError(null);
       setEditingSlug(!hasBeenPublished);
+      setListed(initialListed);
     }
-  }, [open, currentSlug, hasBeenPublished]);
+  }, [open, currentSlug, hasBeenPublished, initialListed]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSlugInput(slugInput), 250);
@@ -132,11 +144,19 @@ export function PublishDialog({
   async function confirm() {
     setPublishing(true);
     try {
-      await onConfirm();
+      await onConfirm(listed);
     } finally {
       setPublishing(false);
     }
   }
+
+  // The dialog is the confirmation: only a live page whose listing changes needs a warning.
+  const listingChanges = isLive && listed !== savedListed;
+  const confirmLabel = listingChanges
+    ? listed
+      ? t("confirmAndList")
+      : t("confirmAndUnlist")
+    : t("confirm");
 
   const publishDisabled =
     publishing ||
@@ -308,6 +328,32 @@ export function PublishDialog({
           </div>
         </CollapsibleDrawer>
 
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="publish-dialog-discover">{t("discoverLabel")}</Label>
+          <Switch
+            id="publish-dialog-discover"
+            checked={listed}
+            onCheckedChange={setListed}
+            disabled={publishing}
+          />
+        </div>
+
+        {listingChanges ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex w-full items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400"
+          >
+            <AlertCircleIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-semibold">
+                {listed ? t("discoverWarnListTitle") : t("discoverWarnUnlistTitle")}
+              </p>
+              <p>{listed ? t("discoverWarnListBody") : t("discoverWarnUnlistBody")}</p>
+            </div>
+          </div>
+        ) : null}
+
         <DialogFooter>
           <Button
             type="button"
@@ -318,7 +364,7 @@ export function PublishDialog({
             {t("cancel")}
           </Button>
           <Button type="button" onClick={confirm} loading={publishing} disabled={publishDisabled}>
-            {t("confirm")}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

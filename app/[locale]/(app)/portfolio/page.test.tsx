@@ -54,6 +54,7 @@ type MockEditorShellProps = {
   initialSeoKeywords: string[];
   initialInquiryRecipientEmail: string;
   hasBeenPublished: boolean;
+  discoverListed?: boolean;
   initialActiveDraftId: string | null;
   initialActiveDraftName?: string;
 };
@@ -68,6 +69,7 @@ function MockEditorShell({
   initialSeoKeywords,
   initialInquiryRecipientEmail,
   hasBeenPublished,
+  discoverListed,
   initialActiveDraftId,
   initialActiveDraftName,
 }: MockEditorShellProps) {
@@ -82,6 +84,7 @@ function MockEditorShell({
       <div data-testid="seo-keywords">{JSON.stringify(initialSeoKeywords)}</div>
       <div data-testid="inquiry-recipient">{initialInquiryRecipientEmail}</div>
       <div data-testid="has-been-published">{String(hasBeenPublished)}</div>
+      <div data-testid="discover-listed">{String(discoverListed)}</div>
       <div data-testid="active-draft-id">{initialActiveDraftId ?? ""}</div>
       <div data-testid="active-draft-name">{initialActiveDraftName ?? ""}</div>
     </div>
@@ -126,7 +129,7 @@ async function seedWorkspace(overrides: Partial<{ slug: string }> = {}) {
   });
 }
 
-function mockRequireOrg(workspace: { _id: Types.ObjectId; slug: string; name: string; businessType?: string }, publicPage: Record<string, unknown>) {
+function mockRequireOrg(workspace: { _id: Types.ObjectId; slug: string; name: string; businessType?: string; discover?: { listed?: boolean } }, publicPage: Record<string, unknown>) {
   requireOrgMock.mockResolvedValue({
     role: "owner",
     workspace: {
@@ -176,6 +179,24 @@ describe("PageBuilderEntry — canvas loads the active draft, not the published 
     expect(screen.getByTestId("initial-contact")).toHaveTextContent("draft@example.com");
     expect(screen.getByTestId("initial-form-locale")).toHaveTextContent("fil");
     expect(screen.getByTestId("current-template-id")).toHaveTextContent("editorial");
+  });
+
+  it("passes the workspace's saved Discover listing through to the editor", async () => {
+    const ws = await seedWorkspace();
+    mockRequireOrg(
+      {
+        _id: ws._id,
+        slug: ws.slug,
+        name: ws.name,
+        businessType: "photographer",
+        discover: { listed: false },
+      },
+      { data: { home: null, gallery: null } },
+    );
+
+    await renderEntry();
+
+    expect(screen.getByTestId("discover-listed")).toHaveTextContent("false");
   });
 
   it("falls back to publicPage-derived values (empty defaults) when there is no active draft", async () => {

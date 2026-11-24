@@ -30,6 +30,9 @@ function renderDialog(
     publicUrl: "https://gallurio.com/w/test-studio",
     currentSlug: "test-studio",
     hasBeenPublished: false,
+    isLive: false,
+    savedListed: true,
+    initialListed: true,
     onSlugSaved: vi.fn(),
     onUpdateSlug: mockUpdateSlug,
   };
@@ -65,7 +68,7 @@ describe("PublishDialog", () => {
   });
 
   it("hides a previously published URL behind an edit control", () => {
-    renderDialog({ hasBeenPublished: true });
+    renderDialog({ hasBeenPublished: true, isLive: true });
     expect(screen.queryByRole("textbox", { name: /portfolio url/i })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio url/i }));
@@ -184,6 +187,89 @@ describe("PublishDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /download qr/i }));
     expect(clickSpy).toHaveBeenCalledOnce();
     clickSpy.mockRestore();
+  });
+
+  it("warns and relabels the button when a published page will be listed", () => {
+    renderDialog({ hasBeenPublished: true, isLive: true, savedListed: false, initialListed: true });
+
+    const warning = screen.getByRole("status");
+    expect(warning).toHaveAttribute("aria-live", "polite");
+    expect(warning).toHaveTextContent("Your portfolio will be listed on Discover");
+    expect(
+      screen.getByRole("button", { name: "Publish and list on Discover" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no warning and the plain label on a never-published page", () => {
+    renderDialog({ hasBeenPublished: false, isLive: false, savedListed: false, initialListed: true });
+
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("button", { name: /publish now/i })).toBeInTheDocument();
+  });
+
+  it("gates the warning on isLive, not hasBeenPublished", () => {
+    renderDialog({ hasBeenPublished: false, isLive: true, savedListed: false, initialListed: true });
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("warns about removal when a listed page is unticked", () => {
+    renderDialog({ hasBeenPublished: true, isLive: true, savedListed: true, initialListed: true });
+
+    fireEvent.click(screen.getByRole("switch", { name: "List on Discover" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your portfolio will be removed from Discover",
+    );
+    expect(
+      screen.getByRole("button", { name: "Publish and remove from Discover" }),
+    ).toBeInTheDocument();
+  });
+
+  it("passes the toggle value to onConfirm", async () => {
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+    renderDialog({
+      hasBeenPublished: true,
+      isLive: true,
+      savedListed: true,
+      initialListed: true,
+      onConfirm,
+    });
+
+    fireEvent.click(screen.getByRole("switch", { name: "List on Discover" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish and remove from Discover" }));
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(false));
+  });
+
+  it("resets the toggle to initialListed when the dialog reopens", () => {
+    const base = {
+      onOpenChange: vi.fn(),
+      onConfirm: vi.fn().mockResolvedValue(undefined),
+      publicUrl: "https://gallurio.com/w/test-studio",
+      currentSlug: "test-studio",
+      hasBeenPublished: true,
+      isLive: true,
+      savedListed: true,
+      initialListed: true,
+      onSlugSaved: vi.fn(),
+      onUpdateSlug: mockUpdateSlug,
+    };
+    const ui = (open: boolean) => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <PublishDialog {...base} open={open} />
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(ui(true));
+
+    fireEvent.click(screen.getByRole("switch", { name: "List on Discover" }));
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    rerender(ui(false));
+    rerender(ui(true));
+
+    expect(screen.getByRole("switch", { name: "List on Discover" })).toBeChecked();
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("shows reset and save controls only after the slug changes", async () => {

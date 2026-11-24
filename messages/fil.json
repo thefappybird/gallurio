@@ -2610,7 +2610,14 @@
           "slugTaken": "Nakuha na",
           "slugInvalid": "Hindi wastong format",
           "qrCodeAlt": "QR code papunta sa iyong portfolio",
-          "downloadQr": "I-download ang QR"
+          "downloadQr": "I-download ang QR",
+          "discoverLabel": "I-list sa Discover",
+          "discoverWarnListTitle": "Ililista ang iyong portfolio sa Discover",
+          "discoverWarnListBody": "Mahahanap ito ng sinumang nagba-browse sa Discover page ng Gallurio.",
+          "discoverWarnUnlistTitle": "Aalisin ang iyong portfolio sa Discover",
+          "discoverWarnUnlistBody": "Mananatili itong live sa pampublikong link nito, pero hindi na ito lalabas sa Discover page.",
+          "confirmAndList": "I-publish at i-list sa Discover",
+          "confirmAndUnlist": "I-publish at alisin sa Discover"
         },
         "themeDialog": {
           "title": "Tema at brand"

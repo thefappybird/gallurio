@@ -197,6 +197,7 @@ export default async function PageBuilderEntry({
         initialSeoKeywords={initialSeoKeywords}
         initialInquiryRecipientEmail={pp?.inquiryRecipientEmail ?? ""}
         hasBeenPublished={Boolean(pp?.publishedAt)}
+        discoverListed={workspace.discover?.listed}
         workspaceBusinessType={workspaceBusinessType}
         initialDrafts={initialDrafts}
         initialActiveDraftId={initialActiveDraftId}

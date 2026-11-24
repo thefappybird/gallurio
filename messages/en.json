@@ -2610,7 +2610,14 @@
           "slugTaken": "Already taken",
           "slugInvalid": "Invalid format",
           "qrCodeAlt": "QR code linking to your portfolio",
-          "downloadQr": "Download QR"
+          "downloadQr": "Download QR",
+          "discoverLabel": "List on Discover",
+          "discoverWarnListTitle": "Your portfolio will be listed on Discover",
+          "discoverWarnListBody": "Anyone browsing the Gallurio Discover page will be able to find it.",
+          "discoverWarnUnlistTitle": "Your portfolio will be removed from Discover",
+          "discoverWarnUnlistBody": "It stays live at its public link, but no longer appears on the Discover page.",
+          "confirmAndList": "Publish and list on Discover",
+          "confirmAndUnlist": "Publish and remove from Discover"
         },
         "themeDialog": {
           "title": "Theme & brand"

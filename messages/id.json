@@ -2610,7 +2610,14 @@
           "slugTaken": "Sudah dipakai",
           "slugInvalid": "Format tidak valid",
           "qrCodeAlt": "Kode QR yang mengarah ke portofolio Anda",
-          "downloadQr": "Unduh kode QR"
+          "downloadQr": "Unduh kode QR",
+          "discoverLabel": "Tampilkan di Discover",
+          "discoverWarnListTitle": "Portofolio Anda akan ditampilkan di Discover",
+          "discoverWarnListBody": "Siapa pun yang menjelajahi halaman Discover Gallurio akan dapat menemukannya.",
+          "discoverWarnUnlistTitle": "Portofolio Anda akan dihapus dari Discover",
+          "discoverWarnUnlistBody": "Portofolio tetap tayang di tautan publiknya, tetapi tidak lagi muncul di halaman Discover.",
+          "confirmAndList": "Terbitkan dan tampilkan di Discover",
+          "confirmAndUnlist": "Terbitkan dan hapus dari Discover"
         },
         "themeDialog": {
           "title": "Tema & merek"
