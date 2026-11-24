@@ -1921,6 +1921,17 @@
         "noindexSection": "Visibilitas pencarian",
         "noindexLabel": "Sembunyikan dari mesin pencari",
         "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi.",
+        "discoverLabel": "Tampilkan di Discover",
+        "discoverHint": "Tampilkan portofolio Anda yang sudah dipublikasikan di halaman Discover Gallurio.",
+        "discoverNoindexNote": "Disembunyikan dari Discover selama visibilitas pencarian dimatikan.",
+        "discoverConfirm": {
+          "listTitle": "Tampilkan portofolio Anda di Discover?",
+          "listBody": "Portofolio Anda akan muncul di halaman Discover Gallurio, tempat siapa pun dapat menjelajahinya.",
+          "unlistTitle": "Hapus portofolio Anda dari Discover?",
+          "unlistBody": "Portofolio Anda tidak akan lagi muncul di halaman Discover. Halaman publik Anda tetap aktif.",
+          "confirm": "Konfirmasi",
+          "cancel": "Batal"
+        },
         "publishChanges": "Terbitkan perubahan",
         "publishingChanges": "Menerbitkan…",
         "publishChangesSuccessToast": "Perubahan telah diterbitkan ke halaman publik Anda.",

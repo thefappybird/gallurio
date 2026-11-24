@@ -132,6 +132,7 @@ export default async function SettingsCatchallPage({
       galleryDescription: settingsDraftFields.seo.galleryDescription,
       noindex: settingsDraftFields.seo.noindex,
     },
+    discoverListed: workspace.discover?.listed ?? true,
   };
 
   // Published-side snapshot in the same shape, so the frontend can recompute
@@ -223,6 +224,7 @@ export default async function SettingsCatchallPage({
               publishedDefaults={publishedDefaults}
               workspaceName={workspace.name}
               businessType={workspace.businessType}
+              savedListed={workspace.discover?.listed === true}
             />
           ),
         },

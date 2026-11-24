@@ -669,3 +669,145 @@ describe("PublicPageSettingsForm — automatic SEO status hints", () => {
     expect(screen.queryByText(/seoDescriptionAutoHint/)).not.toBeInTheDocument();
   });
 });
+
+describe("PublicPageSettingsForm — Discover listing toggle", () => {
+  it("submits without a dialog when the page is unpublished", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, discoverListed: false }}
+        locale="en"
+        savedListed={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
+      expect.objectContaining({ discoverListed: true })
+    );
+  });
+  function renderPublished(opts: { listed: boolean; saved: boolean; noindex?: boolean }) {
+    return render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={{
+          ...baseDefaults,
+          discoverListed: opts.listed,
+          seo: { ...baseDefaults.seo!, noindex: opts.noindex ?? false },
+        }}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={false}
+        publishedDefaults={baseDefaults}
+        savedListed={opts.saved}
+      />
+    );
+  }
+
+  it("opens the list dialog on a published page and Confirm saves discoverListed true", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockClear();
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
+    renderPublished({ listed: false, saved: false });
+
+    fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+
+    expect(await screen.findByText("discoverConfirm.listTitle")).toBeInTheDocument();
+    expect(updatePublicPageSettingsAction).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "discoverConfirm.confirm" }));
+    });
+
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
+      expect.objectContaining({ discoverListed: true })
+    );
+  });
+
+  it("Cancel closes the dialog without saving and the form stays dirty", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockClear();
+    renderPublished({ listed: false, saved: false });
+
+    fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+    await screen.findByText("discoverConfirm.listTitle");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "discoverConfirm.cancel" }));
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByText("discoverConfirm.listTitle")).not.toBeInTheDocument()
+    );
+    expect(updatePublicPageSettingsAction).not.toHaveBeenCalled();
+    expect(screen.getByText("save").closest("button")).toBeEnabled();
+  });
+
+  it("opens the unlist dialog when a saved-listed published page is toggled off", async () => {
+    renderPublished({ listed: true, saved: true });
+
+    fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+
+    expect(await screen.findByText("discoverConfirm.unlistTitle")).toBeInTheDocument();
+  });
+
+  it("compares against the new saved value after a successful save", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockClear();
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValue({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
+    renderPublished({ listed: false, saved: false });
+    const toggle = screen.getByRole("switch", { name: "discoverLabel" });
+
+    fireEvent.click(toggle);
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole("button", { name: "discoverConfirm.confirm" }));
+    });
+    // saved is now true; toggling off must open the unlist dialog, not the list one.
+    fireEvent.click(toggle);
+    await act(async () => {
+      fireEvent.click(screen.getByText("save").closest("button")!);
+    });
+
+    expect(await screen.findByText("discoverConfirm.unlistTitle")).toBeInTheDocument();
+    vi.mocked(updatePublicPageSettingsAction).mockReset();
+  });
+
+  it("shows the noindex note only while seo.noindex is checked", () => {
+    renderPublished({ listed: true, saved: true, noindex: true });
+    expect(screen.getByText("discoverNoindexNote")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /noindex/i }));
+    expect(screen.queryByText("discoverNoindexNote")).not.toBeInTheDocument();
+  });
+
+  it("does not raise the pending-changes banner when only the toggle changes", async () => {
+    renderPublished({ listed: false, saved: false });
+
+    fireEvent.click(screen.getByRole("switch", { name: "discoverLabel" }));
+
+    expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
+  });
+});

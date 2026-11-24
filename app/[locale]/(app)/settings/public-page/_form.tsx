@@ -21,6 +21,8 @@ import { publishDraftAction } from "../../portfolio/_draftActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { DiscoverConfirmDialog } from "./discover-confirm";
 import { TagsInput } from "@/components/ui/tags-input";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -63,6 +65,7 @@ export function PublicPageSettingsForm({
   publishedDefaults,
   workspaceName = "",
   businessType,
+  savedListed: savedListedProp = false,
 }: {
   slug: string;
   publishedAt: Date | null;
@@ -75,6 +78,8 @@ export function PublicPageSettingsForm({
   workspaceName?: string;
   /** Workspace's chosen business type — folded into the automatic description preview, same as the public page's own default. */
   businessType?: string | null;
+  /** Persisted Discover listing (`discover.listed === true`). Confirmation compares the toggle against this. */
+  savedListed?: boolean;
 }) {
   const t = useTranslations("app.settings.publicPage");
   const tSeoDefaults = useTranslations("publicPage.seoDefaults");
@@ -86,6 +91,13 @@ export function PublicPageSettingsForm({
     initialHasPendingChanges ?? false,
   );
   const [isPublishing, startPublishTransition] = useTransition();
+  const [savedListed, setSavedListed] = useState(savedListedProp);
+  const [discoverConfirm, setDiscoverConfirm] = useState<{
+    open: boolean;
+    direction: "list" | "unlist";
+    data: PublicPageSettingsInput | null;
+  }>({ open: false, direction: "list", data: null });
+  const [confirmSaving, setConfirmSaving] = useState(false);
 
   const [optimisticPublishedAt, setOptimisticPublishedAt] = useOptimistic<Date | null>(
     publishedAt
@@ -114,6 +126,7 @@ export function PublicPageSettingsForm({
   });
 
   const siteIconUrl = watch("siteIconUrl");
+  const noindexChecked = watch("seo.noindex");
   const ogImageUrl = watch("seo.ogImageUrl");
   const siteIcon = useImageRetry(siteIconUrl);
 
@@ -178,7 +191,7 @@ export function PublicPageSettingsForm({
     });
   }
 
-  async function onSubmit(data: PublicPageSettingsInput) {
+  async function saveSettings(data: PublicPageSettingsInput) {
     const result = await updatePublicPageSettingsAction(data);
     if (!result?.ok) {
       toast.error(errMsg(result?.error, result?.params));
@@ -186,7 +199,33 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
+    if (data.discoverListed !== undefined) setSavedListed(data.discoverListed);
     setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
+  }
+
+  async function onSubmit(data: PublicPageSettingsInput) {
+    const nextListed = data.discoverListed ?? savedListed;
+    if (optimisticPublishedAt && nextListed !== savedListed) {
+      setDiscoverConfirm({
+        open: true,
+        direction: nextListed ? "list" : "unlist",
+        data,
+      });
+      return;
+    }
+    await saveSettings(data);
+  }
+
+  async function handleDiscoverConfirm() {
+    const data = discoverConfirm.data;
+    setDiscoverConfirm((s) => ({ ...s, open: false }));
+    if (!data) return;
+    setConfirmSaving(true);
+    try {
+      await saveSettings(data);
+    } finally {
+      setConfirmSaving(false);
+    }
   }
 
   function handlePublish() {
@@ -350,7 +389,7 @@ export function PublicPageSettingsForm({
             <Button
               type="submit"
               form={formId}
-              disabled={isSubmitting || !isDirty}
+              disabled={isSubmitting || confirmSaving || !isDirty}
             >
               {isSubmitting ? (
                 <>
@@ -406,10 +445,43 @@ export function PublicPageSettingsForm({
                 </div>
               </div>
             </div>
+
+            <div className="flex items-start gap-3">
+              <Controller
+                control={control}
+                name="discoverListed"
+                render={({ field }) => (
+                  <Switch
+                    id="discoverListed"
+                    className="mt-0.5"
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                    aria-describedby="discoverListedHint"
+                  />
+                )}
+              />
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="discoverListed">{t("discoverLabel")}</Label>
+                <p id="discoverListedHint" className="text-sm text-muted-foreground">
+                  {t("discoverHint")}
+                </p>
+                {noindexChecked && (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    {t("discoverNoindexNote")}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
         </div>
       </section>
+      <DiscoverConfirmDialog
+        open={discoverConfirm.open}
+        direction={discoverConfirm.direction}
+        onConfirm={() => void handleDiscoverConfirm()}
+        onOpenChange={(next) => setDiscoverConfirm((s) => ({ ...s, open: next }))}
+      />
 
       {/* SEO + Site icon + Inquiry (shared form) */}
       <form id={formId} onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-8">

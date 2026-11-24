@@ -1921,6 +1921,17 @@
         "noindexSection": "Kakikitaan sa paghahanap",
         "noindexLabel": "Itago mula sa mga search engine",
         "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana.",
+        "discoverLabel": "I-list sa Discover",
+        "discoverHint": "Ipakita ang iyong nai-publish na portfolio sa Discover page ng Gallurio.",
+        "discoverNoindexNote": "Nakatago sa Discover habang naka-off ang search visibility.",
+        "discoverConfirm": {
+          "listTitle": "Ipakita ang iyong portfolio sa Discover?",
+          "listBody": "Lalabas ang iyong portfolio sa Discover page ng Gallurio, kung saan maaari itong i-browse ng sinuman.",
+          "unlistTitle": "Alisin ang iyong portfolio sa Discover?",
+          "unlistBody": "Hindi na lalabas ang iyong portfolio sa Discover page. Mananatiling live ang iyong public page.",
+          "confirm": "Kumpirmahin",
+          "cancel": "Kanselahin"
+        },
         "publishChanges": "I-publish ang mga pagbabago",
         "publishingChanges": "Pina-publish…",
         "publishChangesSuccessToast": "Na-publish ang mga pagbabago sa iyong pampublikong pahina.",

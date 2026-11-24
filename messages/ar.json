@@ -1921,6 +1921,17 @@
         "noindexSection": "ظهور في محركات البحث",
         "noindexLabel": "إخفاء من محركات البحث",
         "noindexHint": "أبعد هذا الملف الشخصي عن نتائج بحث Google. مناسب للمسودات أو الإطلاق الناعم. رابطك المباشر يظل يعمل.",
+        "discoverLabel": "إدراج في Discover",
+        "discoverHint": "اعرض ملفك المنشور في صفحة Discover من Gallurio.",
+        "discoverNoindexNote": "مخفي من Discover ما دام ظهور البحث متوقفًا.",
+        "discoverConfirm": {
+          "listTitle": "هل تريد عرض ملفك في Discover؟",
+          "listBody": "سيظهر ملفك في صفحة Discover من Gallurio، حيث يمكن لأي شخص تصفحه.",
+          "unlistTitle": "هل تريد إزالة ملفك من Discover؟",
+          "unlistBody": "لن يظهر ملفك بعد الآن في صفحة Discover. تبقى صفحتك العامة منشورة.",
+          "confirm": "تأكيد",
+          "cancel": "إلغاء"
+        },
         "publishChanges": "نشر التغييرات",
         "publishingChanges": "جارٍ النشر…",
         "publishChangesSuccessToast": "تم نشر التغييرات على صفحتك العامة.",

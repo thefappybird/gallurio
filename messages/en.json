@@ -1921,6 +1921,17 @@
         "noindexSection": "Search visibility",
         "noindexLabel": "Hide from search engines",
         "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works.",
+        "discoverLabel": "List on Discover",
+        "discoverHint": "Show your published portfolio on the Gallurio Discover page.",
+        "discoverNoindexNote": "Hidden from Discover while search visibility is off.",
+        "discoverConfirm": {
+          "listTitle": "Show your portfolio on Discover?",
+          "listBody": "Your portfolio will appear on the Gallurio Discover page, where anyone can browse it.",
+          "unlistTitle": "Remove your portfolio from Discover?",
+          "unlistBody": "Your portfolio will no longer appear on the Discover page. Your public page stays live.",
+          "confirm": "Confirm",
+          "cancel": "Cancel"
+        },
         "publishChanges": "Publish changes",
         "publishingChanges": "Publishing…",
         "publishChangesSuccessToast": "Changes published to your public page.",
