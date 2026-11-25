@@ -50,6 +50,16 @@ describe("DiscoverBanner", () => {
     for (const row of rows) expect(row).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("repeats the item list twice inside each set so one set always outspans the row", async () => {
+    mockFeed(8);
+    const { container } = renderWithProviders(<DiscoverBanner />);
+    await screen.findByRole("heading", { level: 2 });
+
+    const sets = container.querySelectorAll(".dsc-set");
+    expect(sets).toHaveLength(6);
+    for (const set of sets) expect(set.querySelectorAll(".dsc-st")).toHaveLength(16);
+  });
+
   it("toggles the pause button label between Pause and Resume scrolling", async () => {
     mockFeed(8);
     const { container } = renderWithProviders(<DiscoverBanner />);

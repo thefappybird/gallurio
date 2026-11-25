@@ -26,40 +26,43 @@ export function BrandTile({ card, line, dimOnHover = false }: { card: DiscoverCa
     <span
       data-brand-tile=""
       className={cn(
-        "flex aspect-[4/5] w-full flex-col justify-between [container-type:inline-size]",
+        "block aspect-[4/5] w-full overflow-hidden",
         dimOnHover &&
           "transition-opacity duration-200 group-hover:opacity-35 group-focus-visible:opacity-35 motion-reduce:transition-none",
       )}
+      // Root is the size container: cqw only resolves for DESCENDANTS, so the cqw padding lives on the inner frame.
       style={{
+        containerType: "inline-size",
         backgroundColor: bg,
         color: fg,
-        padding: "9cqw",
         fontFamily: fontFamilyValue(headingFont),
       }}
     >
-      <span
-        aria-hidden="true"
-        className="grid aspect-square place-items-center rounded-full font-semibold leading-none"
-        style={{ width: "11cqw", backgroundColor: accent, color: bg, fontSize: "5.4cqw" }}
-      >
-        {initial}
-      </span>
-      <span className="block">
-        <span aria-hidden="true" className="mb-[3cqw] block" style={{ width: "12cqw", height: "0.8cqw", backgroundColor: accent }} />
+      <span className="flex size-full flex-col justify-between overflow-hidden" style={{ padding: "9cqw" }}>
         <span
-          className="block text-balance leading-[1.04] tracking-tight"
-          style={{ fontSize: "clamp(13px, 12.5cqw, 64px)" }}
+          aria-hidden="true"
+          className="grid aspect-square place-items-center rounded-full font-semibold leading-none"
+          style={{ width: "11cqw", backgroundColor: accent, color: bg, fontSize: "5.4cqw" }}
         >
-          {card.name}
+          {initial}
         </span>
-        {line ? (
+        <span className="block min-w-0">
+          <span aria-hidden="true" className="mb-[3cqw] block" style={{ width: "12cqw", height: "0.8cqw", backgroundColor: accent }} />
           <span
-            className="mt-[3cqw] block font-semibold uppercase tracking-wider"
-            style={{ color: accent, fontSize: "max(8px, 3.9cqw)" }}
+            className="block text-balance leading-[1.04] tracking-tight [overflow-wrap:anywhere]"
+            style={{ fontSize: "clamp(13px, 12.5cqw, 64px)" }}
           >
-            {line}
+            {card.name}
           </span>
-        ) : null}
+          {line ? (
+            <span
+              className="mt-[3cqw] block font-semibold uppercase tracking-wider"
+              style={{ color: accent, fontSize: "max(8px, 3.9cqw)" }}
+            >
+              {line}
+            </span>
+          ) : null}
+        </span>
       </span>
     </span>
   );

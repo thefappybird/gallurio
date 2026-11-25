@@ -57,6 +57,12 @@ describe("DiscoverTile", () => {
     expect(overlay).toHaveTextContent("Photographer · Philippines");
   });
 
+  it("makes the brand tile root the size container so cqw units track the tile width", () => {
+    const { container } = renderWithProviders(<DiscoverTile card={{ ...card, cover: null }} onOpen={() => {}} />);
+
+    expect(container.querySelector("[data-brand-tile]")).toHaveStyle({ containerType: "inline-size" });
+  });
+
   it("has no hover dim or overlay on a decorative brand tile", () => {
     const { container } = renderWithProviders(<DiscoverTile card={{ ...card, cover: null }} decorative />);
 

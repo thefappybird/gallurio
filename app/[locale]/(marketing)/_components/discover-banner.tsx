@@ -30,11 +30,12 @@ function tileRatio(card: DiscoverCard): number {
   return Math.min(2.5, Math.max(0.5, card.cover.width / card.cover.height));
 }
 
+/** The list is doubled inside each set so ONE set always outspans the visible row (seamless -50% loop). */
 function StripSet({ cards }: { cards: DiscoverCard[] }) {
   return (
     <div className="dsc-set">
-      {cards.map((card) => (
-        <div key={card.slug} className="dsc-st" style={{ "--ar": tileRatio(card) } as React.CSSProperties}>
+      {[...cards, ...cards].map((card, i) => (
+        <div key={`${card.slug}-${i}`} className="dsc-st" style={{ "--ar": tileRatio(card) } as React.CSSProperties}>
           <DiscoverTile card={card} decorative />
         </div>
       ))}
