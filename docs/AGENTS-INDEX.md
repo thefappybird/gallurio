@@ -13,6 +13,7 @@ Read `CLAUDE.md` and `AGENTS.md` first. This page routes durable project documen
 | Locales, RTL, and app design | `docs/modules/i18n-design.md` |
 | Workspace vocabulary presets (entity word renaming) | `docs/vocabulary/vocabulary-presets.md` |
 | Portfolio and Cloudflare Images | `docs/modules/portfolio-and-media.md` |
+| Discover (public portfolio directory, listing toggle) | `docs/modules/discover.md` |
 | Currency conversion and restatement | `docs/pricing/currency-conversion.md` |
 | Bookings import and invoice/receipt themes | `docs/bookings/import-and-document-themes.md` |
 
