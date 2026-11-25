@@ -78,6 +78,7 @@ const UNAUTHENTICATED_PATHS = [
   "/contact",
   "/about",
   "/book-demo",
+  "/discover",
   // Public, unauthenticated Portfolio Maker demo editor (localStorage-only,
   // no server draft/publish calls) — outside the [locale] segment's (app)
   // group, same as the public /w/ portfolio pages.

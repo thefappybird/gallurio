@@ -277,6 +277,18 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["/discover", "/fil/discover", "/discover?p=2&category=wedding"])(
+    "treats the public Discover page %s as public (no AuthKit, locale routing only)",
+    async (path) => {
+      const { proxy } = await import("./proxy");
+
+      await proxy(new NextRequest(`http://localhost${path}`));
+
+      expect(authMiddlewareMock).not.toHaveBeenCalled();
+      expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it.each([
     ["/fil/blog", "/blog"],
     ["/id/blog/how-to-price", "/blog/how-to-price"],
